@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HostKit
 
-## Getting Started
+Plan an event end to end: scout venues and vendors, build the budget and the
+timeline, track every booking, collect RSVPs, and print the run sheet.
 
-First, run the development server:
+HostKit is **host-side only**. Venue and vendor owners never log in and never
+list anything — the catalog is seeded data, and every user is someone planning
+an event. The Airbnb comparison describes the *scouting* experience
+(photo-forward browsing, filters, saved shortlists), not a two-sided
+marketplace.
+
+## The idea
+
+Because HostKit knows your event — date, headcount, city, budget — it can
+price every listing *against that specific event*. A directory tells you a
+venue is "$640/hour". HostKit tells you it's **"$5,120 for your 8 hours, 33%
+of your venue budget, and comfortable for 90 guests."**
+
+Then it keeps the pieces connected. Marking an inquiry **booked** writes a
+committed line into the budget and ticks off the matching timeline task.
+Declining takes the money back out. RSVPs feed back into the headcount that
+every listing is priced against. That write-back loop is what makes it
+end-to-end rather than a pile of separate tools.
+
+## Running it
+
+Requires Node 20.9+ and PostgreSQL 16.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+
+# Create the database (any Postgres will do)
+createdb hostkit
+
+cp .env.example .env        # then set DATABASE_URL and AUTH_SECRET
+npm run db:migrate          # apply migrations
+npm run db:seed             # 78 venues and vendors across 3 cities
+
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sign up with any email and password — there's no email service, so no
+confirmation step.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Scripts
 
-## Learn More
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server (Turbopack) |
+| `npm run build` / `start` | Production build and serve |
+| `npm test` | Unit tests (Vitest) |
+| `npm run test:e2e` | End-to-end spine test (Playwright) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+| `npm run db:migrate` / `db:seed` / `db:reset` | Database |
+| `npm run db:studio` | Prisma Studio |
 
-To learn more about Next.js, take a look at the following resources:
+## How it's put together
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · Prisma 7 → Postgres ·
+Auth.js v5 · Vitest · Playwright.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The interesting logic is pure and unit-tested, deliberately kept out of
+components so the cases that matter are reachable from a test:
 
-## Deploy on Vercel
+| Module | Responsibility |
+| --- | --- |
+| `lib/scoring.ts` | Prices and scores one listing against one event |
+| `lib/plan.ts` | Turns intake answers into a budget and a timeline |
+| `lib/templates.ts` | What each event type needs, and in what order |
+| `lib/budget.ts` | Rolls commitments up into a budget summary |
+| `lib/guests.ts` | RSVP maths and the headcount to plan against |
+| `lib/outreach.ts` | Drafts the first message to a vendor |
+| `lib/runsheet.ts` | Builds a day-of schedule from your bookings |
+| `lib/money.ts` | Integer-cent arithmetic and formatting |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+A few decisions worth knowing about:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Money is integer cents, everywhere.** `allocateCents` splits a budget
+  across weights without losing or inventing a cent.
+- **Venues and vendors share one `Listing` table**, discriminated by `kind`.
+  They share name, artwork, location, price and tags; splitting them would
+  duplicate the whole search stack.
+- **Event templates live in code, not the database.** They're typed planning
+  logic that evolves with the app, and a change should be reviewable in a diff.
+- **Timeline positions are fractions of a planning horizon**, so a wedding
+  booked six weeks out compresses the 365-day template into the 42 days that
+  actually exist rather than emitting overdue tasks.
+- **The planning headcount starts from your estimate** and only moves for a
+  real signal — a regret, or a guest list that outgrows the estimate. Using the
+  guest list directly would reprice your venue for four guests the moment you
+  typed the fourth name.
+- **Inquiry drafts never mention your budget.** Telling a vendor what you have
+  to spend is how it becomes what you spend.
+- **Guests need no account.** The token in `/rsvp/[token]` is the
+  authorization.
+
+## Known limits
+
+This is a working demo, not a production service. Specifically:
+
+- **The catalog is invented.** All 78 venues and vendors are fiction — plausible
+  names, prices and ratings chosen to exercise the scoring logic. None are real
+  businesses. Listing artwork is generated locally from the listing id rather
+  than photographed.
+- **Nothing is sent.** HostKit drafts inquiry messages and per-guest RSVP links,
+  but you copy and send them yourself. There is no email integration.
+- **No payments.** There's no seller to pay, so the budget *tracks* money
+  (committed, paid, outstanding) rather than moving it.
+- **Discovery scores in application code**, not SQL. At catalog scale (tens per
+  city) that's the right trade, since the price that matters is computed
+  per-event; tens of thousands of listings would want it precomputed.
+- **Single light theme**, deliberately — the palette is built around a warm
+  paper ground with no honest dark equivalent.
+- `npm audit` reports advisories inside the Prisma **CLI's** dependency tree
+  (`mysql2`, a driver this project never uses, and `deepmerge-ts`). They are
+  build-time only and reach neither the server runtime nor the browser bundle.
+
+## Tests
+
+131 unit tests cover the pure logic, including the boundaries that bite:
+per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
+event whose date has passed, an unallocated category, an RSVP round that has
+barely started.
+
+`tests/e2e/spine.spec.ts` is one deliberately long Playwright test walking sign
+up → intake → generated plan → filtered discovery → shortlist → drafted inquiry
+→ booking → budget write-back → declining. The product's claim is that these
+steps are connected, and that's only tested by walking the connection.
+
+```bash
+npm test          # unit
+npm run test:e2e  # end to end (starts a dev server if one isn't running)
+```
