@@ -10,7 +10,17 @@ test("plays the launch splash once, then reveals Discover", async ({ page }) => 
     "src",
     /HostKit_Logo/,
   );
-  await expect(splash).toBeHidden({ timeout: 3000 });
+
+  const timings = await splash.evaluate((el) => {
+    const logo = el.querySelector(".launch-splash-logo");
+    return {
+      overlay: getComputedStyle(el).animationDuration,
+      logo: logo ? getComputedStyle(logo).animationDuration : "",
+    };
+  });
+  expect(timings.logo).toBe(timings.overlay);
+
+  await expect(splash).toBeHidden({ timeout: 2500 });
 
   await expect(page.getByRole("heading", { name: "Your events" })).toBeVisible();
   await expect
