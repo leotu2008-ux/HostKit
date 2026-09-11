@@ -42,7 +42,7 @@ export function AddRunSheetItem({ eventId }: { eventId: string }) {
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="eventId" value={eventId} />
       <FormError>{state?.error}</FormError>
-      <div className="grid gap-3 sm:grid-cols-[110px_1fr_180px_auto] sm:items-end">
+      <div className="grid gap-3">
         <Field label="Time">
           <Input name="time" type="time" defaultValue="18:00" required />
         </Field>

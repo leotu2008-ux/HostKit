@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { InstallPrompt } from "@/components/install-prompt";
 import { TabBar } from "@/components/tab-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/session";
@@ -34,6 +35,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      <InstallPrompt />
       <TabBar />
     </div>
   );

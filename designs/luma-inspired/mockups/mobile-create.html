@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create · HostKit mobile prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #fbf8f4; --surface: #fff; --sunk: #f4efe8;
+      --ink: #1c1917; --ink-soft: #57504a; --ink-mute: #8b8179;
+      --line: #e9e1d7; --line-strong: #d8cec1;
+      --clay: #c4502e; --clay-deep: #a03f22; --clay-wash: #fbeee8;
+      --forest: #2a4a40;
+      --amber: #9a6b10; --amber-wash: #fbf1dc;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: var(--font-sans); color: var(--ink);
+      background: #ebe4d8; display: flex; flex-direction: column; align-items: center;
+    }
+    .proto {
+      width: min(390px, 100%); background: var(--amber-wash); color: var(--amber);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+      text-align: center; padding: 8px 12px; margin-top: 16px; border-radius: 8px 8px 0 0;
+    }
+    .phone {
+      width: 390px; height: 844px; background: var(--paper);
+      display: flex; flex-direction: column; overflow: hidden;
+      border: 1px solid var(--line-strong); box-shadow: 0 24px 60px rgba(28,25,23,0.12);
+    }
+    .status { height: 44px; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 24px 8px; font-size: 14px; font-weight: 600; }
+    .appbar { height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 20px; gap: 8px; }
+    .appbar h1 { font-family: var(--font-display); font-size: 22px; margin: 0; font-weight: 500; }
+    .scroll { flex: 1; overflow: auto; padding: 8px 20px 52px; }
+    .preview {
+      border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 18px; background: #161310; color: #f4efe8;
+    }
+    .preview .h { height: 72px; background: linear-gradient(135deg, #2a4a40, #c4502e); }
+    .preview .b { padding: 10px 12px; font-size: 12px; }
+    .preview strong { font-family: var(--font-display); font-size: 16px; display: block; }
+    label { display: block; font-size: 13px; font-weight: 500; margin: 12px 0 6px; }
+    input, select, textarea {
+      width: 100%; border: 1px solid var(--line-strong); background: var(--surface);
+      border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; color: var(--ink);
+    }
+    textarea { min-height: 88px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .seg button {
+      height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+      font-size: 13px; font-weight: 500; color: var(--ink-soft); cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] { border-color: var(--clay); background: var(--clay-wash); color: var(--clay-deep); }
+    .overline { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--clay); margin: 20px 0 8px; }
+    .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    .swatches button { aspect-ratio: 1; border-radius: 8px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+    .swatches button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--clay); }
+    .sticky {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 20px;
+      border-top: 1px solid var(--line); background: var(--paper);
+    }
+    .btn { height: 44px; border-radius: 99px; border: 0; font-weight: 500; font-size: 14px; cursor: pointer; text-decoration: none; display: grid; place-items: center; font-family: inherit; }
+    .btn-primary { background: var(--clay); color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
+    .tabbar {
+      height: 84px; border-top: 1px solid var(--line); background: var(--surface);
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; padding-bottom: 16px; position: relative;
+    }
+    .tabbar a {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      text-decoration: none; font-size: 11px; font-weight: 500; color: var(--ink-mute);
+    }
+    .tabbar .create {
+      width: 40px; height: 40px; border-radius: 99px; background: var(--clay); color: #fff;
+      font-size: 26px; line-height: 38px; text-align: center; margin-top: 0;
+    }
+    .home-pill { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 99px; background: var(--ink); opacity: 0.18; }
+    .note { font-size: 12px; color: var(--ink-mute); text-align: center; padding: 12px 20px 24px; max-width: 390px; }
+    .chk { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-top: 10px; }
+    .end-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 24px 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="proto">Design prototype · HostKit mobile · 390×844 · create · not Luma</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <header class="appbar"><h1>Create night</h1><button class="btn btn-ghost" type="button" style="height:36px;padding:0 12px;font-size:13px">Save</button></header>
+    <form class="scroll" action="#" onsubmit="return false">
+      <div class="preview">
+        <div class="h"></div>
+        <div class="b"><strong id="pt">Rooftop Jazz Night</strong>Midnight Garden · Public · Fri 18 · 7:30 PM</div>
+      </div>
+      <label for="title">Title</label>
+      <input id="title" type="text" value="Rooftop Jazz Night" />
+      <label>Date</label>
+      <input type="date" value="2026-09-18" />
+      <div class="row2">
+        <div><label>Start</label><input type="time" value="19:30" /></div>
+        <div><label>End</label><input type="time" value="22:30" /></div>
+      </div>
+      <label>Timezone</label>
+      <select><option selected>Pacific Time</option><option>Eastern</option></select>
+      <label>Format</label>
+      <div class="seg">
+        <button type="button" aria-pressed="true">In person</button>
+        <button type="button" aria-pressed="false">Online</button>
+        <button type="button" aria-pressed="false">Hybrid</button>
+      </div>
+      <label>Location</label>
+      <input type="text" value="The Lantern Roof, Oakland" />
+      <label>Description</label>
+      <textarea>A late-summer set above downtown Oakland. Doors 7:15. Bring a layer.</textarea>
+      <p class="overline">HostKit plan</p>
+      <div class="seg">
+        <button type="button" aria-pressed="false">Dinner</button>
+        <button type="button" aria-pressed="true">Party</button>
+        <button type="button" aria-pressed="false">Concert</button>
+      </div>
+      <div class="row2">
+        <div><label>Headcount</label><input type="number" value="90" /></div>
+        <div><label>Budget USD</label><input type="number" value="18000" /></div>
+      </div>
+      <p class="overline">Theme</p>
+      <div class="swatches">
+        <button type="button" style="background:#fbf8f4;border-color:#e9e1d7" aria-pressed="false"></button>
+        <button type="button" style="background:#c4502e" aria-pressed="false"></button>
+        <button type="button" style="background:#2a4a40" aria-pressed="false"></button>
+        <button type="button" style="background:#d4a017" aria-pressed="false"></button>
+        <button type="button" style="background:#6b2d5b" aria-pressed="false"></button>
+        <button type="button" style="background:#161310" aria-pressed="true"></button>
+      </div>
+      <label>Visibility</label>
+      <select><option selected>Public</option><option>Unlisted</option><option>Calendar members</option></select>
+      <label>Capacity</label>
+      <input type="number" value="90" />
+      <label class="chk"><input type="checkbox" checked /> Waitlist after capacity</label>
+      <label class="chk"><input type="checkbox" checked /> Approve when over 80% full</label>
+      <div class="end-actions">
+        <button class="btn btn-ghost" type="button">Save draft</button>
+        <a class="btn btn-primary" href="mobile-event.html">Publish</a>
+      </div>
+    </form>
+    <nav class="tabbar" aria-label="Host tabs">
+      <a href="mobile-discover.html">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+        Nights
+      </a>
+      <a href="mobile-create.html" class="create" aria-current="page">+</a>
+      <a href="mobile-guests.html">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><path d="M16 16h1v1h-1zM19 16h1v4h-4v-1"/></svg>
+        Door
+      </a>
+      <a href="#more" id="more-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/></svg>
+        More
+      </a>
+      <div class="home-pill"></div>
+    </nav>
+  </div>
+  <p class="note">Companion wide layout: <a href="create-event.html">create-event.html</a></p>
+  <script>
+    document.getElementById("title").addEventListener("input", (e) => {
+      document.getElementById("pt").textContent = e.target.value || "Untitled night";
+    });
+    document.querySelectorAll(".seg").forEach((g) => {
+      g.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+        g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false"));
+        b.setAttribute("aria-pressed", "true");
+      }));
+    });
+    document.querySelectorAll(".swatches button").forEach((b, _, all) => b.addEventListener("click", () => {
+      all.forEach((x) => x.setAttribute("aria-pressed", "false"));
+      b.setAttribute("aria-pressed", "true");
+    }));
+    document.getElementById("more-tab").addEventListener("click", (e) => { e.preventDefault(); alert("More · Plan, Budget, Scout"); });
+  </script>
+</body>
+</html>

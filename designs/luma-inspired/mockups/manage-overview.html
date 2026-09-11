@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage · Rooftop Jazz Night · HostKit prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #fbf8f4;
+      --surface: #ffffff;
+      --sunk: #f4efe8;
+      --ink: #1c1917;
+      --ink-soft: #57504a;
+      --ink-mute: #8b8179;
+      --line: #e9e1d7;
+      --line-strong: #d8cec1;
+      --clay: #c4502e;
+      --clay-deep: #a03f22;
+      --clay-wash: #fbeee8;
+      --forest: #2a4a40;
+      --forest-wash: #e8f0ec;
+      --amber: #9a6b10;
+      --amber-wash: #fbf1dc;
+      --danger: #8e2a20;
+      --danger-wash: #fbeae8;
+      --radius-card: 0.875rem;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+    body { min-height: 100vh; }
+    a { color: inherit; }
+    button, select { font-family: inherit; }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .display { font-family: var(--font-display); font-variation-settings: "SOFT" 30, "WONK" 1; letter-spacing: -0.02em; }
+    :where(a, button, input, select, textarea, summary):focus-visible {
+      outline: 2px solid var(--clay); outline-offset: 2px; border-radius: 4px;
+    }
+
+    .proto {
+      background: var(--amber-wash); color: var(--amber); text-align: center;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 8px 16px; border-bottom: 1px solid #ead9b3;
+    }
+    .site {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      height: 64px; padding: 0 20px; max-width: 1152px; margin: 0 auto;
+      background: color-mix(in srgb, var(--paper) 85%, transparent); backdrop-filter: blur(10px);
+    }
+    .wordmark { font-family: var(--font-display); font-size: 22px; text-decoration: none; }
+    .wordmark span { color: var(--clay); }
+    .site-nav { display: flex; align-items: center; gap: 8px; }
+    .site-nav a { text-decoration: none; font-size: 14px; color: var(--ink-soft); padding: 8px 12px; border-radius: 999px; }
+    .site-nav a:hover { background: var(--sunk); color: var(--ink); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 999px; background: var(--forest);
+      color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 600;
+    }
+
+    .wrap { max-width: 1152px; margin: 0 auto; padding: 0 20px 64px; }
+    .event-chrome {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+      padding: 20px 0 8px;
+    }
+    .thumb {
+      width: 72px; height: 48px; border-radius: 8px; flex-shrink: 0;
+      background: linear-gradient(135deg, #2a4a40 0%, #c4502e 55%, #9a6b10 100%);
+    }
+    .event-chrome h1 { margin: 0; font-size: 28px; }
+    .meta { margin: 4px 0 0; font-size: 14px; color: var(--ink-soft); }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 500;
+    }
+    .badge.neutral { background: var(--sunk); color: var(--ink-soft); }
+    .badge.forest { background: var(--forest-wash); color: var(--forest); }
+    .badge.clay { background: var(--clay-wash); color: var(--clay-deep); }
+    .badge.amber { background: var(--amber-wash); color: var(--amber); }
+    .badge.danger { background: var(--danger-wash); color: var(--danger); }
+    .chrome-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border-radius: 999px; font-weight: 500; font-size: 14px; text-decoration: none; border: 0; cursor: pointer;
+    }
+    .btn-md { height: 40px; padding: 0 16px; }
+    .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+    .btn-primary { background: var(--clay); color: #fff; }
+    .btn-primary:hover { background: var(--clay-deep); }
+    .btn-secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); }
+    .btn-secondary:hover { background: var(--sunk); }
+    .btn-ghost { background: transparent; color: var(--ink-soft); }
+    .btn-ghost:hover { background: var(--sunk); color: var(--ink); }
+
+    .tabs {
+      display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-top: 8px;
+    }
+    .tabs a {
+      flex-shrink: 0; padding: 12px 12px; font-size: 14px; font-weight: 500;
+      text-decoration: none; color: var(--ink-soft); border-bottom: 2px solid transparent;
+    }
+    .tabs a:hover { color: var(--ink); }
+    .tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--clay); }
+    details.more { position: relative; }
+    details.more summary { list-style: none; cursor: pointer; }
+    details.more summary::-webkit-details-marker { display: none; }
+    .more-menu {
+      position: absolute; right: 0; top: 100%; z-index: 10; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card);
+      padding: 8px; box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 8%, transparent);
+    }
+    .more-menu a { display: block; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 14px; color: var(--ink); border: 0; }
+    .more-menu a:hover { background: var(--sunk); }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+    .stat { padding: 20px; }
+    .stat .label { font-size: 14px; color: var(--ink-soft); margin: 0; }
+    .stat .num { font-family: var(--font-display); font-size: 32px; margin: 4px 0 0; }
+    .stat .hint { font-size: 13px; color: var(--ink-mute); margin: 6px 0 0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 16px; }
+    .section-head h2 { margin: 0; font-size: 22px; }
+    .section-head p, .section-head a { margin: 0; font-size: 14px; color: var(--ink-soft); }
+    .section-head a { color: var(--clay); font-weight: 500; text-decoration: none; }
+    .section-head a:hover { text-decoration: underline; }
+    .pad { padding: 20px; }
+    .spark { width: 100%; height: 72px; display: block; }
+    .live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--forest); font-weight: 500; }
+    .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--forest); animation: pulse 1.6s ease infinite; }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+    .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; }
+    .row:first-of-type { border-top: 0; }
+    .coverage { display: grid; gap: 12px; }
+    .cov {
+      display: flex; justify-content: space-between; align-items: start; gap: 12px;
+      padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card);
+    }
+    .cov strong { display: block; font-weight: 500; }
+    .cov span { font-size: 13px; color: var(--ink-soft); }
+    .activity { padding: 0; }
+    .activity li { display: flex; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); font-size: 14px; list-style: none; }
+    .activity ul { margin: 0; padding: 0; }
+    .activity li:first-child { border-top: 0; }
+    .time { color: var(--ink-mute); font-size: 13px; min-width: 64px; }
+    .bar { height: 6px; background: var(--sunk); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+    .bar > i { display: block; height: 100%; background: var(--clay); border-radius: 99px; }
+    .bar.forest > i { background: var(--forest); }
+
+    @media (max-width: 860px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .chrome-actions { margin-left: 0; }
+      .coverage { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="proto">Design prototype — HostKit tablet companion · canonical UI is mobile-*.html · not affiliated with Luma</div>
+  <div class="site">
+    <a class="wordmark display" href="create-event.html">Host<span>Kit</span></a>
+    <nav class="site-nav">
+      <a href="create-event.html">Create</a>
+      <a href="public-event.html">Discover</a>
+      <div class="avatar" title="Maya Chen">MC</div>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <header class="event-chrome">
+      <div class="thumb" aria-hidden="true"></div>
+      <div>
+        <h1 class="display">Rooftop Jazz Night</h1>
+        <p class="meta">Friday, Sep 18 · 7:30–10:30 PM PDT · The Lantern Roof, Oakland</p>
+        <div class="badges">
+          <span class="badge forest">Public</span>
+          <span class="badge neutral">In person</span>
+          <span class="badge clay">Midnight Garden</span>
+          <span class="badge amber">4 pending approval</span>
+        </div>
+      </div>
+      <div class="chrome-actions">
+        <a class="btn btn-secondary btn-sm" href="public-event.html">Preview page</a>
+        <button class="btn btn-secondary btn-sm" type="button">Share</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Manage event">
+      <a href="manage-overview.html" aria-current="page">Overview</a>
+      <a href="guests.html">Guests</a>
+      <a href="guests.html#registration">Registration</a>
+      <a href="guests.html#blasts">Blasts</a>
+      <a href="manage-overview.html#insights">Insights</a>
+      <details class="more">
+        <summary class="tabs-more"><span style="display:inline-block;padding:12px;font-size:14px;font-weight:500;color:var(--ink-soft)">More</span></summary>
+        <div class="more-menu">
+          <a href="#">Plan</a>
+          <a href="#">Budget</a>
+          <a href="#">Scout listings</a>
+          <a href="#">Shortlist</a>
+          <a href="#">Run sheet</a>
+          <a href="create-event.html">Event settings</a>
+        </div>
+      </details>
+    </nav>
+
+    <section class="stats" aria-label="Pulse">
+      <article class="card stat">
+        <p class="label">Going</p>
+        <p class="num display tabular">86</p>
+        <p class="hint">of 90 capacity · waitlist 7</p>
+      </article>
+      <article class="card stat">
+        <p class="label">Pending</p>
+        <p class="num display tabular">4</p>
+        <p class="hint">approval queue · <a href="guests.html" style="color:var(--clay)">review</a></p>
+      </article>
+      <article class="card stat">
+        <p class="label">Page views</p>
+        <p class="num display tabular">1,240</p>
+        <p class="hint">880 unique · last 7 days</p>
+      </article>
+      <article class="card stat">
+        <p class="label">Checked in</p>
+        <p class="num display tabular">12</p>
+        <p class="hint">doors not open yet — rehearsal</p>
+      </article>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <div class="section-head">
+          <div>
+            <h2 class="display">Live pulse</h2>
+            <p>Traffic on the public page, last 60 minutes.</p>
+          </div>
+          <p class="live"><span class="dot"></span> 14 on the page now</p>
+        </div>
+        <div class="card pad">
+          <svg class="spark" viewBox="0 0 320 72" role="img" aria-label="Page views sparkline climbing through the hour">
+            <polyline fill="none" stroke="#c4502e" stroke-width="2.5" stroke-linejoin="round"
+              points="0,58 20,54 40,56 60,48 80,50 100,42 120,38 140,40 160,28 180,30 200,22 220,24 240,16 260,18 280,12 320,8" />
+            <polyline fill="url(#wash)" stroke="none"
+              points="0,72 0,58 20,54 40,56 60,48 80,50 100,42 120,38 140,40 160,28 180,30 200,22 220,24 240,16 260,18 280,12 320,8 320,72" />
+            <defs>
+              <linearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#c4502e" stop-opacity="0.18" />
+                <stop offset="1" stop-color="#c4502e" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="row"><span>Instagram</span><span class="tabular">410 views</span></div>
+          <div class="row"><span>Direct</span><span class="tabular">290</span></div>
+          <div class="row"><span>lantern.test</span><span class="tabular">80</span></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div>
+            <h2 class="display">Registration health</h2>
+            <p>Free admission · approval on · waitlist on.</p>
+          </div>
+          <a href="guests.html">Open guests</a>
+        </div>
+        <div class="card pad">
+          <div style="display:flex;justify-content:space-between;font-size:14px">
+            <span>Capacity</span><span class="tabular">86 / 90</span>
+          </div>
+          <div class="bar"><i style="width:95%"></i></div>
+          <div class="row"><span>Going (incl. plus-ones)</span><span class="tabular">86</span></div>
+          <div class="row"><span>Waitlist</span><span class="tabular">7</span></div>
+          <div class="row"><span>Invited, no reply</span><span class="tabular">12</span></div>
+          <p style="margin:12px 0 0;font-size:13px;color:var(--ink-mute)">Planning headcount still 90 — HostKit only moves it on regrets or a list that outgrows the estimate.</p>
+        </div>
+      </section>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="display">What this event still needs</h2>
+          <p>2 essential bookings outstanding.</p>
+        </div>
+        <a href="#">Scout listings</a>
+      </div>
+      <div class="coverage" style="grid-template-columns:repeat(3,1fr);margin-bottom:32px">
+        <div class="cov"><div><strong>Venue</strong><span>The Lantern Roof</span></div><span class="badge forest">Booked</span></div>
+        <div class="cov"><div><strong>Catering</strong><span>Inquiry out, no answer yet</span></div><span class="badge amber">Waiting</span></div>
+        <div class="cov"><div><strong>Music</strong><span>Nothing booked</span></div><span class="badge clay">Needed</span></div>
+        <div class="cov"><div><strong>Bar</strong><span>Nightjar Service</span></div><span class="badge forest">Booked</span></div>
+        <div class="cov"><div><strong>Staffing</strong><span>Nothing booked</span></div><span class="badge clay">Needed</span></div>
+        <div class="cov"><div><strong>Lighting</strong><span>Optional for this template</span></div><span class="badge neutral">Optional</span></div>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <div class="section-head">
+          <h2 class="display">Next up</h2>
+          <a href="#">Full timeline</a>
+        </div>
+        <div class="card">
+          <ul class="activity">
+            <li><span class="time tabular">Sep 12</span><span>Confirm headcount with catering once approvals clear</span></li>
+            <li><span class="time tabular">Sep 14</span><span>Send parking blast to Going</span></li>
+            <li><span class="time tabular">Sep 17</span><span>Print run sheet and door list</span></li>
+            <li><span class="time tabular">Sep 18</span><span>Doors 7:15 · first set 7:45</span></li>
+          </ul>
+        </div>
+      </section>
+      <section>
+        <div class="section-head">
+          <h2 class="display">Recent activity</h2>
+          <a href="guests.html">Guest log</a>
+        </div>
+        <div class="card">
+          <ul class="activity">
+            <li><span class="time tabular">7:12p</span><span><strong>Taylor Kim</strong> checked in (rehearsal)</span></li>
+            <li><span class="time tabular">6:40p</span><span><strong>Jordan Blake</strong> requested to join</span></li>
+            <li><span class="time tabular">5:11p</span><span><strong>Priya Shah</strong> joined the waitlist</span></li>
+            <li><span class="time tabular">4:02p</span><span>Instagram referral spike · 48 views in 20 min</span></li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll('a[href="#"]').forEach((a) => {
+      a.addEventListener("click", (e) => e.preventDefault());
+    });
+  </script>
+</body>
+</html>
