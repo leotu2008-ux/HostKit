@@ -16,6 +16,8 @@ struct CreateEventView: View {
     @State private var hours = 4
     @State private var city = Cities.all[0]
     @State private var address = ""
+    @State private var venue: VenuePick?
+    @State private var isPickingVenue = false
     @State private var details = ""
     @State private var capacity = 40
     @State private var ticketType: TicketType = .free
@@ -59,12 +61,42 @@ struct CreateEventView: View {
                     Stepper("Lasts \(hours) hour\(hours == 1 ? "" : "s")", value: $hours, in: 1...24)
                 }
 
-                Section("Where") {
+                Section {
                     Picker("City", selection: $city) {
                         ForEach(Cities.all, id: \.self) { Text($0).tag($0) }
                     }
-                    TextField("Venue or address", text: $address)
-                        .textContentType(.fullStreetAddress)
+                    if let venue {
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "mappin.circle.fill").foregroundStyle(.tint)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(venue.name).font(.body.weight(.medium))
+                                if let address = venue.address {
+                                    Text(address).font(.footnote).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Button("Change") { isPickingVenue = true }
+                                .font(.footnote.weight(.semibold))
+                        }
+                        Button("Remove venue", role: .destructive) {
+                            self.venue = nil
+                            if address == venue.address { address = "" }
+                        }
+                    } else {
+                        Button {
+                            isPickingVenue = true
+                        } label: {
+                            Label("Find a venue near \(Cities.short(city))", systemImage: "magnifyingglass")
+                        }
+                        TextField("Or type the address", text: $address)
+                            .textContentType(.fullStreetAddress)
+                    }
+                } header: {
+                    Text("Where")
+                } footer: {
+                    Text(venue == nil
+                        ? "Optional. Picking a venue adds it to your outreach list so you can contact them about booking."
+                        : "The venue is on your outreach list — reach them from the event dashboard.")
                 }
 
                 Section {
@@ -140,6 +172,12 @@ struct CreateEventView: View {
                     Section { Text(errorMessage).foregroundStyle(.red) }
                 }
             }
+            .sheet(isPresented: $isPickingVenue) {
+                VenuePickerSheet(city: city) { picked in
+                    venue = picked
+                    if address.isEmpty, let full = picked.address { address = full }
+                }
+            }
             .navigationTitle("Create event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -193,7 +231,8 @@ struct CreateEventView: View {
             ticketPriceCents: ticketType == .paid ? cents(price) : nil,
             visibility: visibility,
             budgetCents: budget.isEmpty ? nil : cents(budget),
-            publish: publishNow)
+            publish: publishNow,
+            venue: venue)
         do {
             let created = try await model.createEvent(request)
             onCreated?(created)

@@ -56,6 +56,19 @@ const createSchema = z.object({
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]),
   budgetCents: z.number().int().min(0).max(1_000_000_000).optional(),
   publish: z.boolean().optional(),
+  /** A place picked from MapKit / Apple Maps. Optional. */
+  venue: z
+    .object({
+      name: z.string().trim().min(1).max(120),
+      address: z.string().trim().max(300).nullable().optional(),
+      phone: z.string().trim().max(40).nullable().optional(),
+      website: z.string().trim().max(300).nullable().optional(),
+      externalId: z.string().trim().max(200).nullable().optional(),
+      lat: z.number().nullable().optional(),
+      lng: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 /**
@@ -101,6 +114,18 @@ export async function POST(request: Request) {
     address: input.address || null,
     lat: null,
     lng: null,
+    venue: input.venue
+      ? {
+          name: input.venue.name,
+          address: input.venue.address || null,
+          phone: input.venue.phone || null,
+          website: input.venue.website || null,
+          externalId: input.venue.externalId || null,
+          lat: input.venue.lat ?? null,
+          lng: input.venue.lng ?? null,
+          source: "APPLE_MAPS",
+        }
+      : null,
     budgetTotalCents: input.budgetCents ?? 0,
     description: input.description || null,
     ticketType: input.ticketType,

@@ -32,6 +32,8 @@ async function createNight(page: Page) {
   await page.fill('input[name="title"]', "Sam & Ali's supper");
   await page.fill('input[name="time"]', "18:00");
   await page.fill('input[name="durationHours"]', "8");
+  // The venue step is optional; this host already has a place.
+  await page.click('button:has-text("I already have a venue")');
   await page.fill('input[name="address"]', "200 Kent Ave, Brooklyn, NY");
   await page.fill('input[name="guestCount"]', "90");
   await page.fill('input[name="budget"]', "48,000");

@@ -31,6 +31,11 @@ const schema = z.object({
   ticketType: z.enum(TICKETS),
   ticketPrice: z.string().trim().optional(),
   visibility: z.enum(VISIBILITY),
+  // Filled by the venue picker when the host chose a place.
+  venueName: z.string().trim().max(120).optional(),
+  venuePhone: z.string().trim().max(40).optional(),
+  venueWebsite: z.string().trim().max(300).optional(),
+  venueExternalId: z.string().trim().max(200).optional(),
 });
 
 function parseCoord(raw: string | undefined): number | null {
@@ -105,6 +110,18 @@ export async function createEventAction(
     visibility: input.visibility,
     published: false,
     schoolDomain: user?.schoolDomain ?? null,
+    venue: input.venueName
+      ? {
+          name: input.venueName,
+          address,
+          phone: input.venuePhone || null,
+          website: input.venueWebsite || null,
+          externalId: input.venueExternalId || null,
+          lat,
+          lng,
+          source: "APPLE_MAPS",
+        }
+      : null,
   });
 
   if (claimToken) {

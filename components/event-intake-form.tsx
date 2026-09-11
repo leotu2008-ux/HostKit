@@ -44,7 +44,7 @@ function CapacityField({ name, defaultValue }: { name: string; defaultValue: num
   );
 }
 import { CoverArt } from "@/components/cover-art";
-import { LocationField } from "@/components/location-field";
+import { VenueField } from "@/components/venue-field";
 import { Button, FormError, Input, cx } from "@/components/ui";
 
 function Submit({ signedIn }: { signedIn: boolean }) {
@@ -116,6 +116,7 @@ function Segmented<T extends string>({
 
 export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
   const [state, formAction] = useActionState(createEventAction, undefined);
+  const [city, setCity] = useState<string>(CITIES[0]);
   const [ticketType, setTicketType] = useState<"FREE" | "PAID">("FREE");
   const [visibility, setVisibility] = useState<"PUBLIC" | "UNLISTED" | "PRIVATE">(
     "UNLISTED",
@@ -173,21 +174,26 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
           </Row>
         </div>
 
-        <div className="space-y-4 rounded-card border border-line bg-surface p-4">
-          <LocationField />
+        <div className="space-y-5 rounded-card border border-line bg-surface p-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink">City</span>
-            <select name="city" defaultValue={CITIES[0]} className={cx(compact, "w-full")}>
-              {CITIES.map((city) => (
-                <option key={city} value={city}>
-                  {city}
+            <select
+              name="city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className={cx(compact, "w-full")}
+            >
+              {CITIES.map((option) => (
+                <option key={option} value={option}>
+                  {option}
                 </option>
               ))}
             </select>
             <span className="mt-1.5 block text-sm text-ink-mute">
-              Where HostKit scouts venues and vendors.
+              Where the night is, and where HostKit looks for venues.
             </span>
           </label>
+          <VenueField city={city} />
         </div>
 
         <textarea

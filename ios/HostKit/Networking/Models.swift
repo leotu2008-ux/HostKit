@@ -164,6 +164,19 @@ nonisolated struct DiscoverFeed: Decodable, Sendable {
     var school: School?
 }
 
+/// A venue picked from MapKit on Create. Mirrors `VenuePick` on the server.
+nonisolated struct VenuePick: Codable, Hashable, Identifiable, Sendable {
+    var name: String
+    var address: String?
+    var phone: String?
+    var website: String?
+    var externalId: String?
+    var lat: Double?
+    var lng: Double?
+
+    var id: String { externalId ?? "\(name)@\(lat ?? 0),\(lng ?? 0)" }
+}
+
 nonisolated struct NewEventRequest: Encodable, Sendable {
     var title: String
     var type: EventKind
@@ -178,6 +191,7 @@ nonisolated struct NewEventRequest: Encodable, Sendable {
     var visibility: EventVisibility
     var budgetCents: Int?
     var publish: Bool
+    var venue: VenuePick?
 }
 
 /// The cities HostKit knows; matches `CITIES` and `CITY_CENTERS` in
@@ -197,6 +211,10 @@ nonisolated enum Cities {
 
     static func short(_ city: String) -> String {
         city.split(separator: ",").first.map(String.init) ?? city
+    }
+
+    static func center(of city: String) -> (lat: Double, lng: Double)? {
+        centers[city]
     }
 
     static func nearest(lat: Double, lng: Double) -> String? {
