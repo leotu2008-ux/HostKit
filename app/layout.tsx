@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import Script from "next/script";
 import { Fraunces, Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
+import { LaunchSplash } from "@/components/launch-splash";
+import { SPLASH_BOOTSTRAP } from "@/lib/splash";
 import { parsePreference, THEME_BOOTSTRAP, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
@@ -59,6 +61,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="hostkit-theme" strategy="beforeInteractive">
           {THEME_BOOTSTRAP}
         </Script>
+        <Script id="hostkit-splash" strategy="beforeInteractive">
+          {SPLASH_BOOTSTRAP}
+        </Script>
+        <LaunchSplash />
         <AppFrame>{children}</AppFrame>
       </body>
     </html>

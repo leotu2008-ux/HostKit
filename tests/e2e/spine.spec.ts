@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { SPLASH_STORAGE_KEY } from "../../lib/splash";
 
 /**
  * The spine: everything HostKit claims to do, in the order a host does it.
@@ -11,7 +12,19 @@ import { expect, test, type Page } from "@playwright/test";
 
 const PASSWORD = "correcthorse1";
 
+/** Skip the first-load splash so actionability checks aren't blocked by it. */
+async function skipLaunchSplash(page: Page) {
+  await page.addInitScript((key: string) => {
+    try {
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Ignore quota / private-mode failures; the test still proceeds.
+    }
+  }, SPLASH_STORAGE_KEY);
+}
+
 async function signUp(page: Page) {
+  await skipLaunchSplash(page);
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   await page.goto("/signup");
   await page.fill('input[name="name"]', "Dana Hart");

@@ -148,6 +148,76 @@ body {
   border-radius: 4px;
 }
 
+/* Launch splash: black full-viewport overlay, once per session.
+   Hidden unless the before-paint bootstrap set data-splash="pending". */
+.launch-splash {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  pointer-events: auto;
+}
+
+html[data-splash="pending"] {
+  background: #000;
+}
+
+html[data-splash="pending"] body {
+  background: #000;
+}
+
+html[data-splash="pending"] .launch-splash {
+  display: flex;
+  animation: launch-splash-overlay 2.15s ease-in-out forwards;
+}
+
+.launch-splash-logo {
+  width: min(70vw, 17.5rem);
+  height: auto;
+  opacity: 0;
+}
+
+html[data-splash="pending"] .launch-splash-logo {
+  animation: launch-splash-logo 1.85s ease-in-out forwards;
+}
+
+@keyframes launch-splash-logo {
+  0% {
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes launch-splash-overlay {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-splash="pending"] .launch-splash,
+  .launch-splash {
+    display: none !important;
+    animation: none !important;
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;
