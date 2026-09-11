@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rooftop Jazz Night · HostKit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --night: #161310;
+      --night-surface: #221e1a;
+      --night-sunk: #2c2722;
+      --night-ink: #f4efe8;
+      --night-mute: #a89f95;
+      --night-line: #3a342d;
+      --clay: #e06a45;
+      --clay-deep: #c4502e;
+      --forest: #8fbfad;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-sans: "Inter", system-ui, sans-serif;
+      --radius-card: 0.875rem;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--night); color: var(--night-ink); font-family: var(--font-sans); }
+    body { min-height: 100vh; }
+    a { color: inherit; }
+    button, input { font-family: inherit; }
+    .display { font-family: var(--font-display); letter-spacing: -0.02em; }
+    :where(a, button, input):focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
+
+    .proto {
+      background: #3a2e18; color: #e8c36a; text-align: center;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 8px 16px;
+    }
+    header.site {
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1080px; margin: 0 auto; padding: 20px 20px 0;
+    }
+    .wordmark { font-family: var(--font-display); font-size: 20px; text-decoration: none; color: var(--night-ink); }
+    .wordmark span { color: var(--clay); }
+    .host-link { font-size: 13px; color: var(--night-mute); text-decoration: none; }
+    .host-link:hover { color: var(--night-ink); }
+
+    .page {
+      max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px;
+      display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: start;
+    }
+    .cover {
+      position: relative; height: 320px; border-radius: var(--radius-card); overflow: hidden;
+      background:
+        radial-gradient(circle at 70% 20%, rgba(224,106,69,0.45), transparent 40%),
+        radial-gradient(circle at 20% 80%, rgba(42,74,64,0.8), transparent 45%),
+        linear-gradient(160deg, #1c1814, #2a4a40 50%, #1a1210);
+    }
+    .cover::before {
+      content: ""; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(-12deg, transparent 0 18px, rgba(244,239,232,0.03) 18px 19px);
+    }
+    .cover .lanterns {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 18% 42%, #e06a45 0 4px, transparent 5px),
+        radial-gradient(circle at 32% 28%, #e8c36a 0 3px, transparent 4px),
+        radial-gradient(circle at 55% 35%, #e06a45 0 5px, transparent 6px),
+        radial-gradient(circle at 72% 22%, #8fbfad 0 3px, transparent 4px),
+        radial-gradient(circle at 84% 48%, #e8c36a 0 4px, transparent 5px);
+      opacity: 0.9;
+    }
+    .overline {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--clay); margin: 20px 0 8px;
+    }
+    h1 { font-size: clamp(36px, 5vw, 52px); line-height: 1.08; margin: 0 0 12px; font-weight: 500; }
+    .byline { color: var(--night-mute); font-size: 15px; margin: 0 0 28px; }
+    .byline strong { color: var(--night-ink); font-weight: 500; }
+    .facts { display: grid; gap: 16px; margin-bottom: 32px; }
+    .facts div { border-top: 1px solid var(--night-line); padding-top: 12px; }
+    .facts dt { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--night-mute); }
+    .facts dd { margin: 4px 0 0; font-size: 16px; }
+    .body-copy { font-size: 16px; line-height: 1.65; color: color-mix(in srgb, var(--night-ink) 88%, var(--night-mute)); max-width: 38rem; }
+    .body-copy p { margin: 0 0 1em; }
+
+    .rail {
+      position: sticky; top: 16px; background: var(--night-surface);
+      border: 1px solid var(--night-line); border-radius: var(--radius-card); padding: 20px;
+    }
+    .rail h2 { font-size: 18px; margin: 0 0 4px; }
+    .rail .when { color: var(--night-mute); font-size: 14px; margin: 0 0 16px; line-height: 1.45; }
+    .spots { font-size: 13px; color: var(--forest); font-weight: 500; margin-bottom: 12px; }
+    .bar { height: 6px; background: var(--night-sunk); border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
+    .bar i { display: block; width: 95%; height: 100%; background: var(--clay); }
+    .register {
+      width: 100%; height: 48px; border: 0; border-radius: 999px; background: var(--clay); color: #fff;
+      font-size: 16px; font-weight: 500; cursor: pointer;
+    }
+    .register:hover { background: var(--clay-deep); }
+    .ghost {
+      width: 100%; height: 40px; margin-top: 8px; border-radius: 999px;
+      background: transparent; color: var(--night-ink); border: 1px solid var(--night-line);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .fine { font-size: 12px; color: var(--night-mute); margin: 12px 0 0; }
+
+    .modal {
+      display: none; position: fixed; inset: 0; z-index: 30;
+      background: color-mix(in srgb, #000 55%, transparent); place-items: center; padding: 20px;
+    }
+    .modal.open { display: grid; }
+    .sheet {
+      background: var(--night-surface); border: 1px solid var(--night-line);
+      border-radius: var(--radius-card); padding: 24px; width: min(400px, 100%);
+    }
+    .sheet h3 { margin: 0 0 8px; font-size: 22px; }
+    .sheet p { margin: 0 0 16px; color: var(--night-mute); font-size: 14px; }
+    .sheet label { display: block; font-size: 13px; font-weight: 500; margin: 12px 0 6px; }
+    .sheet input, .sheet select {
+      width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--night-line);
+      background: var(--night); color: var(--night-ink); padding: 0 12px;
+    }
+    .done { display: none; }
+    .done.show { display: block; }
+    .form.hide { display: none; }
+
+    footer {
+      max-width: 1080px; margin: 0 auto; padding: 0 20px 40px;
+      font-size: 13px; color: var(--night-mute);
+    }
+    footer a { color: var(--clay); }
+
+    @media (max-width: 800px) {
+      .page { grid-template-columns: 1fr; }
+      .rail {
+        position: fixed; left: 0; right: 0; bottom: 0; top: auto; border-radius: 16px 16px 0 0;
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; z-index: 10;
+      }
+      .rail h2, .rail .when, .rail .spots, .rail .bar, .rail .ghost, .rail .fine { display: none; }
+      .register { width: auto; flex: 1; }
+      .cover { height: 220px; }
+      body { padding-bottom: 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="proto">Design prototype — HostKit public event · Midnight Garden theme · sample data · not production</div>
+  <header class="site">
+    <a class="wordmark display" href="create-event.html">Host<span>Kit</span></a>
+    <a class="host-link" href="manage-overview.html">Host view (prototype)</a>
+  </header>
+
+  <main class="page">
+    <article>
+      <div class="cover" role="img" aria-label="Stylized night rooftop with warm lanterns — original HostKit illustration">
+        <div class="lanterns"></div>
+      </div>
+      <p class="overline">Public · In person · The Lantern Sessions</p>
+      <h1 class="display">Rooftop Jazz Night</h1>
+      <p class="byline">Hosted by <strong>Maya Chen</strong> · Oakland</p>
+
+      <dl class="facts">
+        <div>
+          <dt>When</dt>
+          <dd>Friday, September 18, 2026<br />7:30 PM – 10:30 PM PDT</dd>
+        </div>
+        <div>
+          <dt>Where</dt>
+          <dd>The Lantern Roof<br />12th Street, Oakland<br /><a href="#" style="color:var(--clay);font-size:14px">Open map</a></dd>
+        </div>
+      </dl>
+
+      <div class="body-copy">
+        <p>A late-summer set above downtown Oakland. Small combo, low lights, paper lanterns. Doors 7:15, first note 7:45. Two drink tickets with registration; kitchen closes at ten.</p>
+        <p>Bring a layer — the wind comes up off the estuary after nine.</p>
+      </div>
+    </article>
+
+    <aside class="rail" aria-label="Register">
+      <h2 class="display">Rooftop Jazz Night</h2>
+      <p class="when">Fri, Sep 18 · 7:30–10:30 PM PDT<br />The Lantern Roof, Oakland</p>
+      <p class="spots">86 of 90 going · waitlist after that</p>
+      <div class="bar" aria-hidden="true"><i></i></div>
+      <button class="register" type="button" id="open-reg">Register</button>
+      <button class="ghost" type="button">Add to calendar</button>
+      <p class="fine">No HostKit account required. You’ll get a link, same idea as a private RSVP token.</p>
+    </aside>
+  </main>
+
+  <footer>
+    Presented with HostKit — a design prototype, not a live listing.
+    Inspired by public event-platform UX patterns; <strong>not affiliated with Luma</strong>.
+    <a href="create-event.html">Create flow</a> ·
+    <a href="manage-overview.html">Manage</a>
+  </footer>
+
+  <div class="modal" id="reg" role="dialog" aria-labelledby="reg-title" aria-modal="true">
+    <div class="sheet">
+      <div class="form" id="reg-form">
+        <h3 class="display" id="reg-title">Join this night</h3>
+        <p>Free admission · Maya approves requests when the roof is over 80% full.</p>
+        <label for="n">Name</label>
+        <input id="n" type="text" value="Jordan Blake" />
+        <label for="e">Email</label>
+        <input id="e" type="email" value="jordan.blake@studio.test" />
+        <label for="p">Plus-ones</label>
+        <select id="p"><option>0</option><option selected>1</option></select>
+        <button class="register" type="button" id="submit-reg" style="margin-top:20px">Request to join</button>
+        <button class="ghost" type="button" id="close-reg">Cancel</button>
+      </div>
+      <div class="done" id="reg-done">
+        <h3 class="display">Request sent</h3>
+        <p>Maya will confirm by email. This is prototype copy — HostKit’s demo still does not send mail.</p>
+        <button class="register" type="button" id="done-close">Back to the night</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("reg");
+    const open = () => modal.classList.add("open");
+    const close = () => modal.classList.remove("open");
+    document.getElementById("open-reg").addEventListener("click", open);
+    document.getElementById("close-reg").addEventListener("click", close);
+    document.getElementById("done-close").addEventListener("click", close);
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.getElementById("submit-reg").addEventListener("click", () => {
+      document.getElementById("reg-form").classList.add("hide");
+      document.getElementById("reg-done").classList.add("show");
+    });
+    document.querySelectorAll('a[href="#"]').forEach((a) => a.addEventListener("click", (e) => e.preventDefault()));
+  </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create event · HostKit prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #fbf8f4; --surface: #ffffff; --sunk: #f4efe8;
+      --ink: #1c1917; --ink-soft: #57504a; --ink-mute: #8b8179;
+      --line: #e9e1d7; --line-strong: #d8cec1;
+      --clay: #c4502e; --clay-deep: #a03f22; --clay-wash: #fbeee8;
+      --forest: #2a4a40; --forest-wash: #e8f0ec;
+      --amber: #9a6b10; --amber-wash: #fbf1dc;
+      --radius-card: 0.875rem;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font-family: inherit; }
+    .display { font-family: var(--font-display); letter-spacing: -0.02em; }
+    :where(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
+
+    .proto {
+      background: var(--amber-wash); color: var(--amber); text-align: center;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 8px 16px; border-bottom: 1px solid #ead9b3;
+    }
+    .top {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      max-width: 1152px; margin: 0 auto; padding: 16px 20px;
+    }
+    .wordmark { font-family: var(--font-display); font-size: 22px; }
+    .wordmark span { color: var(--clay); }
+    .actions { display: flex; gap: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px; font-weight: 500; font-size: 14px; border: 0; cursor: pointer;
+      height: 40px; padding: 0 18px;
+    }
+    .btn-primary { background: var(--clay); color: #fff; }
+    .btn-primary:hover { background: var(--clay-deep); }
+    .btn-secondary { background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); }
+
+    .layout {
+      max-width: 1152px; margin: 0 auto; padding: 8px 20px 80px;
+      display: grid; grid-template-columns: 1fr 340px; gap: 40px; align-items: start;
+    }
+    fieldset { border: 0; margin: 0 0 40px; padding: 0; }
+    legend { font-family: var(--font-display); font-size: 22px; margin-bottom: 16px; padding: 0; }
+    label.field { display: block; margin-bottom: 16px; }
+    label.field > span { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .hint { display: block; font-size: 13px; color: var(--ink-mute); margin-top: 6px; }
+    input[type="text"], input[type="date"], input[type="time"], input[type="url"], input[type="number"],
+    select, textarea {
+      width: 100%; border: 1px solid var(--line-strong); background: var(--surface);
+      border-radius: 8px; padding: 10px 12px; font-size: 15px; color: var(--ink);
+    }
+    textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .row3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; }
+    .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .seg button {
+      border: 1px solid var(--line); background: var(--surface); border-radius: 8px;
+      padding: 12px; font-size: 14px; font-weight: 500; color: var(--ink-soft); cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] { border-color: var(--clay); background: var(--clay-wash); color: var(--clay-deep); }
+    .cover {
+      height: 160px; border-radius: var(--radius-card); border: 1px dashed var(--line-strong);
+      background: linear-gradient(135deg, #2a4a40, #c4502e 55%, #9a6b10);
+      display: flex; align-items: end; padding: 16px;
+    }
+    .cover span { color: #fff; font-size: 13px; background: color-mix(in srgb, #000 35%, transparent); padding: 6px 10px; border-radius: 999px; }
+    .types { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .types button {
+      border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 10px;
+      font-size: 13px; font-weight: 500; color: var(--ink-soft); cursor: pointer;
+    }
+    .types button[aria-pressed="true"] { border-color: var(--clay); background: var(--clay-wash); color: var(--clay-deep); }
+    .themes { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; }
+    .swatch { border: 0; background: none; cursor: pointer; padding: 0; text-align: center; }
+    .swatch i {
+      display: block; width: 100%; aspect-ratio: 1; border-radius: 8px; border: 2px solid transparent;
+    }
+    .swatch[aria-pressed="true"] i { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--clay); }
+    .swatch b { display: block; font-size: 10px; font-weight: 500; color: var(--ink-mute); margin-top: 4px; line-height: 1.2; }
+    .vis { display: grid; gap: 8px; }
+    .vis label {
+      display: flex; gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line);
+      border-radius: 8px; background: var(--surface); cursor: pointer;
+    }
+    .vis label:has(input:checked) { border-color: var(--clay); background: var(--clay-wash); }
+    .vis strong { display: block; font-size: 14px; }
+    .vis small { color: var(--ink-soft); font-size: 13px; }
+
+    .preview {
+      position: sticky; top: 16px; background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius-card); overflow: hidden;
+    }
+    .preview .hero {
+      height: 140px; background: linear-gradient(135deg, #161310, #2a4a40 40%, #c4502e);
+    }
+    .preview .body { padding: 16px; }
+    .preview h2 { margin: 0; font-size: 22px; }
+    .preview p { margin: 6px 0 0; font-size: 13px; color: var(--ink-soft); }
+    .preview .cta {
+      margin-top: 16px; height: 40px; border-radius: 999px; background: var(--clay); color: #fff;
+      display: grid; place-items: center; font-size: 14px; font-weight: 500;
+    }
+    .preview .foot { padding: 12px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-mute); }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .preview { position: static; }
+      .types { grid-template-columns: 1fr 1fr; }
+      .themes { grid-template-columns: repeat(4, 1fr); }
+      .row3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="proto">Design prototype — HostKit · sample data · not production · not affiliated with Luma</div>
+  <div class="top">
+    <a class="wordmark display" href="manage-overview.html">Host<span>Kit</span></a>
+    <div class="actions">
+      <button class="btn btn-secondary" type="button">Save draft</button>
+      <a class="btn btn-primary" href="manage-overview.html" style="line-height:40px">Publish</a>
+    </div>
+  </div>
+
+  <form class="layout" action="#" onsubmit="return false">
+    <div>
+      <fieldset>
+        <legend class="display">The night</legend>
+        <label class="field">
+          <span>Title</span>
+          <input type="text" value="Rooftop Jazz Night" id="title" />
+        </label>
+        <div class="row3">
+          <label class="field"><span>Date</span><input type="date" value="2026-09-18" /></label>
+          <label class="field"><span>Start</span><input type="time" value="19:30" /></label>
+          <label class="field"><span>End</span><input type="time" value="22:30" /></label>
+        </div>
+        <label class="field">
+          <span>Timezone</span>
+          <select><option selected>America/Los_Angeles — Pacific Time</option><option>America/New_York</option><option>UTC</option></select>
+        </label>
+        <p style="font-size:14px;font-weight:500;margin:0 0 8px">Format</p>
+        <div class="seg" role="group">
+          <button type="button" aria-pressed="true">In person</button>
+          <button type="button" aria-pressed="false">Online</button>
+          <button type="button" aria-pressed="false">Hybrid</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="display">Cover & place</legend>
+        <div class="cover"><span>Replace illustration — CSS sample, not a stock photo</span></div>
+        <p class="hint" style="margin-bottom:16px">Original HostKit treatment. Do not paste third-party event-platform artwork.</p>
+        <label class="field">
+          <span>Location</span>
+          <input type="text" value="The Lantern Roof, 12th Street, Oakland" />
+          <span class="hint">Guests see this on the public page. Scouting a venue still happens under Manage → More → Scout.</span>
+        </label>
+        <label class="field">
+          <span>Meeting link <em style="font-style:normal;color:var(--ink-mute);font-weight:400">(optional)</em></span>
+          <input type="url" placeholder="https://" />
+        </label>
+        <label class="field">
+          <span>Description</span>
+          <textarea>A late-summer set above downtown Oakland. Small combo, low lights, paper lanterns. Doors 7:15, first note 7:45. Two drink tickets with registration; kitchen closes at ten.
+
+Bring a layer — the wind comes up off the estuary after nine.</textarea>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend class="display">HostKit plan</legend>
+        <p class="hint" style="margin-top:-8px;margin-bottom:16px">These six extras build the timeline and budget. They are HostKit, not the public page.</p>
+        <p style="font-size:14px;font-weight:500;margin:0 0 8px">What are you hosting?</p>
+        <div class="types">
+          <button type="button" aria-pressed="false">Wedding</button>
+          <button type="button" aria-pressed="false">Dinner</button>
+          <button type="button" aria-pressed="true">Party</button>
+          <button type="button" aria-pressed="false">Concert</button>
+          <button type="button" aria-pressed="false">Conference</button>
+          <button type="button" aria-pressed="false">Retreat</button>
+          <button type="button" aria-pressed="false">Popup</button>
+          <button type="button" aria-pressed="false">Other</button>
+        </div>
+        <div class="row2" style="margin-top:16px">
+          <label class="field"><span>Planned headcount</span><input type="number" value="90" /></label>
+          <label class="field">
+            <span>City</span>
+            <select><option selected>Oakland</option><option>San Francisco</option><option>Berkeley</option></select>
+          </label>
+        </div>
+        <label class="field"><span>Budget (USD)</span><input type="number" value="18000" /><span class="hint">Used to price venues against this night. Never shown to vendors.</span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend class="display">Theme</legend>
+        <p class="hint" style="margin-top:-8px;margin-bottom:12px">Forty-two HostKit themes. Accent carries into email CTAs. Sample uses Midnight Garden.</p>
+        <div class="themes">
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#fbf8f4;border-color:#e9e1d7;border-width:1px;border-style:solid"></i><b>Paper Quiet</b></button>
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#f4efe8"></i><b>Linen</b></button>
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#c4502e"></i><b>Pale Clay</b></button>
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#2a4a40"></i><b>Quiet Oak</b></button>
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#d4a017"></i><b>Toast Gold</b></button>
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#6b2d5b"></i><b>Ribbon Night</b></button>
+          <button class="swatch" type="button" aria-pressed="false"><i style="background:#c45c26"></i><b>Harvest</b></button>
+          <button class="swatch" type="button" aria-pressed="true"><i style="background:#161310"></i><b>Midnight Garden</b></button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="display">Calendar & visibility</legend>
+        <label class="field">
+          <span>Calendar</span>
+          <select><option selected>The Lantern Sessions</option><option>Personal</option></select>
+        </label>
+        <div class="vis">
+          <label><input type="radio" name="vis" checked /><span><strong>Public</strong><small>Listed on Discover. Anyone with the link can request a spot.</small></span></label>
+          <label><input type="radio" name="vis" /><span><strong>Unlisted</strong><small>Link only. Not indexed on Discover.</small></span></label>
+          <label><input type="radio" name="vis" /><span><strong>Calendar members</strong><small>People already on this calendar’s past guest lists.</small></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="display">Registration</legend>
+        <div class="row2">
+          <label class="field"><span>Capacity</span><input type="number" value="90" /></label>
+          <label class="field"><span>Plus-ones allowed</span><select><option>None</option><option selected>1</option><option>2</option></select></label>
+        </div>
+        <label class="field" style="display:flex;gap:8px;align-items:center">
+          <input type="checkbox" checked /> <span style="margin:0">Require approval when over 80% full</span>
+        </label>
+        <label class="field" style="display:flex;gap:8px;align-items:center">
+          <input type="checkbox" checked /> <span style="margin:0">Waitlist after capacity</span>
+        </label>
+      </fieldset>
+    </div>
+
+    <aside class="preview" aria-label="Public page preview">
+      <div class="hero"></div>
+      <div class="body">
+        <p style="font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--clay);font-weight:500;margin:0">Public · In person</p>
+        <h2 class="display" id="preview-title">Rooftop Jazz Night</h2>
+        <p>Fri, Sep 18 · 7:30 PM PDT</p>
+        <p>The Lantern Roof, Oakland</p>
+        <div class="cta">Register</div>
+      </div>
+      <div class="foot">Sticky preview · Midnight Garden · <a href="public-event.html" style="color:var(--clay)">Open full public page</a></div>
+    </aside>
+  </form>
+  <script>
+    document.getElementById("title").addEventListener("input", (e) => {
+      document.getElementById("preview-title").textContent = e.target.value || "Untitled night";
+    });
+    document.querySelectorAll(".seg button, .types button, .swatch").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.parentElement.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        btn.setAttribute("aria-pressed", "true");
+      });
+    });
+  </script>
+</body>
+</html>
