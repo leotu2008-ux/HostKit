@@ -61,9 +61,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="hostkit-theme" strategy="beforeInteractive">
           {THEME_BOOTSTRAP}
         </Script>
-        <Script id="hostkit-splash" strategy="beforeInteractive">
-          {SPLASH_BOOTSTRAP}
-        </Script>
+        <script
+          dangerouslySetInnerHTML={{ __html: SPLASH_BOOTSTRAP }}
+        />
         <LaunchSplash />
         <AppFrame>{children}</AppFrame>
       </body>
