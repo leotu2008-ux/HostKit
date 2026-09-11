@@ -8,11 +8,11 @@ final class Router {
     static let shared = Router()
 
     enum Tab: Hashable {
-        case discover, events, profile
+        case discover, events, create
     }
 
     var tab: Tab = .discover
-    /// A host event to open on the Events tab, set by intents.
+    /// A host event to open on the Events tab, set by intents and by Create.
     var openEventID: String?
 
     private init() {}

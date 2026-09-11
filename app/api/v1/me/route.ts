@@ -29,7 +29,7 @@ export async function PATCH(request: Request) {
   const updated = await db.user.update({
     where: { id: user.id },
     data: normalizeProfile(parsed.data),
-    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true },
+    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, imageUrl: true, phone: true, phoneVerifiedAt: true },
   });
   return json({ user: serializeUser(updated) });
 }

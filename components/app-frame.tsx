@@ -1,44 +1,42 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AccountMenu } from "@/components/account-menu";
+import { Avatar } from "@/components/avatar";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
-import { getCurrentUser } from "@/lib/session";
-
-function initials(name: string) {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]!.toUpperCase())
-      .join("") || "?"
-  );
-}
+import { signOutAction } from "@/lib/actions/auth";
+import { currentProfile } from "@/lib/session";
 
 /**
  * The app shell. Phones get a compact header and the bottom tab bar; wider
  * screens get a full-width top bar with the same destinations and a Create
  * button, so the desktop site is a real layout rather than a phone column.
+ * The logo and the avatar both open the account menu.
  */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const user = await currentProfile();
+  const menuUser = user
+    ? { name: user.name, email: user.email, imageUrl: user.imageUrl, school: user.school, classYear: user.classYear }
+    : null;
 
   return (
     <div className="flex min-h-dvh w-full flex-col">
       <header className="no-print sticky top-0 z-40 border-b border-line/70 bg-paper/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 md:px-8">
-          <Link href="/" className="flex items-center gap-2 font-event text-[21px] text-ink">
-            <Image
-              src="/logo.png"
-              alt=""
-              width={28}
-              height={28}
-              priority
-              className="h-7 w-7 rounded-[8px] ring-1 ring-line"
-            />
-            <span>
-              Host<span className="text-clay">Kit</span>
+          <AccountMenu user={menuUser} signOut={signOutAction} align="left" label="Account menu">
+            <span className="flex items-center gap-2 font-event text-[21px] text-ink">
+              <Image
+                src="/logo.png"
+                alt=""
+                width={28}
+                height={28}
+                priority
+                className="h-7 w-7 rounded-[8px] ring-1 ring-line"
+              />
+              <span>
+                Host<span className="text-clay">Kit</span>
+              </span>
             </span>
-          </Link>
+          </AccountMenu>
           <DesktopNav />
           <div className="ml-auto flex min-w-0 items-center gap-1.5">
             <Link
@@ -48,13 +46,9 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
               Create event
             </Link>
             {user ? (
-              <Link
-                href="/profile"
-                aria-label={`${user.name} — profile`}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white"
-              >
-                {initials(user.name)}
-              </Link>
+              <AccountMenu user={menuUser} signOut={signOutAction} align="right" label={`${user.name} — account menu`}>
+                <Avatar name={user.name} imageUrl={user.imageUrl} size={36} />
+              </AccountMenu>
             ) : (
               <Link
                 href="/signin"

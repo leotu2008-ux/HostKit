@@ -21,7 +21,17 @@ export async function currentProfile() {
   if (!user) return null;
   const row = await db.user.findUnique({
     where: { id: user.id },
-    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      schoolDomain: true,
+      classYear: true,
+      bio: true,
+      imageUrl: true,
+      phone: true,
+      phoneVerifiedAt: true,
+    },
   });
   if (!row) return null;
   return { ...row, school: schoolFor(row.schoolDomain) };

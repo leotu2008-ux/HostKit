@@ -153,14 +153,18 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     var school: School?
     var classYear: Int?
     var bio: String?
+    var imageUrl: String?
 
     var isStudent: Bool { school != nil }
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
 }
 
 /// What Discover shows: the city feed, plus the student's campus nights.
 nonisolated struct DiscoverFeed: Decodable, Sendable {
     var events: [HostEvent]
     var campus: [HostEvent] = []
+    /// What the viewer hosts or is going to, soonest first. Empty signed out.
+    var mine: [HostEvent] = []
     var school: School?
 }
 

@@ -23,6 +23,9 @@ export function serializeUser(user: {
   schoolDomain: string | null;
   classYear: number | null;
   bio: string | null;
+  imageUrl?: string | null;
+  phone?: string | null;
+  phoneVerifiedAt?: Date | null;
 }) {
   return {
     id: user.id,
@@ -31,6 +34,9 @@ export function serializeUser(user: {
     school: serializeSchool(user.schoolDomain),
     classYear: user.classYear,
     bio: user.bio,
+    imageUrl: user.imageUrl ?? null,
+    phone: user.phone ?? null,
+    phoneVerified: Boolean(user.phone && user.phoneVerifiedAt),
   };
 }
 

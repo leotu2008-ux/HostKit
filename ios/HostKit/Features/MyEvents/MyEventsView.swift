@@ -10,7 +10,6 @@ struct MyEventsView: View {
     @State private var showPast = false
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var isCreating = false
     @State private var isSigningIn = false
     @State private var path: [HostEvent] = []
 
@@ -31,11 +30,11 @@ struct MyEventsView: View {
                     timeline
                 } else {
                     ContentUnavailableView {
-                        Label("Host your own nights", systemImage: "calendar.badge.plus")
+                        Label("Host your own events", systemImage: "calendar.badge.plus")
                     } description: {
                         Text("Create an event right here — no account needed until you publish it.")
                     } actions: {
-                        Button("Create event") { isCreating = true }
+                        Button("Create event") { router.tab = .create }
                             .buttonStyle(.glassProminent)
                         Button("Sign in") { isSigningIn = true }
                     }
@@ -53,23 +52,17 @@ struct MyEventsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Create event", systemImage: "plus") { isCreating = true }
-                }
-            }
-            .sheet(isPresented: $isCreating) {
-                CreateEventView { created in
-                    events.append(created)
-                    events.sort { ($0.startsAt ?? .distantFuture) < ($1.startsAt ?? .distantFuture) }
-                    path.append(created)
+                    Button("Create event", systemImage: "plus") { router.tab = .create }
                 }
             }
             .sheet(isPresented: $isSigningIn) {
                 SignInView()
             }
             .task(id: reloadKey) { await load() }
-            .onChange(of: router.openEventID) { _, id in
-                guard let id else { return }
-                Task { await open(id) }
+            // Set by Create and by Siri; also handles the tab being opened
+            // for the first time with an id already waiting.
+            .task(id: router.openEventID) {
+                if let id = router.openEventID { await open(id) }
             }
         }
     }
@@ -109,34 +102,10 @@ struct MyEventsView: View {
                         showPast ? "No past events" : "No upcoming events",
                         systemImage: "calendar",
                         description: Text(showPast
-                            ? "Nights you’ve hosted collect here."
+                            ? "Events you’ve hosted collect here."
                             : "Tap + to create one. You can publish when you’re ready."))
                 } else {
-                    ForEach(DayGroup.group(visible)) { group in
-                        HStack(alignment: .top, spacing: 12) {
-                            VStack(spacing: 6) {
-                                Circle().fill(.secondary).frame(width: 7, height: 7).padding(.top, 7)
-                                Rectangle()
-                                    .fill(.quaternary)
-                                    .frame(width: 1)
-                                    .frame(maxHeight: .infinity)
-                            }
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text(group.label).font(.inter(.headline, .semibold))
-                                    if let relative = group.relative {
-                                        Text(relative).font(.inter(.subheadline)).foregroundStyle(.secondary)
-                                    }
-                                }
-                                ForEach(group.events) { event in
-                                    NavigationLink(value: event) {
-                                        EventRow(event: event, showsStatus: true)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
+                    EventTimeline(events: visible)
                 }
             }
             .padding(.horizontal)

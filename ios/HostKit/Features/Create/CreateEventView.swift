@@ -4,6 +4,10 @@ struct CreateEventView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
+    /// In the Create tab there's nothing to dismiss: the logo sits top-left,
+    /// Clear resets the form, and creating hands off to the Events tab.
+    var inTab = false
+    var onCancel: (() -> Void)?
     var onCreated: ((HostEvent) -> Void)?
 
     @State private var title = ""
@@ -181,10 +185,17 @@ struct CreateEventView: View {
             .navigationTitle("Create event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", role: .cancel) { dismiss() }
+                ToolbarItem(placement: .topBarLeading) {
+                    if inTab {
+                        LogoMark()
+                    } else {
+                        Button("Cancel", role: .cancel) { dismiss() }
+                    }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if inTab && !title.isEmpty {
+                        Button("Clear") { onCancel?() }
+                    }
                     Button(model.isSignedIn ? "Create" : "Save draft") { Task { await save() } }
                         .disabled(!canSave)
                 }
@@ -236,7 +247,7 @@ struct CreateEventView: View {
         do {
             let created = try await model.createEvent(request)
             onCreated?(created)
-            dismiss()
+            if !inTab { dismiss() }
         } catch {
             errorMessage = error.localizedDescription
         }

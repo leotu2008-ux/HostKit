@@ -6,8 +6,10 @@ import { CITIES, isCity, type City } from "@/lib/catalog";
 import { CITY_COOKIE } from "@/lib/city-cookie";
 import { groupByDay } from "@/lib/day-groups";
 import { upcomingOnly } from "@/lib/upcoming";
+import { myUpcomingEvents } from "@/lib/mine";
 import { CityDetector } from "@/components/city-detector";
 import { EventCard } from "@/components/event-card";
+import { EventTile } from "@/components/event-tile";
 import { ButtonLink, EmptyState, cx } from "@/components/ui";
 
 export const metadata = { title: "Discover" };
@@ -56,14 +58,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
   const [mine, campus, nearby] = await Promise.all([
-    user
-      ? db.event.findMany({
-          where: { ownerId: user.id, ...upcomingOnly() },
-          orderBy,
-          take: 4,
-          include,
-        })
-      : Promise.resolve([]),
+    user ? myUpcomingEvents(user.id, 12) : Promise.resolve([]),
     user?.schoolDomain
       ? db.event.findMany({
           where: { ...live, schoolDomain: user.schoolDomain, ownerId: { not: user.id } },
@@ -98,59 +93,63 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
       />
 
       <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-12 md:px-8 md:pt-14">
-        <h1 className="font-display text-[34px] leading-[1.1] text-ink md:text-[46px]">
-          {school
-            ? `What’s on at ${school.short}`
-            : user
-              ? "What’s on next"
-              : "Discover events"}
-        </h1>
-        <p className="mt-2 max-w-xl text-[16px] leading-relaxed text-ink-soft">
-          Student socials, professional mixers, and nights just for fun —
-          register in a tap. Hosting? HostKit plans the rest.
-        </p>
-        {!user ? (
-          <div className="mt-6 flex flex-wrap gap-2">
-            <ButtonLink href="/events/new" size="lg">
-              Create your event
-            </ButtonLink>
-            <ButtonLink href="/signin" variant="secondary" size="lg">
-              Sign in
-            </ButtonLink>
-          </div>
-        ) : null}
-
-        {user ? (
-          <section className="mt-10">
-            <div className="mb-3 flex items-end justify-between">
-              <h2 className="font-display text-xl text-ink">Your nights</h2>
+        {/* Your events first: what you host and what you're going to. */}
+        <section aria-labelledby="your-events">
+          <div className="mb-3 flex items-end justify-between">
+            <h1 id="your-events" className="font-display text-[30px] leading-[1.1] text-ink md:text-[38px]">
+              Your events
+            </h1>
+            {user ? (
               <Link href="/events" className="text-sm font-medium text-ink-soft hover:text-ink">
                 View all →
               </Link>
+            ) : null}
+          </div>
+          {!user ? (
+            <div className="rounded-card border border-line bg-surface p-5 md:flex md:items-center md:justify-between md:gap-6">
+              <div>
+                <p className="text-lg font-semibold text-ink">Create your first event</p>
+                <p className="mt-1 max-w-md text-[15px] text-ink-soft">
+                  Name, time, place — no account needed until you publish. Sign in to
+                  see the events you host and the ones you’re going to.
+                </p>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2 md:mt-0 md:shrink-0">
+                <ButtonLink href="/events/new" size="lg">
+                  Create event
+                </ButtonLink>
+                <ButtonLink href="/signin" variant="secondary" size="lg">
+                  Sign in
+                </ButtonLink>
+              </div>
             </div>
-            {mine.length === 0 ? (
-              <EmptyState
-                title="Nothing coming up"
-                body="Create a night and it shows up here. Publish it and it shows up for everyone."
-                action={<ButtonLink href="/events/new">Create event</ButtonLink>}
-              />
-            ) : (
-              <ul className="grid gap-3 md:grid-cols-2">
-                {mine.map((event) => (
-                  <li key={event.id}>
-                    <EventCard
-                      href={`/events/${event.id}`}
-                      event={{ ...toCard(event), hostName: undefined, status: event.published ? "Published" : "Draft" }}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ) : null}
+          ) : mine.length === 0 ? (
+            <EmptyState
+              title="Nothing coming up"
+              body="Create an event and it shows up here — so does anything you register for."
+              action={<ButtonLink href="/events/new">Create event</ButtonLink>}
+            />
+          ) : (
+            <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
+              {mine.map((event) => (
+                <li key={event.id} className="shrink-0">
+                  <EventTile event={event} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <h2 className="mt-12 font-display text-[26px] leading-[1.1] text-ink md:text-[32px]">
+          {school ? `What’s on at ${school.short}` : "Discover"}
+        </h2>
+        <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-soft">
+          Student socials, professional mixers, and nights just for fun —
+          register in a tap.
+        </p>
 
         {school ? (
-          <section className="mt-12">
+          <section className="mt-8">
             <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
               <div>
                 <h2 className="font-display text-xl text-ink">At {school.short}</h2>
@@ -177,7 +176,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
           </section>
         ) : null}
 
-        <section className="mt-12">
+        <section className="mt-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-display text-xl text-ink">
               {cityShort ? `Around ${cityShort}` : "Upcoming everywhere"}
@@ -210,8 +209,8 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
                 title={user ? "No other events yet" : "Nothing listed yet"}
                 body={
                   user
-                    ? "Your own public nights are under Your nights. Other hosts’ will show up here."
-                    : "Be the first: create a night, make it public, and publish it."
+                    ? "Your own public events are under Your events. Other hosts’ will show up here."
+                    : "Be the first: create an event, make it public, and publish it."
                 }
                 action={<ButtonLink href="/events/new">Create a night</ButtonLink>}
               />

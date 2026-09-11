@@ -7,15 +7,26 @@ extension Font {
     }
 }
 
-/// The HostKit mark, sized for a navigation bar's leading slot.
+/// The HostKit mark in a navigation bar's leading slot. Tapping it opens the
+/// account menu: profile, past events, settings, sign out.
 struct LogoMark: View {
+    @State private var isOpen = false
+
     var body: some View {
-        Image("Logo")
-            .resizable()
-            .frame(width: 28, height: 28)
-            .clipShape(.rect(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
-            .accessibilityLabel("HostKit")
+        Button {
+            isOpen = true
+        } label: {
+            Image("Logo")
+                .resizable()
+                .frame(width: 28, height: 28)
+                .clipShape(.rect(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Account menu")
+        .sheet(isPresented: $isOpen) {
+            AccountMenu()
+        }
     }
 }
 
@@ -92,8 +103,11 @@ struct StatusPill: View {
     }
 }
 
+/// A person: their photo when they've added one, otherwise initials on the
+/// brand gradient (also shown while the photo loads).
 struct HostAvatar: View {
     let name: String
+    var imageURL: URL? = nil
     var size: CGFloat = 32
 
     private var initials: String {
@@ -101,16 +115,27 @@ struct HostAvatar: View {
     }
 
     var body: some View {
-        Text(initials.isEmpty ? "?" : initials)
-            .font(.inter(size: size * 0.38, .semibold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(
-                LinearGradient(
-                    colors: [.accentColor, Color(hex: "#986000")],
-                    startPoint: .topLeading, endPoint: .bottomTrailing),
-                in: .circle)
-            .accessibilityHidden(true)
+        ZStack {
+            Text(initials.isEmpty ? "?" : initials)
+                .font(.inter(size: size * 0.38, .semibold))
+                .foregroundStyle(.white)
+                .frame(width: size, height: size)
+                .background(
+                    LinearGradient(
+                        colors: [.accentColor, Color(hex: "#986000")],
+                        startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: .circle)
+            if let imageURL {
+                AsyncImage(url: imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Color.clear
+                }
+                .frame(width: size, height: size)
+                .clipShape(.circle)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { isCity } from "@/lib/catalog";
 import { apiUser, json } from "@/lib/api/http";
 import { goingCount, serializeEvent, serializeSchool } from "@/lib/api/serialize";
+import { myUpcomingEvents } from "@/lib/mine";
 import { upcomingOnly } from "@/lib/upcoming";
 import { registeredEventIds } from "@/lib/registration";
 
@@ -9,7 +10,8 @@ const include = { owner: { select: { name: true } }, ...goingCount };
 const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
 
 /**
- * Upcoming public nights, optionally for one city. A signed-in student also
+ * Upcoming public nights, optionally for one city. A signed-in viewer also
+ * gets `mine` (what they host or are going to, soonest first) and a student
  * gets `campus`: their school's nights first, wherever they are.
  */
 export async function GET(request: Request) {
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
   const city = isCity(rawCity) ? rawCity : null;
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [events, campus] = await Promise.all([
+  const [events, campus, mine] = await Promise.all([
     db.event.findMany({
       where: { ...live, ...(city ? { city } : {}) },
       orderBy,
@@ -33,10 +35,11 @@ export async function GET(request: Request) {
           include,
         })
       : Promise.resolve([]),
+    viewer ? myUpcomingEvents(viewer.id, 12) : Promise.resolve([]),
   ]);
 
   const registered = await registeredEventIds(
-    [...events, ...campus].map((e) => e.id),
+    [...events, ...campus, ...mine].map((e) => e.id),
     viewer?.id ?? null,
   );
   const out = (e: (typeof events)[number]) =>
@@ -49,6 +52,7 @@ export async function GET(request: Request) {
   return json({
     events: events.map(out),
     campus: campus.map(out),
+    mine: mine.map(out),
     school: serializeSchool(viewer?.schoolDomain),
   });
 }

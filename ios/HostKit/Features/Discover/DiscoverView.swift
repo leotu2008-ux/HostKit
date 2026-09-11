@@ -2,21 +2,20 @@ import SwiftUI
 
 struct DiscoverView: View {
     @Environment(AppModel.self) private var model
+    @Environment(Router.self) private var router
     /// nil = Everywhere. Starts from the saved choice, then detection or the
     /// student's home city fills it in.
     @State private var city: String? = Session.city.map { $0.isEmpty ? nil : $0 } ?? nil
     @State private var hasSettledCity = Session.city != nil
     @State private var feed = DiscoverFeed(events: [])
     @State private var isLoading = true
-    @State private var isCreating = false
+    @State private var isSigningIn = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
-                        .font(.inter(.subheadline))
-                        .foregroundStyle(.secondary)
+                    yourEventsSection
 
                     if let notice = model.sampleNotice {
                         NoticeBanner(text: notice)
@@ -29,6 +28,9 @@ struct DiscoverView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(city.map { "Around \(Cities.short($0))" } ?? "Everywhere")
                             .font(.inter(.title3, .semibold))
+                        Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
+                            .font(.inter(.footnote))
+                            .foregroundStyle(.secondary)
                         cityPicker
                     }
 
@@ -38,7 +40,7 @@ struct DiscoverView: View {
                         ContentUnavailableView(
                             "Nothing listed yet",
                             systemImage: "calendar.badge.plus",
-                            description: Text("Be the first — create a night and publish it."))
+                            description: Text("Be the first — create an event and publish it."))
                     } else {
                         ForEach(DayGroup.group(feed.events)) { group in
                             VStack(alignment: .leading, spacing: 10) {
@@ -69,15 +71,75 @@ struct DiscoverView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Create event", systemImage: "plus") { isCreating = true }
+                    Button("Create event", systemImage: "plus") { router.tab = .create }
                 }
             }
-            .sheet(isPresented: $isCreating) {
-                CreateEventView()
-            }
+            .sheet(isPresented: $isSigningIn) { SignInView() }
             .task(id: "\(city ?? "")|\(model.user?.id ?? "")") { await load() }
             .task { await settleCity() }
             .refreshable { await load() }
+        }
+    }
+
+    /// What you host and what you're going to, before anything else.
+    private var yourEventsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Your events").font(.inter(.title3, .semibold))
+                Spacer()
+                if model.isSignedIn {
+                    Button("See all") { router.tab = .events }
+                        .font(.inter(.subheadline, .medium))
+                }
+            }
+            if !model.isSignedIn {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Create your first event").font(.inter(.headline, .semibold))
+                    Text("Name, time, place — no account needed until you publish. Sign in to see the events you host and the ones you’re going to.")
+                        .font(.inter(.footnote))
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Button("Create event") { router.tab = .create }
+                            .buttonStyle(.glassProminent)
+                        Button("Sign in") { isSigningIn = true }
+                            .buttonStyle(.glass)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: .rect(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.quaternary))
+            } else if feed.mine.isEmpty {
+                HStack(spacing: 12) {
+                    Text(isLoading ? "Loading…" : "Nothing coming up. Create an event and it shows up here — so does anything you register for.")
+                        .font(.inter(.subheadline))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Create") { router.tab = .create }
+                        .font(.inter(.footnote, .semibold))
+                        .buttonStyle(.glass)
+                }
+                .padding(14)
+                .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 14))
+            } else {
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(feed.mine) { event in
+                            if event.isOwner {
+                                Button { router.openHostEvent(event.id) } label: { EventTile(event: event) }
+                                    .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(value: event) { EventTile(event: event) }
+                                    .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .scrollIndicators(.hidden)
+                .padding(.horizontal, -16)
+            }
         }
     }
 
@@ -156,4 +218,5 @@ struct DiscoverView: View {
 #Preview {
     DiscoverView()
         .environment(AppModel())
+        .environment(Router.shared)
 }
