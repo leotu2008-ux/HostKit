@@ -8,7 +8,7 @@ This folder is **not** application runtime. Opening the HTML files does not chan
 
 ## Attribution
 
-Inspired by public Luma help-center UX patterns (create flow, manage dashboard tabs, guest filters, insights metrics, theme families). **HostKit is not affiliated with Luma.** Do not copy Luma logos, wordmarks, trademarks, color-for-color palettes, proprietary illustrations, or pixel-perfect clones of Luma screens.
+Inspired by public Luma help-center UX patterns and live luma.com *layout* (create flow, manage tabs, guest filters, insights, public-page column split). **HostKit is not affiliated with Luma.** Do not copy Luma logos, wordmarks, trademarks, color-for-color palettes, proprietary illustrations, or pixel-perfect clones. Live screenshots used as reference are **not** stored in this repo.
 
 If a mock feels too close to a third-party product, restyle toward `DESIGN_SYSTEM.md` (paper ground, clay, forest, Fraunces display) rather than toward the reference.
 

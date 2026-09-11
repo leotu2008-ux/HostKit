@@ -1,11 +1,13 @@
 # Research notes (public Luma UX → HostKit)
 
-Reference only. **HostKit is not affiliated with Luma.** Do not copy logos, trademarks, proprietary illustrations, theme artwork, or pixel-perfect layouts. Translate *jobs-to-be-done* into HostKit’s paper / clay / Fraunces system (`DESIGN_SYSTEM.md`).
+Reference only. **HostKit is not affiliated with Luma.** Do not copy logos (`luma+` or otherwise), trademarks, event photography, sponsor marks, theme artwork, or pixel-perfect layouts. Translate *jobs-to-be-done* into HostKit’s paper / clay / Fraunces system (`DESIGN_SYSTEM.md`).
 
-Sources used in this pack:
+Live screenshots used for this note (homepage hero, public event page, Discover list) are **visual reference only**. They must not be committed to this repo, redrawn 1:1, or used as mock artwork.
 
-1. **Help-center IA** (public Luma docs, summarized in the original brief).  
-2. **Live-site visual DNA** from luma.com (homepage, Discover, public event page) — structural notes, not a style to reproduce.
+Sources:
+
+1. **Help-center IA** (public Luma docs, original brief).  
+2. **Live luma.com screenshots** attached to the design brief (layout rhythm only).
 
 ---
 
@@ -32,7 +34,7 @@ Hosts set, in roughly this order:
 
 Documented as: **Overview | Guests | Registration | Blasts | Insights | More**
 
-HostKit keeps that primary bar and puts the existing planner (Plan, Budget, Scout, Shortlist, Run sheet) under **More**, with Overview still showing coverage (“what this event still needs”).
+On **phone** (canonical): those become stack segments or More-sheet rows under Nights / Door / More. On **tablet** companions, keep the underline bar. Planner (Plan, Budget, Scout, Shortlist, Run sheet) stays under **More**. Overview still shows coverage (“what this event still needs”).
 
 ### Guests
 
@@ -50,60 +52,74 @@ Light and dark presentations; a **custom accent** that should carry into email C
 
 ---
 
-## 2. Live-site visual DNA (luma.com)
+## 2. Live-site visual DNA (from attached screenshots)
 
 Observed as *competitor notes*. HostKit must not ship this look.
 
-### Homepage
+### Homepage hero
 
-- Airy white hero, lots of leftover space.  
-- Oversized **black sans** headline with **pink/orange gradient** emphasis on a word or two.  
-- Floating event-image tiles (photos overlapping the hero).  
-- Rounded **black** primary CTA. Minimal Sign In.  
-- Feels like a consumer marketplace landing, not stationery.
+What the frame actually shows:
 
-### Discover
+- Airy **white** field, generous leftover space.  
+- Tiny wordmark centered near the top; **Sign In** as a ghost pill, top-right (not the primary).  
+- Oversized **black geometric sans** headline (“Delightful events”) with **pink → orange gradient** on two words (“start here”).  
+- Soft gray subcopy under the headline.  
+- **Black** rounded primary: “Create Your First Event”; a text link “Discover Events →” under it.  
+- **Floating rounded-square tiles** of event art, some overlapping, some slightly rotated, around the type (workshop flyers, food, code, portraits).  
+- Feels like a consumer marketplace splash, not stationery.
 
-- Compact top nav.  
-- **Popular events** as a dense list: thumbnail + date + location.  
-- **Category tiles** with colorful line icons and counts.  
-- Featured-calendar cards with a Follow action.
+**HostKit instead:** paper ground, Fraunces headline with a *flat* clay word (never a gradient fill on type), clay pill CTA, 16:9 cards in a stack/grid — **no collage of flying photos**.
+
+### Discover list
+
+What the frame actually shows:
+
+- Compact top nav: wordmark · local time · Discover Events · Sign In.  
+- Soft **pastel gradient wash** (lilac) behind the title block.  
+- Page title in geometric sans; gray supporting sentence.  
+- **Popular Events** + city name; **View All →**.  
+- **Two-column dense list**: ~72px rounded-square thumbnail | date/time (gray) / title (black sans) / venue (gray).  
+- This particular shot does **not** include the category-icon tiles or Follow-calendar cards mentioned in the written DNA; those remain help-center / other-page notes, not this frame.
+
+**HostKit instead:** Nights tab shows **your** nights as large paper cards, then “Happening nearby” as a compact **thumb + date + place** list (CSS thumbs, HostKit event-type chips — Party / Concert / Dinner — not colorful line-icon taxonomies, no Follow marketplace).
 
 ### Public event page
 
-- **Warm cream** background (closer to HostKit paper than the homepage white).  
-- Two-column layout: story on the left, **sticky / full-width Register** on the right (brown CTA on the observed page).  
-- Large cover, **editorial serif** event title.  
-- Date/time and map as labeled rows.  
-- Host profile block, tags, long description.
+What the frame actually shows:
 
-### Type and color (live)
+- **Warm cream** ground (closer to HostKit `paper` than the homepage white).  
+- Same compact nav.  
+- **Two columns:**  
+  - **Left:** large **rounded-square cover**; under it “Hosted By” (avatar + calendar name + social); Contact / Report; **hash tags** as pills.  
+  - **Right:** location “Featured in …” chip; **editorial serif** title; date row (calendar glyph + weekday/date + time range); map row (pin + venue + city + outbound); **Registration** card with welcome sentence and a **full-width brown** Register button; **About** body.  
+- Geometric sans for nav/UI; serif for the event title only.  
+- Soft gray secondary text; lots of whitespace.
 
-- Geometric sans for UI and nav.  
-- Editorial serif for event titles.  
-- White / warm neutrals, soft gray text, pastel gradients, bright category accents, generous whitespace.
+**HostKit instead (same skeleton, different skin):**
 
-### What HostKit does instead
-
-| Observed on Luma live | HostKit |
+| Live luma.com | HostKit |
 | --- | --- |
-| Pink/orange gradient in headlines | No gradient type. Clay as a flat accent |
-| Black pill CTA | Clay pill CTA (`#c4502e`) |
-| Geometric sans wordmark / UI | **Fraunces** wordmark + headings, Inter UI |
-| Floating photo tiles on the home hero | Event cards on a paper ground, 16:9 covers in `radius-card`, no overlap collage |
-| Colorful category line-icons | HostKit event-type chips (Wedding, Dinner, Party…) |
-| Cream public page as the default | Paper for host tooling; **themeable** public pages (sample Jazz Night = Midnight Garden, which is *darker* and more club-like so it does not read as a cream clone) |
-| Brown register button | Clay (or the event accent) |
+| Cream default public page | Themeable. Jazz Night sample = **Midnight Garden** (night) so we do not ship a cream clone. Daytime events may use Paper Quiet. |
+| Brown Register | Clay (`#c4502e` / lifted `#e06a45` on night) |
+| Left cover + right title/register | **Reuse this column split** on tablet (`public-event.html`) |
+| Hash tags | HostKit tags without a forced `#` prefix |
+| Sponsor/photography on the cover | CSS illustration only in mocks |
 
-The serif title + two-column register rail + labeled when/where rows are **UX patterns** we *do* reuse. The gradient marketing hero and black CTAs are **brand**; we do not.
+Patterns we **do** reuse: serif title, two-column register, labeled when/where, host block, tags, sticky Register on phone.
+
+Patterns we **do not** reuse: `luma+` mark, black marketing CTA, gradient headline, flying photo tiles, brown-as-brand, third-party cover art.
+
+### Type and color (live, summarized)
+
+- Geometric sans → UI/nav.  
+- Editorial serif → event titles.  
+- White / cream / warm neutrals, soft gray text, pastel hero washes, bright tile accents, generous whitespace.
 
 ---
 
 ## 3. Implications for this pack
 
-- Manage chrome stays on **paper** so budgets and tables stay readable (HostKit’s existing product).  
-- Public page follows the live two-column + sticky register *structure*, with HostKit tokens and a host profile + tags.  
-- Discover/home in `SCREENS.md` uses “Your nights” cards + “Happening nearby” — HostKit’s host-side product, not a clone of Luma Discover category iconography.  
-- HTML mocks use CSS illustrations only (no scraped photos, no third-party logos).
-
-Screenshots from a live scrape, if attached to a brief, are **visual reference for layout rhythm only**. They must not be redrawn 1:1 into HostKit.
+- **Phone is canonical** (`MOBILE.md`). Discover list rhythm (thumb + date + place) informs “Happening nearby.” Event detail guest view stacks the two-column public page.  
+- **Tablet public page** follows left-media / right-story+register. Host tooling stays on paper.  
+- HTML mocks use CSS illustrations only. Competitor screenshots stay out of git.  
+- Accent from the event theme still carries into email CTAs.

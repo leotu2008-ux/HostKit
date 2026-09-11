@@ -61,8 +61,9 @@ HTML: `mobile-discover.html`, `mobile-event.html`, `mobile-create.html`, `mobile
 │                                       │
 │ HAPPENING NEARBY                      │
 │ [Party] [Concert] [Dinner]  chips     │
-│ • Golden Hour Picnic · Sat 19 · 24    │
-│ • Harbor Listening · Sun 20 · 40      │
+│ [thumb] Golden Hour Picnic            │
+│         Sat 19 · Lake Merritt         │
+│ [thumb] Harbor Listening …            │
 │                                       │
 │ Nights   ＋   Door   More              │
 └───────────────────────────────────────┘

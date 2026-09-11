@@ -87,9 +87,16 @@
     }
     .chips span.on { background: var(--clay-wash); color: var(--clay-deep); }
     .row {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; gap: 12px; align-items: center;
       padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; text-decoration: none; color: inherit;
     }
+    .row .thumb {
+      width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, #2a4a40, #c4502e);
+    }
+    .row .thumb.b { background: linear-gradient(135deg, #9a6b10, #2a4a40); }
+    .row .grow { flex: 1; min-width: 0; }
+    .row small { display: block; color: var(--ink-mute); font-size: 12px; margin-top: 2px; }
     .tabbar {
       height: 84px; border-top: 1px solid var(--line); background: var(--surface);
       display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; padding-bottom: 16px; position: relative;
@@ -130,8 +137,14 @@
       <a class="draft" href="mobile-create.html"><span class="plus">+</span> Harvest Supper · draft</a>
       <p class="overline">Happening nearby</p>
       <div class="chips"><span class="on">Party</span><span>Concert</span><span>Dinner</span></div>
-      <a class="row" href="mobile-event.html"><span>Golden Hour Picnic</span><span style="color:var(--ink-mute)">Sat 19 · 24</span></a>
-      <a class="row" href="mobile-event.html"><span>Harbor Listening</span><span style="color:var(--ink-mute)">Sun 20 · 40</span></a>
+      <a class="row" href="mobile-event.html">
+        <span class="thumb" aria-hidden="true"></span>
+        <span class="grow"><strong>Golden Hour Picnic</strong><small>Sat 19 · 4:00 PM · Lake Merritt</small></span>
+      </a>
+      <a class="row" href="mobile-event.html">
+        <span class="thumb b" aria-hidden="true"></span>
+        <span class="grow"><strong>Harbor Listening</strong><small>Sun 20 · 7:00 PM · Jack London Sq</small></span>
+      </a>
     </div>
     <nav class="tabbar" aria-label="Host tabs">
       <a href="mobile-discover.html" aria-current="page">

@@ -46,10 +46,10 @@
 
     .page {
       max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px;
-      display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: start;
+      display: grid; grid-template-columns: 320px 1fr; gap: 48px; align-items: start;
     }
     .cover {
-      position: relative; height: 320px; border-radius: var(--radius-card); overflow: hidden;
+      position: relative; aspect-ratio: 1; border-radius: var(--radius-card); overflow: hidden;
       background:
         radial-gradient(circle at 70% 20%, rgba(224,106,69,0.45), transparent 40%),
         radial-gradient(circle at 20% 80%, rgba(42,74,64,0.8), transparent 45%),
@@ -71,9 +71,11 @@
     }
     .overline {
       font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--clay); margin: 20px 0 8px;
+      color: var(--clay); margin: 0 0 8px;
     }
-    h1 { font-size: clamp(36px, 5vw, 52px); line-height: 1.08; margin: 0 0 12px; font-weight: 500; }
+    h1 { font-size: clamp(36px, 5vw, 52px); line-height: 1.08; margin: 0 0 20px; font-weight: 500; }
+    .reg-sticky { display: none; }
+    .media .host-block { margin-top: 16px; }
     .byline { color: var(--night-mute); font-size: 15px; margin: 0 0 28px; }
     .byline strong { color: var(--night-ink); font-weight: 500; }
     .facts { display: grid; gap: 16px; margin-bottom: 32px; }
@@ -100,9 +102,11 @@
     .body-copy p { margin: 0 0 1em; }
 
     .rail {
-      position: sticky; top: 16px; background: var(--night-surface);
+      background: var(--night-surface);
       border: 1px solid var(--night-line); border-radius: var(--radius-card); padding: 20px;
+      margin: 8px 0 28px;
     }
+    .story h1 { font-size: clamp(36px, 5vw, 52px); line-height: 1.08; margin: 0 0 20px; font-weight: 500; }
     .rail h2 { font-size: 18px; margin: 0 0 4px; }
     .rail .when { color: var(--night-mute); font-size: 14px; margin: 0 0 16px; line-height: 1.45; }
     .spots { font-size: 13px; color: var(--forest); font-weight: 500; margin-bottom: 12px; }
@@ -148,13 +152,14 @@
 
     @media (max-width: 800px) {
       .page { grid-template-columns: 1fr; }
-      .rail {
-        position: fixed; left: 0; right: 0; bottom: 0; top: auto; border-radius: 16px 16px 0 0;
-        display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; z-index: 10;
+      .cover { aspect-ratio: 16/9; }
+      .reg-sticky {
+        display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+        padding: 12px 20px 24px; background: var(--night-surface);
+        border-top: 1px solid var(--night-line); gap: 12px; align-items: center;
       }
-      .rail h2, .rail .when, .rail .spots, .rail .bar, .rail .ghost, .rail .fine { display: none; }
-      .register { width: auto; flex: 1; }
-      .cover { height: 220px; }
+      .reg-sticky .register { flex: 1; }
+      .rail { display: none; }
       body { padding-bottom: 80px; }
     }
   </style>
@@ -167,25 +172,11 @@
   </header>
 
   <main class="page">
-    <article>
+    <aside class="media">
       <div class="cover" role="img" aria-label="Stylized night rooftop with warm lanterns — original HostKit illustration">
         <div class="lanterns"></div>
       </div>
-      <p class="overline">Public · In person · The Lantern Sessions</p>
-      <h1 class="display">Rooftop Jazz Night</h1>
-      <p class="byline">Hosted by <strong>Maya Chen</strong> · Oakland</p>
-
-      <dl class="facts">
-        <div>
-          <dt>When</dt>
-          <dd>Friday, September 18, 2026<br />7:30 PM – 10:30 PM PDT</dd>
-        </div>
-        <div>
-          <dt>Where</dt>
-          <dd>The Lantern Roof<br />12th Street, Oakland<br /><a href="#" style="color:var(--clay);font-size:14px">Open map</a></dd>
-        </div>
-      </dl>
-
+      <p class="overline" style="margin-top:20px">Hosted by</p>
       <div class="host-block">
         <div class="host-avatar" aria-hidden="true">MC</div>
         <div>
@@ -196,23 +187,40 @@
       <p class="tags" aria-label="Tags">
         <span>Jazz</span><span>Rooftop</span><span>Oakland</span><span>Live combo</span>
       </p>
+    </aside>
 
+    <article class="story">
+      <p class="overline">Oakland · In person · Public</p>
+      <h1 class="display">Rooftop Jazz Night</h1>
+      <dl class="facts">
+        <div>
+          <dt>When</dt>
+          <dd>Friday, September 18, 2026<br />7:30 PM – 10:30 PM PDT</dd>
+        </div>
+        <div>
+          <dt>Where</dt>
+          <dd>The Lantern Roof<br />12th Street, Oakland<br /><a href="#" style="color:var(--clay);font-size:14px">Open map</a></dd>
+        </div>
+      </dl>
+      <div class="rail" aria-label="Register">
+        <p class="overline" style="margin:0 0 8px">Registration</p>
+        <p class="spots">86 of 90 going · waitlist after that</p>
+        <div class="bar" aria-hidden="true"><i></i></div>
+        <button class="register" type="button" id="open-reg">Register</button>
+        <button class="ghost" type="button">Add to calendar</button>
+        <p class="fine">No HostKit account required. You’ll get a link, same idea as a private RSVP token.</p>
+      </div>
+      <p class="overline">About this night</p>
       <div class="body-copy">
         <p>A late-summer set above downtown Oakland. Small combo, low lights, paper lanterns. Doors 7:15, first note 7:45. Two drink tickets with registration; kitchen closes at ten.</p>
         <p>Bring a layer — the wind comes up off the estuary after nine.</p>
       </div>
     </article>
-
-    <aside class="rail" aria-label="Register">
-      <h2 class="display">Rooftop Jazz Night</h2>
-      <p class="when">Fri, Sep 18 · 7:30–10:30 PM PDT<br />The Lantern Roof, Oakland</p>
-      <p class="spots">86 of 90 going · waitlist after that</p>
-      <div class="bar" aria-hidden="true"><i></i></div>
-      <button class="register" type="button" id="open-reg">Register</button>
-      <button class="ghost" type="button">Add to calendar</button>
-      <p class="fine">No HostKit account required. You’ll get a link, same idea as a private RSVP token.</p>
-    </aside>
   </main>
+  <div class="reg-sticky">
+    <span style="font-size:13px;color:var(--night-mute)">86 / 90</span>
+    <button class="register" type="button" id="open-reg-m">Register</button>
+  </div>
 
   <footer>
     Presented with HostKit — a design prototype, not a live listing.
@@ -248,6 +256,7 @@
     const open = () => modal.classList.add("open");
     const close = () => modal.classList.remove("open");
     document.getElementById("open-reg").addEventListener("click", open);
+    document.getElementById("open-reg-m").addEventListener("click", open);
     document.getElementById("close-reg").addEventListener("click", close);
     document.getElementById("done-close").addEventListener("click", close);
     modal.addEventListener("click", (e) => { if (e.target === modal) close(); });

@@ -43,8 +43,8 @@ next-env.d.ts
 
 /generated
 
-# local screenshot helper
-/tools
+/luma-shots
+
 
 # playwright
 /test-results

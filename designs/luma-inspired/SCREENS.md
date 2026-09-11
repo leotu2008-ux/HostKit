@@ -87,26 +87,23 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 **Goal.** A guest understands the night in five seconds and can register.
 
 ```
-┌──────────────────────────────────────────┬──────────────────┐
-│ Cover (full width of column, radius-card)│ Register card    │
-│ Overline PUBLIC · IN PERSON              │ sticky           │
-│ Display Rooftop Jazz Night               │ Fri 18 Sep       │
-│ Host Maya Chen · The Lantern Sessions    │ 7:30–10:30 PM    │
-│                                          │ PDT              │
-│ When  Friday, September 18, 2026         │ The Lantern Roof │
-│       7:30 PM – 10:30 PM PDT             │ Oakland          │
-│ Where The Lantern Roof, 12th St          │                  │
-│       [Open map]                         │ 86 / 90 going    │
-│                                          │ [Register]       │
-│ Body  rich description…                  │ or waitlist      │
-│                                          │ Add to calendar  │
-│ Share copy link · ICS                    │                  │
-└──────────────────────────────────────────┴──────────────────┘
+┌──────────── cover ────────────┬─────────────────────────────┐
+│ rounded-square illustration   │ Oakland · In person         │
+│                               │ Display Rooftop Jazz Night  │
+│ Hosted by Maya Chen           │ When  Fri 18 Sep, 7:30 PM   │
+│ The Lantern Sessions          │ Where The Lantern Roof      │
+│ Tags: Jazz · Rooftop          │                             │
+│                               │ Registration card           │
+│                               │ 86/90  [Register] clay      │
+│                               │ About this night…           │
+└───────────────────────────────┴─────────────────────────────┘
 ```
+
+**Live-site note (structure only).** luma.com places cover + host on the **left** and serif title + when/where + Register + about on the **right**. HostKit reuses that split with Midnight Garden + clay — not cream + brown.
 
 **Theme.** Midnight Garden: `night` ground, clay register button, Fraunces title in `night-ink`.
 
-**Mobile.** Register card becomes a sticky footer (title + clay button). Cover first.
+**Mobile (canonical).** See `MOBILE.md` guest view: cover first, then title, facts, host, tags, sticky Register footer. Hide host tabs.
 
 **States.** Sold out → waitlist CTA. Private unlisted → same layout, no Discover indexing. Approval required → “Request to join”.
 

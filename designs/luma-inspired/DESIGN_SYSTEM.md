@@ -236,9 +236,13 @@ Target clients: **Expo / React Native** (native tabs, camera for QR) or a **mobi
 
 ## Contrast with observed luma.com marketing (do not ship)
 
-Live luma.com (see `RESEARCH_NOTES.md`) uses a white hero, oversized geometric-sans headlines with **pink/orange gradient** stress, floating photo tiles, and a **black** rounded CTA. HostKit does none of that.
+Live luma.com screenshots (see `RESEARCH_NOTES.md`):
 
-Reuse only the *public event* skeleton that already fits stationery: cream/paper ground option, serif title, two-column register rail, labeled when/where, host block, tags. Default HostKit public sample in this pack is **Midnight Garden** (night club, clay CTA) so a Jazz Night does not look like a cream marketing clone.
+- Marketing: white hero, geometric-sans headline, **pink/orange gradient** on two words, **floating photo tiles**, **black** Create pill, ghost Sign In.  
+- Discover: compact nav, pastel wash, **thumb + date + venue** list (not a card collage).  
+- Public event: **cream** ground, **left square cover + host/tags**, **right serif title + when/where + brown Register**.
+
+HostKit does none of the marketing look. We reuse the public-page *column split* and Discover *list rhythm* with paper/clay/Fraunces. Jazz Night public sample is **Midnight Garden** (night, clay CTA) so it does not read as a cream clone.
 
 ## Do / don’t
 
