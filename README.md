@@ -117,6 +117,14 @@ events** — what you host and what you've registered for, soonest first
   when configured; otherwise the code is logged and — outside production —
   returned so the flow works locally. Hosts see registrants' verified numbers
   on the guest list.
+- **Registering puts the event on your calendar and sets reminders.** On
+  iOS the app adds it with write-only EventKit access (it never reads your
+  calendar) and schedules local notifications for the evening before and an
+  hour before — no server push; reminders re-sync from "Your events" on
+  every Discover load, so a moved date moves the reminder. Both are toggles
+  in Settings. On the web, registering shows Apple/Outlook (`.ics`, from
+  `/e/:id/calendar.ics`) and Google Calendar links (`lib/calendar.ts`).
+  Times are floating local time — 7:30 PM stays 7:30 PM.
 - Everything is set in Inter, on the web and in the app.
 
 ## Hosting an event

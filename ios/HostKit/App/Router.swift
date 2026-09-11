@@ -14,11 +14,18 @@ final class Router {
     var tab: Tab = .discover
     /// A host event to open on the Events tab, set by intents and by Create.
     var openEventID: String?
+    /// An event you're going to, opened on Discover from a tapped reminder.
+    var openGuestEventID: String?
 
     private init() {}
 
     func openHostEvent(_ id: String) {
         tab = .events
         openEventID = id
+    }
+
+    func openGuestEvent(_ id: String) {
+        tab = .discover
+        openGuestEventID = id
     }
 }

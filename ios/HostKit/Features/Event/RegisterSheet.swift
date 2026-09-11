@@ -14,6 +14,18 @@ struct RegisterSheet: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var done = false
+    @State private var extras = AppModel.RegistrationExtras()
+
+    private var doneDescription: String {
+        var lines = ["See you at \(event.title). Updates from the host go to \(model.user?.email ?? "your email")."]
+        switch (extras.reminderSet, extras.calendarAdded) {
+        case (true, true): lines.append("Added to your calendar, with reminders the evening before and an hour out.")
+        case (true, false): lines.append("We’ll remind you the evening before and an hour out.")
+        case (false, true): lines.append("Added to your calendar.")
+        default: break
+        }
+        return lines.joined(separator: " ")
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,7 +35,7 @@ struct RegisterSheet: View {
                         Label("You’re in", systemImage: "checkmark.seal.fill")
                             .foregroundStyle(.green)
                     } description: {
-                        Text("See you at \(event.title). Updates from the host go to \(model.user?.email ?? "your email").")
+                        Text(doneDescription)
                     } actions: {
                         Button("Done") { dismiss() }
                             .buttonStyle(.glassProminent)
@@ -86,7 +98,7 @@ struct RegisterSheet: View {
         errorMessage = nil
         defer { isSubmitting = false }
         do {
-            try await model.register(for: event)
+            extras = try await model.register(for: event)
             done = true
             onRegistered()
         } catch {

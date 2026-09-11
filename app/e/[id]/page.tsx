@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { canAccessEvent, getCurrentUser } from "@/lib/session";
@@ -8,6 +9,9 @@ import { isRegistered } from "@/lib/registration";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
+import { googleCalendarUrl } from "@/lib/calendar";
+import { eventUrl } from "@/lib/promote";
+import { AddToCalendar } from "@/components/add-to-calendar";
 import { EventCover } from "@/components/event-cover";
 import { RegisterForm } from "@/components/register-form";
 import { MapsLink } from "@/components/maps-link";
@@ -89,6 +93,15 @@ export default async function PublicEventPage({
   const canRegister = event.published && !alreadyGoing && spotsLeft > 0;
   const ticketLabel =
     event.ticketType === "PAID" ? formatCents(event.ticketPriceCents) : "Free";
+  // Calendar links only make sense once the night has a date.
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"}`;
+  const calendar = event.date
+    ? {
+        ics: `/e/${event.id}/calendar.ics`,
+        google: googleCalendarUrl({ ...event, date: event.date }, eventUrl(origin, event.id)),
+      }
+    : null;
 
   return (
     <main className="relative isolate flex-1 overflow-hidden">
@@ -188,9 +201,12 @@ export default async function PublicEventPage({
                   can register.
                 </p>
               ) : alreadyGoing ? (
-                <p className="font-medium text-forest">
-                  You’re registered. See you there.
-                </p>
+                <div className="space-y-3">
+                  <p className="font-medium text-forest">
+                    You’re registered. See you there.
+                  </p>
+                  {calendar ? <AddToCalendar links={calendar} /> : null}
+                </div>
               ) : spotsLeft === 0 ? (
                 <p className="font-medium text-amber">
                   This night is full. Ask the host about a waitlist.
@@ -207,6 +223,7 @@ export default async function PublicEventPage({
                   <RegisterForm
                     eventId={event.id}
                     viewer={user ? { name: user.name, email: user.email } : null}
+                    calendar={calendar}
                   />
                 </>
               )}

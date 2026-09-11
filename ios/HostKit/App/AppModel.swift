@@ -160,11 +160,34 @@ final class AppModel {
     }
 
     /// Registers the signed-in account. Callers present sign-in first.
-    func register(for event: HostEvent) async throws {
+    /// What happened on the phone after registering, for the confirmation.
+    struct RegistrationExtras {
+        var reminderSet = false
+        var calendarAdded = false
+    }
+
+    /// Registers, then — if the settings allow — schedules the reminders and
+    /// puts the night on the calendar. Neither can fail the registration.
+    func register(for event: HostEvent) async throws -> RegistrationExtras {
         if SampleData.events.contains(where: { $0.id == event.id }) {
             try await Task.sleep(for: .milliseconds(500))
-            return
+        } else {
+            try await api.register(eventID: event.id)
         }
-        try await api.register(eventID: event.id)
+        var extras = RegistrationExtras()
+        if Session.remindersEnabled, await Reminders.requestPermission() {
+            await Reminders.schedule(for: event)
+            extras.reminderSet = event.startsAt != nil
+        }
+        if Session.calendarEnabled {
+            extras.calendarAdded = await CalendarSync.add(event, link: api.webURL(for: event))
+        }
+        return extras
+    }
+
+    /// Keeps reminders in step with the events you're going to (dates move).
+    func syncReminders(with feed: DiscoverFeed) async {
+        guard Session.remindersEnabled, await Reminders.isAllowed() else { return }
+        await Reminders.sync(going: feed.mine.filter { !$0.isOwner })
     }
 }

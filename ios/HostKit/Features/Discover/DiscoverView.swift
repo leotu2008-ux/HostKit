@@ -10,9 +10,10 @@ struct DiscoverView: View {
     @State private var feed = DiscoverFeed(events: [])
     @State private var isLoading = true
     @State private var isSigningIn = false
+    @State private var path: [HostEvent] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     yourEventsSection
@@ -77,6 +78,12 @@ struct DiscoverView: View {
             .sheet(isPresented: $isSigningIn) { SignInView() }
             .task(id: "\(city ?? "")|\(model.user?.id ?? "")") { await load() }
             .task { await settleCity() }
+            // A tapped reminder lands here with the event to open.
+            .task(id: router.openGuestEventID) {
+                guard let id = router.openGuestEventID else { return }
+                router.openGuestEventID = nil
+                if let event = try? await model.event(id: id) { path = [event] }
+            }
             .refreshable { await load() }
         }
     }
@@ -212,6 +219,7 @@ struct DiscoverView: View {
         isLoading = true
         feed = await model.discover(city: city)
         isLoading = false
+        await model.syncReminders(with: feed)
     }
 }
 

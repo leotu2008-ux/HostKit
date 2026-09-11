@@ -6,6 +6,7 @@ import {
   registerForEventAction,
   type RegisterState,
 } from "@/lib/actions/register";
+import { AddToCalendar, type CalendarLinks } from "@/components/add-to-calendar";
 import { Button, ButtonLink, FormError } from "@/components/ui";
 
 function Submit({ label }: { label: string }) {
@@ -20,14 +21,16 @@ function Submit({ label }: { label: string }) {
 /**
  * Registering needs an account, so the host's blasts have a real email to
  * go to. Signed out, this points at sign-in / sign-up and comes straight
- * back here afterwards.
+ * back here afterwards. Once you're in, the calendar links are right there.
  */
 export function RegisterForm({
   eventId,
   viewer,
+  calendar,
 }: {
   eventId: string;
   viewer: { name: string; email: string } | null;
+  calendar: CalendarLinks | null;
 }) {
   const [state, formAction] = useActionState(
     registerForEventAction,
@@ -41,6 +44,11 @@ export function RegisterForm({
         <p className="mt-1 text-sm text-ink-soft">
           We’ll see you there. Updates from the host go to {viewer?.email}.
         </p>
+        {calendar ? (
+          <div className="mt-3 flex justify-center">
+            <AddToCalendar links={calendar} />
+          </div>
+        ) : null}
       </div>
     );
   }

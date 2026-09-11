@@ -32,6 +32,27 @@ nonisolated enum Session {
         }
     }
     private static let tokenAccount = "hostkit.apiToken"
+    private static let remindersKey = "hostkit.remindersEnabled"
+    private static let calendarKey = "hostkit.calendarEnabled"
+    private static let calendarEntriesKey = "hostkit.calendarEntries"
+
+    /// Reminders the evening before and an hour before events you're going to. On by default.
+    static var remindersEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: remindersKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: remindersKey) }
+    }
+
+    /// Add events you register for to the calendar. On by default.
+    static var calendarEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: calendarKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: calendarKey) }
+    }
+
+    /// Event id → calendar entry identifier, so a night is only added once.
+    static var calendarEntries: [String: String] {
+        get { UserDefaults.standard.dictionary(forKey: calendarEntriesKey) as? [String: String] ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: calendarEntriesKey) }
+    }
 
     static var serverURL: URL {
         get {

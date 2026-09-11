@@ -105,6 +105,15 @@ nonisolated enum EventDates {
         return calendar.date(from: parts) ?? localDate
     }
 
+    /// The inverse of `toWallClock`: the stored 7:30 PM as a real instant in
+    /// the phone's time zone, for reminders and calendar entries.
+    static func fromWallClock(_ stored: Date) -> Date {
+        let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: stored)
+        var local = Calendar(identifier: .gregorian)
+        local.timeZone = .current
+        return local.date(from: parts) ?? stored
+    }
+
     static func wallClock(daysFromNow days: Int, hour: Int, minute: Int) -> Date {
         let base = calendar.startOfDay(for: wallClockNow())
         let day = calendar.date(byAdding: .day, value: days, to: base) ?? base

@@ -6,6 +6,8 @@
 	     while production stays HTTPS-only. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>HostKit uses your location once to pick the nearest city, so Discover shows events near you.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>HostKit adds events you register for to your calendar. It never reads what’s already there.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Inter-Regular.ttf</string>

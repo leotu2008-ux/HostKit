@@ -46,7 +46,13 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 | **Discover** | "Your events" first (hosting + going), then campus and city feeds grouped by day, event page with register sheet |
 | **Events** | Your events as a timeline (upcoming / past) and Manage — Overview (guest list, check-in, tap the cover to add a photo) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list) · Promote (publish, visibility, share link, QR code, promo copy) |
 | **Create** | The event form, with an optional MapKit venue search and a cover photo |
-| **Logo (top-left)** | The account menu: profile (with photo), past events, settings (phone number verified by text, server address, Apple Intelligence, Siri), sign in / out |
+| **Logo (top-left)** | The account menu: profile (with photo), past events, settings (reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri), sign in / out |
+
+Registering for an event adds it to your calendar (`App/CalendarSync.swift`,
+write-only EventKit access) and schedules two local notifications — the
+evening before at 6 pm and an hour before (`App/Reminders.swift`). Reminders
+are re-synced from "Your events" whenever Discover loads; tapping one opens
+the event. No push server is involved.
 
 Everything is set in Inter (`Design/Typography.swift`; the four static faces
 are bundled under `Resources/Fonts`).

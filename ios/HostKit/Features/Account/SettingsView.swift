@@ -7,9 +7,37 @@ struct SettingsView: View {
     @State private var server = ""
     @State private var serverError: String?
     @State private var showSiriTip = true
+    @State private var remindersOn = Session.remindersEnabled
+    @State private var calendarOn = Session.calendarEnabled
+    @State private var remindersDenied = false
 
     var body: some View {
         Form {
+            Section {
+                Toggle("Remind me before events", isOn: $remindersOn)
+                    .onChange(of: remindersOn) { _, on in
+                        Session.remindersEnabled = on
+                        Task {
+                            if on {
+                                remindersDenied = !(await Reminders.requestPermission())
+                            } else {
+                                await Reminders.cancelAll()
+                            }
+                        }
+                    }
+                if remindersDenied && remindersOn {
+                    Text("Notifications are off for HostKit in Settings.")
+                        .font(.inter(.footnote))
+                        .foregroundStyle(.red)
+                }
+                Toggle("Add to my calendar when I register", isOn: $calendarOn)
+                    .onChange(of: calendarOn) { _, on in Session.calendarEnabled = on }
+            } header: {
+                Text("Going to events")
+            } footer: {
+                Text("The evening before and an hour before each event you register for. Calendar access is write-only — HostKit never reads your calendar.")
+            }
+
             if model.isSignedIn {
                 Section {
                     if let user = model.user, user.hasVerifiedPhone, let phone = user.phone {
