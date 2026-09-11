@@ -1,43 +1,17 @@
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { goingCount } from "@/lib/api/serialize";
 import { upcomingOnly } from "@/lib/upcoming";
+import type { ClubInput } from "@/lib/club-format";
+
+export { HANDLE_PATTERN, RESERVED_HANDLES, clubSchema, suggestHandle } from "@/lib/club-format";
+export type { ClubInput } from "@/lib/club-format";
 
 /**
  * Clubs: a page people follow, run by its admins, that events can be posted
  * as. The creator is the OWNER; owners and admins manage the club and every
- * event posted as it.
+ * event posted as it. Server-only (it opens the database); client code
+ * wants lib/club-format.ts.
  */
-
-export const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
-export const RESERVED_HANDLES = new Set(["new", "edit", "api", "c", "clubs", "admin", "hostkit", "me"]);
-
-export const clubSchema = z.object({
-  name: z.string().trim().min(2, "Give the club a name.").max(60),
-  handle: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(HANDLE_PATTERN, "Handles are 3–30 letters, numbers or dashes.")
-    .refine((h) => !RESERVED_HANDLES.has(h), "That handle is reserved."),
-  blurb: z.string().trim().max(280).optional(),
-  city: z.string().trim().max(60).optional(),
-});
-
-export type ClubInput = z.infer<typeof clubSchema>;
-
-/** "Babson Entrepreneurship Club" → "babson-entrepreneurship-club". */
-export function suggestHandle(name: string): string {
-  const base = name
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 30)
-    .replace(/-+$/g, "");
-  if (base.length >= 3 && !RESERVED_HANDLES.has(base)) return base;
-  return (base + "-club").slice(0, 30);
-}
 
 export class ClubError extends Error {
   constructor(message: string, readonly status: number) {

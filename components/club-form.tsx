@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createClubAction, updateClubAction, type ClubFormState } from "@/lib/actions/clubs";
-import { suggestHandle } from "@/lib/clubs";
+import { suggestHandle } from "@/lib/club-format";
 import { CITIES } from "@/lib/catalog";
 import { Button, Field, FormError, Input, Select, Textarea } from "@/components/ui";
 
