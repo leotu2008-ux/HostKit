@@ -34,8 +34,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf8f4" },
-    { media: "(prefers-color-scheme: dark)", color: "#161310" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f8f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e0f" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       data-theme-pref={pref}
       suppressHydrationWarning
     >
-      <body className="min-h-full bg-sunk">
+      <body className="min-h-full bg-paper">
         <Script id="hostkit-theme" strategy="beforeInteractive">
           {THEME_BOOTSTRAP}
         </Script>

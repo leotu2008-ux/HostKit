@@ -1,11 +1,14 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * The browser is preinstalled in this environment at a build Playwright does
- * not manage, so the executable is pointed at explicitly. Never run
- * `playwright install` here.
+ * The agent image preinstalls Chromium at a build Playwright does not manage,
+ * so when that path exists the executable is pointed at explicitly (never run
+ * `playwright install` there). Anywhere else — a laptop, CI — Playwright's own
+ * browser is used.
  */
 const CHROMIUM = "/opt/pw-browsers/chromium";
+const launchOptions = existsSync(CHROMIUM) ? { executablePath: CHROMIUM } : {};
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -22,7 +25,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        launchOptions: { executablePath: CHROMIUM },
+        launchOptions,
       },
     },
   ],

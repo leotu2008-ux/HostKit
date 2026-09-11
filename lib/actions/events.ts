@@ -5,7 +5,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser, requireEvent, requireUser } from "@/lib/session";
-import { generatePlan } from "@/lib/plan";
+import { createEventWithPlan } from "@/lib/event-create";
 import { parseCents } from "@/lib/money";
 import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
@@ -86,53 +86,24 @@ export async function createEventAction(
   const address = input.address || null;
   const claimToken = user ? null : newClaimToken();
 
-  const plan = generatePlan({ type, date, budgetTotalCents });
-
-  const event = await db.$transaction(async (tx) => {
-    const created = await tx.event.create({
-      data: {
-        ownerId: user?.id ?? null,
-        claimToken,
-        title: input.title,
-        type,
-        date,
-        durationHours: input.durationHours,
-        guestCount: input.guestCount,
-        city: input.city,
-        address,
-        lat,
-        lng,
-        budgetTotalCents,
-        description: input.description || null,
-        vibe: input.description || null,
-        ticketType: input.ticketType,
-        ticketPriceCents,
-        visibility: input.visibility,
-        published: false,
-      },
-    });
-
-    await tx.budgetCategory.createMany({
-      data: plan.categories.map((c) => ({
-        eventId: created.id,
-        category: c.category,
-        name: c.name,
-        allocatedCents: c.allocatedCents,
-      })),
-    });
-
-    await tx.task.createMany({
-      data: plan.tasks.map((t) => ({
-        eventId: created.id,
-        title: t.title,
-        notes: t.notes ?? null,
-        offsetDays: t.offsetDays,
-        category: t.category ?? null,
-        dueDate: t.dueDate,
-      })),
-    });
-
-    return created;
+  const event = await createEventWithPlan({
+    ownerId: user?.id ?? null,
+    claimToken,
+    title: input.title,
+    type,
+    date,
+    durationHours: input.durationHours,
+    guestCount: input.guestCount,
+    city: input.city,
+    address,
+    lat,
+    lng,
+    budgetTotalCents,
+    description: input.description || null,
+    ticketType: input.ticketType,
+    ticketPriceCents,
+    visibility: input.visibility,
+    published: false,
   });
 
   if (claimToken) {

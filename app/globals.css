@@ -3,48 +3,50 @@
 /* ---------------------------------------------------------------------------
    HostKit design tokens.
 
-   Warm, editorial, confident — planning an event is a happy occasion and the
-   product should feel like good stationery, not a project management tool.
-   Light is paper + clay. Dark is a warm night ground (not a cool-grey invert)
-   so the same tokens keep working when the host flips appearance.
+   Clean and bright, the way the best event apps feel: near-white grounds,
+   hairline borders, a sans UI, and one warm clay accent that stays HostKit's
+   own. Event titles are the only serif on the page — they're the part that
+   should feel like an invitation. Dark is a true night ground, not a grey
+   invert, so covers glow on it.
 --------------------------------------------------------------------------- */
 
 @theme {
   /* Grounds */
-  --color-paper: #fbf8f4;
+  --color-paper: #f8f8f7;
   --color-surface: #ffffff;
-  --color-sunk: #f4efe8;
+  --color-sunk: #f0efed;
 
   /* Ink */
-  --color-ink: #1c1917;
-  --color-ink-soft: #57504a;
-  --color-ink-mute: #8b8179;
+  --color-ink: #141414;
+  --color-ink-soft: #5c5a57;
+  --color-ink-mute: #8b8884;
 
   /* Lines */
-  --color-line: #e9e1d7;
-  --color-line-strong: #d8cec1;
+  --color-line: #e7e6e3;
+  --color-line-strong: #d5d3cf;
 
   /* Accent — clay. Primary actions, active state, brand marks. */
-  --color-clay: #c4502e;
-  --color-clay-deep: #a03f22;
-  --color-clay-wash: #fbeee8;
+  --color-clay: #c64a22;
+  --color-clay-deep: #a63c19;
+  --color-clay-wash: #fcede7;
 
-  /* Forest — confirmed, booked, on-track. */
-  --color-forest: #2a4a40;
-  --color-forest-wash: #e8f0ec;
+  /* Forest — confirmed, booked, going. */
+  --color-forest: #1f6f4f;
+  --color-forest-wash: #e5f3eb;
 
   /* Amber — attention, over budget, due soon. */
-  --color-amber: #9a6b10;
-  --color-amber-wash: #fbf1dc;
+  --color-amber: #986000;
+  --color-amber-wash: #fdf2dc;
 
   /* Danger — destructive and declined. */
-  --color-danger: #8e2a20;
-  --color-danger-wash: #fbeae8;
+  --color-danger: #b8322a;
+  --color-danger-wash: #fcebe9;
 
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-event: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 0.875rem;
+  --radius-card: 1rem;
 }
 
 :root,
@@ -54,23 +56,23 @@ html[data-theme="light"] {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --color-paper: #161310;
-  --color-surface: #221e1a;
-  --color-sunk: #2c2722;
-  --color-ink: #f4efe8;
-  --color-ink-soft: #c4bbb3;
-  --color-ink-mute: #a89f95;
-  --color-line: #3a342d;
-  --color-line-strong: #4a433b;
-  --color-clay: #e06a45;
-  --color-clay-deep: #c4502e;
-  --color-clay-wash: #3a221c;
-  --color-forest: #8fbfad;
-  --color-forest-wash: #1e2e28;
-  --color-amber: #e0b15a;
-  --color-amber-wash: #2e2618;
-  --color-danger: #e07a72;
-  --color-danger-wash: #3a1f1c;
+  --color-paper: #0e0e0f;
+  --color-surface: #18181a;
+  --color-sunk: #222225;
+  --color-ink: #f4f4f3;
+  --color-ink-soft: #b8b6b2;
+  --color-ink-mute: #8b8985;
+  --color-line: #2a2a2d;
+  --color-line-strong: #3c3c40;
+  --color-clay: #e5643a;
+  --color-clay-deep: #c64a22;
+  --color-clay-wash: #36201a;
+  --color-forest: #7fcca6;
+  --color-forest-wash: #16271f;
+  --color-amber: #efbd5c;
+  --color-amber-wash: #2c2413;
+  --color-danger: #f28a80;
+  --color-danger-wash: #361b19;
 }
 
 /* Before the bootstrap script runs, follow the device when no explicit
@@ -78,55 +80,47 @@ html[data-theme="dark"] {
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-paper: #161310;
-    --color-surface: #221e1a;
-    --color-sunk: #2c2722;
-    --color-ink: #f4efe8;
-    --color-ink-soft: #c4bbb3;
-    --color-ink-mute: #a89f95;
-    --color-line: #3a342d;
-    --color-line-strong: #4a433b;
-    --color-clay: #e06a45;
-    --color-clay-deep: #c4502e;
-    --color-clay-wash: #3a221c;
-    --color-forest: #8fbfad;
-    --color-forest-wash: #1e2e28;
-    --color-amber: #e0b15a;
-    --color-amber-wash: #2e2618;
-    --color-danger: #e07a72;
-    --color-danger-wash: #3a1f1c;
+    --color-paper: #0e0e0f;
+    --color-surface: #18181a;
+    --color-sunk: #222225;
+    --color-ink: #f4f4f3;
+    --color-ink-soft: #b8b6b2;
+    --color-ink-mute: #8b8985;
+    --color-line: #2a2a2d;
+    --color-line-strong: #3c3c40;
+    --color-clay: #e5643a;
+    --color-clay-deep: #c64a22;
+    --color-clay-wash: #36201a;
+    --color-forest: #7fcca6;
+    --color-forest-wash: #16271f;
+    --color-amber: #efbd5c;
+    --color-amber-wash: #2c2413;
+    --color-danger: #f28a80;
+    --color-danger-wash: #361b19;
   }
 }
 
 html,
 body {
   min-height: 100%;
-  background: var(--color-sunk);
+  background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-@media (min-width: 480px) {
-  body {
-    display: flex;
-    justify-content: center;
-  }
-
-  .app-frame {
-    min-height: 100dvh;
-    box-shadow:
-      0 0 0 1px var(--color-line),
-      0 24px 80px rgb(28 25 23 / 0.08);
-  }
-}
-
-/* Fraunces is a variable font with optical-size, softness and "wonk" axes.
-   Dialing in a little softness and wonk is what gives headings character
-   instead of generic-serif. */
+/* UI headings: tight, confident sans. */
 .font-display {
   font-family: var(--font-display);
-  font-variation-settings: "SOFT" 30, "WONK" 1;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Event titles: the one serif moment. */
+.font-event {
+  font-family: var(--font-event);
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+  font-weight: 500;
   letter-spacing: -0.02em;
 }
 
@@ -154,13 +148,8 @@ body {
   }
   html,
   body {
-    display: block;
     background: #fff;
-    color: #1c1917;
+    color: #141414;
     color-scheme: light;
-  }
-  .app-frame {
-    max-width: none;
-    box-shadow: none;
   }
 }

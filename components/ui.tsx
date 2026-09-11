@@ -68,7 +68,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-card border border-line bg-surface",
+        "rounded-card border border-line bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.03)]",
         className,
       )}
       {...props}

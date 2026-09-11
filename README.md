@@ -89,6 +89,32 @@ against that `DATABASE_URL` locally.
 
 Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 
+## iOS app
+
+`ios/` is a native SwiftUI app (iOS 26) on the same backend: Discover and
+register, a host timeline, publish, guest check-in, and create — with Apple
+Intelligence drafting event descriptions on-device and Siri shortcuts for the
+door. Open `ios/HostKit.xcodeproj`; see [`ios/README.md`](ios/README.md).
+
+It talks to the website through a small JSON API under `/api/v1`:
+
+| Route | What it does |
+| --- | --- |
+| `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
+| `GET /api/v1/me` | The token's user |
+| `GET /api/v1/discover?city=` | Upcoming public, published events |
+| `GET /api/v1/events` · `POST` | The host's events · create one (with its plan) |
+| `GET /api/v1/events/:id` | One event (public if live; owner sees drafts) |
+| `POST /api/v1/events/:id/register` | Account-free registration |
+| `POST /api/v1/events/:id/publish` | Publish / unpublish (owner) |
+| `GET /api/v1/events/:id/guests` | Guest list and door counts (owner) |
+| `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo (owner) |
+
+Web and API share their rules: `lib/event-create.ts` builds an event and its
+plan, and `lib/registration.ts` decides who can register — an existing guest is
+never renamed and a declined guest can't be flipped back by someone who knows
+their email.
+
 ## How it's put together
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Prisma 7 → Postgres ·
@@ -153,7 +179,7 @@ This is a working demo, not a production service. Specifically:
 
 ## Tests
 
-143 unit tests cover the pure logic, including the boundaries that bite:
+148 unit tests cover the pure logic, including the boundaries that bite:
 per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
 event whose date has passed, an unallocated category, an RSVP round that has
 barely started.

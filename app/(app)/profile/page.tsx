@@ -13,7 +13,7 @@ export default async function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="px-4 py-10">
+      <div className="mx-auto max-w-xl px-4 py-10">
         <h1 className="font-display text-[28px] text-ink">You</h1>
         <p className="mt-2 text-[15px] text-ink-soft">
           Sign in to host nights, check guests in, and pick up a plan in
@@ -35,7 +35,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="px-4 py-6">
+    <div className="mx-auto max-w-xl px-4 py-6">
       <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
         Profile
       </p>

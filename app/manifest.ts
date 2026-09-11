@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Plan a night, register, and get people through the door.",
     start_url: "/",
     display: "standalone",
-    background_color: "#fbf8f4",
-    theme_color: "#fbf8f4",
+    background_color: "#f8f8f7",
+    theme_color: "#f8f8f7",
     icons: [
       {
         src: "/icon.svg",

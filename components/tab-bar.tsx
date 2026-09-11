@@ -36,13 +36,43 @@ export function shouldShowTabBar(pathname: string) {
   return true;
 }
 
+/** Top-bar navigation for wide screens; the tab bar covers phones. */
+export function DesktopNav() {
+  const pathname = usePathname();
+  const links = [
+    { href: "/", label: "Discover", match: "discover" },
+    { href: "/events", label: "My events", match: "nights" },
+  ] as const;
+
+  return (
+    <nav className="no-print hidden items-center gap-1 md:flex" aria-label="Main">
+      {links.map((link) => {
+        const active = tabActive(pathname, link.match);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={active ? "page" : undefined}
+            className={cx(
+              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              active ? "bg-sunk text-ink" : "text-ink-soft hover:text-ink",
+            )}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function TabBar() {
   const pathname = usePathname();
   if (!shouldShowTabBar(pathname)) return null;
 
   return (
     <nav
-      className="no-print sticky bottom-0 z-40 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-paper/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       aria-label="Primary"
     >
       <ul className="grid grid-cols-4">
