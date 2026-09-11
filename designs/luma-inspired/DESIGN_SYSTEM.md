@@ -217,6 +217,23 @@ Each theme defines: `ground`, `surface`, `ink`, `accent` (email + CTA), `cover-t
 
 Hosts may override **accent only**; emails always pick up that accent.
 
+## Mobile app shell
+
+HostKit is a **phone app** first. Tokens above still apply; these rules are extra.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| Frame | `390 × 844` | Spec and HTML phone mocks |
+| Status | 44px | Simulated 9:41 |
+| Header | 52px | Wordmark / back / avatar |
+| Tab bar | 64px + 20px safe | Four tabs; Create is a 48px clay circle overlapping by 10px |
+| Touch | ≥ 44px | Chips, rows, icon buttons |
+| Sheet | 12px top radius | More, register, check-in result |
+
+No hover-only actions. One clay primary per screen. Guest deep links hide the tab bar and use a sticky Register footer (48px + safe).
+
+Target clients: **Expo / React Native** (native tabs, camera for QR) or a **mobile PWA** (same layout, `getUserMedia` / file QR later). The current Next.js App Router demo is not the shipping chrome.
+
 ## Contrast with observed luma.com marketing (do not ship)
 
 Live luma.com (see `RESEARCH_NOTES.md`) uses a white hero, oversized geometric-sans headlines with **pink/orange gradient** stress, floating photo tiles, and a **black** rounded CTA. HostKit does none of that.

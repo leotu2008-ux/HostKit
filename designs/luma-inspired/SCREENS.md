@@ -1,6 +1,8 @@
-# Screen specs (wireframe level)
+# Screen specs (tablet / companion)
 
-Specs for implementation and for reading the HTML mocks. Layouts are HostKit; flows follow publicly documented event-platform patterns (create fields, manage tabs, guest filters, insights). Sample event: **Rooftop Jazz Night**.
+**Canonical phone frames live in [MOBILE.md](./MOBILE.md)** (390 × 844, bottom tabs). This file is the **wide layout** of the same product — useful for iPad or a future host companion. Do not implement the phone app from these wireframes.
+
+Layouts are HostKit; flows follow publicly documented event-platform patterns (create fields, manage tabs, guest filters, insights). Sample event: **Rooftop Jazz Night**.
 
 Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit · sample data · not production`.
 
@@ -33,7 +35,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 
 **States.** Empty “Your nights”: Fraunces “No events yet” + clay **Create event**. Search no hits: “Nothing in that city this month.”
 
-**Mobile.** Cards stack. Create is sticky bottom clay bar.
+**Mobile (canonical).** See `MOBILE.md` — cards stack, bottom tabs, Create is the clay circle tab. Do not use a sticky bottom CTA that fights the tab bar.
 
 **Live-site note (structure only).** luma.com Discover uses a compact nav, a dense “popular” list (thumb + date + place), category tiles with icons/counts, and followable calendars. HostKit’s host-home should **not** copy those icons or the Follow marketplace pattern. Optional later: a compact “Happening nearby” *list* variant under the card grid, using HostKit event types (Party, Concert, Dinner…) as text chips, not colorful line-icon tiles.
 

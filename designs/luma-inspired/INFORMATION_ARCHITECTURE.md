@@ -1,19 +1,24 @@
 # HostKit information architecture
 
+**Mobile-first.** HostKit ships as a phone app (Expo / React Native or mobile PWA). Canonical nav is a **bottom tab bar**. The Next.js demo in `/app` is a planning prototype.
+
 Maps a Luma-style **create → public page → manage** loop onto HostKit’s existing host-side planner (venues, budget, timeline, run sheet). Guest accounts are still not required: public registration and check-in use HostKit tokens, same idea as `/rsvp/[token]`.
 
 ```mermaid
-flowchart LR
-  Discover["Discover / home"] --> Create["Create event"]
-  Create --> Public["Public event page"]
-  Create --> Manage["Manage dashboard"]
-  Public --> Register["Register / waitlist"]
-  Manage --> Guests["Guests"]
-  Manage --> Registration["Registration"]
-  Manage --> Blasts["Blasts"]
-  Manage --> Insights["Insights"]
-  Manage --> More["More: Plan, Budget, Scout, Run sheet"]
-  Guests --> Checkin["Check-in (mobile)"]
+flowchart TB
+  subgraph tabs [Host tab bar]
+    Nights[Nights / Discover]
+    Create[Create]
+    Door[Door / Guests]
+    More[More]
+  end
+  Nights --> Detail[Event detail]
+  Detail --> GuestView[Guest view / public]
+  Create --> Detail
+  Door --> List[Guest list]
+  Door --> Scan[QR check-in]
+  More --> Plan[Plan / Budget / Scout / Run sheet]
+  GuestView --> Register[Register / waitlist]
 ```
 
 ## Audiences
@@ -28,15 +33,26 @@ Venue and vendor owners still never log in. The catalog remains seeded scouting 
 
 ## Global chrome
 
-### Marketing / logged-out
+### Host app — bottom tabs (canonical)
 
-`HostKit` wordmark · Discover · Sign in · **Plan an event** (clay pill)
+| Tab | Job |
+| --- | --- |
+| **Nights** | Discover / home: your events + nearby |
+| **Create** | New event composer (clay circle) |
+| **Door** | Guests list + QR check-in for the selected night |
+| **More** | Plan, Budget, Scout, Shortlist, Run sheet, Account |
 
-### Host app header
+Event detail is a **stack screen** on Nights (not its own tab). Guest-facing register links hide the host tab bar.
 
-Wordmark → `/` (discover home) · **My events** · **Create** · account menu (name, theme, sign out)
+Phone frame: 390 × 844. See `MOBILE.md`.
 
-Event context (once an event is open) sits *below* the app header: cover thumb, title, date, visibility, **Preview**, **Share**.
+### Marketing / logged-out (PWA splash or first launch)
+
+`HostKit` wordmark · **Plan an event** (clay pill) · Sign in as text.
+
+### Tablet companion
+
+Wide header + underline manage tabs (Overview | Guests | Registration | Blasts | Insights | More) — see `SCREENS.md` and `mockups/*.html` without the `mobile-` prefix. Do not treat that chrome as the phone UI.
 
 ## Screen map
 
@@ -98,11 +114,11 @@ Primary tabs (always visible), mapped from the public Luma manage pattern, HostK
 - Run sheet  
 - Event settings (theme, visibility, calendar, danger zone)
 
-This preserves today’s `EventNav` information without crowding the Luma-shaped primary tabs.
+This preserves today’s `EventNav` information without crowding the Luma-shaped primary tabs. **On phone, these become stack segments or More-sheet rows**, not a seven-item top bar.
 
 ```
-HostKit  ·  Rooftop Jazz Night                    [Preview] [Share]
-Overview | Guests | Registration | Blasts | Insights | More ▾
+Phone:  Nights | Create | Door | More
+Tablet: Overview | Guests | Registration | Blasts | Insights | More ▾
 ```
 
 ### 5. Guests — `/events/[id]/guests`
@@ -140,11 +156,11 @@ Narrow viewport. Camera/QR, search fallback, big Going / not-on-list states. Lin
 
 ## Navigation rules
 
-- **One event at a time** in manage chrome. Switching events goes through Discover home / My events.  
-- **Preview** always opens the public page in a new context (guest theme).  
-- **Scout / Budget / Plan** are one click from Overview (“What this event still needs”) *and* from More.  
-- Guest-facing surfaces never link into manage.  
-- Check-in is a first-class route, not a modal-only feature, so door staff can bookmark it.
+- **Tab bar is always the host’s compass.** Event switching happens on Nights; Door uses the last selected event.  
+- **Preview** opens Guest view (theme applied). Hosts get a Manage control to return.  
+- **Scout / Budget / Plan** are More-sheet rows and deep links from Event detail coverage.  
+- Guest-facing surfaces never show host tabs.  
+- Check-in is the Door tab’s Scan segment, bookmarkable as `/door?scan=1`.
 
 ## Mapping from today’s HostKit app
 
