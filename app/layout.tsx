@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
+import { LaunchSplash } from "@/components/launch-splash";
+import { SPLASH_BOOTSTRAP } from "@/lib/splash";
 import "./globals.css";
 
 // One face everywhere — Inter — the same as the iOS app bundles.
@@ -39,8 +41,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
+    // suppressHydrationWarning: the splash bootstrap stamps data-splash on
+    // <html> before React runs, once per session.
+    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full bg-paper">
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_BOOTSTRAP }} />
+        <LaunchSplash />
         <AppFrame>{children}</AppFrame>
       </body>
     </html>
