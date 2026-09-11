@@ -15,10 +15,10 @@ nonisolated enum SampleData {
             hours: 4, capacity: 36, going: 21, host: "Maya Chen",
             description: "Long tables, seasonal plates, no speeches. Bring a layer — the barn cools down after dark."),
         make(
-            id: "sample-garden-shower", title: "Garden Baby Shower", type: .babyShower,
-            city: "Los Angeles, CA", address: "Canyon House, Laurel Canyon", days: 12, hour: 11, minute: 0,
-            hours: 3, capacity: 28, going: 28, host: "Priya Shah",
-            description: "Late morning in the garden, easy and bright. Lemonade, pastries, and one very gentle game."),
+            id: "sample-study-social", title: "End-of-Term Social", type: .birthday,
+            city: "Los Angeles, CA", address: "Silver Lake Studio 9", days: 12, hour: 20, minute: 0,
+            hours: 4, capacity: 60, going: 60, host: "Priya Shah",
+            description: "Exams are done. Pizza, a playlist you can argue with, and the roof terrace if the weather holds."),
         make(
             id: "sample-founders-mixer", title: "Founders & Friends Mixer", type: .corporateOffsite,
             city: "New York, NY", address: "Grand Street Loft, SoHo", days: 16, hour: 18, minute: 30,

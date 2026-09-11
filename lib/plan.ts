@@ -58,14 +58,14 @@ export function daysBetween(from: Date, to: Date): number {
  * event still needs.
  *
  * Pure — no database, no clock of its own — so the interesting cases (a
- * wedding booked six weeks out, a budget that doesn't divide evenly, an event
+ * fundraiser booked six weeks out, a budget that doesn't divide evenly, an event
  * with no date yet) are all reachable from tests.
  */
 export function generatePlan(input: PlanInput, now = new Date()): GeneratedPlan {
   const template = templateFor(input.type);
 
   // Budget. allocateCents guarantees the parts sum to exactly the total, so a
-  // 100-guest wedding's categories always add back up to what the host typed.
+  // 100-guest fundraiser's categories always add back up to what the host typed.
   const weights = template.budget.map((b) => b.weight);
   const amounts = allocateCents(input.budgetTotalCents, weights);
   const categories: PlannedCategory[] = template.budget.map((b, i) => ({

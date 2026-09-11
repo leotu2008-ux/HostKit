@@ -47,7 +47,7 @@ type VenueSeed = {
 
 const VENUES: VenueSeed[] = [
   // --- New York ------------------------------------------------------------
-  { city: "NYC", name: "The Foundry Room", neighborhood: "Long Island City", description: "A restored iron foundry with 30-foot ceilings, a skylit main hall and an ivy courtyard that takes the overflow in summer.", hourly: 92_000, capacityMin: 60, capacityMax: 180, leadTimeDays: 120, amenities: ["Courtyard", "In-house AV", "Bridal suite", "Step-free access"], tags: ["industrial", "photogenic", "outdoor space"], rating: 4.8, reviewCount: 212 },
+  { city: "NYC", name: "The Foundry Room", neighborhood: "Long Island City", description: "A restored iron foundry with 30-foot ceilings, a skylit main hall and an ivy courtyard that takes the overflow in summer.", hourly: 92_000, capacityMin: 60, capacityMax: 180, leadTimeDays: 120, amenities: ["Courtyard", "In-house AV", "Green room", "Step-free access"], tags: ["industrial", "photogenic", "outdoor space"], rating: 4.8, reviewCount: 212 },
   { city: "NYC", name: "Grand Street Loft", neighborhood: "SoHo", description: "A white-box loft on the fifth floor with cast-iron columns, enormous west-facing windows and a freight lift that vendors actually fit in.", hourly: 64_000, capacityMin: 30, capacityMax: 110, leadTimeDays: 45, amenities: ["Freight elevator", "Blackout blinds", "Catering kitchen"], tags: ["loft", "blank canvas", "natural light"], rating: 4.6, reviewCount: 148 },
   { city: "NYC", name: "Hudson & Vine", neighborhood: "Tribeca", description: "A wine cellar turned dining room. Low vaults, long communal tables, and a sommelier who will happily run the pairing.", hourly: 48_000, capacityMin: 14, capacityMax: 48, leadTimeDays: 21, amenities: ["Wine list", "Private entrance", "In-house catering"], tags: ["intimate", "dinner", "wine"], rating: 4.9, reviewCount: 96 },
   { city: "NYC", name: "The Greenpoint Glasshouse", neighborhood: "Greenpoint", description: "A working greenhouse with a cleared central nave, string lights year-round and a skyline view through the east wall.", hourly: 78_000, capacityMin: 40, capacityMax: 140, leadTimeDays: 90, amenities: ["Climate control", "Garden", "Parking"], tags: ["garden", "romantic", "photogenic"], rating: 4.7, reviewCount: 174 },
@@ -57,7 +57,7 @@ const VENUES: VenueSeed[] = [
   { city: "NYC", name: "Carroll Gardens Supper Club", neighborhood: "Carroll Gardens", description: "A neighborhood restaurant that closes for private hire. Twelve tables, one open kitchen, no corkage.", hourly: 32_000, capacityMin: 10, capacityMax: 36, leadTimeDays: 14, amenities: ["In-house catering", "No corkage", "Sound system"], tags: ["intimate", "dinner", "affordable"], rating: 4.8, reviewCount: 118 },
 
   // --- Los Angeles ---------------------------------------------------------
-  { city: "LA", name: "Villa Arroyo", neighborhood: "Pasadena", description: "A 1920s Spanish colonial with terracotta courtyards, olive trees and a fountain that everyone photographs.", hourly: 96_000, capacityMin: 50, capacityMax: 200, leadTimeDays: 150, amenities: ["Courtyard", "Bridal suite", "Parking", "Gardens"], tags: ["romantic", "outdoor space", "photogenic"], rating: 4.9, reviewCount: 301 },
+  { city: "LA", name: "Villa Arroyo", neighborhood: "Pasadena", description: "A 1920s Spanish colonial with terracotta courtyards, olive trees and a fountain that everyone photographs.", hourly: 96_000, capacityMin: 50, capacityMax: 200, leadTimeDays: 150, amenities: ["Courtyard", "Green room", "Parking", "Gardens"], tags: ["romantic", "outdoor space", "photogenic"], rating: 4.9, reviewCount: 301 },
   { city: "LA", name: "The Arts District Warehouse", neighborhood: "Arts District", description: "Ten thousand square feet of polished concrete and roof trusses. Loading dock, three-phase power, and absolutely no décor.", hourly: 74_000, capacityMin: 80, capacityMax: 450, leadTimeDays: 75, amenities: ["Loading dock", "Three-phase power", "Parking"], tags: ["industrial", "blank canvas", "large"], rating: 4.4, reviewCount: 133 },
   { city: "LA", name: "Canyon House", neighborhood: "Laurel Canyon", description: "A mid-century home cut into the hillside, with a deck that runs the length of the canyon view and a kitchen caterers like.", hourly: 68_000, capacityMin: 20, capacityMax: 80, leadTimeDays: 45, amenities: ["Deck", "Catering kitchen", "Pool", "Views"], tags: ["intimate", "views", "outdoor space"], rating: 4.7, reviewCount: 87 },
   { city: "LA", name: "The Echo Park Boathouse", neighborhood: "Echo Park", description: "A lakeside pavilion with wraparound windows, string lights over the terrace and swans that turn up uninvited.", hourly: 52_000, capacityMin: 30, capacityMax: 120, leadTimeDays: 40, amenities: ["Terrace", "Waterfront", "Step-free access"], tags: ["waterfront", "romantic", "outdoor space"], rating: 4.5, reviewCount: 142 },
@@ -67,7 +67,7 @@ const VENUES: VenueSeed[] = [
   { city: "LA", name: "Silver Lake Studio 9", neighborhood: "Silver Lake", description: "A photographer's daylight studio with cycloramas and a small garden. Ideal for daytime events that need to look good.", hourly: 38_000, capacityMin: 10, capacityMax: 45, leadTimeDays: 14, amenities: ["Natural light", "Garden", "Parking"], tags: ["natural light", "intimate", "affordable"], rating: 4.6, reviewCount: 64 },
 
   // --- Austin --------------------------------------------------------------
-  { city: "ATX", name: "Pecan Grove Ranch", neighborhood: "Dripping Springs", description: "Forty acres, a restored barn and a pecan grove strung with lights. Ceremony under the trees, dinner in the barn.", hourly: 70_000, capacityMin: 60, capacityMax: 250, leadTimeDays: 150, amenities: ["Barn", "Gardens", "Parking", "Bridal suite"], tags: ["rustic", "outdoor space", "romantic"], rating: 4.8, reviewCount: 224 },
+  { city: "ATX", name: "Pecan Grove Ranch", neighborhood: "Dripping Springs", description: "Forty acres, a restored barn and a pecan grove strung with lights. Ceremony under the trees, dinner in the barn.", hourly: 70_000, capacityMin: 60, capacityMax: 250, leadTimeDays: 150, amenities: ["Barn", "Gardens", "Parking", "Green room"], tags: ["rustic", "outdoor space", "romantic"], rating: 4.8, reviewCount: 224 },
   { city: "ATX", name: "The Rainey Street Bungalow", neighborhood: "Rainey Street", description: "A converted craftsman bungalow with a deck, a yard and a bar in what used to be the front room.", hourly: 36_000, capacityMin: 20, capacityMax: 90, leadTimeDays: 21, amenities: ["Yard", "Bar", "Deck"], tags: ["relaxed", "drinks", "outdoor space"], rating: 4.5, reviewCount: 167 },
   { city: "ATX", name: "East Sixth Warehouse", neighborhood: "East Austin", description: "A clear-span warehouse with a mural wall, roller doors at both ends and enough power for a full production rig.", hourly: 58_000, capacityMin: 70, capacityMax: 320, leadTimeDays: 60, amenities: ["Loading dock", "Three-phase power", "Step-free access"], tags: ["industrial", "blank canvas", "large"], rating: 4.3, reviewCount: 91 },
   { city: "ATX", name: "Barton Springs Pavilion", neighborhood: "Zilker", description: "An open-sided pavilion by the water with ceiling fans, a covered terrace and a short walk from downtown.", hourly: 42_000, capacityMin: 40, capacityMax: 160, leadTimeDays: 45, amenities: ["Covered terrace", "Waterfront", "Parking"], tags: ["outdoor space", "waterfront", "relaxed"], rating: 4.6, reviewCount: 138 },
@@ -103,8 +103,6 @@ const VENDOR_SPECS: VendorSpec[] = [
   { category: "RENTALS", priceUnit: "FLAT", prices: [140_000, 165_000, 95_000], leadTimeDays: 14, tags: ["tables", "delivery"], description: "%s delivers tables, chairs, linen and glassware, sets them out, and comes back for them.", names: ["Hudson Event Hire", "Pacific Party Rentals", "Hill Country Hire"] },
   { category: "BAR_SERVICE", priceUnit: "PERSON", prices: [4_500, 5_500, 3_200], leadTimeDays: 21, tags: ["licensed", "cocktails"], description: "%s runs a licensed bar with two cocktails on batch and bartenders who keep the queue moving.", names: ["The Standing Room", "Ministry of Mixing", "Rainey Street Bar Co"] },
   { category: "CAKE_DESSERT", priceUnit: "FLAT", prices: [65_000, 78_000, 44_000], leadTimeDays: 21, tags: ["custom"], description: "%s bakes to order, delivers assembled, and does a dairy-free tier without making it a whole thing.", names: ["Linden Bakehouse", "Almond & Oak", "Sugarbird Bakery"] },
-  { category: "HAIR_MAKEUP", priceUnit: "PERSON", prices: [28_000, 34_000, 20_000], leadTimeDays: 30, tags: ["on site", "trial included"], description: "%s comes to you, works from a trial, and keeps to a schedule on the morning.", names: ["Atelier Ness", "Goldleaf Beauty", "Belle & Bloom"] },
-  { category: "OFFICIANT", priceUnit: "FLAT", prices: [95_000, 110_000, 70_000], leadTimeDays: 30, tags: ["custom ceremony"], description: "%s writes the ceremony with you rather than at you, and handles the paperwork.", names: ["Ceremonies by Ada", "Pacific Vows", "Texas Knot Ceremonies"] },
   { category: "TRANSPORT", priceUnit: "FLAT", prices: [125_000, 145_000, 88_000], leadTimeDays: 14, tags: ["shuttle"], description: "%s shuttles guests on a loop so nobody has to think about parking or driving home.", names: ["Metro Coach Co", "Westbound Shuttles", "Lone Star Coaches"] },
   { category: "STAFFING", priceUnit: "PERSON", prices: [3_800, 4_400, 2_900], leadTimeDays: 14, tags: ["servers", "coordinator"], description: "%s supplies servers and a floor lead who has run this kind of room before.", names: ["Front of House NYC", "Golden State Staffing", "Austin Event Crew"] },
   { category: "DECOR_STYLING", priceUnit: "FLAT", prices: [195_000, 240_000, 130_000], leadTimeDays: 30, tags: ["styling", "install"], description: "%s styles the room end to end — linen, lighting, table settings — and strikes it afterwards.", names: ["Studio Lorne", "Marlowe Styling", "Field & Fold"] },
@@ -241,13 +239,13 @@ async function seedDemoNights() {
       daysFromNow: 32,
     },
     {
-      title: "Garden Baby Shower",
-      type: "BABY_SHOWER" as const,
+      title: "Founders & Friends Mixer",
+      type: "CORPORATE_OFFSITE" as const,
       city: "Los Angeles, CA",
-      guestCount: 28,
+      guestCount: 80,
       durationHours: 3,
-      budget: 2_400_00,
-      vibe: "Late morning in the garden, easy and bright.",
+      budget: 6_000_00,
+      vibe: "Short demos, long conversations, and enough food to skip dinner.",
       daysFromNow: 24,
     },
   ];

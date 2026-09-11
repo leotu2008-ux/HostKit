@@ -75,16 +75,6 @@ const QUESTIONS: Partial<Record<ListingCategory, string[]>> = {
     "What sizes work for this many guests?",
     "Can you handle dietary requirements?",
   ],
-  HAIR_MAKEUP: [
-    "Are you free on the morning of the date?",
-    "Is a trial included?",
-    "How many people can you do, and how long do you need?",
-  ],
-  OFFICIANT: [
-    "Are you free on the date?",
-    "How much of the ceremony can we write ourselves?",
-    "What paperwork do we need to sort, and by when?",
-  ],
   RENTALS: [
     "Do you have availability for the date?",
     "Is delivery, setup and collection included?",

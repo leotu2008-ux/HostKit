@@ -47,28 +47,24 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var place: String { address ?? city }
 }
 
+/// HostKit is for student, professional and fun events — no weddings or
+/// family occasions. Mirrors `EventType` in prisma/schema.prisma.
 nonisolated enum EventKind: String, Codable, CaseIterable, Identifiable, Sendable {
-    case wedding = "WEDDING"
     case birthday = "BIRTHDAY"
     case corporateOffsite = "CORPORATE_OFFSITE"
     case launchParty = "LAUNCH_PARTY"
-    case babyShower = "BABY_SHOWER"
     case dinnerParty = "DINNER_PARTY"
     case fundraiser = "FUNDRAISER"
-    case engagement = "ENGAGEMENT"
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .wedding: "Wedding"
         case .birthday: "Birthday party"
         case .corporateOffsite: "Corporate offsite"
         case .launchParty: "Launch party"
-        case .babyShower: "Baby shower"
         case .dinnerParty: "Dinner party"
         case .fundraiser: "Fundraiser"
-        case .engagement: "Engagement party"
         }
     }
 }

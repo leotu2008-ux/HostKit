@@ -11,7 +11,7 @@ struct DiscoverView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text("Nights worth leaving the house for. Register in a tap.")
+                    Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 

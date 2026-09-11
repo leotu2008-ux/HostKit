@@ -34,7 +34,7 @@ createdb hostkit
 
 cp .env.example .env        # then set DATABASE_URL and AUTH_SECRET
 npm run db:migrate          # apply migrations
-npm run db:seed             # 78 venues and vendors across 3 cities
+npm run db:seed             # 72 venues and vendors across 3 cities
 
 npm run dev                 # http://localhost:3000
 ```
@@ -147,8 +147,8 @@ A few decisions worth knowing about:
   duplicate the whole search stack.
 - **Event templates live in code, not the database.** They're typed planning
   logic that evolves with the app, and a change should be reviewable in a diff.
-- **Timeline positions are fractions of a planning horizon**, so a wedding
-  booked six weeks out compresses the 365-day template into the 42 days that
+- **Timeline positions are fractions of a planning horizon**, so a fundraiser
+  booked six weeks out compresses the 120-day template into the 42 days that
   actually exist rather than emitting overdue tasks.
 - **The planning headcount starts from your estimate** and only moves for a
   real signal — a regret, or a guest list that outgrows the estimate. Using the
@@ -163,7 +163,7 @@ A few decisions worth knowing about:
 
 This is a working demo, not a production service. Specifically:
 
-- **The catalog is invented.** All 78 venues and vendors are fiction — plausible
+- **The catalog is invented.** All 72 venues and vendors are fiction — plausible
   names, prices and ratings chosen to exercise the scoring logic. None are real
   businesses. Listing artwork is generated locally from the listing id rather
   than photographed.

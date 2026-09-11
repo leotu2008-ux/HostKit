@@ -15,8 +15,6 @@ export const CATEGORY_LABEL: Record<ListingCategory, string> = {
   RENTALS: "Rentals",
   BAR_SERVICE: "Bar service",
   CAKE_DESSERT: "Cake & dessert",
-  HAIR_MAKEUP: "Hair & makeup",
-  OFFICIANT: "Officiant",
   TRANSPORT: "Transport",
   STAFFING: "Staffing",
   DECOR_STYLING: "Decor & styling",
@@ -35,8 +33,6 @@ export const CATEGORY_LABEL_INLINE: Record<ListingCategory, string> = {
   RENTALS: "rentals",
   BAR_SERVICE: "bar service",
   CAKE_DESSERT: "cake",
-  HAIR_MAKEUP: "hair & makeup",
-  OFFICIANT: "officiant",
   TRANSPORT: "transport",
   STAFFING: "event staff",
   DECOR_STYLING: "stylist",
@@ -44,14 +40,11 @@ export const CATEGORY_LABEL_INLINE: Record<ListingCategory, string> = {
 };
 
 export const EVENT_TYPE_LABEL: Record<EventType, string> = {
-  WEDDING: "Wedding",
   BIRTHDAY: "Birthday party",
   CORPORATE_OFFSITE: "Corporate offsite",
   LAUNCH_PARTY: "Launch party",
-  BABY_SHOWER: "Baby shower",
   DINNER_PARTY: "Dinner party",
   FUNDRAISER: "Fundraiser",
-  ENGAGEMENT: "Engagement party",
 };
 
 export const ALL_CATEGORIES = Object.keys(CATEGORY_LABEL) as ListingCategory[];

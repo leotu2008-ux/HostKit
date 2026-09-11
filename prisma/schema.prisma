@@ -52,15 +52,14 @@ enum CollaboratorStatus {
 // The event being planned. Everything else hangs off this.
 // ---------------------------------------------------------------------------
 
+/// HostKit is for student, professional and fun events — no weddings or
+/// family occasions.
 enum EventType {
-  WEDDING
   BIRTHDAY
   CORPORATE_OFFSITE
   LAUNCH_PARTY
-  BABY_SHOWER
   DINNER_PARTY
   FUNDRAISER
-  ENGAGEMENT
 }
 
 enum EventStatus {
@@ -159,8 +158,6 @@ enum ListingCategory {
   RENTALS
   BAR_SERVICE
   CAKE_DESSERT
-  HAIR_MAKEUP
-  OFFICIANT
   TRANSPORT
   STAFFING
   DECOR_STYLING

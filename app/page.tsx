@@ -64,8 +64,8 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
           {user ? "What’s on next" : "Discover events"}
         </h1>
         <p className="mt-2 max-w-xl text-[16px] leading-relaxed text-ink-soft">
-          Nights worth leaving the house for — register in a tap. Hosting?
-          HostKit plans the rest.
+          Student socials, professional mixers, and nights just for fun —
+          register in a tap. Hosting? HostKit plans the rest.
         </p>
         {!user ? (
           <div className="mt-6 flex flex-wrap gap-2">
