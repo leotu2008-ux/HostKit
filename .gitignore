@@ -43,9 +43,12 @@ next-env.d.ts
 
 /generated
 
-# local screenshot helper
-/tools
+/luma-shots
+
 
 # playwright
 /test-results
 /playwright-report
+
+# local screenshot helper
+/tools
