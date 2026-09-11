@@ -1,10 +1,12 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import type {
   ListingCategory,
   PriceUnit,
 } from "../generated/prisma/enums";
+import { generatePlan } from "../lib/plan";
 
 /**
  * Seeds the venue and vendor catalog.
@@ -120,10 +122,14 @@ function jitter(base: number, seed: number, spread = 0.09) {
 async function main() {
   const existing = await db.listing.count();
   if (existing > 0) {
-    console.log(`Catalog already has ${existing} listings; skipping seed.`);
-    return;
+    console.log(`Catalog already has ${existing} listings; skipping catalog seed.`);
+  } else {
+    await seedCatalog();
   }
+  await seedDemoNights();
+}
 
+async function seedCatalog() {
   console.log("Seeding catalog…");
 
   const rows: Array<Parameters<typeof db.listing.create>[0]["data"]> = [];
@@ -188,6 +194,113 @@ async function main() {
   console.log(`Seeded ${rows.length} listings.`);
   for (const row of byCity) console.log(`  ${row.city}: ${row._count}`);
   for (const row of byKind) console.log(`  ${row.kind}: ${row._count}`);
+}
+
+const DEMO_EMAIL = "maya@hostkit.demo";
+
+async function seedDemoNights() {
+  const existing = await db.user.findUnique({ where: { email: DEMO_EMAIL } });
+  if (existing) {
+    const nights = await db.event.count({ where: { ownerId: existing.id } });
+    if (nights > 0) {
+      console.log("Demo nights already seeded; skipping.");
+      return;
+    }
+  }
+
+  const passwordHash = await bcrypt.hash("hostkit-demo", 10);
+  const host =
+    existing ??
+    (await db.user.create({
+      data: {
+        email: DEMO_EMAIL,
+        name: "Maya Chen",
+        passwordHash,
+      },
+    }));
+
+  const samples = [
+    {
+      title: "Rooftop Jazz Night",
+      type: "LAUNCH_PARTY" as const,
+      city: "New York, NY",
+      guestCount: 90,
+      durationHours: 4,
+      budget: 12_000_00,
+      vibe: "Warm lights, a quartet, and the city as the backdrop.",
+      daysFromNow: 18,
+    },
+    {
+      title: "Harvest Supper",
+      type: "DINNER_PARTY" as const,
+      city: "Austin, TX",
+      guestCount: 36,
+      durationHours: 4,
+      budget: 4_800_00,
+      vibe: "Long tables, seasonal plates, no speeches.",
+      daysFromNow: 32,
+    },
+    {
+      title: "Garden Baby Shower",
+      type: "BABY_SHOWER" as const,
+      city: "Los Angeles, CA",
+      guestCount: 28,
+      durationHours: 3,
+      budget: 2_400_00,
+      vibe: "Late morning in the garden, easy and bright.",
+      daysFromNow: 24,
+    },
+  ];
+
+  for (const sample of samples) {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + sample.daysFromNow);
+    const plan = generatePlan({
+      type: sample.type,
+      date,
+      budgetTotalCents: sample.budget,
+    });
+
+    const created = await db.event.create({
+      data: {
+        ownerId: host.id,
+        title: sample.title,
+        type: sample.type,
+        date,
+        durationHours: sample.durationHours,
+        guestCount: sample.guestCount,
+        city: sample.city,
+        budgetTotalCents: sample.budget,
+        vibe: sample.vibe,
+        description: sample.vibe,
+        published: true,
+        visibility: "PUBLIC",
+        ticketType: "FREE",
+      },
+    });
+
+    await db.budgetCategory.createMany({
+      data: plan.categories.map((c) => ({
+        eventId: created.id,
+        category: c.category,
+        name: c.name,
+        allocatedCents: c.allocatedCents,
+      })),
+    });
+    await db.task.createMany({
+      data: plan.tasks.map((t) => ({
+        eventId: created.id,
+        title: t.title,
+        notes: t.notes ?? null,
+        offsetDays: t.offsetDays,
+        category: t.category ?? null,
+        dueDate: t.dueDate,
+      })),
+    });
+  }
+
+  console.log(`Seeded ${samples.length} public demo nights for ${DEMO_EMAIL}.`);
 }
 
 main()

@@ -2,6 +2,10 @@ import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { toggleTaskAction } from "@/lib/actions/tasks";
 import { daysBetween, startOfDay } from "@/lib/plan";
+import { summarizeBudget } from "@/lib/budget";
+import { computeCoverage, outstandingRequired } from "@/lib/coverage";
+import { templateFor } from "@/lib/templates";
+import { formatCents } from "@/lib/money";
 import { CATEGORY_LABEL } from "@/lib/catalog";
 import { Badge, Card, SectionHeading, cx } from "@/components/ui";
 
@@ -32,10 +36,27 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
   const { event } = await requireEvent(id);
   const now = startOfDay(new Date());
 
-  const tasks = await db.task.findMany({
-    where: { eventId: event.id },
-    orderBy: [{ status: "asc" }, { offsetDays: "desc" }],
-  });
+  const [tasks, categories, inquiries] = await Promise.all([
+    db.task.findMany({
+      where: { eventId: event.id },
+      orderBy: [{ status: "asc" }, { offsetDays: "desc" }],
+    }),
+    db.budgetCategory.findMany({
+      where: { eventId: event.id },
+      include: { items: true },
+    }),
+    db.inquiry.findMany({
+      where: { eventId: event.id },
+      include: { listing: { select: { name: true, category: true } } },
+    }),
+  ]);
+  const budget = summarizeBudget(categories);
+  const coverage = computeCoverage(
+    templateFor(event.type).required,
+    categories.map((c) => c.category),
+    inquiries,
+  );
+  const outstanding = outstandingRequired(coverage);
 
   const open = tasks.filter((t) => t.status === "TODO");
   const done = tasks.filter((t) => t.status === "DONE");
@@ -49,6 +70,28 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
 
   return (
     <div className="space-y-10">
+      <section className="grid gap-3 sm:grid-cols-2">
+        <Card className="p-4">
+          <p className="text-sm text-ink-soft">Budget committed</p>
+          <p className="font-display tabular mt-1 text-2xl text-ink">
+            {formatCents(budget.committedCents)}
+          </p>
+          <p className="mt-1 text-sm text-ink-mute">
+            of {formatCents(budget.allocatedCents)}
+          </p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-ink-soft">Still needed</p>
+          <p className="font-display mt-1 text-2xl text-ink">
+            {outstanding.length === 0
+              ? "Covered"
+              : `${outstanding.length} essential ${
+                  outstanding.length === 1 ? "booking" : "bookings"
+                } outstanding`}
+          </p>
+        </Card>
+      </section>
+
       <section>
         <SectionHeading
           title="Timeline"

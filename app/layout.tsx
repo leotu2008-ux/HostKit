@@ -1,5 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
+import Script from "next/script";
 import { Fraunces, Inter } from "next/font/google";
+import { AppFrame } from "@/components/app-frame";
+import { parsePreference, THEME_BOOTSTRAP, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -15,20 +19,48 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "HostKit — plan your event end to end",
+    default: "HostKit",
     template: "%s · HostKit",
   },
   description:
-    "Scout venues and vendors, build the budget and the timeline, and track every booking in one place.",
+    "Find a night, register in a tap, or plan your own — timeline, budget, and guest list in one place.",
+  appleWebApp: {
+    capable: true,
+    title: "HostKit",
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf8f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#161310" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const pref = parsePreference(
+    (await cookies()).get(THEME_COOKIE)?.value,
+  );
+
   return (
     <html
       lang="en"
       className={`${fraunces.variable} ${inter.variable} h-full`}
+      data-theme={pref === "system" ? undefined : pref}
+      data-theme-pref={pref}
+      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="min-h-full bg-sunk">
+        <Script id="hostkit-theme" strategy="beforeInteractive">
+          {THEME_BOOTSTRAP}
+        </Script>
+        <AppFrame>{children}</AppFrame>
+      </body>
     </html>
   );
 }

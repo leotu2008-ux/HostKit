@@ -24,6 +24,30 @@ model User {
   events Event[]
 }
 
+/// Who can see a live night. Drafts are unpublished regardless of this.
+enum EventVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum TicketType {
+  FREE
+  PAID
+}
+
+enum CollaboratorKind {
+  VENUE
+  SPEAKER
+  COHOST
+}
+
+enum CollaboratorStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
 // ---------------------------------------------------------------------------
 // The event being planned. Everything else hangs off this.
 // ---------------------------------------------------------------------------
@@ -48,11 +72,12 @@ enum EventStatus {
 
 model Event {
   id               String      @id @default(cuid())
-  ownerId          String
+  /// Null until the host signs in. Drafts are claimed via `claimToken`.
+  ownerId          String?
   title            String
   type             EventType
   status           EventStatus @default(PLANNING)
-  /// Date of the event itself. Null while the host is still deciding.
+  /// Start of the night, including time of day. Null while still deciding.
   date             DateTime?
   /// Set when the host is flexible: `date` is the earliest acceptable day and
   /// `endDate` the latest. Lead-time scoring uses the earliest.
@@ -62,12 +87,24 @@ model Event {
   durationHours    Int         @default(6)
   guestCount       Int
   city             String
+  /// Place name and street address for device maps. `city` stays the scout area.
+  address          String?
+  lat              Float?
+  lng              Float?
   budgetTotalCents Int
   vibe             String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  description      String?
+  ticketType       TicketType      @default(FREE)
+  ticketPriceCents Int             @default(0)
+  visibility       EventVisibility @default(UNLISTED)
+  /// When true the night is live. Discover only lists PUBLIC + published.
+  published        Boolean         @default(false)
+  /// Lets a signed-out host keep editing a draft until they sign in to publish.
+  claimToken       String?         @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  owner            User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner            User?                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   savedListings    SavedListing[]
   inquiries        Inquiry[]
   budgetCategories BudgetCategory[]
@@ -75,8 +112,26 @@ model Event {
   tasks            Task[]
   guests           Guest[]
   runSheetItems    RunSheetItem[]
+  collaborators    EventCollaborator[]
 
   @@index([ownerId])
+  @@index([published, visibility, date])
+}
+
+/// People and places the host is lining up, separate from catalog scouting.
+model EventCollaborator {
+  id        String              @id @default(cuid())
+  eventId   String
+  kind      CollaboratorKind
+  name      String
+  email     String?
+  detail    String?
+  status    CollaboratorStatus  @default(PENDING)
+  createdAt DateTime            @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, kind])
 }
 
 // ---------------------------------------------------------------------------
@@ -298,6 +353,8 @@ model Guest {
   note       String?
   rsvpToken  String     @unique @default(cuid())
   respondedAt DateTime?
+  /// Set when door staff tap Check in. Null means not yet through the door.
+  checkedInAt DateTime?
   createdAt  DateTime   @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)

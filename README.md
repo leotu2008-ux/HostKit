@@ -41,8 +41,9 @@ npm run dev                 # http://localhost:3000
 
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
-Sign up with any email and password — there's no email service, so no
-confirmation step.
+You can draft a night before you have an account. Publishing — listing it on
+Discover or sharing a live guest link — needs a sign-in. Sign up with any
+email and password; there's no email service, so no confirmation step.
 
 ### Scripts
 
@@ -138,20 +139,21 @@ This is a working demo, not a production service. Specifically:
   than photographed.
 - **Nothing is sent.** HostKit drafts inquiry messages and per-guest RSVP links,
   but you copy and send them yourself. There is no email integration.
-- **No payments.** There's no seller to pay, so the budget *tracks* money
-  (committed, paid, outstanding) rather than moving it.
+- **No payments.** Ticket price is shown to guests; you collect it yourself.
+  The planner budget *tracks* money (committed, paid, outstanding) rather
+  than moving it.
 - **Discovery scores in application code**, not SQL. At catalog scale (tens per
   city) that's the right trade, since the price that matters is computed
   per-event; tens of thousands of listings would want it precomputed.
-- **Single light theme**, deliberately — the palette is built around a warm
-  paper ground with no honest dark equivalent.
+- **Light and dark.** Paper by default; Dark uses a warm night palette. System
+  follows the device. The choice is saved in this browser.
 - `npm audit` reports advisories inside the Prisma **CLI's** dependency tree
   (`mysql2`, a driver this project never uses, and `deepmerge-ts`). They are
   build-time only and reach neither the server runtime nor the browser bundle.
 
 ## Tests
 
-131 unit tests cover the pure logic, including the boundaries that bite:
+143 unit tests cover the pure logic, including the boundaries that bite:
 per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
 event whose date has passed, an unallocated category, an RSVP round that has
 barely started.

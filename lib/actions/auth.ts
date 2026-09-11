@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { safeNextPath } from "@/lib/listing";
 
 export type AuthFormState = { error?: string } | undefined;
 
@@ -37,8 +38,7 @@ export async function signUpAction(
     data: { name, email, passwordHash: await bcrypt.hash(password, 10) },
   });
 
-  // signIn redirects on success by throwing NEXT_REDIRECT, which must escape.
-  return attemptSignIn(email, password);
+  return attemptSignIn(email, password, formData);
 }
 
 export async function signInAction(
@@ -50,15 +50,28 @@ export async function signInAction(
   if (!email || !password) {
     return { error: "Enter your email and password." };
   }
-  return attemptSignIn(email, password);
+  return attemptSignIn(email, password, formData);
+}
+
+function claimRedirect(formData?: FormData) {
+  const next = safeNextPath(formData?.get("next"), "/events");
+  const publish = String(formData?.get("publish") ?? "") === "1";
+  const params = new URLSearchParams({ next });
+  if (publish) params.set("publish", "1");
+  return `/events/claim?${params.toString()}`;
 }
 
 async function attemptSignIn(
   email: string,
   password: string,
+  formData?: FormData,
 ): Promise<AuthFormState> {
   try {
-    await signIn("credentials", { email, password, redirectTo: "/events" });
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: claimRedirect(formData),
+    });
     return undefined;
   } catch (error) {
     // Auth.js signals a successful sign-in by throwing a redirect. Only a real

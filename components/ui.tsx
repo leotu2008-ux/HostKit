@@ -24,9 +24,9 @@ const BUTTON_VARIANT: Record<Variant, string> = {
 };
 
 const BUTTON_SIZE = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-12 px-6 text-base",
+  sm: "min-h-11 px-3.5 text-sm",
+  md: "min-h-12 px-4 text-sm",
+  lg: "min-h-12 px-6 text-base",
 } as const;
 
 type ButtonSize = keyof typeof BUTTON_SIZE;
@@ -176,7 +176,7 @@ export function Field({
 }
 
 export const inputClass =
-  "w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-ink placeholder:text-ink-mute focus:border-clay focus:outline-none focus-visible:outline-none";
+  "w-full min-h-12 rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-base text-ink placeholder:text-ink-mute focus:border-clay focus:outline-none focus-visible:outline-none";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cx(inputClass, className)} {...props} />;

@@ -32,7 +32,7 @@ export async function startInquiryAction(formData: FormData) {
   const listing = await db.listing.findUnique({ where: { id: listingId } });
   if (!listing) return;
 
-  const { body } = composeInquiry(event, listing, user.name);
+  const { body } = composeInquiry(event, listing, user?.name ?? "the host");
 
   await db.inquiry.upsert({
     where: { eventId_listingId: { eventId, listingId } },

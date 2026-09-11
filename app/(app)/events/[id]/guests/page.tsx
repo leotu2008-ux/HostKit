@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
 import { updateGuestAction, removeGuestAction } from "@/lib/actions/guests";
+import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
 import { AddGuestsForm } from "@/components/add-guests-form";
 import { RsvpLink } from "@/components/rsvp-link";
 import { ProgressBar } from "@/components/progress-bar";
@@ -147,6 +148,30 @@ export default async function GuestsPage({
                 </form>
 
                 <RsvpLink token={guest.rsvpToken} />
+
+                {guest.checkedInAt ? (
+                  <form action={undoCheckInAction}>
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <input type="hidden" name="guestId" value={guest.id} />
+                    <button
+                      type="submit"
+                      className="min-h-11 text-sm font-medium text-amber"
+                    >
+                      Undo check-in
+                    </button>
+                  </form>
+                ) : (
+                  <form action={checkInGuestAction}>
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <input type="hidden" name="guestId" value={guest.id} />
+                    <button
+                      type="submit"
+                      className="min-h-11 text-sm font-medium text-forest"
+                    >
+                      Check in
+                    </button>
+                  </form>
+                )}
 
                 <form action={removeGuestAction}>
                   <input type="hidden" name="eventId" value={event.id} />

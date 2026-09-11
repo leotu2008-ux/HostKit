@@ -1,12 +1,15 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { summarizeBudget } from "@/lib/budget";
-import { computeCoverage, outstandingRequired } from "@/lib/coverage";
-import { daysUntil, describeCountdown } from "@/lib/plan";
-import { templateFor } from "@/lib/templates";
+import { summarizeGuests } from "@/lib/guests";
+import { VISIBILITY_LABEL } from "@/lib/listing";
 import { formatCents } from "@/lib/money";
-import { ProgressBar } from "@/components/progress-bar";
+import { formatEventDate, formatEventTime } from "@/lib/when";
+import { MapsLink } from "@/components/maps-link";
+import { AddCollaboratorForm } from "@/components/add-collaborator-form";
+import {
+  setCollaboratorStatusAction,
+  removeCollaboratorAction,
+} from "@/lib/actions/collaborators";
 import {
   Badge,
   ButtonLink,
@@ -14,224 +17,236 @@ import {
   EmptyState,
   SectionHeading,
 } from "@/components/ui";
+import type { CollaboratorKind, CollaboratorStatus } from "@/generated/prisma/enums";
 
-function formatDue(date: Date | null) {
-  if (!date) return "No date";
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+const KIND_COPY: Record<
+  CollaboratorKind,
+  { title: string; empty: string; add: string; name: string; detail: string }
+> = {
+  VENUE: {
+    title: "Pending venues",
+    empty: "Hold rooms you’re waiting on — not the catalog scout.",
+    add: "Add a venue hold",
+    name: "Venue",
+    detail: "Address or note",
+  },
+  SPEAKER: {
+    title: "Speakers",
+    empty: "No speakers yet.",
+    add: "Add a speaker",
+    name: "Speaker",
+    detail: "Talk title or role",
+  },
+  COHOST: {
+    title: "Cohosts",
+    empty: "No cohosts yet.",
+    add: "Add a cohost",
+    name: "Cohost",
+    detail: "How they’re helping",
+  },
+};
 
-export default async function EventOverviewPage({
+const STATUS_LABEL: Record<CollaboratorStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  DECLINED: "Declined",
+};
+
+export default async function EventDashboardPage({
   params,
 }: PageProps<"/events/[id]">) {
   const { id } = await params;
-  const { event } = await requireEvent(id);
+  const { event, user } = await requireEvent(id);
 
-  const [categories, tasks, taskCounts, inquiries] = await Promise.all([
-    db.budgetCategory.findMany({
+  const [collaborators, guests] = await Promise.all([
+    db.eventCollaborator.findMany({
       where: { eventId: event.id },
-      include: { items: true },
-      orderBy: { allocatedCents: "desc" },
+      orderBy: [{ kind: "asc" }, { createdAt: "asc" }],
     }),
-    db.task.findMany({
-      where: { eventId: event.id, status: "TODO" },
-      orderBy: [{ dueDate: "asc" }, { offsetDays: "desc" }],
-      take: 4,
-    }),
-    db.task.groupBy({
-      by: ["status"],
+    db.guest.findMany({
       where: { eventId: event.id },
-      _count: true,
-    }),
-    db.inquiry.findMany({
-      where: { eventId: event.id },
-      include: { listing: { select: { name: true, category: true } } },
+      orderBy: [{ rsvpStatus: "asc" }, { name: "asc" }],
     }),
   ]);
 
-  const budget = summarizeBudget(categories);
-  const template = templateFor(event.type);
-  const coverage = computeCoverage(
-    template.required,
-    categories.map((c) => c.category),
-    inquiries,
-  );
-  const outstanding = outstandingRequired(coverage);
-
-  const done = taskCounts.find((c) => c.status === "DONE")?._count ?? 0;
-  const total = taskCounts.reduce((sum, c) => sum + c._count, 0);
-  const days = daysUntil(event.date);
+  const summary = summarizeGuests(guests);
+  const pendingGuests = guests.filter((g) => g.rsvpStatus === "INVITED");
+  const kinds: CollaboratorKind[] = ["VENUE", "SPEAKER", "COHOST"];
 
   return (
     <div className="space-y-8">
-      {/* Three numbers that say where the event stands. */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-sm text-ink-soft">Countdown</p>
-          <p className="font-display mt-1 text-2xl text-ink">
-            {describeCountdown(days)}
+      <section>
+        <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
+          Dashboard
+        </p>
+        <h2 className="font-display mt-1 text-[22px] text-ink">This night</h2>
+        <Card className="mt-3 space-y-3 p-4">
+          <p className="font-medium text-ink">
+            {formatEventDate(event.date, true) ?? "Date to be announced"}
+            {formatEventTime(event.date) ? (
+              <span className="text-ink-soft">
+                {" "}
+                · {formatEventTime(event.date)}
+              </span>
+            ) : null}
           </p>
-          <p className="mt-1 text-sm text-ink-mute">
-            {event.date
-              ? event.date.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : "Add a date to anchor the timeline"}
+          <p className="text-sm text-ink-soft">
+            {event.address ? (
+              <MapsLink
+                target={{
+                  address: event.address,
+                  lat: event.lat,
+                  lng: event.lng,
+                  label: event.title,
+                }}
+                className="font-medium text-clay"
+              />
+            ) : (
+              event.city
+            )}
           </p>
+          <p className="text-sm text-ink-mute">
+            {event.ticketType === "PAID"
+              ? `${formatCents(event.ticketPriceCents)} a ticket`
+              : "Free"}
+            {" · "}
+            {event.guestCount} capacity
+            {" · "}
+            {VISIBILITY_LABEL[event.visibility]}
+          </p>
+          {event.description ? (
+            <p className="text-[15px] leading-relaxed text-ink-soft">
+              {event.description}
+            </p>
+          ) : null}
         </Card>
+      </section>
 
-        <Card className="p-5">
-          <p className="text-sm text-ink-soft">Budget committed</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
-            {formatCents(budget.committedCents)}
-          </p>
-          <ProgressBar
-            className="mt-3"
-            percent={budget.percentCommitted}
-            tone={budget.overBudget ? "danger" : "clay"}
-          />
-          <p className="mt-2 text-sm text-ink-mute">
-            of {formatCents(budget.allocatedCents)}
-            {budget.overBudget
-              ? ` · ${formatCents(-budget.remainingCents)} over`
-              : ` · ${formatCents(budget.remainingCents)} left`}
-          </p>
-        </Card>
+      {kinds.map((kind) => {
+        const rows = collaborators.filter((row) => row.kind === kind);
+        const copy = KIND_COPY[kind];
+        return (
+          <section key={kind}>
+            <SectionHeading
+              title={copy.title}
+              hint={`${rows.filter((r) => r.status === "PENDING").length} pending`}
+            />
+            {rows.length === 0 ? (
+              <EmptyState title={`No ${copy.title.toLowerCase()}`} body={copy.empty} />
+            ) : (
+              <Card className="mb-3 divide-y divide-line">
+                {rows.map((row) => (
+                  <div key={row.id} className="flex flex-wrap items-start gap-3 p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-ink">{row.name}</p>
+                      <p className="text-sm text-ink-soft">
+                        {row.email ?? row.detail ?? "—"}
+                        {row.email && row.detail ? ` · ${row.detail}` : ""}
+                      </p>
+                    </div>
+                    <Badge
+                      tone={
+                        row.status === "CONFIRMED"
+                          ? "forest"
+                          : row.status === "DECLINED"
+                            ? "danger"
+                            : "amber"
+                      }
+                    >
+                      {STATUS_LABEL[row.status]}
+                    </Badge>
+                    <form action={setCollaboratorStatusAction} className="flex gap-2">
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input type="hidden" name="collaboratorId" value={row.id} />
+                      {row.status !== "CONFIRMED" ? (
+                        <button
+                          name="status"
+                          value="CONFIRMED"
+                          className="text-sm font-medium text-forest"
+                        >
+                          Confirm
+                        </button>
+                      ) : (
+                        <button
+                          name="status"
+                          value="PENDING"
+                          className="text-sm font-medium text-ink-mute"
+                        >
+                          Undo
+                        </button>
+                      )}
+                    </form>
+                    <form action={removeCollaboratorAction}>
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input type="hidden" name="collaboratorId" value={row.id} />
+                      <button className="text-sm text-ink-mute" type="submit">
+                        Remove
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </Card>
+            )}
+            <Card className="p-4">
+              <AddCollaboratorForm
+                eventId={event.id}
+                kind={kind}
+                nameLabel={copy.name}
+                detailLabel={copy.detail}
+                submitLabel={copy.add}
+              />
+            </Card>
+          </section>
+        );
+      })}
 
-        <Card className="p-5">
-          <p className="text-sm text-ink-soft">Tasks done</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
-            {done}
-            <span className="text-ink-mute"> / {total}</span>
-          </p>
-          <ProgressBar
-            className="mt-3"
-            percent={total ? (done / total) * 100 : 0}
-            tone="forest"
-          />
-          <p className="mt-2 text-sm text-ink-mute">
-            {total - done} still to do
-          </p>
-        </Card>
-      </div>
-
-      {/* What the event still needs — the reason this is a planner. */}
       <section>
         <SectionHeading
-          title="What this event still needs"
-          hint={
-            outstanding.length === 0
-              ? "Everything essential is booked."
-              : `${outstanding.length} essential ${
-                  outstanding.length === 1 ? "booking" : "bookings"
-                } outstanding.`
-          }
+          title="Attendees"
+          hint={`${summary.confirmedHeads} going · ${summary.awaiting} pending`}
           action={
-            <ButtonLink href={`/events/${event.id}/discover`} size="sm">
-              Scout listings
+            <ButtonLink href={`/events/${event.id}/guests`} size="sm" variant="secondary">
+              Full list
             </ButtonLink>
           }
         />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {coverage.map((row) => (
-            <Card key={row.category} className="flex items-start justify-between gap-3 p-4">
-              <div className="min-w-0">
-                <p className="font-medium text-ink">{row.label}</p>
-                <p className="mt-0.5 truncate text-sm text-ink-soft">
-                  {row.bookedName
-                    ? row.bookedName
-                    : row.inFlight
-                      ? "Inquiry out, no answer yet"
-                      : "Nothing booked"}
-                </p>
-              </div>
-              {row.bookedName ? (
-                <Badge tone="forest">Booked</Badge>
-              ) : row.inFlight ? (
-                <Badge tone="amber">Waiting</Badge>
-              ) : row.required ? (
-                <Badge tone="clay">Needed</Badge>
-              ) : (
-                <Badge>Optional</Badge>
-              )}
-            </Card>
-          ))}
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="p-3 text-center">
+            <p className="font-display tabular text-xl text-ink">{summary.confirmedHeads}</p>
+            <p className="text-[12px] text-ink-mute">Going</p>
+          </Card>
+          <Card className="p-3 text-center">
+            <p className="font-display tabular text-xl text-ink">{summary.awaiting}</p>
+            <p className="text-[12px] text-ink-mute">Pending</p>
+          </Card>
+          <Card className="p-3 text-center">
+            <p className="font-display tabular text-xl text-ink">{event.guestCount}</p>
+            <p className="text-[12px] text-ink-mute">Capacity</p>
+          </Card>
         </div>
-      </section>
-
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section>
-          <SectionHeading
-            title="Next up"
-            action={
-              <Link
-                href={`/events/${event.id}/plan`}
-                className="text-sm font-medium text-clay hover:underline"
-              >
-                Full timeline
-              </Link>
-            }
-          />
-          {tasks.length === 0 ? (
-            <EmptyState
-              title="Nothing outstanding"
-              body="Every task on the timeline is done."
-            />
-          ) : (
-            <Card className="divide-y divide-line">
-              {tasks.map((task) => (
-                <div key={task.id} className="flex items-start gap-3 p-4">
-                  <span className="tabular mt-0.5 w-14 shrink-0 text-sm text-ink-mute">
-                    {formatDue(task.dueDate)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-ink">{task.title}</p>
-                    {task.notes ? (
-                      <p className="mt-0.5 text-sm text-ink-soft">{task.notes}</p>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </Card>
-          )}
-        </section>
-
-        <section>
-          <SectionHeading
-            title="Where the money is going"
-            action={
-              <Link
-                href={`/events/${event.id}/budget`}
-                className="text-sm font-medium text-clay hover:underline"
-              >
-                Full budget
-              </Link>
-            }
-          />
-          <Card className="divide-y divide-line">
-            {budget.rows.slice(0, 6).map((row) => (
-              <div key={row.category} className="p-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-ink">{row.name}</p>
-                  <p className="tabular text-sm text-ink-soft">
-                    {formatCents(row.committedCents)}{" "}
-                    <span className="text-ink-mute">
-                      / {formatCents(row.allocatedCents)}
-                    </span>
-                  </p>
-                </div>
-                <ProgressBar
-                  className="mt-2"
-                  percent={row.percentOfAllocation}
-                  tone={row.overCents > 0 ? "danger" : "clay"}
-                />
+        {pendingGuests.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-mute">
+            {user
+              ? "Invite guests from the list when you’re ready."
+              : "Sign in to publish, then invite people."}
+          </p>
+        ) : (
+          <Card className="mt-3 divide-y divide-line">
+            {pendingGuests.slice(0, 6).map((guest) => (
+              <div key={guest.id} className="px-4 py-3">
+                <p className="text-ink">{guest.name}</p>
+                <p className="text-sm text-ink-soft">{guest.email ?? "No email"}</p>
               </div>
             ))}
           </Card>
-        </section>
-      </div>
+        )}
+      </section>
+
+      <p className="text-sm text-ink-mute">
+        Venue scouting, budget, and the run sheet stay under{" "}
+        <span className="font-medium text-ink">Plan</span> — this dashboard is
+        the people side.
+      </p>
     </div>
   );
 }
