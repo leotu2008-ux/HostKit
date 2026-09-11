@@ -7,25 +7,35 @@ extension Font {
     }
 }
 
-/// The HostKit mark in a navigation bar's leading slot. Tapping it opens the
-/// account menu: profile, past events, settings, sign out.
+/// The HostKit mark in a navigation bar's leading slot, optionally with the
+/// wordmark beside it. Tapping it opens the account menu: profile, past
+/// events, settings, sign out.
 struct LogoMark: View {
+    var wordmark = false
     @State private var isOpen = false
 
     var body: some View {
         Button {
             isOpen = true
         } label: {
-            Image("Logo")
-                .resizable()
-                .frame(width: 28, height: 28)
-                .clipShape(.rect(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+            HStack(spacing: 8) {
+                Image("Logo")
+                    .resizable()
+                    .frame(width: 28, height: 28)
+                    .clipShape(.rect(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+                if wordmark {
+                    (Text("Host") + Text("Kit").foregroundStyle(Color.accentColor))
+                        .font(.inter(size: 19, .semibold))
+                        .foregroundStyle(.primary)
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Account menu")
         .sheet(isPresented: $isOpen) {
             AccountMenu()
+                .presentationDetents([.medium, .large])
         }
     }
 }

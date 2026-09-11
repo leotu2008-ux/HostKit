@@ -232,7 +232,7 @@ struct CreateEventView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if inTab {
-                        LogoMark()
+                        LogoMark(wordmark: true)
                     } else {
                         Button("Cancel", role: .cancel) { dismiss() }
                     }

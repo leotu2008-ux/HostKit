@@ -8,10 +8,10 @@ final class Router {
     static let shared = Router()
 
     enum Tab: Hashable {
-        case discover, events, create
+        case home, discover, events, create, profile
     }
 
-    var tab: Tab = .discover
+    var tab: Tab = .home
     /// A host event to open on the Events tab, set by intents and by Create.
     var openEventID: String?
     /// An event you're going to, opened on Discover from a tapped reminder.

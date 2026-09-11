@@ -43,10 +43,11 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 
 | Tab | Screens |
 | --- | --- |
-| **Discover** | "Your events" first (hosting + going), then campus and city feeds grouped by day, event page with register sheet |
+| **Home** | The brand at the top, "Your events" (hosting + going), where-to-next actions, and a preview of what's at your school and around your city |
+| **Discover** | Campus and city feeds grouped by day with the city picker, event page with register sheet |
 | **Events** | Your events as a timeline (upcoming / past) and Manage — Overview (guest list, check-in, tap the cover to add a photo) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list) · Promote (publish, visibility, share link, QR code, promo copy) |
 | **Create** | The event form, with an optional MapKit venue search and a cover photo |
-| **Logo (top-left)** | The account menu: profile (with photo), past events, settings (reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri), sign in / out |
+| **Profile** | Photo, name, school; past events; settings (reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri); sign in / out. The same menu opens from the HostKit mark top-left on every tab |
 
 Registering for an event adds it to your calendar (`App/CalendarSync.swift`,
 write-only EventKit access) and schedules two local notifications — the

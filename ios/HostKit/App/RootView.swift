@@ -7,6 +7,9 @@ struct RootView: View {
         @Bindable var router = router
 
         TabView(selection: $router.tab) {
+            Tab("Home", systemImage: "house", value: Router.Tab.home) {
+                HomeView()
+            }
             Tab("Discover", systemImage: "sparkles", value: Router.Tab.discover) {
                 DiscoverView()
             }
@@ -15,6 +18,9 @@ struct RootView: View {
             }
             Tab("Create", systemImage: "plus.circle", value: Router.Tab.create) {
                 CreateTab()
+            }
+            Tab("Profile", systemImage: "person.crop.circle", value: Router.Tab.profile) {
+                AccountMenu(inTab: true)
             }
         }
     }

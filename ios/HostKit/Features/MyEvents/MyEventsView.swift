@@ -50,7 +50,7 @@ struct MyEventsView: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { LogoMark() }
+                ToolbarItem(placement: .topBarLeading) { LogoMark(wordmark: true) }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create event", systemImage: "plus") { router.tab = .create }
                 }

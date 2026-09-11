@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Everything public and upcoming: your campus first, then the city.
 struct DiscoverView: View {
     @Environment(AppModel.self) private var model
     @Environment(Router.self) private var router
@@ -9,14 +10,15 @@ struct DiscoverView: View {
     @State private var hasSettledCity = Session.city != nil
     @State private var feed = DiscoverFeed(events: [])
     @State private var isLoading = true
-    @State private var isSigningIn = false
     @State private var path: [HostEvent] = []
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    yourEventsSection
+                    Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
+                        .font(.inter(.subheadline))
+                        .foregroundStyle(.secondary)
 
                     if let notice = model.sampleNotice {
                         NoticeBanner(text: notice)
@@ -29,9 +31,6 @@ struct DiscoverView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(city.map { "Around \(Cities.short($0))" } ?? "Everywhere")
                             .font(.inter(.title3, .semibold))
-                        Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
-                            .font(.inter(.footnote))
-                            .foregroundStyle(.secondary)
                         cityPicker
                     }
 
@@ -70,12 +69,11 @@ struct DiscoverView: View {
                 EventDetailView(event: event)
             }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { LogoMark() }
+                ToolbarItem(placement: .topBarLeading) { LogoMark(wordmark: true) }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create event", systemImage: "plus") { router.tab = .create }
                 }
             }
-            .sheet(isPresented: $isSigningIn) { SignInView() }
             .task(id: "\(city ?? "")|\(model.user?.id ?? "")") { await load() }
             .task { await settleCity() }
             // A tapped reminder lands here with the event to open.
@@ -85,68 +83,6 @@ struct DiscoverView: View {
                 if let event = try? await model.event(id: id) { path = [event] }
             }
             .refreshable { await load() }
-        }
-    }
-
-    /// What you host and what you're going to, before anything else.
-    private var yourEventsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Your events").font(.inter(.title3, .semibold))
-                Spacer()
-                if model.isSignedIn {
-                    Button("See all") { router.tab = .events }
-                        .font(.inter(.subheadline, .medium))
-                }
-            }
-            if !model.isSignedIn {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Create your first event").font(.inter(.headline, .semibold))
-                    Text("Name, time, place — no account needed until you publish. Sign in to see the events you host and the ones you’re going to.")
-                        .font(.inter(.footnote))
-                        .foregroundStyle(.secondary)
-                    HStack(spacing: 8) {
-                        Button("Create event") { router.tab = .create }
-                            .buttonStyle(.glassProminent)
-                        Button("Sign in") { isSigningIn = true }
-                            .buttonStyle(.glass)
-                    }
-                    .padding(.top, 4)
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.background, in: .rect(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.quaternary))
-            } else if feed.mine.isEmpty {
-                HStack(spacing: 12) {
-                    Text(isLoading ? "Loading…" : "Nothing coming up. Create an event and it shows up here — so does anything you register for.")
-                        .font(.inter(.subheadline))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Create") { router.tab = .create }
-                        .font(.inter(.footnote, .semibold))
-                        .buttonStyle(.glass)
-                }
-                .padding(14)
-                .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 14))
-            } else {
-                ScrollView(.horizontal) {
-                    HStack(alignment: .top, spacing: 12) {
-                        ForEach(feed.mine) { event in
-                            if event.isOwner {
-                                Button { router.openHostEvent(event.id) } label: { EventTile(event: event) }
-                                    .buttonStyle(.plain)
-                            } else {
-                                NavigationLink(value: event) { EventTile(event: event) }
-                                    .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                .scrollIndicators(.hidden)
-                .padding(.horizontal, -16)
-            }
         }
     }
 

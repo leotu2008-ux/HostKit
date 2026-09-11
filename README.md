@@ -102,10 +102,12 @@ Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
 
 ## Your account
 
-The logo (and your avatar) opens the account menu on both apps: profile,
-your events, past events, settings, sign out. Discover leads with **Your
-events** — what you host and what you've registered for, soonest first
-(`lib/mine.ts`).
+Both apps open on **Home**: the HostKit brand, **Your events** — what you
+host and what you've registered for, soonest first (`lib/mine.ts`) — quick
+actions, and a taste of what's on nearby. **Discover** (`/discover`) is the
+full feed with the city picker. The logo (and your avatar) opens the account
+menu: profile, your events, past events, settings, sign out; on phones the
+tab bar is Home · Discover · Create · Events · Profile.
 
 - **Profile picture** and **event covers** are uploads (`lib/images.ts`):
   JPEG/PNG/WebP up to 5 MB, downscaled in the client first. They go to

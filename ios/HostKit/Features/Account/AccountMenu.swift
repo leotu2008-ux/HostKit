@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// Behind the logo: who you are, your profile, past events, settings, sign out.
+/// Who you are, your profile, past events, settings, sign out. Presented as
+/// a sheet from the logo, and as the Profile tab (`inTab`).
 struct AccountMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
     @State private var isSigningIn = false
+
+    var inTab = false
 
     var body: some View {
         NavigationStack {
@@ -69,7 +72,7 @@ struct AccountMenu: View {
                     Section {
                         Button("Sign out", role: .destructive) {
                             model.signOut()
-                            dismiss()
+                            if !inTab { dismiss() }
                         }
                     }
                 } else if !model.drafts.isEmpty {
@@ -80,11 +83,17 @@ struct AccountMenu: View {
                     }
                 }
             }
-            .navigationTitle("HostKit")
-            .navigationBarTitleDisplayMode(.inline)
+            .background { if inTab { BrandWash() } }
+            .scrollContentBackground(inTab ? .hidden : .automatic)
+            .navigationTitle(inTab ? "Profile" : "HostKit")
+            .navigationBarTitleDisplayMode(inTab ? .large : .inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                if inTab {
+                    ToolbarItem(placement: .topBarLeading) { LogoMark(wordmark: true) }
+                } else {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
                 }
             }
             .navigationDestination(for: HostEvent.self) { event in
@@ -92,6 +101,5 @@ struct AccountMenu: View {
             }
             .sheet(isPresented: $isSigningIn) { SignInView() }
         }
-        .presentationDetents([.medium, .large])
     }
 }
