@@ -69,7 +69,7 @@ struct DiscoverView: View {
                 EventDetailView(event: event)
             }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { LogoMark(wordmark: true) }
+                ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create event", systemImage: "plus") { router.tab = .create }
                 }

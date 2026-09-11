@@ -7,29 +7,22 @@ extension Font {
     }
 }
 
-/// The HostKit mark in a navigation bar's leading slot, optionally with the
-/// wordmark beside it. Tapping it opens the account menu: profile, past
-/// events, settings, sign out.
+/// The HostKit mark in a navigation bar's leading slot. Tapping it opens the
+/// account menu: profile, past events, settings, sign out. Image only — the
+/// toolbar hides text in a button label but still reserves its width, which
+/// pushes the mark off-centre in its glass circle.
 struct LogoMark: View {
-    var wordmark = false
     @State private var isOpen = false
 
     var body: some View {
         Button {
             isOpen = true
         } label: {
-            HStack(spacing: 8) {
-                Image("Logo")
-                    .resizable()
-                    .frame(width: 28, height: 28)
-                    .clipShape(.rect(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
-                if wordmark {
-                    (Text("Host") + Text("Kit").foregroundStyle(Color.accentColor))
-                        .font(.inter(size: 19, .semibold))
-                        .foregroundStyle(.primary)
-                }
-            }
+            Image("Logo")
+                .resizable()
+                .frame(width: 28, height: 28)
+                .clipShape(.rect(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Account menu")

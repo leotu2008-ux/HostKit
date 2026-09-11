@@ -89,7 +89,7 @@ struct AccountMenu: View {
             .navigationBarTitleDisplayMode(inTab ? .large : .inline)
             .toolbar {
                 if inTab {
-                    ToolbarItem(placement: .topBarLeading) { LogoMark(wordmark: true) }
+                    ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 } else {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done") { dismiss() }
