@@ -164,6 +164,91 @@ nonisolated struct DiscoverFeed: Decodable, Sendable {
     var school: School?
 }
 
+// MARK: Manage — outreach, blasts
+
+/// One person or place to reach. Mirrors `OutreachRow` in `lib/api/outreach.ts`.
+nonisolated struct OutreachRow: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let kind: String
+    let name: String
+    let detail: String?
+    let email: String?
+    let phone: String?
+    let website: String?
+    let status: String
+    let source: String
+    let listingPath: String?
+    let subject: String
+    let message: String
+
+    var isCollaborator: Bool { source == "collaborator" }
+    var isConfirmed: Bool { status == "CONFIRMED" || status == "BOOKED" }
+
+    var kindLabel: String {
+        switch kind {
+        case "VENUE": "Venue"
+        case "SPEAKER": "Speaker"
+        case "COHOST": "Cohost"
+        default: "Vendor"
+        }
+    }
+
+    var statusLabel: String {
+        switch status {
+        case "PENDING": "Not yet asked"
+        case "SENT": "Asked"
+        case "REPLIED": "Replied"
+        case "QUOTED": "Quoted"
+        case "CONFIRMED": "Confirmed"
+        case "BOOKED": "Booked"
+        case "DECLINED": "Declined"
+        default: status.capitalized
+        }
+    }
+}
+
+nonisolated struct OutreachFeed: Decodable, Sendable { let rows: [OutreachRow] }
+
+nonisolated struct NewCollaborator: Encodable, Sendable {
+    var kind: String
+    var name: String
+    var email: String?
+    var phone: String?
+    var website: String?
+    var detail: String?
+}
+
+nonisolated struct BlastSegment: Codable, Identifiable, Hashable, Sendable {
+    let key: String
+    let label: String
+    let count: Int
+    var id: String { key }
+}
+
+nonisolated struct Blast: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let segment: String
+    let subject: String
+    let body: String
+    let recipientCount: Int
+    let provider: String
+    let sentAt: Date
+}
+
+nonisolated struct BlastRecipient: Codable, Hashable, Sendable {
+    let name: String
+    let email: String
+}
+
+nonisolated struct BlastsFeed: Decodable, Sendable {
+    var canSend: Bool
+    var segments: [BlastSegment]
+    var blasts: [Blast]
+    /// Present on the response to a send.
+    var provider: String?
+    var recipients: [BlastRecipient]?
+}
+
 /// A venue picked from MapKit on Create. Mirrors `VenuePick` on the server.
 nonisolated struct VenuePick: Codable, Hashable, Identifiable, Sendable {
     var name: String

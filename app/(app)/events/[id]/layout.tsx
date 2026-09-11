@@ -5,10 +5,7 @@ import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { Badge, Button, ButtonLink } from "@/components/ui";
 import { CoverArt } from "@/components/cover-art";
-import {
-  publishEventAction,
-  unpublishEventAction,
-} from "@/lib/actions/events";
+import { publishEventAction } from "@/lib/actions/events";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
@@ -55,14 +52,7 @@ export default async function EventLayout({
           <ButtonLink href={`/e/${event.id}`} variant="secondary" size="sm">
             Event page ↗
           </ButtonLink>
-          {event.published ? (
-            <form action={unpublishEventAction}>
-              <input type="hidden" name="eventId" value={event.id} />
-              <Button type="submit" variant="ghost" size="sm">
-                Unpublish
-              </Button>
-            </form>
-          ) : user ? (
+          {event.published ? null : user ? (
             <form action={publishEventAction}>
               <input type="hidden" name="eventId" value={event.id} />
               <Button type="submit" size="sm">

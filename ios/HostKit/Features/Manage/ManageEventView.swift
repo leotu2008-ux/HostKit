@@ -1,17 +1,23 @@
 import SwiftUI
 
-/// The host's side of one night: publish it, see who's coming, and check
-/// people in at the door.
+/// The host's side of one night: who's coming and the door (Overview),
+/// who to reach (Outreach), emailing the guest list (Blasts), and getting
+/// the word out (Promote).
 struct ManageEventView: View {
+    enum Tab: String, CaseIterable, Identifiable {
+        case overview = "Overview"
+        case outreach = "Outreach"
+        case blasts = "Blasts"
+        case promote = "Promote"
+        var id: String { rawValue }
+    }
+
     @Environment(AppModel.self) private var model
     @State private var event: HostEvent
-    @State private var guests: [Guest] = []
-    @State private var summary: GuestSummary?
-    @State private var search = ""
-    @State private var errorMessage: String?
-    @State private var busyGuestID: String?
-    @State private var isPublishing = false
+    @State private var tab: Tab = .overview
     @State private var isSigningIn = false
+    @State private var isPublishing = false
+    @State private var errorMessage: String?
 
     let onChange: (HostEvent) -> Void
 
@@ -19,6 +25,116 @@ struct ManageEventView: View {
         _event = State(initialValue: event)
         self.onChange = onChange
     }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+                .padding(.horizontal)
+                .padding(.top, 8)
+            Picker("Section", selection: $tab) {
+                ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal)
+            }
+
+            switch tab {
+            case .overview:
+                OverviewTab(event: event)
+            case .outreach:
+                OutreachTab(event: event)
+            case .blasts:
+                BlastsTab(event: event)
+            case .promote:
+                PromoteTab(event: $event, onChange: onChange, requestSignIn: { isSigningIn = true })
+            }
+        }
+        .background { AmbientBackground(seed: event.id) }
+        .navigationTitle(event.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                ShareLink(item: model.api.webURL(for: event)) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
+        }
+        // Publishing asked for a sign-in; once that's done, finish the job.
+        .sheet(isPresented: $isSigningIn, onDismiss: {
+            if model.isSignedIn && !event.published {
+                Task { await publish() }
+            }
+        }) {
+            SignInView()
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 14) {
+            CoverArt(seed: event.id)
+                .frame(width: 64, height: 64)
+                .clipShape(.rect(cornerRadius: 14))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    StatusPill(
+                        text: event.statusLabel,
+                        tint: event.published ? .accentColor : .secondary)
+                    if let school = event.school {
+                        StatusPill(text: school.short, tint: .accentColor)
+                    }
+                }
+                Text(event.title).font(.event(22)).lineLimit(2)
+                Text(EventDates.summary(for: event))
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            if !event.published {
+                Button {
+                    Task { await publish() }
+                } label: {
+                    Text(model.isSignedIn ? "Publish" : "Sign in")
+                }
+                .buttonStyle(.glassProminent)
+                .disabled(isPublishing)
+            }
+        }
+    }
+
+    private func publish() async {
+        guard model.isSignedIn else {
+            isSigningIn = true
+            return
+        }
+        isPublishing = true
+        defer { isPublishing = false }
+        do {
+            event = try await model.setPublished(event, true)
+            onChange(event)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Overview: counts, guests, check-in
+
+private struct OverviewTab: View {
+    @Environment(AppModel.self) private var model
+    let event: HostEvent
+
+    @State private var guests: [Guest] = []
+    @State private var summary: GuestSummary?
+    @State private var search = ""
+    @State private var busyGuestID: String?
+    @State private var errorMessage: String?
 
     private var filtered: [Guest] {
         let query = search.trimmingCharacters(in: .whitespaces)
@@ -31,12 +147,6 @@ struct ManageEventView: View {
 
     var body: some View {
         List {
-            Section {
-                header
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-            }
-
             Section {
                 HStack(spacing: 10) {
                     stat("Going", summary?.going ?? event.going)
@@ -68,67 +178,9 @@ struct ManageEventView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background { AmbientBackground(seed: event.id) }
         .searchable(text: $search, prompt: "Find a guest")
-        .navigationTitle(event.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: model.api.webURL(for: event)) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
-            }
-        }
         .task { await loadGuests() }
         .refreshable { await loadGuests() }
-        // Publishing asked for a sign-in; once that's done, finish the job.
-        .sheet(isPresented: $isSigningIn, onDismiss: {
-            if model.isSignedIn && !event.published {
-                Task { await togglePublished() }
-            }
-        }) {
-            SignInView()
-        }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 14) {
-                CoverArt(seed: event.id)
-                    .frame(width: 72, height: 72)
-                    .clipShape(.rect(cornerRadius: 16))
-                VStack(alignment: .leading, spacing: 4) {
-                    StatusPill(
-                        text: event.statusLabel,
-                        tint: event.published ? .accentColor : .secondary)
-                    Text(event.title).font(.event(24)).lineLimit(2)
-                    Text(EventDates.summary(for: event))
-                        .font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-            HStack(spacing: 10) {
-                NavigationLink {
-                    EventDetailView(event: event)
-                } label: {
-                    Label("Event page", systemImage: "eye")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.glass)
-
-                Button {
-                    Task { await togglePublished() }
-                } label: {
-                    Label(
-                        event.published ? "Unpublish" : model.isSignedIn ? "Publish" : "Sign in to publish",
-                        systemImage: event.published ? "eye.slash" : "paperplane.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(event.published ? AnyPrimitiveButtonStyle(.glass) : AnyPrimitiveButtonStyle(.glassProminent))
-                .disabled(isPublishing)
-            }
-            .controlSize(.large)
-        }
-        .padding(.vertical, 8)
     }
 
     private func stat(_ label: String, _ value: Int) -> some View {
@@ -205,34 +257,5 @@ struct ManageEventView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
-    }
-
-    private func togglePublished() async {
-        // Publishing is the one step that needs an account.
-        guard model.isSignedIn else {
-            isSigningIn = true
-            return
-        }
-        isPublishing = true
-        defer { isPublishing = false }
-        do {
-            event = try await model.setPublished(event, !event.published)
-            onChange(event)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-}
-
-/// Lets one button switch between two different primitive button styles.
-struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
-    private let make: (Configuration) -> AnyView
-
-    init<S: PrimitiveButtonStyle>(_ style: S) {
-        make = { AnyView(style.makeBody(configuration: $0)) }
-    }
-
-    func makeBody(configuration: Configuration) -> some View {
-        make(configuration)
     }
 }

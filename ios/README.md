@@ -44,7 +44,7 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 | Tab | Screens |
 | --- | --- |
 | **Discover** | Upcoming public events grouped by day, city filter, event page with register sheet |
-| **Events** | Your events as a timeline (upcoming / past), Manage (publish, guest list, check-in), Create |
+| **Events** | Your events as a timeline (upcoming / past), Create (with an optional MapKit venue search), and Manage — Overview (guest list, check-in) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list) · Promote (publish, visibility, share link, QR code, promo copy) |
 | **You** | Sign in/out, server address, Apple Intelligence status, Siri tip |
 
 ### Apple Intelligence
@@ -52,7 +52,9 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 - **Foundation Models** — on Create, *Write with Apple Intelligence* drafts a
   tagline and description from the event's details and your notes, entirely
   on-device (`Intelligence/DescriptionWriter.swift`). The button hides itself
-  and explains why when the model isn't available.
+  and explains why when the model isn't available. On Manage → Promote,
+  *Rewrite with Apple Intelligence* turns the event into a short post for a
+  story or group chat.
 - **App Intents** (`Intents/HostKitIntents.swift`):
   - "What's my next event in HostKit" — answers with the time and headcount.
   - "Check in a guest with HostKit" — asks for the guest and event, checks them in.

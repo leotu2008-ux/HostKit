@@ -5,7 +5,6 @@ import { VISIBILITY_LABEL } from "@/lib/listing";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { MapsLink } from "@/components/maps-link";
-import { AddCollaboratorForm } from "@/components/add-collaborator-form";
 import {
   DateTile,
   IconTile,
@@ -13,41 +12,15 @@ import {
   PinIcon,
   TicketIcon,
 } from "@/components/date-tile";
-import {
-  removeCollaboratorAction,
-  setCollaboratorStatusAction,
-} from "@/lib/actions/collaborators";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
 import { Badge, Button, ButtonLink, Card, EmptyState, type Tone } from "@/components/ui";
-import type {
-  CollaboratorKind,
-  CollaboratorStatus,
-  RsvpStatus,
-} from "@/generated/prisma/enums";
-
-const KINDS: Array<{
-  kind: CollaboratorKind;
-  title: string;
-  add: string;
-  name: string;
-  detail: string;
-}> = [
-  { kind: "VENUE", title: "Venue holds", add: "Add venue hold", name: "Venue", detail: "Address or note" },
-  { kind: "SPEAKER", title: "Speakers", add: "Add speaker", name: "Speaker", detail: "Talk title or role" },
-  { kind: "COHOST", title: "Cohosts", add: "Add cohost", name: "Cohost", detail: "How they’re helping" },
-];
+import type { RsvpStatus } from "@/generated/prisma/enums";
 
 const GUEST_STATUS: Record<RsvpStatus, { label: string; tone: Tone }> = {
   INVITED: { label: "Invited", tone: "neutral" },
   ATTENDING: { label: "Going", tone: "forest" },
   MAYBE: { label: "Maybe", tone: "amber" },
   DECLINED: { label: "Not going", tone: "danger" },
-};
-
-const PEOPLE_TONE: Record<CollaboratorStatus, Tone> = {
-  PENDING: "amber",
-  CONFIRMED: "forest",
-  DECLINED: "danger",
 };
 
 function initials(name: string) {
@@ -63,8 +36,8 @@ function initials(name: string) {
 
 /**
  * The host's view of one night — the website twin of the iOS Manage screen:
- * headline counts, the guest list with one-tap check-in, and the event and
- * its people alongside.
+ * headline counts, what to do next, the guest list with one-tap check-in,
+ * and the event alongside.
  */
 export default async function EventOverviewPage({
   params,
@@ -76,15 +49,16 @@ export default async function EventOverviewPage({
   const q = (rawQ ?? "").trim();
   const { event } = await requireEvent(id);
 
-  const [guests, collaborators] = await Promise.all([
+  const [guests, collaborators, blastCount] = await Promise.all([
     db.guest.findMany({
       where: { eventId: event.id },
       orderBy: [{ name: "asc" }],
     }),
     db.eventCollaborator.findMany({
       where: { eventId: event.id },
-      orderBy: [{ kind: "asc" }, { createdAt: "asc" }],
+      select: { kind: true, status: true },
     }),
+    db.blast.count({ where: { eventId: event.id } }),
   ]);
 
   const going = guests.filter((g) => g.rsvpStatus === "ATTENDING").length;
@@ -106,6 +80,37 @@ export default async function EventOverviewPage({
     { label: "Awaiting reply", value: invited },
   ];
 
+  // What still needs doing, each pointing at the tab that does it.
+  const venue = collaborators.find((c) => c.kind === "VENUE");
+  const pendingOutreach = collaborators.filter((c) => c.status === "PENDING").length;
+  const base = `/events/${event.id}`;
+  const nextUp: Array<{ done: boolean; title: string; hint: string; href: string }> = [
+    {
+      done: Boolean(venue && venue.status === "CONFIRMED"),
+      title: venue ? (venue.status === "CONFIRMED" ? "Venue confirmed" : "Confirm the venue") : "Line up a venue",
+      hint: venue ? "Draft the message and mark it confirmed once they say yes." : "Add one on Outreach, or search when you edit the event.",
+      href: `${base}/outreach`,
+    },
+    {
+      done: pendingOutreach === 0 && collaborators.length > 0,
+      title: pendingOutreach > 0 ? `Reach ${pendingOutreach} ${pendingOutreach === 1 ? "person" : "people"}` : "Outreach up to date",
+      hint: "Speakers, cohosts, vendors — each has a first message drafted.",
+      href: `${base}/outreach`,
+    },
+    {
+      done: event.published,
+      title: event.published ? "Published" : "Publish and share",
+      hint: event.published ? `${VISIBILITY_LABEL[event.visibility]} · link and QR on Promote.` : "Guests can't register until it's live.",
+      href: `${base}/promote`,
+    },
+    {
+      done: blastCount > 0,
+      title: blastCount > 0 ? `${blastCount} ${blastCount === 1 ? "update" : "updates"} sent` : "Send guests an update",
+      hint: "Doors, parking, what to bring — straight to the email they registered with.",
+      href: `${base}/blasts`,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -120,7 +125,38 @@ export default async function EventOverviewPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <section>
+        <section className="space-y-6">
+          <Card className="divide-y divide-line overflow-hidden">
+            <div className="px-5 py-4">
+              <h2 className="font-display text-lg text-ink">Next up</h2>
+            </div>
+            {nextUp.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="flex items-start gap-3 px-5 py-3.5 hover:bg-sunk"
+              >
+                <span
+                  aria-hidden
+                  className={
+                    item.done
+                      ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-forest text-[11px] text-white"
+                      : "mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-line-strong"
+                  }
+                >
+                  {item.done ? "✓" : ""}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={item.done ? "block font-medium text-ink-mute line-through" : "block font-medium text-ink"}>
+                    {item.title}
+                  </span>
+                  <span className="block text-[13px] text-ink-mute">{item.hint}</span>
+                </span>
+                <span aria-hidden className="text-ink-mute">›</span>
+              </Link>
+            ))}
+          </Card>
+
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
               <div>
@@ -132,10 +168,10 @@ export default async function EventOverviewPage({
                 </p>
               </div>
               <div className="flex gap-2">
-                <ButtonLink href={`/events/${event.id}/guests`} variant="secondary" size="sm">
+                <ButtonLink href={`${base}/guests`} variant="secondary" size="sm">
                   Add guests
                 </ButtonLink>
-                <ButtonLink href={`/events/${event.id}/check-in`} size="sm">
+                <ButtonLink href={`${base}/check-in`} size="sm">
                   Door mode
                 </ButtonLink>
               </div>
@@ -154,10 +190,7 @@ export default async function EventOverviewPage({
                   Search
                 </Button>
                 {q ? (
-                  <Link
-                    href={`/events/${event.id}`}
-                    className="text-sm font-medium text-ink-soft hover:text-ink"
-                  >
+                  <Link href={base} className="text-sm font-medium text-ink-soft hover:text-ink">
                     Clear
                   </Link>
                 ) : null}
@@ -293,76 +326,6 @@ export default async function EventOverviewPage({
             ) : null}
           </Card>
 
-          <Card className="divide-y divide-line overflow-hidden">
-            {KINDS.map((section) => {
-              const rows = collaborators.filter((row) => row.kind === section.kind);
-              return (
-                <div key={section.kind} className="px-5 py-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-ink">{section.title}</h3>
-                    <span className="text-[12px] text-ink-mute">
-                      {rows.filter((r) => r.status === "PENDING").length} pending
-                    </span>
-                  </div>
-                  {rows.length > 0 ? (
-                    <ul className="mb-2 space-y-2">
-                      {rows.map((row) => (
-                        <li key={row.id} className="flex items-center gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[14px] font-medium text-ink">{row.name}</p>
-                            {row.detail || row.email ? (
-                              <p className="truncate text-[12px] text-ink-mute">
-                                {row.detail ?? row.email}
-                              </p>
-                            ) : null}
-                          </div>
-                          <form action={setCollaboratorStatusAction}>
-                            <input type="hidden" name="eventId" value={event.id} />
-                            <input type="hidden" name="collaboratorId" value={row.id} />
-                            <button
-                              name="status"
-                              value={row.status === "CONFIRMED" ? "PENDING" : "CONFIRMED"}
-                              title={row.status === "CONFIRMED" ? "Mark pending" : "Confirm"}
-                            >
-                              <Badge tone={PEOPLE_TONE[row.status]}>
-                                {row.status === "CONFIRMED" ? "Confirmed" : row.status === "DECLINED" ? "Declined" : "Pending"}
-                              </Badge>
-                            </button>
-                          </form>
-                          <form action={removeCollaboratorAction}>
-                            <input type="hidden" name="eventId" value={event.id} />
-                            <input type="hidden" name="collaboratorId" value={row.id} />
-                            <button
-                              type="submit"
-                              aria-label={`Remove ${row.name}`}
-                              className="px-1 text-ink-mute hover:text-danger"
-                            >
-                              ×
-                            </button>
-                          </form>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <details className="group">
-                    <summary className="cursor-pointer list-none text-[13px] font-medium text-clay [&::-webkit-details-marker]:hidden">
-                      + {section.add}
-                    </summary>
-                    <div className="mt-3">
-                      <AddCollaboratorForm
-                        eventId={event.id}
-                        kind={section.kind}
-                        nameLabel={section.name}
-                        detailLabel={section.detail}
-                        submitLabel={section.add}
-                      />
-                    </div>
-                  </details>
-                </div>
-              );
-            })}
-          </Card>
-
           <Card className="p-5">
             <h3 className="text-sm font-semibold text-ink">Planner</h3>
             <p className="mt-0.5 text-[13px] text-ink-mute">
@@ -377,7 +340,7 @@ export default async function EventOverviewPage({
               ].map(([path, label]) => (
                 <Link
                   key={path}
-                  href={`/events/${event.id}/${path}`}
+                  href={`${base}/${path}`}
                   className="rounded-full bg-sunk px-3 py-1.5 text-[13px] font-medium text-ink-soft hover:text-ink"
                 >
                   {label}

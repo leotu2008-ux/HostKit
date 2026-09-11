@@ -88,10 +88,44 @@ nonisolated struct APIClient: Sendable {
         return envelope.claimed
     }
 
-    func setPublished(eventID: String, published: Bool) async throws -> HostEvent {
-        let body = try Self.encode(["published": published])
+    func setPublished(eventID: String, published: Bool, visibility: EventVisibility? = nil) async throws -> HostEvent {
+        let body = try Self.encode(PublishBody(published: published, visibility: visibility))
         let envelope: EventEnvelope = try await send("POST", "/api/v1/events/\(eventID)/publish", body: body)
         return envelope.event
+    }
+
+    // MARK: Manage — outreach & blasts
+
+    func outreach(eventID: String) async throws -> [OutreachRow] {
+        let envelope: OutreachFeed = try await send("GET", "/api/v1/events/\(eventID)/outreach")
+        return envelope.rows
+    }
+
+    func addCollaborator(eventID: String, _ collaborator: NewCollaborator) async throws -> [OutreachRow] {
+        let envelope: OutreachFeed = try await send(
+            "POST", "/api/v1/events/\(eventID)/outreach", body: try Self.encode(collaborator))
+        return envelope.rows
+    }
+
+    func setCollaboratorStatus(eventID: String, rowID: String, status: String) async throws -> [OutreachRow] {
+        let envelope: OutreachFeed = try await send(
+            "PATCH", "/api/v1/events/\(eventID)/outreach/\(rowID)", body: try Self.encode(["status": status]))
+        return envelope.rows
+    }
+
+    func removeCollaborator(eventID: String, rowID: String) async throws -> [OutreachRow] {
+        let envelope: OutreachFeed = try await send("DELETE", "/api/v1/events/\(eventID)/outreach/\(rowID)")
+        return envelope.rows
+    }
+
+    func blasts(eventID: String) async throws -> BlastsFeed {
+        try await send("GET", "/api/v1/events/\(eventID)/blasts")
+    }
+
+    func sendBlast(eventID: String, segment: String, subject: String, body: String) async throws -> BlastsFeed {
+        try await send(
+            "POST", "/api/v1/events/\(eventID)/blasts",
+            body: try Self.encode(["segment": segment, "subject": subject, "body": body]))
     }
 
     func guests(eventID: String) async throws -> GuestsEnvelope {
@@ -186,6 +220,10 @@ nonisolated struct CreateEnvelope: Decodable, Sendable {
 }
 nonisolated struct ClaimEnvelope: Decodable, Sendable { let claimed: [String] }
 nonisolated struct UserEnvelope: Decodable, Sendable { let user: HostUser }
+nonisolated struct PublishBody: Encodable, Sendable {
+    let published: Bool
+    let visibility: EventVisibility?
+}
 nonisolated struct ProfilePatch: Encodable, Sendable {
     let name: String
     let classYear: Int?

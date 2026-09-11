@@ -5,10 +5,13 @@ import { usePathname } from "next/navigation";
 import { Fragment } from "react";
 import { cx } from "@/components/ui";
 
-/** People first (who's coming, who's at the door), then the planner. */
+/** Running the night first (people, outreach, promotion), then the planner. */
 const GROUPS = [
   [
     { href: "", label: "Overview" },
+    { href: "/outreach", label: "Outreach" },
+    { href: "/blasts", label: "Blasts" },
+    { href: "/promote", label: "Promote" },
     { href: "/guests", label: "Guests" },
     { href: "/check-in", label: "Door" },
   ],

@@ -165,6 +165,21 @@ export async function unpublishEventAction(formData: FormData) {
   refresh();
 }
 
+const VISIBILITY_VALUES = ["PUBLIC", "UNLISTED", "PRIVATE"] as const;
+
+/** Who can find the night. Changing it doesn't publish or unpublish. */
+export async function setVisibilityAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const raw = String(formData.get("visibility") ?? "");
+  if (!(VISIBILITY_VALUES as readonly string[]).includes(raw)) return;
+  const { event } = await requireEvent(eventId);
+  await db.event.update({
+    where: { id: event.id },
+    data: { visibility: raw as (typeof VISIBILITY_VALUES)[number] },
+  });
+  refresh();
+}
+
 export async function setPublishedAction(formData: FormData) {
   const published = String(formData.get("published") ?? "") === "on";
   if (published) return publishEventAction(formData);

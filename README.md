@@ -100,6 +100,33 @@ geocoding service). Tagging only surfaces events — anyone nearby can register.
 Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
 `docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
 
+## Hosting an event
+
+**Registering needs an account.** Guests sign in or create one on the event
+page and HostKit registers the account's email — that's the address blasts go
+to (`lib/registration.ts`).
+
+**Create** asks the essentials and, optionally, a venue: search real places
+near your city (Apple Maps on both apps) or skip it if you already have one.
+A picked venue becomes the event's address and the first row in Outreach.
+
+**Manage event** (`/events/:id`, and the Manage screen in the iOS app) has four
+tabs:
+
+| Tab | What's there |
+| --- | --- |
+| **Overview** | Going / checked-in / capacity, a "next up" checklist, the guest list with check-in |
+| **Outreach** | Venue, speakers, vendors and cohosts in one list, each with a drafted first message (`lib/outreach.ts`), Copy / email / call, confirm or remove, add someone |
+| **Blasts** | Email everyone going, those who haven't replied, or all — `{name}` becomes their first name. Sends via Resend when configured, otherwise hands you the addresses and message to paste (`lib/blasts.ts`, `lib/blast-send.ts`) |
+| **Promote** | Publish and visibility, the share link, a QR code for posters and the door, paste-ready copy for a story or group chat (`lib/promote.ts`, `lib/qr.ts`) |
+
+Optional services, both off by default (see `.env.example`):
+
+| Variable | Enables |
+| --- | --- |
+| `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). The iOS app uses MapKit directly and needs nothing |
+| `RESEND_API_KEY`, `RESEND_FROM` | Real email blasts (resend.com, after verifying a sending domain). Without them blasts are recorded and copied by hand |
+
 ## iOS app
 
 `ios/` is a native SwiftUI app (iOS 26) on the same backend: Discover and
@@ -117,11 +144,15 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `GET /api/v1/discover?city=` | Upcoming public, published events |
 | `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
 | `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
-| `POST /api/v1/events/:id/register` | Account-free registration |
-| `POST /api/v1/events/:id/publish` | Publish / unpublish — needs sign-in; claims a draft on the way |
+| `POST /api/v1/events/:id/register` | Register the signed-in account (401 without a token) |
+| `POST /api/v1/events/:id/publish` | Publish / unpublish, optional `visibility` — needs sign-in; claims a draft on the way |
 | `POST /api/v1/drafts/claim` | Attach a device's drafts to the signed-in host |
 | `GET /api/v1/events/:id/guests` | Guest list and door counts |
 | `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo |
+| `GET /api/v1/venues/search?q=&city=` | Venue search (Apple Maps); `{ venues: [], unavailable: true }` when keys are missing |
+| `GET /api/v1/events/:id/outreach` · `POST` | Everyone to reach, with drafted messages · add a venue / speaker / cohost |
+| `PATCH /api/v1/events/:id/outreach/:rowId` · `DELETE` | Confirm / pending / declined · remove |
+| `GET /api/v1/events/:id/blasts` · `POST` | Segments with counts, past blasts, `canSend` · send one (returns recipients when it couldn't email) |
 
 Like the website's draft cookie, a signed-out device proves it made a draft
 by sending `X-HostKit-Drafts: id.token,id.token` (`lib/api/drafts.ts`).

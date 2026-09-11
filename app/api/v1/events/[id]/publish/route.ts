@@ -3,7 +3,10 @@ import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
 import { goingCount, serializeEvent } from "@/lib/api/serialize";
 
-const schema = z.object({ published: z.boolean() });
+const schema = z.object({
+  published: z.boolean(),
+  visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional(),
+});
 
 /**
  * Publishes or unpublishes a night. This is the step that needs an account:
@@ -27,6 +30,7 @@ export async function POST(
     where: { id: event.id },
     data: {
       published: parsed.data.published,
+      ...(parsed.data.visibility ? { visibility: parsed.data.visibility } : {}),
       ...(event.ownerId === null
         ? { ownerId: user.id, schoolDomain: user.schoolDomain }
         : {}),

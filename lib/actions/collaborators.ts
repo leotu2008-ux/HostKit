@@ -14,6 +14,8 @@ const addSchema = z.object({
   kind: z.enum(KINDS),
   name: z.string().trim().min(1, "Add a name.").max(80),
   email: z.string().trim().email().max(120).optional().or(z.literal("")),
+  phone: z.string().trim().max(40).optional(),
+  website: z.string().trim().max(300).optional(),
   detail: z.string().trim().max(200).optional(),
 });
 
@@ -28,6 +30,8 @@ export async function addCollaboratorAction(
     kind: formData.get("kind"),
     name: formData.get("name"),
     email: formData.get("email"),
+    phone: formData.get("phone") ?? "",
+    website: formData.get("website") ?? "",
     detail: formData.get("detail"),
   });
   if (!parsed.success) {
@@ -40,6 +44,8 @@ export async function addCollaboratorAction(
       kind: parsed.data.kind as CollaboratorKind,
       name: parsed.data.name,
       email: parsed.data.email || null,
+      phone: parsed.data.phone || null,
+      website: parsed.data.website || null,
       detail: parsed.data.detail || null,
     },
   });
