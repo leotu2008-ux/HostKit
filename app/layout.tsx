@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
+import Script from "next/script";
 import { Fraunces, Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
+import { parsePreference, THEME_BOOTSTRAP, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -30,19 +33,32 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fbf8f4",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf8f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#161310" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const pref = parsePreference(
+    (await cookies()).get(THEME_COOKIE)?.value,
+  );
+
   return (
     <html
       lang="en"
       className={`${fraunces.variable} ${inter.variable} h-full`}
+      data-theme={pref === "system" ? undefined : pref}
+      data-theme-pref={pref}
+      suppressHydrationWarning
     >
       <body className="min-h-full bg-sunk">
+        <Script id="hostkit-theme" strategy="beforeInteractive">
+          {THEME_BOOTSTRAP}
+        </Script>
         <AppFrame>{children}</AppFrame>
       </body>
     </html>

@@ -1,11 +1,15 @@
+import { cookies } from "next/headers";
 import { signOutAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/session";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, ButtonLink } from "@/components/ui";
+import { parsePreference, THEME_COOKIE } from "@/lib/theme";
 
 export const metadata = { title: "You" };
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
+  const themePref = parsePreference((await cookies()).get(THEME_COOKIE)?.value);
 
   if (!user) {
     return (
@@ -23,6 +27,9 @@ export default async function ProfilePage() {
             Create an account
           </ButtonLink>
         </div>
+        <div className="mt-10">
+          <ThemeToggle initial={themePref} />
+        </div>
       </div>
     );
   }
@@ -34,6 +41,10 @@ export default async function ProfilePage() {
       </p>
       <h1 className="font-display mt-1 text-[28px] text-ink">{user.name}</h1>
       <p className="mt-1 text-[15px] text-ink-soft">{user.email}</p>
+
+      <div className="mt-8">
+        <ThemeToggle initial={themePref} />
+      </div>
 
       <ul className="mt-8 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
         <li>

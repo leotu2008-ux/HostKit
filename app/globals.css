@@ -5,11 +5,8 @@
 
    Warm, editorial, confident — planning an event is a happy occasion and the
    product should feel like good stationery, not a project management tool.
-   A paper ground, warm near-black ink, and one saturated clay accent.
-
-   This app deliberately commits to a single light theme rather than shipping a
-   half-considered dark mode; the palette is built around a warm paper ground
-   that has no honest dark equivalent.
+   Light is paper + clay. Dark is a warm night ground (not a cool-grey invert)
+   so the same tokens keep working when the host flips appearance.
 --------------------------------------------------------------------------- */
 
 @theme {
@@ -50,8 +47,55 @@
   --radius-card: 0.875rem;
 }
 
-:root {
+:root,
+html[data-theme="light"] {
   color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #161310;
+  --color-surface: #221e1a;
+  --color-sunk: #2c2722;
+  --color-ink: #f4efe8;
+  --color-ink-soft: #c4bbb3;
+  --color-ink-mute: #a89f95;
+  --color-line: #3a342d;
+  --color-line-strong: #4a433b;
+  --color-clay: #e06a45;
+  --color-clay-deep: #c4502e;
+  --color-clay-wash: #3a221c;
+  --color-forest: #8fbfad;
+  --color-forest-wash: #1e2e28;
+  --color-amber: #e0b15a;
+  --color-amber-wash: #2e2618;
+  --color-danger: #e07a72;
+  --color-danger-wash: #3a1f1c;
+}
+
+/* Before the bootstrap script runs, follow the device when no explicit
+   light/dark cookie has been applied to <html>. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper: #161310;
+    --color-surface: #221e1a;
+    --color-sunk: #2c2722;
+    --color-ink: #f4efe8;
+    --color-ink-soft: #c4bbb3;
+    --color-ink-mute: #a89f95;
+    --color-line: #3a342d;
+    --color-line-strong: #4a433b;
+    --color-clay: #e06a45;
+    --color-clay-deep: #c4502e;
+    --color-clay-wash: #3a221c;
+    --color-forest: #8fbfad;
+    --color-forest-wash: #1e2e28;
+    --color-amber: #e0b15a;
+    --color-amber-wash: #2e2618;
+    --color-danger: #e07a72;
+    --color-danger-wash: #3a1f1c;
+  }
 }
 
 html,
@@ -108,9 +152,12 @@ body {
   .no-print {
     display: none !important;
   }
+  html,
   body {
     display: block;
     background: #fff;
+    color: #1c1917;
+    color-scheme: light;
   }
   .app-frame {
     max-width: none;
