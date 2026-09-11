@@ -1,12 +1,16 @@
 import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { codeMessage, normalizePhone } from "@/lib/phone-format";
 import { isSmsConfigured, sendSms } from "@/lib/sms/twilio";
+
+export { codeMessage, formatPhone, normalizePhone } from "@/lib/phone-format";
 
 /**
  * A phone number on the account, confirmed with a one-time code. The code
  * lives hashed in PhoneVerification for ten minutes; the number is only
- * written to the user once a code matches.
+ * written to the user once a code matches. Server-only (it opens the
+ * database); client code wants lib/phone-format.ts.
  */
 
 export const CODE_TTL_MS = 10 * 60 * 1000;
@@ -17,31 +21,6 @@ export class PhoneError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
   }
-}
-
-/** E.164, assuming the US for bare 10-digit numbers; null when it isn't one. */
-export function normalizePhone(input: string): string | null {
-  const trimmed = input.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  if (!trimmed.startsWith("+")) {
-    if (digits.length === 10) return `+1${digits}`;
-    if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-    return null;
-  }
-  if (digits.length < 8 || digits.length > 15) return null;
-  return `+${digits}`;
-}
-
-/** "+16175550100" → "(617) 555-0100"; other countries keep the + form, spaced. */
-export function formatPhone(e164: string): string {
-  if (/^\+1\d{10}$/.test(e164)) {
-    return `(${e164.slice(2, 5)}) ${e164.slice(5, 8)}-${e164.slice(8)}`;
-  }
-  return e164.replace(/(\d{3})(?=\d)/g, "$1 ");
-}
-
-export function codeMessage(code: string) {
-  return `Your HostKit code is ${code}. It expires in 10 minutes.`;
 }
 
 /** Sends a fresh code. Returns the code itself only when there's no SMS

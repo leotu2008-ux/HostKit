@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { phoneAction, type PhoneFormState } from "@/lib/actions/phone";
-import { formatPhone } from "@/lib/phone";
+import { formatPhone } from "@/lib/phone-format";
 import { Badge, Button, Field, FormError, Input } from "@/components/ui";
 
 function Submit({ children }: { children: string }) {

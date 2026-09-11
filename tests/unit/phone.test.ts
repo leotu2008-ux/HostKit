@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeMessage, formatPhone, normalizePhone } from "@/lib/phone";
+import { codeMessage, formatPhone, normalizePhone } from "@/lib/phone-format";
 
 describe("normalizePhone", () => {
   it("assumes the US for ten digits, however they're typed", () => {
