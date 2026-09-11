@@ -29,11 +29,103 @@ model User {
   /// E.164, set only once a code sent to it has been confirmed.
   phone           String?   @unique
   phoneVerifiedAt DateTime?
+  /// Whether their name and photo may appear in "who's going" on event pages.
+  showOnGuestLists Boolean @default(true)
   createdAt    DateTime @default(now())
 
   events             Event[]
   registrations      Guest[]
   phoneVerifications PhoneVerification[]
+  clubMemberships    ClubMember[]
+  follows            Follow[]
+  notifications      Notification[]
+  pushTokens         PushToken[]
+}
+
+/// A club or org that hosts events: a page people follow, run by its admins.
+model Club {
+  id           String   @id @default(cuid())
+  /// ^[a-z0-9-]{3,30}$, lowercased, immutable once chosen.
+  handle       String   @unique
+  name         String
+  blurb        String?
+  imageUrl     String?
+  coverUrl     String?
+  /// The creator's school, when they're a student — surfaces the club and
+  /// its events to that campus first.
+  schoolDomain String?
+  city         String?
+  createdAt    DateTime @default(now())
+
+  members   ClubMember[]
+  followers Follow[]
+  events    Event[]
+
+  @@index([schoolDomain])
+}
+
+enum ClubRole {
+  OWNER
+  ADMIN
+}
+
+model ClubMember {
+  clubId    String
+  userId    String
+  role      ClubRole @default(ADMIN)
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([clubId, userId])
+  @@index([userId])
+}
+
+model Follow {
+  userId    String
+  clubId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@id([userId, clubId])
+  @@index([clubId])
+}
+
+/// Something that happened to you: lands in the Inbox always, goes out by
+/// email and push when those are configured (lib/notify.ts).
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  /// club_published | registration_request | registration_approved | waitlist_promoted | blast
+  kind      String
+  title     String
+  body      String
+  eventId   String?
+  clubId    String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/// An APNs device token. Registered by the iOS app only when its push
+/// entitlement is on (Info.plist HostKitPushEnabled).
+model PushToken {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  platform   String   @default("ios")
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 /// A one-time code on its way to a phone number. Rows are short-lived:
@@ -150,10 +242,15 @@ model Event {
   schoolDomain     String?
   /// A photo the host chose; when null the cover is drawn from the id.
   coverUrl         String?
+  /// "Posted as" a club the owner manages. The owner stays the person.
+  clubId           String?
+  /// Registrations wait for the host's approval instead of going straight in.
+  requiresApproval Boolean         @default(false)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
   owner            User?                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  club             Club?                @relation(fields: [clubId], references: [id], onDelete: SetNull)
   savedListings    SavedListing[]
   inquiries        Inquiry[]
   budgetCategories BudgetCategory[]
@@ -165,6 +262,7 @@ model Event {
   blasts           Blast[]
 
   @@index([ownerId])
+  @@index([clubId])
   @@index([published, visibility, date])
   @@index([schoolDomain, published, date])
 }
@@ -204,6 +302,8 @@ model Blast {
   recipientCount Int
   /// "resend" when the provider sent it; "manual" when the host copied it.
   provider       String
+  /// Guests also texted (Twilio), when the host asked for it.
+  smsCount       Int      @default(0)
   sentAt         DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -415,6 +515,10 @@ enum RsvpStatus {
   ATTENDING
   DECLINED
   MAYBE
+  /// Asked to join an approval-required event; the host hasn't decided.
+  PENDING
+  /// Wants in; the event was full. Promoted in order when a seat frees.
+  WAITLISTED
 }
 
 model Guest {

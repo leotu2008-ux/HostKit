@@ -23,6 +23,8 @@ const GUEST_STATUS: Record<RsvpStatus, { label: string; tone: Tone }> = {
   ATTENDING: { label: "Going", tone: "forest" },
   MAYBE: { label: "Maybe", tone: "amber" },
   DECLINED: { label: "Not going", tone: "danger" },
+  PENDING: { label: "Requested", tone: "amber" },
+  WAITLISTED: { label: "Waitlist", tone: "neutral" },
 };
 
 function initials(name: string) {

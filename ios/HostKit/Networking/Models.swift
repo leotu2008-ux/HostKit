@@ -28,13 +28,18 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     let isOwner: Bool
     /// True when the signed-in account is registered as attending.
     var registered: Bool?
+    /// Going / pending / waitlisted; older servers only send `registered`.
+    var registration: RegistrationState?
     /// A photo the host uploaded; nil means the cover is drawn from the id.
     var coverUrl: String?
     let webPath: String
 
     var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+    var registrationState: RegistrationState {
+        registration ?? ((registered ?? false) ? .going : .none)
+    }
 
-    var isRegistered: Bool { registered ?? false }
+    var isRegistered: Bool { registrationState == .going }
 
     var endsAt: Date? {
         startsAt.map { $0.addingTimeInterval(TimeInterval(durationHours * 3600)) }
@@ -114,6 +119,17 @@ nonisolated enum RsvpStatus: String, Codable, Sendable {
     case attending = "ATTENDING"
     case declined = "DECLINED"
     case maybe = "MAYBE"
+    /// Asked to join; the host hasn't decided.
+    case pending = "PENDING"
+    /// Wants in; the event is full.
+    case waitlisted = "WAITLISTED"
+    /// A status this build doesn't know — never fail the whole list over it.
+    case unknown = "UNKNOWN"
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = RsvpStatus(rawValue: raw) ?? .unknown
+    }
 
     var label: String {
         switch self {
@@ -121,7 +137,21 @@ nonisolated enum RsvpStatus: String, Codable, Sendable {
         case .attending: "Going"
         case .declined: "Not going"
         case .maybe: "Maybe"
+        case .pending: "Requested"
+        case .waitlisted: "Waitlist"
+        case .unknown: "—"
         }
+    }
+}
+
+/// Where the signed-in viewer stands with an event. Mirrors `registration`
+/// in `lib/api/serialize.ts`; unknown values decode as `.none`.
+nonisolated enum RegistrationState: String, Codable, Sendable {
+    case none, going, pending, waitlisted
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = RegistrationState(rawValue: raw) ?? .none
     }
 }
 
