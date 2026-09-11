@@ -11,6 +11,29 @@ struct SettingsView: View {
     var body: some View {
         Form {
             if model.isSignedIn {
+                Section {
+                    if let user = model.user, user.hasVerifiedPhone, let phone = user.phone {
+                        HStack {
+                            Text(PhoneFormat.pretty(phone))
+                            Spacer()
+                            StatusPill(text: "Verified", tint: .green)
+                        }
+                        Button("Remove number", role: .destructive) {
+                            Task { try? await model.removePhone() }
+                        }
+                    } else {
+                        NavigationLink {
+                            PhoneView()
+                        } label: {
+                            Label("Add phone number", systemImage: "phone")
+                        }
+                    }
+                } header: {
+                    Text("Phone")
+                } footer: {
+                    Text("Hosts of events you register for can see this number. Confirmed with a text.")
+                }
+
                 Section("Siri & Shortcuts") {
                     SiriTipView(intent: NextEventIntent(), isVisible: $showSiriTip)
                     Text("Try “Check in a guest with HostKit” at the door.")

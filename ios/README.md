@@ -43,9 +43,13 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 
 | Tab | Screens |
 | --- | --- |
-| **Discover** | Upcoming public events grouped by day, city filter, event page with register sheet |
-| **Events** | Your events as a timeline (upcoming / past), Create (with an optional MapKit venue search), and Manage — Overview (guest list, check-in) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list) · Promote (publish, visibility, share link, QR code, promo copy) |
-| **You** | Sign in/out, server address, Apple Intelligence status, Siri tip |
+| **Discover** | "Your events" first (hosting + going), then campus and city feeds grouped by day, event page with register sheet |
+| **Events** | Your events as a timeline (upcoming / past) and Manage — Overview (guest list, check-in, tap the cover to add a photo) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list) · Promote (publish, visibility, share link, QR code, promo copy) |
+| **Create** | The event form, with an optional MapKit venue search and a cover photo |
+| **Logo (top-left)** | The account menu: profile (with photo), past events, settings (phone number verified by text, server address, Apple Intelligence, Siri), sign in / out |
+
+Everything is set in Inter (`Design/Typography.swift`; the four static faces
+are bundled under `Resources/Fonts`).
 
 ### Apple Intelligence
 

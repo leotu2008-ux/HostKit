@@ -100,6 +100,25 @@ geocoding service). Tagging only surfaces events — anyone nearby can register.
 Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
 `docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
 
+## Your account
+
+The logo (and your avatar) opens the account menu on both apps: profile,
+your events, past events, settings, sign out. Discover leads with **Your
+events** — what you host and what you've registered for, soonest first
+(`lib/mine.ts`).
+
+- **Profile picture** and **event covers** are uploads (`lib/images.ts`):
+  JPEG/PNG/WebP up to 5 MB, downscaled in the client first. They go to
+  Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set, otherwise into Postgres
+  and out through `/api/images/:id`, so local dev needs no storage service.
+  Without a photo an event keeps the cover drawn from its id.
+- **Phone number**, verified by a texted code (`lib/phone.ts`): six digits,
+  hashed, ten minutes, five tries, one code a minute. Twilio sends the text
+  when configured; otherwise the code is logged and — outside production —
+  returned so the flow works locally. Hosts see registrants' verified numbers
+  on the guest list.
+- Everything is set in Inter, on the web and in the app.
+
 ## Hosting an event
 
 **Registering needs an account.** Guests sign in or create one on the event
@@ -126,6 +145,8 @@ Optional services, both off by default (see `.env.example`):
 | --- | --- |
 | `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). The iOS app uses MapKit directly and needs nothing |
 | `RESEND_API_KEY`, `RESEND_FROM` | Real email blasts (resend.com, after verifying a sending domain). Without them blasts are recorded and copied by hand |
+| `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob (Vercel → Storage → Blob). Without it photos are stored in Postgres |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes. Without them the code is logged (and returned in development) |
 
 ## iOS app
 
@@ -141,7 +162,7 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `POST /api/v1/auth/signup` | Name + email + password → account and token, in one step |
 | `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
 | `GET /api/v1/me` | The token's user |
-| `GET /api/v1/discover?city=` | Upcoming public, published events |
+| `GET /api/v1/discover?city=` | Upcoming public, published events; with a token also `mine` (hosting + going) and a student's `campus` |
 | `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
 | `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
 | `POST /api/v1/events/:id/register` | Register the signed-in account (401 without a token) |
@@ -153,6 +174,10 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `GET /api/v1/events/:id/outreach` · `POST` | Everyone to reach, with drafted messages · add a venue / speaker / cohost |
 | `PATCH /api/v1/events/:id/outreach/:rowId` · `DELETE` | Confirm / pending / declined · remove |
 | `GET /api/v1/events/:id/blasts` · `POST` | Segments with counts, past blasts, `canSend` · send one (returns recipients when it couldn't email) |
+| `PUT /api/v1/me/avatar` · `DELETE` | Profile picture — the image is the request body, with its `Content-Type` |
+| `PUT /api/v1/events/:id/cover` · `DELETE` | Event cover photo, same shape; honours the drafts header |
+| `POST /api/v1/me/phone` · `DELETE` | `{ phone }` → texts a code (`devCode` in development without Twilio) · remove the number |
+| `POST /api/v1/me/phone/verify` | `{ code }` → the number goes on the account |
 
 Like the website's draft cookie, a signed-out device proves it made a draft
 by sending `X-HostKit-Drafts: id.token,id.token` (`lib/api/drafts.ts`).

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent } from "@/lib/api/http";
-import { serializeGuest } from "@/lib/api/serialize";
+import { guestPhone, serializeGuest } from "@/lib/api/serialize";
 
 /** The guest list and door counts for a night this request manages. */
 export async function GET(
@@ -15,6 +15,7 @@ export async function GET(
   const guests = await db.guest.findMany({
     where: { eventId: event.id },
     orderBy: [{ name: "asc" }],
+    include: guestPhone,
   });
 
   return json({

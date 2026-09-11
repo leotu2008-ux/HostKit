@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
+import { guestPhone, verifiedPhone } from "@/lib/api/serialize";
+import { formatPhone } from "@/lib/phone";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
@@ -53,6 +55,7 @@ export default async function EventOverviewPage({
     db.guest.findMany({
       where: { eventId: event.id },
       orderBy: [{ name: "asc" }],
+      include: guestPhone,
     }),
     db.eventCollaborator.findMany({
       where: { eventId: event.id },
@@ -228,6 +231,14 @@ export default async function EventOverviewPage({
                           {isIn
                             ? `In at ${guest.checkedInAt!.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
                             : (guest.email ?? "No email")}
+                          {!isIn && verifiedPhone(guest.user) ? (
+                            <>
+                              {" · "}
+                              <a href={`tel:${verifiedPhone(guest.user)}`} className="hover:text-ink">
+                                {formatPhone(verifiedPhone(guest.user)!)}
+                              </a>
+                            </>
+                          ) : null}
                           {guest.plusOnes > 0 ? ` · +${guest.plusOnes}` : ""}
                         </p>
                       </div>

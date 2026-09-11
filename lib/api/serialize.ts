@@ -139,10 +139,21 @@ export type ApiGuest = {
   id: string;
   name: string;
   email: string | null;
+  /** The registrant's verified number, when their account has one. */
+  phone: string | null;
   status: RsvpStatus;
   plusOnes: number;
   checkedInAt: string | null;
 };
+
+/** Selects the registrant's verified phone alongside a guest query. */
+export const guestPhone = {
+  user: { select: { phone: true, phoneVerifiedAt: true } },
+};
+
+export function verifiedPhone(user?: { phone: string | null; phoneVerifiedAt: Date | null } | null) {
+  return user?.phone && user.phoneVerifiedAt ? user.phone : null;
+}
 
 export function serializeGuest(guest: {
   id: string;
@@ -151,11 +162,13 @@ export function serializeGuest(guest: {
   rsvpStatus: RsvpStatus;
   plusOnes: number;
   checkedInAt: Date | null;
+  user?: { phone: string | null; phoneVerifiedAt: Date | null } | null;
 }): ApiGuest {
   return {
     id: guest.id,
     name: guest.name,
     email: guest.email,
+    phone: verifiedPhone(guest.user),
     status: guest.rsvpStatus,
     plusOnes: guest.plusOnes,
     checkedInAt: guest.checkedInAt ? guest.checkedInAt.toISOString() : null,

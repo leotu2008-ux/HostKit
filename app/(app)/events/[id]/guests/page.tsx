@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
+import { guestPhone, verifiedPhone } from "@/lib/api/serialize";
+import { formatPhone } from "@/lib/phone";
 import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
 import { updateGuestAction, removeGuestAction } from "@/lib/actions/guests";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
@@ -39,6 +41,7 @@ export default async function GuestsPage({
   const guests = await db.guest.findMany({
     where: { eventId: event.id },
     orderBy: [{ rsvpStatus: "asc" }, { name: "asc" }],
+    include: guestPhone,
   });
 
   const summary = summarizeGuests(guests);
@@ -112,6 +115,14 @@ export default async function GuestsPage({
                   <p className="font-medium text-ink">{guest.name}</p>
                   <p className="truncate text-sm text-ink-soft">
                     {guest.email ?? "No email"}
+                    {verifiedPhone(guest.user) ? (
+                      <>
+                        {" · "}
+                        <a href={`tel:${verifiedPhone(guest.user)}`} className="hover:text-ink">
+                          {formatPhone(verifiedPhone(guest.user)!)}
+                        </a>
+                      </>
+                    ) : null}
                     {guest.plusOnes > 0 ? ` · +${guest.plusOnes}` : ""}
                     {guest.dietary ? ` · ${guest.dietary}` : ""}
                   </p>

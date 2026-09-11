@@ -114,6 +114,22 @@ final class AppModel {
         user = updated
     }
 
+    func startPhone(_ phone: String) async throws -> PhoneStart {
+        try await api.startPhone(phone)
+    }
+
+    func verifyPhone(code: String) async throws {
+        let updated = try await api.verifyPhone(code: code)
+        Session.user = updated
+        user = updated
+    }
+
+    func removePhone() async throws {
+        let updated = try await api.removePhone()
+        Session.user = updated
+        user = updated
+    }
+
     func event(id: String) async throws -> HostEvent {
         if let sample = SampleData.events.first(where: { $0.id == id }) {
             return sample

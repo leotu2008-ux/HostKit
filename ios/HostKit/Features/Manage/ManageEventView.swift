@@ -265,7 +265,8 @@ private struct OverviewTab: View {
                 Text(guest.name).font(.inter(.body, .medium))
                 Text(isIn
                     ? "In at \(EventDates.localTime(guest.checkedInAt!))"
-                    : [guest.status.label, guest.email].compactMap { $0 }.joined(separator: " · "))
+                    : [guest.status.label, guest.email, guest.phone.map(PhoneFormat.pretty)]
+                        .compactMap { $0 }.joined(separator: " · "))
                     .font(.inter(.caption))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -289,6 +290,9 @@ private struct OverviewTab: View {
         .swipeActions {
             if isIn {
                 Button("Undo") { Task { await setCheckedIn(guest, false) } }.tint(.orange)
+            }
+            if let phone = guest.phone, let url = URL(string: "sms:\(phone)") {
+                Link(destination: url) { Label("Text", systemImage: "message") }.tint(.green)
             }
         }
     }

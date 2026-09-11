@@ -129,9 +129,18 @@ nonisolated struct Guest: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let name: String
     let email: String?
+    /// The registrant's verified number, when their account has one.
+    var phone: String?
     let status: RsvpStatus
     let plusOnes: Int
     var checkedInAt: Date?
+}
+
+nonisolated struct PhoneStart: Decodable, Sendable {
+    let phone: String
+    let expiresAt: Date
+    /// Only present without an SMS service, outside production.
+    let devCode: String?
 }
 
 nonisolated struct GuestSummary: Codable, Hashable, Sendable {
@@ -158,9 +167,13 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     var classYear: Int?
     var bio: String?
     var imageUrl: String?
+    /// E.164, present only once a texted code confirmed it.
+    var phone: String?
+    var phoneVerified: Bool?
 
     var isStudent: Bool { school != nil }
     var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var hasVerifiedPhone: Bool { phone != nil && (phoneVerified ?? false) }
 }
 
 /// What Discover shows: the city feed, plus the student's campus nights.

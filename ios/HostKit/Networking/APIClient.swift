@@ -166,6 +166,23 @@ nonisolated struct APIClient: Sendable {
         return envelope.event
     }
 
+    // MARK: Phone verification
+
+    func startPhone(_ phone: String) async throws -> PhoneStart {
+        try await send("POST", "/api/v1/me/phone", body: Self.encode(PhoneBody(phone: phone)))
+    }
+
+    func verifyPhone(code: String) async throws -> HostUser {
+        let envelope: UserEnvelope = try await send(
+            "POST", "/api/v1/me/phone/verify", body: Self.encode(CodeBody(code: code)))
+        return envelope.user
+    }
+
+    func removePhone() async throws -> HostUser {
+        let envelope: UserEnvelope = try await send("DELETE", "/api/v1/me/phone")
+        return envelope.user
+    }
+
     // MARK: Plumbing
 
     private func send<T: Decodable>(
@@ -249,6 +266,8 @@ nonisolated struct PublishBody: Encodable, Sendable {
     let published: Bool
     let visibility: EventVisibility?
 }
+nonisolated struct PhoneBody: Encodable, Sendable { let phone: String }
+nonisolated struct CodeBody: Encodable, Sendable { let code: String }
 nonisolated struct ProfilePatch: Encodable, Sendable {
     let name: String
     let classYear: Int?
