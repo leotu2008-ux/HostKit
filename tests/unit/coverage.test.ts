@@ -37,7 +37,7 @@ describe("computeCoverage", () => {
     expect(venue.bookedCents).toBe(820_000);
   });
 
-  it("does NOT count a sent or quoted enquiry as coverage", () => {
+  it("does NOT count a sent or quoted inquiry as coverage", () => {
     // Chasing a caterer is not the same as having one.
     const rows = computeCoverage(
       [...required],
@@ -60,7 +60,7 @@ describe("computeCoverage", () => {
     expect(venue.inFlight).toBe(false);
   });
 
-  it("ignores a declined enquiry entirely", () => {
+  it("ignores a declined inquiry entirely", () => {
     const rows = computeCoverage(
       [...required],
       [...funded],

@@ -27,7 +27,12 @@ export default async function DiscoverPage({
       return single === undefined ? [] : [[key, single] as [string, string]];
     }),
   );
-  const [{ scored, totalInCity }, neighborhoods, amenities, budgetCategories] =
+  const [
+    { scored, totalInCity, savedIds },
+    neighborhoods,
+    amenities,
+    budgetCategories,
+  ] =
     await Promise.all([
       loadDiscovery(event, filters),
       neighborhoodsIn(event.city),
@@ -76,6 +81,8 @@ export default async function DiscoverPage({
                 listing={listing}
                 fit={fit}
                 href={`/listings/${listing.id}?event=${event.id}`}
+                eventId={event.id}
+                saved={savedIds.has(listing.id)}
               />
             ))}
           </div>

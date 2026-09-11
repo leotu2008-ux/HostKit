@@ -31,7 +31,7 @@ export async function loadDiscovery(
   },
   filters: DiscoverFilters,
 ) {
-  const [listings, budgetCategories] = await Promise.all([
+  const [listings, budgetCategories, saved] = await Promise.all([
     db.listing.findMany({
       where: {
         city: event.city,
@@ -43,7 +43,12 @@ export async function loadDiscovery(
       },
     }),
     db.budgetCategory.findMany({ where: { eventId: event.id } }),
+    db.savedListing.findMany({
+      where: { eventId: event.id },
+      select: { listingId: true },
+    }),
   ]);
+  const savedIds = new Set(saved.map((s) => s.listingId));
 
   const allocationByCategory = new Map(
     budgetCategories.map((c) => [c.category, c.allocatedCents]),
@@ -92,10 +97,10 @@ export async function loadDiscovery(
     }
   });
 
-  return { scored, totalInCity: listings.length };
+  return { scored, totalInCity: listings.length, savedIds };
 }
 
-/** Distinct neighbourhoods available in a city, for the filter rail. */
+/** Distinct neighborhoods available in a city, for the filter rail. */
 export async function neighborhoodsIn(city: string): Promise<string[]> {
   const rows = await db.listing.findMany({
     where: { city, neighborhood: { not: null } },

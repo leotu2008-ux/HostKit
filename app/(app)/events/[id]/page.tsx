@@ -143,7 +143,7 @@ export default async function EventOverviewPage({
                   {row.bookedName
                     ? row.bookedName
                     : row.inFlight
-                      ? "Enquiry out, no answer yet"
+                      ? "Inquiry out, no answer yet"
                       : "Nothing booked"}
                 </p>
               </div>

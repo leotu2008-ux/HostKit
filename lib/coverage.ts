@@ -4,7 +4,7 @@ import { CATEGORY_LABEL } from "@/lib/catalog";
 /**
  * "What does this event still need?"
  *
- * A category counts as covered once a booking exists against it. Enquiries
+ * A category counts as covered once a booking exists against it. Inquiries
  * that are merely sent or quoted are explicitly NOT coverage — chasing a
  * caterer is not the same as having one, and a checklist that pretends
  * otherwise is worse than no checklist.
@@ -22,7 +22,7 @@ export type CoverageRow = {
   required: boolean;
   bookedName: string | null;
   bookedCents: number | null;
-  /** An enquiry is out but nothing is booked yet. */
+  /** An inquiry is out but nothing is booked yet. */
   inFlight: boolean;
 };
 

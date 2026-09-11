@@ -22,7 +22,7 @@ const STEPS = [
   {
     step: "04",
     title: "Shortlist, ask, book",
-    body: "Compare your finalists side by side, send an enquiry with the details already filled in, and log the quote. Booking writes straight back into your budget and ticks off the task.",
+    body: "Compare your finalists side by side, send an inquiry with the details already filled in, and log the quote. Booking writes straight back into your budget and ticks off the task.",
   },
 ];
 

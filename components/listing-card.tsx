@@ -4,6 +4,7 @@ import type { ListingFit } from "@/lib/scoring";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { CATEGORY_LABEL } from "@/lib/catalog";
 import { ListingImage } from "@/components/listing-image";
+import { SaveButton } from "@/components/save-button";
 import { Badge, cx, type Tone } from "@/components/ui";
 
 export type ListingCardData = {
@@ -43,11 +44,16 @@ export function ListingCard({
   listing,
   fit,
   href,
+  eventId,
+  saved = false,
   action,
 }: {
   listing: ListingCardData;
   fit: ListingFit;
   href: string;
+  /** Present when browsing inside an event, which enables shortlisting. */
+  eventId?: string;
+  saved?: boolean;
   action?: React.ReactNode;
 }) {
   const signal = headlineSignal(fit);
@@ -60,15 +66,27 @@ export function ListingCard({
         disqualified && "opacity-70",
       )}
     >
-      <Link href={href} className="block">
-        <div className="aspect-[3/2] overflow-hidden bg-sunk">
-          <ListingImage
-            listingId={listing.id}
-            category={listing.category}
-            name={listing.name}
-          />
-        </div>
-      </Link>
+      <div className="relative">
+        <Link href={href} className="block">
+          <div className="aspect-[3/2] overflow-hidden bg-sunk">
+            <ListingImage
+              listingId={listing.id}
+              category={listing.category}
+              name={listing.name}
+            />
+          </div>
+        </Link>
+        {eventId ? (
+          <div className="absolute top-3 right-3 z-10">
+            <SaveButton
+              eventId={eventId}
+              listingId={listing.id}
+              saved={saved}
+              variant="icon"
+            />
+          </div>
+        ) : null}
+      </div>
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">

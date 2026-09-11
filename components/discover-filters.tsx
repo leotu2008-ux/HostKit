@@ -116,7 +116,7 @@ export function DiscoverFilters({
       </Field>
 
       {neighborhoods.length > 0 ? (
-        <Field label="Neighbourhood">
+        <Field label="Neighborhood">
           <Select
             value={current.get("hood") ?? ""}
             onChange={(e) => update("hood", e.target.value || null)}

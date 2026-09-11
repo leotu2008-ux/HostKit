@@ -1,4 +1,8 @@
-import type { EventType, ListingCategory } from "@/generated/prisma/enums";
+import type {
+  EventType,
+  InquiryStatus,
+  ListingCategory,
+} from "@/generated/prisma/enums";
 
 export const CATEGORY_LABEL: Record<ListingCategory, string> = {
   VENUE: "Venue",
@@ -66,3 +70,22 @@ export const CITIES = [
 ] as const;
 
 export type City = (typeof CITIES)[number];
+
+export const INQUIRY_STATUS_LABEL: Record<InquiryStatus, string> = {
+  DRAFT: "Draft",
+  SENT: "Sent",
+  REPLIED: "Replied",
+  QUOTED: "Quoted",
+  BOOKED: "Booked",
+  DECLINED: "Declined",
+};
+
+/** Statuses in the order an inquiry actually moves through them. */
+export const INQUIRY_STATUS_FLOW: InquiryStatus[] = [
+  "DRAFT",
+  "SENT",
+  "REPLIED",
+  "QUOTED",
+  "BOOKED",
+  "DECLINED",
+];

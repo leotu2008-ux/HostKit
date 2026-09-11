@@ -7,6 +7,13 @@ import { daysUntil } from "@/lib/plan";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { CATEGORY_LABEL } from "@/lib/catalog";
 import { ListingImage } from "@/components/listing-image";
+import { SaveButton } from "@/components/save-button";
+import {
+  InquiryPanel,
+  StartInquiryButton,
+} from "@/components/inquiry-panel";
+import { composeInquiry } from "@/lib/outreach";
+import { INQUIRY_STATUS_LABEL } from "@/lib/catalog";
 import { Badge, ButtonLink, Card, cx, type Tone } from "@/components/ui";
 
 const UNIT_LABEL = {
@@ -49,7 +56,23 @@ export default async function ListingPage({
       : null;
 
   let fit: ListingFit | null = null;
+  let saved = false;
+  let inquiry = null as Awaited<
+    ReturnType<typeof db.inquiry.findUnique>
+  > | null;
+
   if (event) {
+    [saved, inquiry] = await Promise.all([
+      db.savedListing
+        .findUnique({
+          where: { eventId_listingId: { eventId: event.id, listingId: id } },
+        })
+        .then(Boolean),
+      db.inquiry.findUnique({
+        where: { eventId_listingId: { eventId: event.id, listingId: id } },
+      }),
+    ]);
+
     const allocation = await db.budgetCategory.findUnique({
       where: {
         eventId_category: { eventId: event.id, category: listing.category },
@@ -132,6 +155,25 @@ export default async function ListingPage({
           <p className="mt-10 text-sm text-ink-mute">
             Needs at least {listing.leadTimeDays} days&rsquo; notice.
           </p>
+
+          {event && inquiry ? (
+            <section className="mt-10 border-t border-line pt-8">
+              <h2 className="font-display mb-1 text-lg text-ink">
+                Your inquiry
+              </h2>
+              <p className="mb-5 text-sm text-ink-soft">
+                HostKit can&rsquo;t send this for you — copy it into your own
+                email, then track what comes back here.
+              </p>
+              <InquiryPanel
+                eventId={event.id}
+                inquiry={inquiry}
+                subject={
+                  composeInquiry(event, listing, user?.name ?? "").subject
+                }
+              />
+            </section>
+          ) : null}
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
@@ -199,6 +241,27 @@ export default async function ListingPage({
                     }
                   />
                 </dl>
+
+                <div className="mt-5 space-y-3 border-t border-line pt-5">
+                  <SaveButton
+                    eventId={event.id}
+                    listingId={listing.id}
+                    saved={saved}
+                  />
+                  {inquiry ? (
+                    <p className="text-center text-sm text-ink-soft">
+                      Inquiry status:{" "}
+                      <span className="font-medium text-ink">
+                        {INQUIRY_STATUS_LABEL[inquiry.status]}
+                      </span>
+                    </p>
+                  ) : (
+                    <StartInquiryButton
+                      eventId={event.id}
+                      listingId={listing.id}
+                    />
+                  )}
+                </div>
               </>
             ) : (
               <>

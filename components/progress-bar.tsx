@@ -1,6 +1,6 @@
 import { cx } from "@/components/ui";
 
-/** A budget bar. Caps the fill at 100% but keeps the over-budget colour, so a
+/** A budget bar. Caps the fill at 100% but keeps the over-budget color, so a
  *  wildly overspent category is obvious without the bar escaping its box. */
 export function ProgressBar({
   percent,
