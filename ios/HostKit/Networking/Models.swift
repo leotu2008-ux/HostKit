@@ -32,6 +32,8 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var registration: RegistrationState?
     /// Registrations wait for the host's approval.
     var requiresApproval: Bool?
+    /// The first few people going (opted-in account registrations); empty in lists.
+    var attendees: [Attendee]?
     /// A photo the host uploaded; nil means the cover is drawn from the id.
     var coverUrl: String?
     let webPath: String
@@ -146,6 +148,25 @@ nonisolated enum RsvpStatus: String, Codable, Sendable {
     }
 }
 
+/// A face on the event page. Mirrors `ApiAttendee` in `lib/api/serialize.ts`.
+nonisolated struct Attendee: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let firstName: String
+    let imageUrl: String?
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+
+    /// "Ada, Grace and 12 others are going" — same rules as `goingSentence` on the web.
+    static func sentence(_ names: [String], total: Int) -> String {
+        if total == 0 { return "Be the first to register" }
+        let shown = Array(names.prefix(2))
+        let rest = total - shown.count
+        let verb = total == 1 ? "is" : "are"
+        if shown.isEmpty { return "\(total) \(verb) going" }
+        if rest <= 0 { return "\(shown.joined(separator: " and ")) \(verb) going" }
+        return "\(shown.joined(separator: ", ")) and \(rest) \(rest == 1 ? "other" : "others") are going"
+    }
+}
+
 /// Where the signed-in viewer stands with an event. Mirrors `registration`
 /// in `lib/api/serialize.ts`; unknown values decode as `.none`.
 nonisolated enum RegistrationState: String, Codable, Sendable {
@@ -204,6 +225,8 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     /// E.164, present only once a texted code confirmed it.
     var phone: String?
     var phoneVerified: Bool?
+    /// Whether their first name and photo may appear in "who's going".
+    var showOnGuestLists: Bool?
 
     var isStudent: Bool { school != nil }
     var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }

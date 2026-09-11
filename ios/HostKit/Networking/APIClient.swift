@@ -38,7 +38,14 @@ nonisolated struct APIClient: Sendable {
     }
 
     func updateProfile(name: String, classYear: Int?, bio: String?) async throws -> HostUser {
-        let body = try Self.encode(ProfilePatch(name: name, classYear: classYear, bio: bio))
+        let body = try Self.encode(ProfilePatch(name: name, classYear: classYear, bio: bio, showOnGuestLists: nil))
+        let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
+        return envelope.user
+    }
+
+    /// Only this one setting; the server leaves everything else alone.
+    func setShowOnGuestLists(_ on: Bool) async throws -> HostUser {
+        let body = try Self.encode(ProfilePatch(name: nil, classYear: nil, bio: nil, showOnGuestLists: on))
         let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
         return envelope.user
     }
@@ -287,10 +294,21 @@ nonisolated struct RegisterEnvelope: Decodable, Sendable {
 }
 nonisolated struct PhoneBody: Encodable, Sendable { let phone: String }
 nonisolated struct CodeBody: Encodable, Sendable { let code: String }
+/// Keys that are nil are left out, so the server only touches what's sent.
 nonisolated struct ProfilePatch: Encodable, Sendable {
-    let name: String
+    let name: String?
     let classYear: Int?
     let bio: String?
+    let showOnGuestLists: Bool?
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: Keys.self)
+        if let name { try c.encode(name, forKey: .name) }
+        if name != nil { try c.encode(classYear, forKey: .classYear) }
+        if name != nil { try c.encode(bio, forKey: .bio) }
+        if let showOnGuestLists { try c.encode(showOnGuestLists, forKey: .showOnGuestLists) }
+    }
+    private enum Keys: String, CodingKey { case name, classYear, bio, showOnGuestLists }
 }
 nonisolated struct GuestEnvelope: Decodable, Sendable { let guest: Guest }
 nonisolated struct GuestsEnvelope: Decodable, Sendable {

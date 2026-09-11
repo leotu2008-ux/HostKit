@@ -7,6 +7,8 @@ import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
 import { registrationState } from "@/lib/registration";
 import { waitlistPositionFor } from "@/lib/waitlist";
+import { attendeesPreview, type Attendee } from "@/lib/attendees";
+import { GoingRow } from "@/components/going-row";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
@@ -47,7 +49,13 @@ function timeRange(date: Date | null, hours: number): string {
   return `${formatEventTime(date)} – ${formatEventTime(end)}`;
 }
 
-function HostedBy({ name, going }: { name: string | null; going: number }) {
+function HostedBy({
+  name,
+  preview,
+}: {
+  name: string | null;
+  preview: { attendees: Attendee[]; total: number };
+}) {
   return (
     <div className="border-t border-line pt-5">
       <p className="text-[13px] font-medium text-ink-mute">Hosted by</p>
@@ -59,9 +67,9 @@ function HostedBy({ name, going }: { name: string | null; going: number }) {
           {name ?? "A host still signing in"}
         </span>
       </div>
-      <p className="mt-4 text-[14px] text-ink-soft">
-        <span className="tabular font-medium text-ink">{going}</span> going
-      </p>
+      <div className="mt-4">
+        <GoingRow attendees={preview.attendees} total={preview.total} />
+      </div>
     </div>
   );
 }
@@ -86,7 +94,10 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const registration = await registrationState(event.id, user?.id ?? null);
+  const [registration, preview] = await Promise.all([
+    registrationState(event.id, user?.id ?? null),
+    attendeesPreview(event.id),
+  ]);
   const alreadyGoing = registration === "going";
   const waitlistPlace =
     registration === "waitlisted" ? await waitlistPositionFor(event.id, user?.id ?? null) : null;
@@ -125,7 +136,7 @@ export default async function PublicEventPage({
             <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" />
           </div>
           <div className="hidden md:block">
-            <HostedBy name={event.owner?.name ?? null} going={going} />
+            <HostedBy name={event.owner?.name ?? null} preview={preview} />
           </div>
         </aside>
 
@@ -265,7 +276,7 @@ export default async function PublicEventPage({
           </section>
 
           <div className="mt-10 md:hidden">
-            <HostedBy name={event.owner?.name ?? null} going={going} />
+            <HostedBy name={event.owner?.name ?? null} preview={preview} />
           </div>
 
           {isOwner ? (

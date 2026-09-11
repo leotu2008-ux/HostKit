@@ -24,3 +24,11 @@ export async function updateProfileAction(
   refresh();
   return { saved: true };
 }
+
+/** Settings → "Show me on guest lists". */
+export async function setGuestListVisibilityAction(formData: FormData) {
+  const user = await requireUser("/settings");
+  const on = String(formData.get("showOnGuestLists") ?? "") === "on";
+  await db.user.update({ where: { id: user.id }, data: { showOnGuestLists: on } });
+  refresh();
+}

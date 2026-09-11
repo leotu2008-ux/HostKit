@@ -16,12 +16,9 @@ export async function PATCH(request: Request) {
   const user = await apiUser(request);
   if (!user) return apiError("Sign in first.", 401);
 
-  const body = (await readJson(request)) as Record<string, unknown> | null;
-  const parsed = profileSchema.safeParse({
-    name: body?.name ?? user.name,
-    classYear: body?.classYear ?? "",
-    bio: body?.bio ?? "",
-  });
+  // Only the keys sent are touched, so the app can PATCH one setting.
+  const body = ((await readJson(request)) ?? {}) as Record<string, unknown>;
+  const parsed = profileSchema.safeParse(body);
   if (!parsed.success) {
     return apiError(parsed.error.issues[0]?.message ?? "Check the details.", 400);
   }
@@ -29,7 +26,10 @@ export async function PATCH(request: Request) {
   const updated = await db.user.update({
     where: { id: user.id },
     data: normalizeProfile(parsed.data),
-    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, imageUrl: true, phone: true, phoneVerifiedAt: true },
+    select: {
+      id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true,
+      imageUrl: true, phone: true, phoneVerifiedAt: true, showOnGuestLists: true,
+    },
   });
   return json({ user: serializeUser(updated) });
 }

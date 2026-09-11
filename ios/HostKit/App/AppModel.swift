@@ -102,6 +102,12 @@ final class AppModel {
         user = updated
     }
 
+    func setShowOnGuestLists(_ on: Bool) async throws {
+        let updated = try await api.setShowOnGuestLists(on)
+        Session.user = updated
+        user = updated
+    }
+
     func setAvatar(_ jpeg: Data) async throws {
         let updated = try await api.setAvatar(jpeg, contentType: PhotoJPEG.contentType)
         Session.user = updated

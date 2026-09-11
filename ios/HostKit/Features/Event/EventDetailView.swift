@@ -36,6 +36,10 @@ struct EventDetailView: View {
                             Text("Hosted by \(host)").font(.inter(.subheadline))
                         }
                     }
+                    if event.published {
+                        GoingRow(attendees: event.attendees ?? [], total: event.going)
+                            .padding(.top, 4)
+                    }
                 }
 
                 VStack(spacing: 14) {

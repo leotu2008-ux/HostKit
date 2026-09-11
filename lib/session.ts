@@ -31,6 +31,7 @@ export async function currentProfile() {
       imageUrl: true,
       phone: true,
       phoneVerifiedAt: true,
+      showOnGuestLists: true,
     },
   });
   if (!row) return null;

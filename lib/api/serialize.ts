@@ -26,6 +26,7 @@ export function serializeUser(user: {
   imageUrl?: string | null;
   phone?: string | null;
   phoneVerifiedAt?: Date | null;
+  showOnGuestLists?: boolean;
 }) {
   return {
     id: user.id,
@@ -37,6 +38,7 @@ export function serializeUser(user: {
     imageUrl: user.imageUrl ?? null,
     phone: user.phone ?? null,
     phoneVerified: Boolean(user.phone && user.phoneVerifiedAt),
+    showOnGuestLists: user.showOnGuestLists ?? true,
   };
 }
 
@@ -67,6 +69,9 @@ type EventRow = {
 };
 
 export type RegistrationState = "none" | "going" | "pending" | "waitlisted";
+
+/** A face on the event page. */
+export type ApiAttendee = { id: string; firstName: string; imageUrl: string | null };
 
 export type ApiEvent = {
   id: string;
@@ -104,6 +109,8 @@ export type ApiEvent = {
   registration: RegistrationState;
   /** Registrations wait for the host's approval. */
   requiresApproval: boolean;
+  /** The first few people going (opted-in account registrations); empty in lists. */
+  attendees: ApiAttendee[];
   /** A photo the host uploaded; null means draw the cover from the id. */
   coverUrl: string | null;
   webPath: string;
@@ -114,6 +121,7 @@ export function serializeEvent(
   going: number,
   canManage: boolean,
   registration: RegistrationState | boolean = "none",
+  attendees: ApiAttendee[] = [],
 ): ApiEvent {
   const state: RegistrationState =
     typeof registration === "boolean" ? (registration ? "going" : "none") : registration;
@@ -141,6 +149,7 @@ export function serializeEvent(
     registered: state === "going",
     registration: state,
     requiresApproval: event.requiresApproval ?? false,
+    attendees,
     coverUrl: event.coverUrl ?? null,
     webPath: `/e/${event.id}`,
   };

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { isPublicPageVisible } from "@/lib/listing";
 import { requestOwnsDraft } from "@/lib/api/drafts";
 import { registrationState } from "@/lib/registration";
+import { attendeesPreview } from "@/lib/attendees";
 import { apiError, apiUser, json } from "@/lib/api/http";
 import { goingCount, serializeEvent } from "@/lib/api/serialize";
 
@@ -28,6 +29,11 @@ export async function GET(
     return apiError("Not found.", 404);
   }
 
-  const registration = await registrationState(event.id, viewer?.id ?? null);
-  return json({ event: serializeEvent(event, event._count.guests, canManage, registration) });
+  const [registration, preview] = await Promise.all([
+    registrationState(event.id, viewer?.id ?? null),
+    attendeesPreview(event.id),
+  ]);
+  return json({
+    event: serializeEvent(event, event._count.guests, canManage, registration, preview.attendees),
+  });
 }
