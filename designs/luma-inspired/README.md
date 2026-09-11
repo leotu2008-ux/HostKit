@@ -14,6 +14,7 @@ If a mock feels too close to a third-party product, restyle toward `DESIGN_SYSTE
 
 | File | What it is |
 | --- | --- |
+| [RESEARCH_NOTES.md](./RESEARCH_NOTES.md) | Public help-center IA + live luma.com visual DNA, and how HostKit diverges |
 | [INFORMATION_ARCHITECTURE.md](./INFORMATION_ARCHITECTURE.md) | Screens, nav, and how HostKit’s planner maps onto a Luma-style manage surface |
 | [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | HostKit tokens, type, radius, components, light/dark, original theme catalog |
 | [SCREENS.md](./SCREENS.md) | Wireframe-level specs for Discover, Create, public page, Manage, Guests, Registration, Blasts, Insights, Check-in |
@@ -26,7 +27,7 @@ Sample event throughout: **Rooftop Jazz Night** (Oakland, fictional guests). Eve
 
 ## How to use these files
 
-1. **Read IA first**, then the design system, then screen specs. Mocks are illustrations of those specs, not a second source of truth.
+1. **Read `RESEARCH_NOTES.md` then IA**, then the design system, then screen specs. Mocks illustrate those specs; they are not a second source of truth.
 2. **Open mocks in a browser** (double-click or `open designs/luma-inspired/mockups/…`). They are self-contained: inline CSS, Google Fonts for Inter + Fraunces, no build step.
 3. **Click between mocks** using the prototype chrome (tabs, “Preview page”, “Create event”). Links stay inside this folder.
 4. **Implement against tokens in `DESIGN_SYSTEM.md`**, which already match `app/globals.css` (`paper`, `clay`, `forest`, Fraunces/Inter). Prefer extending those tokens over inventing a parallel palette.

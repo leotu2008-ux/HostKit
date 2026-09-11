@@ -35,6 +35,8 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 
 **Mobile.** Cards stack. Create is sticky bottom clay bar.
 
+**Live-site note (structure only).** luma.com Discover uses a compact nav, a dense “popular” list (thumb + date + place), category tiles with icons/counts, and followable calendars. HostKit’s host-home should **not** copy those icons or the Follow marketplace pattern. Optional later: a compact “Happening nearby” *list* variant under the card grid, using HostKit event types (Party, Concert, Dinner…) as text chips, not colorful line-icon tiles.
+
 ---
 
 ## 2. Create event

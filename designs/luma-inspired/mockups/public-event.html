@@ -80,6 +80,22 @@
     .facts div { border-top: 1px solid var(--night-line); padding-top: 12px; }
     .facts dt { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--night-mute); }
     .facts dd { margin: 4px 0 0; font-size: 16px; }
+    .host-block {
+      display: flex; gap: 12px; align-items: center;
+      padding: 16px; margin: 0 0 16px; border-radius: var(--radius-card);
+      background: var(--night-surface); border: 1px solid var(--night-line);
+    }
+    .host-avatar {
+      width: 44px; height: 44px; border-radius: 999px; background: #2a4a40;
+      display: grid; place-items: center; font-size: 13px; font-weight: 600; color: #f4efe8;
+    }
+    .host-name { margin: 0; font-weight: 500; font-size: 15px; }
+    .host-cal { margin: 2px 0 0; font-size: 13px; color: var(--night-mute); }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; }
+    .tags span {
+      border: 1px solid var(--night-line); border-radius: 999px; padding: 6px 12px;
+      font-size: 12px; font-weight: 500; color: var(--night-mute);
+    }
     .body-copy { font-size: 16px; line-height: 1.65; color: color-mix(in srgb, var(--night-ink) 88%, var(--night-mute)); max-width: 38rem; }
     .body-copy p { margin: 0 0 1em; }
 
@@ -169,6 +185,17 @@
           <dd>The Lantern Roof<br />12th Street, Oakland<br /><a href="#" style="color:var(--clay);font-size:14px">Open map</a></dd>
         </div>
       </dl>
+
+      <div class="host-block">
+        <div class="host-avatar" aria-hidden="true">MC</div>
+        <div>
+          <p class="host-name">Maya Chen</p>
+          <p class="host-cal">The Lantern Sessions · Oakland</p>
+        </div>
+      </div>
+      <p class="tags" aria-label="Tags">
+        <span>Jazz</span><span>Rooftop</span><span>Oakland</span><span>Live combo</span>
+      </p>
 
       <div class="body-copy">
         <p>A late-summer set above downtown Oakland. Small combo, low lights, paper lanterns. Doors 7:15, first note 7:45. Two drink tickets with registration; kitchen closes at ten.</p>
