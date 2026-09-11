@@ -1,5 +1,7 @@
 import { currentProfile } from "@/lib/session";
+import { removeAvatarAction, setAvatarAction } from "@/lib/actions/photos";
 import { Avatar } from "@/components/avatar";
+import { ImageUpload } from "@/components/image-upload";
 import { ProfileForm } from "@/components/profile-form";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 
@@ -34,6 +36,13 @@ export default async function ProfilePage() {
             {user.bio ? (
               <p className="mt-4 text-[15px] text-ink-soft">{user.bio}</p>
             ) : null}
+            <ImageUpload
+              upload={setAvatarAction}
+              remove={removeAvatarAction}
+              hasImage={Boolean(user.imageUrl)}
+              label="Change photo"
+              className="mt-4"
+            />
           </Card>
 
           <Card className="mt-4 p-5">

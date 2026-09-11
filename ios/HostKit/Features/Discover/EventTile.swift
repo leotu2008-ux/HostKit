@@ -14,7 +14,7 @@ struct EventTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            CoverArt(seed: event.id)
+            EventCover(event: event)
                 .frame(width: 196, height: 118)
                 .clipShape(.rect(cornerRadius: 12))
             Text(EventDates.summary(for: event))

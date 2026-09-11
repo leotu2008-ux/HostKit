@@ -143,18 +143,43 @@ nonisolated struct APIClient: Sendable {
         baseURL.appending(path: event.webPath)
     }
 
+    // MARK: Photos — the image is the request body
+
+    func setAvatar(_ data: Data, contentType: String) async throws -> HostUser {
+        let envelope: UserEnvelope = try await send("PUT", "/api/v1/me/avatar", body: data, contentType: contentType)
+        return envelope.user
+    }
+
+    func removeAvatar() async throws -> HostUser {
+        let envelope: UserEnvelope = try await send("DELETE", "/api/v1/me/avatar")
+        return envelope.user
+    }
+
+    func setCover(eventID: String, _ data: Data, contentType: String) async throws -> HostEvent {
+        let envelope: EventEnvelope = try await send(
+            "PUT", "/api/v1/events/\(eventID)/cover", body: data, contentType: contentType)
+        return envelope.event
+    }
+
+    func removeCover(eventID: String) async throws -> HostEvent {
+        let envelope: EventEnvelope = try await send("DELETE", "/api/v1/events/\(eventID)/cover")
+        return envelope.event
+    }
+
     // MARK: Plumbing
 
-    private func send<T: Decodable>(_ method: String, _ path: String, body: Data? = nil) async throws -> T {
+    private func send<T: Decodable>(
+        _ method: String, _ path: String, body: Data? = nil, contentType: String = "application/json"
+    ) async throws -> T {
         guard let url = URL(string: path, relativeTo: baseURL) else {
             throw APIError(message: "That server address doesn't look right.", status: 0)
         }
-        var request = URLRequest(url: url, timeoutInterval: 15)
+        var request = URLRequest(url: url, timeoutInterval: body == nil ? 15 : 60)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let body {
             request.httpBody = body
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         }
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

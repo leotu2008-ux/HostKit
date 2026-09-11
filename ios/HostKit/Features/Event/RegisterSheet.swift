@@ -32,7 +32,7 @@ struct RegisterSheet: View {
                     Form {
                         Section {
                             HStack(spacing: 12) {
-                                CoverArt(seed: event.id)
+                                EventCover(event: event)
                                     .frame(width: 48, height: 48)
                                     .clipShape(.rect(cornerRadius: 10))
                                 VStack(alignment: .leading) {

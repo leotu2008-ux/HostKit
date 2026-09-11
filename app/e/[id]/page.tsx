@@ -8,7 +8,7 @@ import { isRegistered } from "@/lib/registration";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
-import { CoverArt } from "@/components/cover-art";
+import { EventCover } from "@/components/event-cover";
 import { RegisterForm } from "@/components/register-form";
 import { MapsLink } from "@/components/maps-link";
 import {
@@ -97,13 +97,13 @@ export default async function PublicEventPage({
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] scale-125 opacity-50 blur-3xl saturate-150 [mask-image:linear-gradient(to_bottom,black_30%,transparent)] dark:opacity-40"
       >
-        <CoverArt id={event.id} title="" />
+        <EventCover id={event.id} title="" coverUrl={event.coverUrl} sizes="100vw" />
       </div>
 
       <div className="mx-auto grid w-full max-w-5xl gap-8 px-4 pt-6 pb-32 md:grid-cols-[minmax(0,330px)_minmax(0,1fr)] md:gap-12 md:px-8 md:pt-12 md:pb-16">
         <aside className="space-y-6">
           <div className="aspect-square overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
-            <CoverArt id={event.id} title={event.title} />
+            <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" />
           </div>
           <div className="hidden md:block">
             <HostedBy name={event.owner?.name ?? null} going={going} />

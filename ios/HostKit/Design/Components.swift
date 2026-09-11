@@ -143,9 +143,19 @@ struct HostAvatar: View {
 /// event page is tinted by its artwork.
 struct AmbientBackground: View {
     let seed: String
+    var coverURL: URL? = nil
 
     var body: some View {
-        CoverArt(seed: seed)
+        ZStack {
+            CoverArt(seed: seed)
+            if let coverURL {
+                AsyncImage(url: coverURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Color.clear
+                }
+            }
+        }
             .scaleEffect(1.6)
             .blur(radius: 70)
             .opacity(0.5)

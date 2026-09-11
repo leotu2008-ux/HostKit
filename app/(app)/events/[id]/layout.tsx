@@ -4,8 +4,10 @@ import { daysUntil, describeCountdown } from "@/lib/plan";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { Badge, Button, ButtonLink } from "@/components/ui";
-import { CoverArt } from "@/components/cover-art";
+import { EventCover } from "@/components/event-cover";
+import { ImageUpload } from "@/components/image-upload";
 import { publishEventAction } from "@/lib/actions/events";
+import { removeCoverAction, setCoverAction } from "@/lib/actions/photos";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
@@ -26,7 +28,7 @@ export default async function EventLayout({
       <header className="mb-5 flex flex-col gap-4 md:flex-row md:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-sunk md:h-20 md:w-20">
-            <CoverArt id={event.id} title={event.title} />
+            <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="160px" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-mute">
@@ -49,6 +51,13 @@ export default async function EventLayout({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <ImageUpload
+            upload={setCoverAction}
+            remove={removeCoverAction}
+            hasImage={Boolean(event.coverUrl)}
+            fields={{ eventId: event.id }}
+            label="Change cover"
+          />
           <ButtonLink href={`/e/${event.id}`} variant="secondary" size="sm">
             Event page ↗
           </ButtonLink>

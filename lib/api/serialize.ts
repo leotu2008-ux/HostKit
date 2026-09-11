@@ -61,6 +61,7 @@ type EventRow = {
   published: boolean;
   ownerId: string | null;
   schoolDomain: string | null;
+  coverUrl?: string | null;
   owner?: { name: string } | null;
 };
 
@@ -96,6 +97,8 @@ export type ApiEvent = {
   isOwner: boolean;
   /** True when the signed-in account is registered as attending. */
   registered: boolean;
+  /** A photo the host uploaded; null means draw the cover from the id. */
+  coverUrl: string | null;
   webPath: string;
 };
 
@@ -127,6 +130,7 @@ export function serializeEvent(
     school: serializeSchool(event.schoolDomain),
     isOwner: canManage,
     registered,
+    coverUrl: event.coverUrl ?? null,
     webPath: `/e/${event.id}`,
   };
 }

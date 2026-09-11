@@ -15,7 +15,7 @@ struct EventDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                CoverArt(seed: event.id)
+                EventCover(event: event)
                     .aspectRatio(1, contentMode: .fit)
                     .clipShape(.rect(cornerRadius: 24))
                     .shadow(color: .black.opacity(0.25), radius: 30, y: 18)
@@ -72,7 +72,7 @@ struct EventDetailView: View {
             .padding()
             .padding(.bottom, 80)
         }
-        .background { AmbientBackground(seed: event.id) }
+        .background { AmbientBackground(seed: event.id, coverURL: event.coverURL) }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

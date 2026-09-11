@@ -28,7 +28,11 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     let isOwner: Bool
     /// True when the signed-in account is registered as attending.
     var registered: Bool?
+    /// A photo the host uploaded; nil means the cover is drawn from the id.
+    var coverUrl: String?
     let webPath: String
+
+    var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
 
     var isRegistered: Bool { registered ?? false }
 

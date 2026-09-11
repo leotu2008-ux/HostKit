@@ -27,6 +27,7 @@ function toCard(event: {
   date: Date | null;
   durationHours: number;
   schoolDomain: string | null;
+  coverUrl: string | null;
   owner?: { name: string } | null;
   _count: { guests: number };
 }) {
@@ -39,6 +40,7 @@ function toCard(event: {
     going: event._count.guests,
     hostName: event.owner?.name,
     schoolDomain: event.schoolDomain,
+    coverUrl: event.coverUrl,
   };
 }
 

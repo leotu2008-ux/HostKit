@@ -33,7 +33,7 @@ struct EventRow: View {
                 .padding(.top, 2)
             }
             Spacer(minLength: 0)
-            CoverArt(seed: event.id)
+            EventCover(event: event)
                 .frame(width: 78, height: 78)
                 .clipShape(.rect(cornerRadius: 14))
         }

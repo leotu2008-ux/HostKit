@@ -102,6 +102,18 @@ final class AppModel {
         user = updated
     }
 
+    func setAvatar(_ jpeg: Data) async throws {
+        let updated = try await api.setAvatar(jpeg, contentType: PhotoJPEG.contentType)
+        Session.user = updated
+        user = updated
+    }
+
+    func removeAvatar() async throws {
+        let updated = try await api.removeAvatar()
+        Session.user = updated
+        user = updated
+    }
+
     func event(id: String) async throws -> HostEvent {
         if let sample = SampleData.events.first(where: { $0.id == id }) {
             return sample

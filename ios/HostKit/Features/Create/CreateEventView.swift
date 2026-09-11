@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 struct CreateEventView: View {
@@ -34,6 +35,12 @@ struct CreateEventView: View {
     @State private var isDrafting = false
     @State private var errorMessage: String?
 
+    /// A cover photo, uploaded right after the event exists.
+    @State private var isPickingCover = false
+    @State private var coverItem: PhotosPickerItem?
+    @State private var coverJPEG: Data?
+    @State private var coverPreview: UIImage?
+
     private var coverSeed: String {
         let cleaned = title.filter { $0.isLetter || $0.isNumber }
         return cleaned.isEmpty ? "new-night" : cleaned
@@ -50,14 +57,41 @@ struct CreateEventView: View {
             Form {
                 Section {
                     HStack(alignment: .center, spacing: 16) {
-                        CoverArt(seed: coverSeed)
+                        Menu {
+                            Button("Choose photo", systemImage: "photo") { isPickingCover = true }
+                            if coverPreview != nil {
+                                Button("Use the drawn cover", systemImage: "paintpalette", role: .destructive) {
+                                    coverPreview = nil
+                                    coverJPEG = nil
+                                }
+                            }
+                        } label: {
+                            ZStack {
+                                CoverArt(seed: coverSeed)
+                                if let coverPreview {
+                                    Image(uiImage: coverPreview).resizable().scaledToFill()
+                                }
+                            }
                             .frame(width: 88, height: 88)
                             .clipShape(.rect(cornerRadius: 18))
+                            .overlay(alignment: .bottomTrailing) {
+                                Image(systemName: "camera.fill")
+                                    .font(.inter(size: 10, .bold))
+                                    .frame(width: 24, height: 24)
+                                    .background(.regularMaterial, in: .circle)
+                                    .padding(4)
+                            }
+                        }
+                        .buttonStyle(.plain)
                         TextField("Event name", text: $title, axis: .vertical)
                             .font(.event(26))
                             .lineLimit(1...3)
                     }
                     .padding(.vertical, 6)
+                } footer: {
+                    Text(coverPreview == nil
+                        ? "Tap the cover to add a photo, or keep the one drawn from the name."
+                        : "Your photo goes up as soon as the event is created.")
                 }
 
                 Section("When") {
@@ -182,6 +216,17 @@ struct CreateEventView: View {
                     if address.isEmpty, let full = picked.address { address = full }
                 }
             }
+            .photosPicker(isPresented: $isPickingCover, selection: $coverItem, matching: .images)
+            .onChange(of: coverItem) { _, item in
+                guard let item else { return }
+                Task {
+                    defer { coverItem = nil }
+                    if let jpeg = try? await PhotoJPEG.data(from: item) {
+                        coverJPEG = jpeg
+                        coverPreview = UIImage(data: jpeg)
+                    }
+                }
+            }
             .navigationTitle("Create event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -245,7 +290,12 @@ struct CreateEventView: View {
             publish: publishNow,
             venue: venue)
         do {
-            let created = try await model.createEvent(request)
+            var created = try await model.createEvent(request)
+            if let coverJPEG {
+                // The event exists now; a failed photo shouldn't undo it.
+                created = (try? await model.api.setCover(
+                    eventID: created.id, coverJPEG, contentType: PhotoJPEG.contentType)) ?? created
+            }
             onCreated?(created)
             if !inTab { dismiss() }
         } catch {

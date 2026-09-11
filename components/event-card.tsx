@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CoverArt } from "@/components/cover-art";
+import { EventCover } from "@/components/event-cover";
 import { formatEventWhen } from "@/lib/when";
 import { schoolFor } from "@/lib/schools";
 import { cx } from "@/components/ui";
@@ -16,6 +16,8 @@ export type EventCardEvent = {
   status?: string;
   /** The host's school, shown as a chip. */
   schoolDomain?: string | null;
+  /** An uploaded cover photo; otherwise the cover is drawn from the id. */
+  coverUrl?: string | null;
 };
 
 /**
@@ -73,7 +75,7 @@ export function EventCard({
         ) : null}
       </div>
       <div className="h-[84px] w-[84px] shrink-0 overflow-hidden rounded-xl bg-sunk">
-        <CoverArt id={event.id} title={event.title} />
+        <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="168px" />
       </div>
     </Link>
   );

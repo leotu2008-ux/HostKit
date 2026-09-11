@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CoverArt } from "@/components/cover-art";
+import { EventCover } from "@/components/event-cover";
 import { formatEventWhen } from "@/lib/when";
 import type { MineRole } from "@/lib/mine";
 
@@ -13,6 +13,7 @@ export function EventTile({
     date: Date | null;
     durationHours: number;
     published: boolean;
+    coverUrl?: string | null;
     role: MineRole;
   };
 }) {
@@ -23,7 +24,7 @@ export function EventTile({
       className="group block w-[220px] shrink-0 snap-start overflow-hidden rounded-card border border-line bg-surface transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-[0_8px_30px_rgb(0_0_0/0.06)]"
     >
       <div className="aspect-[16/10] w-full bg-sunk">
-        <CoverArt id={event.id} title={event.title} />
+        <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="440px" />
       </div>
       <div className="p-3">
         <p className="truncate text-[12px] text-ink-mute">

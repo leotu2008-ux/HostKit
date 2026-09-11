@@ -1,5 +1,25 @@
 import SwiftUI
 
+/// The host's photo when they've added one, over the generated cover
+/// (which also shows while the photo loads).
+struct EventCover: View {
+    let event: HostEvent
+
+    var body: some View {
+        ZStack {
+            CoverArt(seed: event.id)
+            if let url = event.coverURL {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Color.clear
+                }
+            }
+        }
+        .clipped()
+    }
+}
+
 /// Event cover artwork, generated from the event id exactly like
 /// `components/cover-art.tsx`, so a night has the same cover on the website
 /// and on the phone.

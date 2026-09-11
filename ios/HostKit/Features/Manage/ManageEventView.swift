@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 /// The host's side of one night: who's coming and the door (Overview),
@@ -18,6 +19,9 @@ struct ManageEventView: View {
     @State private var isSigningIn = false
     @State private var isPublishing = false
     @State private var errorMessage: String?
+    @State private var isPickingCover = false
+    @State private var coverItem: PhotosPickerItem?
+    @State private var isSavingCover = false
 
     let onChange: (HostEvent) -> Void
 
@@ -56,7 +60,7 @@ struct ManageEventView: View {
                 PromoteTab(event: $event, onChange: onChange, requestSignIn: { isSigningIn = true })
             }
         }
-        .background { AmbientBackground(seed: event.id) }
+        .background { AmbientBackground(seed: event.id, coverURL: event.coverURL) }
         .navigationTitle(event.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -74,13 +78,42 @@ struct ManageEventView: View {
         }) {
             SignInView()
         }
+        .photosPicker(isPresented: $isPickingCover, selection: $coverItem, matching: .images)
+        .onChange(of: coverItem) { _, item in
+            guard let item else { return }
+            Task { await setCover(item) }
+        }
     }
 
     private var header: some View {
         HStack(spacing: 14) {
-            CoverArt(seed: event.id)
-                .frame(width: 64, height: 64)
-                .clipShape(.rect(cornerRadius: 14))
+            // Tap the cover to swap in a photo.
+            Menu {
+                Button("Choose photo", systemImage: "photo") { isPickingCover = true }
+                if event.coverURL != nil {
+                    Button("Remove photo", systemImage: "trash", role: .destructive) {
+                        Task { await removeCover() }
+                    }
+                }
+            } label: {
+                EventCover(event: event)
+                    .frame(width: 64, height: 64)
+                    .clipShape(.rect(cornerRadius: 14))
+                    .overlay(alignment: .bottomTrailing) {
+                        Group {
+                            if isSavingCover {
+                                ProgressView().controlSize(.mini)
+                            } else {
+                                Image(systemName: "camera.fill").font(.inter(size: 9, .bold))
+                            }
+                        }
+                        .frame(width: 20, height: 20)
+                        .background(.regularMaterial, in: .circle)
+                        .padding(3)
+                    }
+            }
+            .buttonStyle(.plain)
+            .disabled(isSavingCover)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     StatusPill(
@@ -104,6 +137,36 @@ struct ManageEventView: View {
                 .buttonStyle(.glassProminent)
                 .disabled(isPublishing)
             }
+        }
+    }
+
+    private func setCover(_ item: PhotosPickerItem) async {
+        isSavingCover = true
+        defer {
+            isSavingCover = false
+            coverItem = nil
+        }
+        do {
+            guard let jpeg = try await PhotoJPEG.data(from: item) else {
+                errorMessage = "Couldn't read that photo."
+                return
+            }
+            event = try await model.api.setCover(eventID: event.id, jpeg, contentType: PhotoJPEG.contentType)
+            onChange(event)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func removeCover() async {
+        isSavingCover = true
+        defer { isSavingCover = false }
+        do {
+            event = try await model.api.removeCover(eventID: event.id)
+            onChange(event)
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
