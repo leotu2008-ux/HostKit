@@ -18,6 +18,9 @@ nonisolated struct APIError: LocalizedError, Sendable {
 nonisolated struct APIClient: Sendable {
     let baseURL: URL
     let token: String?
+    /// Drafts this device made while signed out; sent on every request so the
+    /// server lets us keep managing them.
+    var drafts: [DraftClaim] = []
 
     // MARK: Public nights
 
@@ -53,9 +56,19 @@ nonisolated struct APIClient: Sendable {
         return envelope.events
     }
 
-    func createEvent(_ request: NewEventRequest) async throws -> HostEvent {
-        let envelope: EventEnvelope = try await send("POST", "/api/v1/events", body: try Self.encode(request))
-        return envelope.event
+    /// Creates a night. Signed out, the server also returns a claim token —
+    /// the caller must remember it or the draft is orphaned.
+    func createEvent(_ request: NewEventRequest) async throws -> (event: HostEvent, claimToken: String?) {
+        let envelope: CreateEnvelope = try await send("POST", "/api/v1/events", body: try Self.encode(request))
+        return (envelope.event, envelope.claimToken)
+    }
+
+    /// Hands the device's drafts to the signed-in host. Returns the ids that
+    /// actually moved.
+    func claimDrafts(_ drafts: [DraftClaim]) async throws -> [String] {
+        let body = try Self.encode(["drafts": drafts])
+        let envelope: ClaimEnvelope = try await send("POST", "/api/v1/drafts/claim", body: body)
+        return envelope.claimed
     }
 
     func setPublished(eventID: String, published: Bool) async throws -> HostEvent {
@@ -94,6 +107,10 @@ nonisolated struct APIClient: Sendable {
         }
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        if !drafts.isEmpty {
+            let pairs = drafts.map { "\($0.id).\($0.token)" }.joined(separator: ",")
+            request.setValue(pairs, forHTTPHeaderField: "X-HostKit-Drafts")
         }
 
         let data: Data
@@ -146,6 +163,11 @@ nonisolated struct APIClient: Sendable {
 
 nonisolated struct EventsEnvelope: Decodable, Sendable { let events: [HostEvent] }
 nonisolated struct EventEnvelope: Decodable, Sendable { let event: HostEvent }
+nonisolated struct CreateEnvelope: Decodable, Sendable {
+    let event: HostEvent
+    let claimToken: String?
+}
+nonisolated struct ClaimEnvelope: Decodable, Sendable { let claimed: [String] }
 nonisolated struct GuestEnvelope: Decodable, Sendable { let guest: Guest }
 nonisolated struct GuestsEnvelope: Decodable, Sendable {
     let guests: [Guest]

@@ -3,24 +3,42 @@ import type { EventType } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { createEventWithPlan } from "@/lib/event-create";
+import { claimMatches, newClaimToken } from "@/lib/drafts";
+import { requestDrafts } from "@/lib/api/drafts";
 import { apiError, apiUser, json, readJson } from "@/lib/api/http";
 import { goingCount, serializeEvent } from "@/lib/api/serialize";
 
-/** Every night the signed-in host owns, soonest first. */
+/**
+ * The nights this request can manage, soonest first: everything the
+ * signed-in host owns, plus any unclaimed drafts the device holds tokens for.
+ */
 export async function GET(request: Request) {
   const user = await apiUser(request);
-  if (!user) return apiError("Sign in first.", 401);
+  const drafts = requestDrafts(request);
+  if (!user && drafts.length === 0) return apiError("Sign in first.", 401);
 
   const events = await db.event.findMany({
-    where: { ownerId: user.id },
+    where: {
+      OR: [
+        ...(user ? [{ ownerId: user.id }] : []),
+        ...(drafts.length > 0
+          ? [{ id: { in: drafts.map((d) => d.id) }, ownerId: null }]
+          : []),
+      ],
+    },
     orderBy: [{ date: "asc" }, { createdAt: "desc" }],
     include: { owner: { select: { name: true } }, ...goingCount },
   });
 
   return json({
-    events: events.map((event) =>
-      serializeEvent(event, event._count.guests, user.id),
-    ),
+    events: events
+      // A draft id alone isn't enough; the token has to match too.
+      .filter(
+        (event) =>
+          (user && event.ownerId === user.id) ||
+          claimMatches(drafts, event.id, event.claimToken),
+      )
+      .map((event) => serializeEvent(event, event._count.guests, true)),
   });
 }
 
@@ -40,10 +58,14 @@ const createSchema = z.object({
   publish: z.boolean().optional(),
 });
 
-/** Creates a night, with its plan, owned by the signed-in host. */
+/**
+ * Creates a night with its plan. Signed in, the host owns it. Signed out, it
+ * is a draft: the response includes a claim token the device must keep and
+ * send back (see lib/api/drafts.ts) to manage it, and publishing waits until
+ * the host signs in.
+ */
 export async function POST(request: Request) {
   const user = await apiUser(request);
-  if (!user) return apiError("Sign in first.", 401);
 
   const parsed = createSchema.safeParse(await readJson(request));
   if (!parsed.success) {
@@ -65,9 +87,11 @@ export async function POST(request: Request) {
     return apiError("Add a ticket price, or make the night free.", 400);
   }
 
+  const claimToken = user ? null : newClaimToken();
+
   const created = await createEventWithPlan({
-    ownerId: user.id,
-    claimToken: null,
+    ownerId: user?.id ?? null,
+    claimToken,
     title: input.title,
     type: input.type as EventType,
     date,
@@ -82,16 +106,18 @@ export async function POST(request: Request) {
     ticketType: input.ticketType,
     ticketPriceCents,
     visibility: input.visibility,
-    published: input.publish ?? false,
+    // Publishing is the one step that needs an account.
+    published: user ? (input.publish ?? false) : false,
   });
 
   return json(
     {
       event: serializeEvent(
-        { ...created, owner: { name: user.name } },
+        { ...created, owner: user ? { name: user.name } : null },
         0,
-        user.id,
+        true,
       ),
+      ...(claimToken ? { claimToken } : {}),
     },
     201,
   );

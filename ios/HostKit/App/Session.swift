@@ -1,13 +1,22 @@
 import Foundation
 import Security
 
-/// Where the saved server address and sign-in live. Plain storage with no
-/// UI state, so App Intents running outside the app's views can use it too.
+/// A draft this device made before signing in. The token is what lets the
+/// phone keep managing it; publishing hands it to the signed-in host.
+nonisolated struct DraftClaim: Codable, Hashable, Sendable {
+    let id: String
+    let token: String
+}
+
+/// Where the saved server address, sign-in and drafts live. Plain storage
+/// with no UI state, so App Intents running outside the app's views can use
+/// it too.
 nonisolated enum Session {
     static let defaultServer = URL(string: "https://host-kit-one.vercel.app")!
 
     private static let serverKey = "hostkit.serverURL"
     private static let userKey = "hostkit.user"
+    private static let draftsKey = "hostkit.drafts"
     private static let tokenAccount = "hostkit.apiToken"
 
     static var serverURL: URL {
@@ -31,6 +40,28 @@ nonisolated enum Session {
         }
     }
 
+    static var drafts: [DraftClaim] {
+        get {
+            UserDefaults.standard.data(forKey: draftsKey)
+                .flatMap { try? JSONDecoder().decode([DraftClaim].self, from: $0) } ?? []
+        }
+        set {
+            if newValue.isEmpty {
+                UserDefaults.standard.removeObject(forKey: draftsKey)
+            } else if let data = try? JSONEncoder().encode(Array(newValue.prefix(20))) {
+                UserDefaults.standard.set(data, forKey: draftsKey)
+            }
+        }
+    }
+
+    static func rememberDraft(_ draft: DraftClaim) {
+        drafts = [draft] + drafts.filter { $0.id != draft.id }
+    }
+
+    static func forgetDrafts(_ ids: [String]) {
+        drafts = drafts.filter { !ids.contains($0.id) }
+    }
+
     static var token: String? {
         get { Keychain.read(account: tokenAccount) }
         set {
@@ -43,7 +74,7 @@ nonisolated enum Session {
     }
 
     static func client() -> APIClient {
-        APIClient(baseURL: serverURL, token: token)
+        APIClient(baseURL: serverURL, token: token, drafts: drafts)
     }
 }
 

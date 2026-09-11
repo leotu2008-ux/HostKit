@@ -103,12 +103,16 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
 | `GET /api/v1/me` | The token's user |
 | `GET /api/v1/discover?city=` | Upcoming public, published events |
-| `GET /api/v1/events` · `POST` | The host's events · create one (with its plan) |
-| `GET /api/v1/events/:id` | One event (public if live; owner sees drafts) |
+| `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
+| `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
 | `POST /api/v1/events/:id/register` | Account-free registration |
-| `POST /api/v1/events/:id/publish` | Publish / unpublish (owner) |
-| `GET /api/v1/events/:id/guests` | Guest list and door counts (owner) |
-| `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo (owner) |
+| `POST /api/v1/events/:id/publish` | Publish / unpublish — needs sign-in; claims a draft on the way |
+| `POST /api/v1/drafts/claim` | Attach a device's drafts to the signed-in host |
+| `GET /api/v1/events/:id/guests` | Guest list and door counts |
+| `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo |
+
+Like the website's draft cookie, a signed-out device proves it made a draft
+by sending `X-HostKit-Drafts: id.token,id.token` (`lib/api/drafts.ts`).
 
 Web and API share their rules: `lib/event-create.ts` builds an event and its
 plan, and `lib/registration.ts` decides who can register — an existing guest is
@@ -180,7 +184,7 @@ This is a working demo, not a production service. Specifically:
 
 ## Tests
 
-144 unit tests cover the pure logic, including the boundaries that bite:
+148 unit tests cover the pure logic, including the boundaries that bite:
 per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
 event whose date has passed, an unallocated category, an RSVP round that has
 barely started.

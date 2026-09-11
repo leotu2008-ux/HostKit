@@ -1,17 +1,16 @@
 import { db } from "@/lib/db";
-import { apiError, apiUser, json, ownedEvent } from "@/lib/api/http";
+import { apiError, apiUser, json, manageableEvent } from "@/lib/api/http";
 import { serializeGuest } from "@/lib/api/serialize";
 
-/** The guest list and door counts for a night the host owns. */
+/** The guest list and door counts for a night this request manages. */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const user = await apiUser(request);
-  if (!user) return apiError("Sign in first.", 401);
-  const event = await ownedEvent(id, user.id);
-  if (!event) return apiError("Not found.", 404);
+  const event = await manageableEvent(request, id, user?.id ?? null);
+  if (!event) return apiError(user ? "Not found." : "Sign in first.", user ? 404 : 401);
 
   const guests = await db.guest.findMany({
     where: { eventId: event.id },

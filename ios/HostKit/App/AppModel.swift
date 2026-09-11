@@ -10,19 +10,28 @@ import Observation
 final class AppModel {
     private(set) var user: HostUser? = Session.user
     private(set) var serverURL: URL = Session.serverURL
+    /// Nights drafted on this phone before signing in.
+    private(set) var drafts: [DraftClaim] = Session.drafts
     var sampleNotice: String?
 
     var isSignedIn: Bool { user != nil && Session.token != nil }
+
+    /// True when the Events tab has something to show: owned nights, or
+    /// drafts waiting for a sign-in.
+    var hasNights: Bool { isSignedIn || !drafts.isEmpty }
 
     var api: APIClient { Session.client() }
 
     // MARK: Account
 
+    /// Signs in, then hands any drafts made on this phone to that account —
+    /// the same thing the website does with its draft cookie.
     func signIn(email: String, password: String) async throws {
         let result = try await api.signIn(email: email, password: password)
         Session.token = result.token
         Session.user = result.user
         user = result.user
+        await claimDrafts()
     }
 
     func signOut() {
@@ -31,13 +40,26 @@ final class AppModel {
         user = nil
     }
 
+    func claimDrafts() async {
+        guard isSignedIn, !drafts.isEmpty else { return }
+        if let claimed = try? await api.claimDrafts(drafts) {
+            Session.forgetDrafts(claimed)
+            drafts = Session.drafts
+        }
+    }
+
     /// Saves a new server address. Returns false if it isn't an http(s) URL.
     func setServer(_ raw: String) -> Bool {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmed), let scheme = url.scheme,
               ["http", "https"].contains(scheme), url.host() != nil
         else { return false }
-        if url != serverURL { signOut() }
+        if url != serverURL {
+            signOut()
+            // Drafts belong to the server that issued their tokens.
+            Session.drafts = []
+            drafts = []
+        }
         Session.serverURL = url
         serverURL = url
         return true
@@ -64,6 +86,28 @@ final class AppModel {
             return sample
         }
         return try await api.event(id: id)
+    }
+
+    /// Creates a night. Signed out, it's a draft kept on this phone until the
+    /// host signs in to publish it.
+    func createEvent(_ request: NewEventRequest) async throws -> HostEvent {
+        let result = try await api.createEvent(request)
+        if let token = result.claimToken {
+            Session.rememberDraft(DraftClaim(id: result.event.id, token: token))
+            drafts = Session.drafts
+        }
+        return result.event
+    }
+
+    /// Publishing is the one step that needs an account. A draft becomes the
+    /// signed-in host's on the way through, so it's no longer tracked here.
+    func setPublished(_ event: HostEvent, _ published: Bool) async throws -> HostEvent {
+        let updated = try await api.setPublished(eventID: event.id, published: published)
+        if drafts.contains(where: { $0.id == event.id }) {
+            Session.forgetDrafts([event.id])
+            drafts = Session.drafts
+        }
+        return updated
     }
 
     func register(for event: HostEvent, name: String, email: String) async throws {

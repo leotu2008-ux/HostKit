@@ -53,6 +53,8 @@ export type ApiEvent = {
   visibility: EventVisibility;
   published: boolean;
   hostName: string | null;
+  /** True when this request may manage the event: the owner, or the device
+   *  that drafted it and hasn't signed in yet. */
   isOwner: boolean;
   webPath: string;
 };
@@ -60,7 +62,7 @@ export type ApiEvent = {
 export function serializeEvent(
   event: EventRow,
   going: number,
-  viewerId: string | null,
+  canManage: boolean,
 ): ApiEvent {
   return {
     id: event.id,
@@ -81,7 +83,7 @@ export function serializeEvent(
     visibility: event.visibility,
     published: event.published,
     hostName: event.owner?.name ?? null,
-    isOwner: viewerId !== null && event.ownerId === viewerId,
+    isOwner: canManage,
     webPath: `/e/${event.id}`,
   };
 }

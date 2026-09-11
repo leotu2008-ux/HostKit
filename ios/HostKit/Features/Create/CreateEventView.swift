@@ -25,15 +25,15 @@ struct CreateEventView: View {
     @State private var isSaving = false
     @State private var isDrafting = false
     @State private var errorMessage: String?
-    @State private var isSigningIn = false
 
     private var coverSeed: String {
         let cleaned = title.filter { $0.isLetter || $0.isNumber }
         return cleaned.isEmpty ? "new-night" : cleaned
     }
 
+    // No account needed to build a night; publishing is the step that asks.
     private var canSave: Bool {
-        model.isSignedIn && !title.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
+        !title.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
             && (ticketType == .free || cents(price) ?? 0 > 0)
     }
 
@@ -50,14 +50,6 @@ struct CreateEventView: View {
                             .lineLimit(1...3)
                     }
                     .padding(.vertical, 6)
-                }
-
-                if !model.isSignedIn {
-                    Section {
-                        Button("Sign in to create events") { isSigningIn = true }
-                    } footer: {
-                        Text("Events are saved to your HostKit account, so the website and this app stay in sync.")
-                    }
                 }
 
                 Section("When") {
@@ -122,11 +114,15 @@ struct CreateEventView: View {
                     }
                     TextField("Planning budget (optional)", text: $budget)
                         .keyboardType(.decimalPad)
-                    Toggle("Publish now", isOn: $publishNow)
+                    if model.isSignedIn {
+                        Toggle("Publish now", isOn: $publishNow)
+                    }
                 } header: {
                     Text("Options")
                 } footer: {
-                    Text("\(visibility.hint) The planning budget splits venue and vendor spend on the website’s planner.")
+                    Text(model.isSignedIn
+                        ? "\(visibility.hint) The planning budget splits venue and vendor spend on the website’s planner."
+                        : "\(visibility.hint) This saves as a draft on this iPhone — you’ll sign in when you publish it.")
                 }
 
                 if let errorMessage {
@@ -140,11 +136,10 @@ struct CreateEventView: View {
                     Button("Cancel", role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") { Task { await save() } }
+                    Button(model.isSignedIn ? "Create" : "Save draft") { Task { await save() } }
                         .disabled(!canSave)
                 }
             }
-            .sheet(isPresented: $isSigningIn) { SignInView() }
         }
     }
 
@@ -189,7 +184,7 @@ struct CreateEventView: View {
             budgetCents: budget.isEmpty ? nil : cents(budget),
             publish: publishNow)
         do {
-            let created = try await model.api.createEvent(request)
+            let created = try await model.createEvent(request)
             onCreated?(created)
             dismiss()
         } catch {

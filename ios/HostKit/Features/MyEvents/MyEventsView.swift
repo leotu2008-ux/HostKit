@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The host's own nights as a timeline, upcoming or past.
+/// The host's own nights as a timeline, upcoming or past. Works signed out
+/// too: drafts made on this phone show here until a sign-in publishes them.
 struct MyEventsView: View {
     @Environment(AppModel.self) private var model
     @Environment(Router.self) private var router
@@ -18,19 +19,25 @@ struct MyEventsView: View {
         return showPast ? filtered.reversed() : filtered
     }
 
+    /// Reload when the account or the set of local drafts changes.
+    private var reloadKey: String {
+        "\(model.user?.id ?? "-")|\(model.drafts.map(\.id).joined(separator: ","))"
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if model.isSignedIn {
+                if model.hasNights {
                     timeline
                 } else {
                     ContentUnavailableView {
                         Label("Host your own nights", systemImage: "calendar.badge.plus")
                     } description: {
-                        Text("Sign in to see the events you host, check guests in, and publish new ones.")
+                        Text("Create an event right here — no account needed until you publish it.")
                     } actions: {
-                        Button("Sign in") { isSigningIn = true }
+                        Button("Create event") { isCreating = true }
                             .buttonStyle(.glassProminent)
+                        Button("Sign in") { isSigningIn = true }
                     }
                 }
             }
@@ -44,10 +51,8 @@ struct MyEventsView: View {
                 }
             }
             .toolbar {
-                if model.isSignedIn {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Create event", systemImage: "plus") { isCreating = true }
-                    }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Create event", systemImage: "plus") { isCreating = true }
                 }
             }
             .sheet(isPresented: $isCreating) {
@@ -60,7 +65,7 @@ struct MyEventsView: View {
             .sheet(isPresented: $isSigningIn) {
                 SignInView()
             }
-            .task(id: model.user?.id) { await load() }
+            .task(id: reloadKey) { await load() }
             .onChange(of: router.openEventID) { _, id in
                 guard let id else { return }
                 Task { await open(id) }
@@ -76,6 +81,21 @@ struct MyEventsView: View {
                     Text("Past").tag(true)
                 }
                 .pickerStyle(.segmented)
+
+                if !model.isSignedIn {
+                    HStack(spacing: 12) {
+                        Image(systemName: "iphone")
+                            .foregroundStyle(.secondary)
+                        Text("Drafts live on this iPhone. Sign in when you’re ready to publish.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Sign in") { isSigningIn = true }
+                            .font(.footnote.weight(.semibold))
+                    }
+                    .padding(12)
+                    .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 12))
+                }
 
                 if let errorMessage {
                     NoticeBanner(text: errorMessage)
@@ -125,7 +145,7 @@ struct MyEventsView: View {
     }
 
     private func load() async {
-        guard model.isSignedIn else {
+        guard model.hasNights else {
             events = []
             return
         }

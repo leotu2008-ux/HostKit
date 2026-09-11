@@ -11,6 +11,7 @@ struct ManageEventView: View {
     @State private var errorMessage: String?
     @State private var busyGuestID: String?
     @State private var isPublishing = false
+    @State private var isSigningIn = false
 
     let onChange: (HostEvent) -> Void
 
@@ -80,6 +81,14 @@ struct ManageEventView: View {
         }
         .task { await loadGuests() }
         .refreshable { await loadGuests() }
+        // Publishing asked for a sign-in; once that's done, finish the job.
+        .sheet(isPresented: $isSigningIn, onDismiss: {
+            if model.isSignedIn && !event.published {
+                Task { await togglePublished() }
+            }
+        }) {
+            SignInView()
+        }
     }
 
     private var header: some View {
@@ -110,7 +119,7 @@ struct ManageEventView: View {
                     Task { await togglePublished() }
                 } label: {
                     Label(
-                        event.published ? "Unpublish" : "Publish",
+                        event.published ? "Unpublish" : model.isSignedIn ? "Publish" : "Sign in to publish",
                         systemImage: event.published ? "eye.slash" : "paperplane.fill")
                         .frame(maxWidth: .infinity)
                 }
@@ -199,10 +208,15 @@ struct ManageEventView: View {
     }
 
     private func togglePublished() async {
+        // Publishing is the one step that needs an account.
+        guard model.isSignedIn else {
+            isSigningIn = true
+            return
+        }
         isPublishing = true
         defer { isPublishing = false }
         do {
-            event = try await model.api.setPublished(eventID: event.id, published: !event.published)
+            event = try await model.setPublished(event, !event.published)
             onChange(event)
         } catch {
             errorMessage = error.localizedDescription

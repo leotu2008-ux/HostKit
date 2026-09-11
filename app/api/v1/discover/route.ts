@@ -26,7 +26,11 @@ export async function GET(request: Request) {
 
   return json({
     events: events.map((event) =>
-      serializeEvent(event, event._count.guests, viewer?.id ?? null),
+      serializeEvent(
+        event,
+        event._count.guests,
+        viewer !== null && event.ownerId === viewer.id,
+      ),
     ),
   });
 }

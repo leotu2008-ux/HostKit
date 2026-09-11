@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { apiError, apiUser, json, ownedEvent, readJson } from "@/lib/api/http";
+import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
 import { serializeGuest } from "@/lib/api/serialize";
 
 const schema = z.object({ checkedIn: z.boolean() });
@@ -12,9 +12,8 @@ export async function POST(
 ) {
   const { id, guestId } = await params;
   const user = await apiUser(request);
-  if (!user) return apiError("Sign in first.", 401);
-  const event = await ownedEvent(id, user.id);
-  if (!event) return apiError("Not found.", 404);
+  const event = await manageableEvent(request, id, user?.id ?? null);
+  if (!event) return apiError(user ? "Not found." : "Sign in first.", user ? 404 : 401);
 
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) return apiError("Say whether they're in.", 400);

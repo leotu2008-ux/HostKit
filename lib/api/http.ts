@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyToken } from "@/lib/api/token";
+import { requestOwnsDraft } from "@/lib/api/drafts";
 
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -36,9 +37,18 @@ export async function apiUser(request: Request) {
 }
 
 /**
- * An event the token's user owns. The API deliberately ignores the web's
- * draft cookie: a native client either signs in or it doesn't manage events.
+ * An event this request may manage: one the signed-in user owns, or a draft
+ * the device made and still holds the token for. Null otherwise, so callers
+ * answer 404 and never confirm that someone else's event exists.
  */
-export async function ownedEvent(eventId: string, userId: string) {
-  return db.event.findFirst({ where: { id: eventId, ownerId: userId } });
+export async function manageableEvent(
+  request: Request,
+  eventId: string,
+  userId: string | null,
+) {
+  const event = await db.event.findUnique({ where: { id: eventId } });
+  if (!event) return null;
+  if (userId && event.ownerId === userId) return event;
+  if (requestOwnsDraft(request, event)) return event;
+  return null;
 }
