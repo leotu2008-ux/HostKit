@@ -111,6 +111,7 @@ It talks to the website through a small JSON API under `/api/v1`:
 
 | Route | What it does |
 | --- | --- |
+| `POST /api/v1/auth/signup` | Name + email + password → account and token, in one step |
 | `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
 | `GET /api/v1/me` | The token's user |
 | `GET /api/v1/discover?city=` | Upcoming public, published events |

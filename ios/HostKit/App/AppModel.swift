@@ -27,7 +27,15 @@ final class AppModel {
     /// Signs in, then hands any drafts made on this phone to that account —
     /// the same thing the website does with its draft cookie.
     func signIn(email: String, password: String) async throws {
-        let result = try await api.signIn(email: email, password: password)
+        await adopt(try await api.signIn(email: email, password: password))
+    }
+
+    /// Creates the account and signs in, in one go.
+    func signUp(name: String, email: String, password: String) async throws {
+        await adopt(try await api.signUp(name: name, email: email, password: password))
+    }
+
+    private func adopt(_ result: (token: String, user: HostUser)) async {
         Session.token = result.token
         Session.user = result.user
         user = result.user

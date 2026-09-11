@@ -61,6 +61,13 @@ nonisolated struct APIClient: Sendable {
         return (envelope.token, envelope.user)
     }
 
+    /// Creates an account and signs it in. A .edu email makes it a student.
+    func signUp(name: String, email: String, password: String) async throws -> (token: String, user: HostUser) {
+        let body = try Self.encode(["name": name, "email": email, "password": password])
+        let envelope: TokenEnvelope = try await send("POST", "/api/v1/auth/signup", body: body)
+        return (envelope.token, envelope.user)
+    }
+
     func myEvents() async throws -> [HostEvent] {
         let envelope: EventsEnvelope = try await send("GET", "/api/v1/events")
         return envelope.events
