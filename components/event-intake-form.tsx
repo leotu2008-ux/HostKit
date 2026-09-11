@@ -2,10 +2,47 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import type { EventType } from "@/generated/prisma/enums";
 import { createEventAction } from "@/lib/actions/events";
-import { ALL_EVENT_TYPES, CITIES, EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { CITIES } from "@/lib/catalog";
 import { EVENT_TEMPLATES } from "@/lib/templates";
+
+/** The planner template behind every night. There's no picker any more; the
+ *  dinner-party plan is a sensible split for a typical night out. */
+const DEFAULT_TYPE = "DINNER_PARTY";
+const template = EVENT_TEMPLATES[DEFAULT_TYPE];
+
+/** Capacity: type a number, or nudge it with − and +. */
+function CapacityField({ name, defaultValue }: { name: string; defaultValue: number }) {
+  const [value, setValue] = useState(defaultValue);
+  const clamp = (n: number) => Math.min(100_000, Math.max(1, n));
+  const bump = (delta: number) => setValue((v) => clamp((Number.isFinite(v) ? v : 0) + delta));
+  const bumpClass =
+    "flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface text-lg text-ink hover:border-line-strong disabled:opacity-40";
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={() => bump(-1)} aria-label="Fewer" className={bumpClass} disabled={value <= 1}>
+        −
+      </button>
+      <input
+        name={name}
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={100000}
+        required
+        value={Number.isFinite(value) ? value : ""}
+        onChange={(e) => setValue(e.target.value === "" ? NaN : Number(e.target.value))}
+        onBlur={() => setValue((v) => clamp(Number.isFinite(v) ? v : defaultValue))}
+        aria-label="Capacity"
+        className={cx(compact, "w-24 text-center")}
+      />
+      <button type="button" onClick={() => bump(1)} aria-label="More" className={bumpClass}>
+        +
+      </button>
+    </div>
+  );
+}
 import { CoverArt } from "@/components/cover-art";
 import { LocationField } from "@/components/location-field";
 import { Button, FormError, Input, cx } from "@/components/ui";
@@ -79,13 +116,11 @@ function Segmented<T extends string>({
 
 export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
   const [state, formAction] = useActionState(createEventAction, undefined);
-  const [type, setType] = useState<EventType>("DINNER_PARTY");
   const [ticketType, setTicketType] = useState<"FREE" | "PAID">("FREE");
   const [visibility, setVisibility] = useState<"PUBLIC" | "UNLISTED" | "PRIVATE">(
     "UNLISTED",
   );
   const [title, setTitle] = useState("");
-  const template = EVENT_TEMPLATES[type];
   const coverSeed = title.replace(/[^a-zA-Z0-9_-]/g, "") || "new-night";
 
   return (
@@ -93,7 +128,7 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
       action={formAction}
       className="grid gap-8 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-10"
     >
-      <input type="hidden" name="type" value={type} />
+      <input type="hidden" name="type" value={DEFAULT_TYPE} />
 
       <aside className="space-y-4">
         <div className="aspect-square overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-28px_rgb(0_0_0/0.45)]">
@@ -102,31 +137,6 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
         <p className="text-[13px] text-ink-mute">
           The cover is drawn from the name — every night gets its own.
         </p>
-
-        <fieldset>
-          <legend className="mb-2 text-[13px] font-medium text-ink-soft">
-            Kind of night
-          </legend>
-          <div className="flex flex-wrap gap-1.5">
-            {ALL_EVENT_TYPES.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setType(option)}
-                aria-pressed={type === option}
-                className={cx(
-                  "min-h-9 rounded-full border px-3 text-[13px] font-medium",
-                  type === option
-                    ? "border-ink bg-ink text-paper"
-                    : "border-line bg-surface text-ink-soft hover:border-line-strong",
-                )}
-              >
-                {EVENT_TYPE_LABEL[option]}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-[13px] text-ink-mute">{template.blurb}</p>
-        </fieldset>
       </aside>
 
       <div className="min-w-0 space-y-5">
@@ -152,7 +162,6 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
           </Row>
           <Row label="Hours" hint="Used to price hourly venues.">
             <input
-              key={`hours-${type}`}
               name="durationHours"
               type="number"
               min={1}
@@ -217,16 +226,7 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
               <input type="hidden" name="ticketPrice" value="" />
             )}
             <Row label="Capacity">
-              <input
-                key={`guests-${type}`}
-                name="guestCount"
-                type="number"
-                min={1}
-                max={100000}
-                defaultValue={template.defaultGuestCount}
-                required
-                className={cx(compact, "w-28")}
-              />
+              <CapacityField name="guestCount" defaultValue={template.defaultGuestCount} />
             </Row>
             <Row
               label="Visibility"

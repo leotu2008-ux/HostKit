@@ -7,7 +7,9 @@ struct CreateEventView: View {
     var onCreated: ((HostEvent) -> Void)?
 
     @State private var title = ""
-    @State private var kind: EventKind = .dinnerParty
+    /// The planner template behind every night. There's no picker any more;
+    /// the dinner-party plan is a sensible split for a typical night out.
+    private let kind: EventKind = .dinnerParty
     @State private var start = Calendar.current.date(
         bySettingHour: 19, minute: 0, second: 0,
         of: .now.addingTimeInterval(7 * 86_400)) ?? .now
@@ -96,10 +98,19 @@ struct CreateEventView: View {
                 }
 
                 Section {
-                    Picker("Kind of night", selection: $kind) {
-                        ForEach(EventKind.allCases) { Text($0.label).tag($0) }
+                    HStack {
+                        Text("Capacity")
+                        Spacer()
+                        TextField("0", value: $capacity, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 72)
+                            .onChange(of: capacity) { _, value in
+                                capacity = min(max(value, 1), 100_000)
+                            }
+                        Stepper("Capacity", value: $capacity, in: 1...100_000)
+                            .labelsHidden()
                     }
-                    Stepper("Capacity: \(capacity)", value: $capacity, in: 1...2000, step: capacity < 50 ? 5 : 10)
                     Picker("Tickets", selection: $ticketType) {
                         Text("Free").tag(TicketType.free)
                         Text("Paid").tag(TicketType.paid)
