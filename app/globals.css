@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   HostKit design tokens.
+
+   Warm, editorial, confident — planning an event is a happy occasion and the
+   product should feel like good stationery, not a project management tool.
+   A paper ground, warm near-black ink, and one saturated clay accent.
+
+   This app deliberately commits to a single light theme rather than shipping a
+   half-considered dark mode; the palette is built around a warm paper ground
+   that has no honest dark equivalent.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Grounds */
+  --color-paper: #fbf8f4;
+  --color-surface: #ffffff;
+  --color-sunk: #f4efe8;
+
+  /* Ink */
+  --color-ink: #1c1917;
+  --color-ink-soft: #57504a;
+  --color-ink-mute: #8b8179;
+
+  /* Lines */
+  --color-line: #e9e1d7;
+  --color-line-strong: #d8cec1;
+
+  /* Accent — clay. Primary actions, active state, brand marks. */
+  --color-clay: #c4502e;
+  --color-clay-deep: #a03f22;
+  --color-clay-wash: #fbeee8;
+
+  /* Forest — confirmed, booked, on-track. */
+  --color-forest: #2a4a40;
+  --color-forest-wash: #e8f0ec;
+
+  /* Amber — attention, over budget, due soon. */
+  --color-amber: #9a6b10;
+  --color-amber-wash: #fbf1dc;
+
+  /* Danger — destructive and declined. */
+  --color-danger: #8e2a20;
+  --color-danger-wash: #fbeae8;
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.875rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fraunces is a variable font with optical-size, softness and "wonk" axes.
+   Dialing in a little softness and wonk is what gives headings character
+   instead of generic-serif. */
+.font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 30, "WONK" 1;
+  letter-spacing: -0.02em;
+}
+
+/* Numbers in budgets and counts should line up in columns. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-clay);
+  color: #fff;
+}
+
+/* A consistent, visible focus ring everywhere — keyboard users are planning
+   real events with real money in these forms. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-clay);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

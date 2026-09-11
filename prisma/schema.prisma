@@ -1,0 +1,337 @@
+// HostKit — event planning, end-to-end.
+// Money is ALWAYS stored as integer cents. Never floats. See lib/money.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Accounts. Every user is a host planning an event; there is no supply side.
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  events Event[]
+}
+
+// ---------------------------------------------------------------------------
+// The event being planned. Everything else hangs off this.
+// ---------------------------------------------------------------------------
+
+enum EventType {
+  WEDDING
+  BIRTHDAY
+  CORPORATE_OFFSITE
+  LAUNCH_PARTY
+  BABY_SHOWER
+  DINNER_PARTY
+  FUNDRAISER
+  ENGAGEMENT
+}
+
+enum EventStatus {
+  PLANNING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Event {
+  id               String      @id @default(cuid())
+  ownerId          String
+  title            String
+  type             EventType
+  status           EventStatus @default(PLANNING)
+  /// Date of the event itself. Null while the host is still deciding.
+  date             DateTime?
+  /// Set when the host is flexible: `date` is the earliest acceptable day and
+  /// `endDate` the latest. Lead-time scoring uses the earliest.
+  endDate          DateTime?
+  datesFlexible    Boolean     @default(false)
+  /// Planned duration, used to price hourly listings against this event.
+  durationHours    Int         @default(6)
+  guestCount       Int
+  city             String
+  budgetTotalCents Int
+  vibe             String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  owner            User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  savedListings    SavedListing[]
+  inquiries        Inquiry[]
+  budgetCategories BudgetCategory[]
+  budgetItems      BudgetItem[]
+  tasks            Task[]
+  guests           Guest[]
+  runSheetItems    RunSheetItem[]
+
+  @@index([ownerId])
+}
+
+// ---------------------------------------------------------------------------
+// Catalog. Seeded data — venue and vendor owners never log in or list anything.
+// Venues and vendors share one table because they share name, photos, location,
+// price and tags; splitting them would duplicate the entire search stack.
+// ---------------------------------------------------------------------------
+
+enum ListingKind {
+  VENUE
+  VENDOR
+}
+
+/// Vendor categories double as the planning checklist: templates declare which
+/// of these an event type needs, and an event is "covered" for a category once
+/// it has a BOOKED inquiry against a listing in it.
+enum ListingCategory {
+  VENUE
+  CATERING
+  PHOTOGRAPHY
+  VIDEOGRAPHY
+  FLORALS
+  MUSIC_DJ
+  AV_PRODUCTION
+  RENTALS
+  BAR_SERVICE
+  CAKE_DESSERT
+  HAIR_MAKEUP
+  OFFICIANT
+  TRANSPORT
+  STAFFING
+  DECOR_STYLING
+  INVITATIONS
+}
+
+/// How a listing's headline price is quoted. Turning this into a real cost for
+/// a specific event is lib/scoring.ts's job — an hourly venue and a per-person
+/// caterer are not comparable until they are both priced against one event.
+enum PriceUnit {
+  HOUR
+  DAY
+  PERSON
+  FLAT
+}
+
+model Listing {
+  id           String          @id @default(cuid())
+  kind         ListingKind
+  category     ListingCategory
+  name         String
+  description  String
+  city         String
+  neighborhood String?
+  lat          Float
+  lng          Float
+  priceCents   Int
+  priceUnit    PriceUnit
+  /// Venues only. Null for vendors, who are constrained by lead time instead.
+  capacityMin  Int?
+  capacityMax  Int?
+  /// Minimum days of notice this listing needs before the event date.
+  leadTimeDays Int             @default(14)
+  amenities    String[]        @default([])
+  tags         String[]        @default([])
+  rating       Float?
+  reviewCount  Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  photos        ListingPhoto[]
+  savedBy       SavedListing[]
+  inquiries     Inquiry[]
+  budgetItems   BudgetItem[]
+
+  @@index([city, category])
+  @@index([category])
+}
+
+model ListingPhoto {
+  id        String @id @default(cuid())
+  listingId String
+  url       String
+  alt       String
+  position  Int    @default(0)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, position])
+}
+
+// ---------------------------------------------------------------------------
+// Shortlist and outreach. With no supply side there is no checkout: "booking"
+// is a tracked outreach loop that ends by writing back into budget and tasks.
+// ---------------------------------------------------------------------------
+
+model SavedListing {
+  id        String   @id @default(cuid())
+  eventId   String
+  listingId String
+  note      String?
+  rank      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, listingId])
+  @@index([eventId])
+}
+
+enum InquiryStatus {
+  DRAFT
+  SENT
+  REPLIED
+  QUOTED
+  BOOKED
+  DECLINED
+}
+
+model Inquiry {
+  id           String        @id @default(cuid())
+  eventId      String
+  listingId    String
+  status       InquiryStatus @default(DRAFT)
+  message      String
+  quotedCents  Int?
+  sentAt       DateTime?
+  respondedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  listing    Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  budgetItem BudgetItem?
+
+  @@unique([eventId, listingId])
+  @@index([eventId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Budget. Categories are allocated up front from the event template; items are
+// the real commitments that land against them.
+// ---------------------------------------------------------------------------
+
+model BudgetCategory {
+  id             String          @id @default(cuid())
+  eventId        String
+  category       ListingCategory
+  name           String
+  allocatedCents Int
+
+  event Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  items BudgetItem[]
+
+  @@unique([eventId, category])
+  @@index([eventId])
+}
+
+model BudgetItem {
+  id             String   @id @default(cuid())
+  eventId        String
+  categoryId     String
+  label          String
+  estimatedCents Int      @default(0)
+  /// What it actually costs, once quoted or booked.
+  actualCents    Int?
+  /// What has been handed over so far — deposits and part payments.
+  paidCents      Int      @default(0)
+  dueDate        DateTime?
+  listingId      String?
+  /// Set when this item was created by booking an inquiry, so the write-back
+  /// is idempotent: re-booking updates the same row rather than duplicating it.
+  inquiryId      String?  @unique
+  createdAt      DateTime @default(now())
+
+  event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  listing  Listing?       @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  inquiry  Inquiry?       @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([categoryId])
+}
+
+// ---------------------------------------------------------------------------
+// Timeline. Generated from the event template, backfilled from the event date.
+// ---------------------------------------------------------------------------
+
+enum TaskStatus {
+  TODO
+  DONE
+}
+
+model Task {
+  id         String           @id @default(cuid())
+  eventId    String
+  title      String
+  notes      String?
+  dueDate    DateTime?
+  /// Days before the event this is due. Kept alongside dueDate so the timeline
+  /// can be recomputed if the event date moves.
+  offsetDays Int
+  /// Set when this task is "book a <category>", which lets booking an inquiry
+  /// close the matching task automatically.
+  category   ListingCategory?
+  status     TaskStatus       @default(TODO)
+  createdAt  DateTime         @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Guests. RSVP is public and token-addressed — guests never have accounts.
+// ---------------------------------------------------------------------------
+
+enum RsvpStatus {
+  INVITED
+  ATTENDING
+  DECLINED
+  MAYBE
+}
+
+model Guest {
+  id         String     @id @default(cuid())
+  eventId    String
+  name       String
+  email      String?
+  rsvpStatus RsvpStatus @default(INVITED)
+  plusOnes   Int        @default(0)
+  dietary    String?
+  note       String?
+  rsvpToken  String     @unique @default(cuid())
+  respondedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// Day-of run sheet.
+// ---------------------------------------------------------------------------
+
+model RunSheetItem {
+  id        String   @id @default(cuid())
+  eventId   String
+  startsAt  DateTime
+  title     String
+  owner     String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, startsAt])
+}
