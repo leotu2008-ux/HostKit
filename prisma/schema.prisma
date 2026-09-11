@@ -81,7 +81,7 @@ model Event {
 
 // ---------------------------------------------------------------------------
 // Catalog. Seeded data — venue and vendor owners never log in or list anything.
-// Venues and vendors share one table because they share name, photos, location,
+// Venues and vendors share one table because they share name, artwork, location,
 // price and tags; splitting them would duplicate the entire search stack.
 // ---------------------------------------------------------------------------
 
@@ -145,25 +145,12 @@ model Listing {
   reviewCount  Int             @default(0)
   createdAt    DateTime        @default(now())
 
-  photos        ListingPhoto[]
   savedBy       SavedListing[]
   inquiries     Inquiry[]
   budgetItems   BudgetItem[]
 
   @@index([city, category])
   @@index([category])
-}
-
-model ListingPhoto {
-  id        String @id @default(cuid())
-  listingId String
-  url       String
-  alt       String
-  position  Int    @default(0)
-
-  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  @@index([listingId, position])
 }
 
 // ---------------------------------------------------------------------------

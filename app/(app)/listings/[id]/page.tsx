@@ -1,0 +1,253 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
+import { scoreListing, type ListingFit } from "@/lib/scoring";
+import { daysUntil } from "@/lib/plan";
+import { formatCents, formatCentsCompact } from "@/lib/money";
+import { CATEGORY_LABEL } from "@/lib/catalog";
+import { ListingImage } from "@/components/listing-image";
+import { Badge, ButtonLink, Card, cx, type Tone } from "@/components/ui";
+
+const UNIT_LABEL = {
+  HOUR: "per hour",
+  DAY: "per day",
+  PERSON: "per person",
+  FLAT: "flat fee",
+} as const;
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/listings/[id]">) {
+  const { id } = await params;
+  const listing = await db.listing.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+  return { title: listing?.name ?? "Listing" };
+}
+
+export default async function ListingPage({
+  params,
+  searchParams,
+}: PageProps<"/listings/[id]">) {
+  const { id } = await params;
+  const query = await searchParams;
+  const eventId = Array.isArray(query.event) ? query.event[0] : query.event;
+
+  const listing = await db.listing.findUnique({ where: { id } });
+  if (!listing) notFound();
+
+  // The page works without an event — but with one it can say what this
+  // listing actually costs you, which is the entire point.
+  const user = await getCurrentUser();
+  const event =
+    user && eventId
+      ? await db.event.findFirst({
+          where: { id: eventId, ownerId: user.id },
+        })
+      : null;
+
+  let fit: ListingFit | null = null;
+  if (event) {
+    const allocation = await db.budgetCategory.findUnique({
+      where: {
+        eventId_category: { eventId: event.id, category: listing.category },
+      },
+    });
+    fit = scoreListing(
+      listing,
+      {
+        guestCount: event.guestCount,
+        durationHours: event.durationHours,
+        daysUntil: daysUntil(event.date),
+      },
+      allocation?.allocatedCents ?? null,
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl px-5 py-8">
+      {event ? (
+        <Link
+          href={`/events/${event.id}/discover`}
+          className="mb-6 inline-block text-sm font-medium text-clay hover:underline"
+        >
+          ← Back to {event.title}
+        </Link>
+      ) : null}
+
+      <div className="overflow-hidden rounded-card border border-line">
+        <div className="aspect-[16/7]">
+          <ListingImage
+            listingId={listing.id}
+            category={listing.category}
+            name={listing.name}
+          />
+        </div>
+      </div>
+
+      <div className="mt-7 grid gap-10 lg:grid-cols-[1fr_320px]">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone="clay">{CATEGORY_LABEL[listing.category]}</Badge>
+            {listing.rating && listing.reviewCount >= 5 ? (
+              <span className="text-sm text-ink-soft">
+                ★ {listing.rating.toFixed(1)} ({listing.reviewCount} reviews)
+              </span>
+            ) : null}
+          </div>
+
+          <h1 className="font-display mt-3 text-3xl text-ink">{listing.name}</h1>
+          <p className="mt-1 text-ink-soft">
+            {listing.neighborhood ? `${listing.neighborhood}, ` : ""}
+            {listing.city}
+          </p>
+
+          <p className="mt-6 leading-relaxed text-ink-soft">
+            {listing.description}
+          </p>
+
+          {listing.capacityMin !== null || listing.capacityMax !== null ? (
+            <p className="mt-4 text-ink-soft">
+              Seats {listing.capacityMin ?? 1}–{listing.capacityMax} guests.
+            </p>
+          ) : null}
+
+          {listing.amenities.length > 0 ? (
+            <section className="mt-8">
+              <h2 className="font-display mb-3 text-lg text-ink">
+                What&rsquo;s here
+              </h2>
+              <ul className="flex flex-wrap gap-2">
+                {listing.amenities.map((amenity) => (
+                  <li key={amenity}>
+                    <Badge>{amenity}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <p className="mt-10 text-sm text-ink-mute">
+            Needs at least {listing.leadTimeDays} days&rsquo; notice.
+          </p>
+        </div>
+
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <Card className="p-5">
+            {fit && event ? (
+              <>
+                <p className="text-sm text-ink-soft">For your event</p>
+                <p className="font-display tabular mt-1 text-3xl text-ink">
+                  {formatCents(fit.estimatedCents)}
+                </p>
+                <p className="mt-1 text-sm text-ink-mute">
+                  {formatCentsCompact(listing.priceCents)}{" "}
+                  {UNIT_LABEL[listing.priceUnit]} · {fit.priceBasis}
+                </p>
+
+                <dl className="mt-5 space-y-3 border-t border-line pt-5">
+                  <FitRow
+                    label="Capacity"
+                    tone={
+                      fit.capacity === "fits"
+                        ? "forest"
+                        : fit.capacity === "tight" || fit.capacity === "too_big"
+                          ? "amber"
+                          : fit.capacity === "too_small"
+                            ? "danger"
+                            : "neutral"
+                    }
+                    value={fit.capacityNote ?? "Not applicable"}
+                  />
+                  <FitRow
+                    label="Budget"
+                    tone={
+                      fit.budget === "comfortable"
+                        ? "forest"
+                        : fit.budget === "stretch"
+                          ? "amber"
+                          : fit.budget === "over"
+                            ? "danger"
+                            : "neutral"
+                    }
+                    value={
+                      fit.budgetSharePercent === null
+                        ? "No budget set for this category"
+                        : `${fit.budgetSharePercent}% of your ${CATEGORY_LABEL[
+                            listing.category
+                          ].toLowerCase()} allocation`
+                    }
+                  />
+                  <FitRow
+                    label="Timing"
+                    tone={
+                      fit.lead === "ok"
+                        ? "forest"
+                        : fit.lead === "tight"
+                          ? "amber"
+                          : fit.lead === "too_late"
+                            ? "danger"
+                            : "neutral"
+                    }
+                    value={
+                      fit.leadNote ??
+                      (fit.lead === "ok"
+                        ? "Plenty of notice"
+                        : "Add a date to check")
+                    }
+                  />
+                </dl>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-ink-soft">Headline rate</p>
+                <p className="font-display tabular mt-1 text-3xl text-ink">
+                  {formatCents(listing.priceCents)}
+                </p>
+                <p className="mt-1 text-sm text-ink-mute">
+                  {UNIT_LABEL[listing.priceUnit]}
+                </p>
+                <p className="mt-5 border-t border-line pt-5 text-sm text-ink-soft">
+                  Open this from one of your events to see what it actually
+                  costs for your headcount, your hours and your budget.
+                </p>
+                <ButtonLink href="/events" variant="secondary" className="mt-4 w-full">
+                  Go to my events
+                </ButtonLink>
+              </>
+            )}
+          </Card>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function FitRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: Tone;
+}) {
+  const dot: Record<Tone, string> = {
+    neutral: "bg-ink-mute",
+    clay: "bg-clay",
+    forest: "bg-forest",
+    amber: "bg-amber",
+    danger: "bg-danger",
+  };
+  return (
+    <div className="flex gap-3">
+      <span className={cx("mt-1.5 size-2 shrink-0 rounded-full", dot[tone])} />
+      <div>
+        <dt className="text-sm font-medium text-ink">{label}</dt>
+        <dd className="text-sm text-ink-soft">{value}</dd>
+      </div>
+    </div>
+  );
+}
