@@ -3,8 +3,8 @@ import { composeInquiry, describeDate, mailtoLink } from "@/lib/outreach";
 import type { OutreachEvent } from "@/lib/outreach";
 
 const event = (over: Partial<OutreachEvent> = {}): OutreachEvent => ({
-  title: "Sam & Ali's wedding",
-  type: "WEDDING",
+  title: "Sam & Ali's launch",
+  type: "LAUNCH_PARTY",
   date: new Date("2026-10-23T12:00:00"),
   endDate: null,
   datesFlexible: false,
@@ -103,7 +103,7 @@ describe("composeInquiry", () => {
 
   it("drops the date from the subject when there isn't one", () => {
     const { subject } = composeInquiry(event({ date: null }), listing, "Dana");
-    expect(subject).toBe("Wedding inquiry — 90 guests");
+    expect(subject).toBe("Launch party inquiry — 90 guests");
   });
 });
 

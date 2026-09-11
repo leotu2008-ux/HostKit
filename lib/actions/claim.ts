@@ -7,6 +7,11 @@ import { readDraftClaims } from "@/lib/drafts";
 export async function claimDraftsForUser(userId: string) {
   const claims = await readDraftClaims();
   if (claims.length === 0) return 0;
+  // A draft made before signing in picks up the host's school now.
+  const host = await db.user.findUnique({
+    where: { id: userId },
+    select: { schoolDomain: true },
+  });
   let claimed = 0;
   for (const claim of claims) {
     const result = await db.event.updateMany({
@@ -15,7 +20,7 @@ export async function claimDraftsForUser(userId: string) {
         claimToken: claim.token,
         ownerId: null,
       },
-      data: { ownerId: userId },
+      data: { ownerId: userId, schoolDomain: host?.schoolDomain ?? null },
     });
     claimed += result.count;
   }

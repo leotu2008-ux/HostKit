@@ -1,17 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
-import Script from "next/script";
-import { Fraunces, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
-import { parsePreference, THEME_BOOTSTRAP, THEME_COOKIE } from "@/lib/theme";
+import { LaunchSplash } from "@/components/launch-splash";
+import { SPLASH_BOOTSTRAP } from "@/lib/splash";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
-});
-
+// One face everywhere — Inter — the same as the iOS app bundles.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -32,33 +26,27 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
+// Light and dark come straight from the device (see globals.css), so the
+// browser chrome follows the same media query.
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf8f4" },
-    { media: "(prefers-color-scheme: dark)", color: "#161310" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f8f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e0f" },
   ],
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const pref = parsePreference(
-    (await cookies()).get(THEME_COOKIE)?.value,
-  );
-
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${inter.variable} h-full`}
-      data-theme={pref === "system" ? undefined : pref}
-      data-theme-pref={pref}
-      suppressHydrationWarning
-    >
-      <body className="min-h-full bg-sunk">
-        <Script id="hostkit-theme" strategy="beforeInteractive">
-          {THEME_BOOTSTRAP}
-        </Script>
+    // suppressHydrationWarning: the splash bootstrap stamps data-splash on
+    // <html> before React runs, once per session.
+    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
+      <body className="min-h-full bg-paper">
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_BOOTSTRAP }} />
+        <LaunchSplash />
         <AppFrame>{children}</AppFrame>
       </body>
     </html>

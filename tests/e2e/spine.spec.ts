@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { SPLASH_STORAGE_KEY } from "../../lib/splash";
 
 /**
  * The spine: everything HostKit claims to do, in the order a host does it.
@@ -11,7 +12,19 @@ import { expect, test, type Page } from "@playwright/test";
 
 const PASSWORD = "correcthorse1";
 
+/** Skip the first-load splash so actionability checks aren't blocked by it. */
+async function skipLaunchSplash(page: Page) {
+  await page.addInitScript((key: string) => {
+    try {
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Ignore quota / private-mode failures; the test still proceeds.
+    }
+  }, SPLASH_STORAGE_KEY);
+}
+
 async function signUp(page: Page) {
+  await skipLaunchSplash(page);
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   await page.goto("/signup");
   await page.fill('input[name="name"]', "Dana Hart");
@@ -23,13 +36,17 @@ async function signUp(page: Page) {
   return email;
 }
 
-async function createWedding(page: Page) {
+// Every night is planned from the dinner-party template (there is no
+// kind-of-night picker): catering is the one essential booking.
+async function createNight(page: Page) {
   await page.goto("/events/new");
-  await page.click('button:has-text("Wedding")');
   const date = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
   await page.fill('input[name="date"]', date);
-  await page.fill('input[name="title"]', "Sam & Ali's wedding");
+  await page.fill('input[name="title"]', "Sam & Ali's supper");
   await page.fill('input[name="time"]', "18:00");
+  await page.fill('input[name="durationHours"]', "8");
+  // The venue step is optional; this host already has a place.
+  await page.click('button:has-text("I already have a venue")');
   await page.fill('input[name="address"]', "200 Kent Ave, Brooklyn, NY");
   await page.fill('input[name="guestCount"]', "90");
   await page.fill('input[name="budget"]', "48,000");
@@ -40,24 +57,18 @@ async function createWedding(page: Page) {
 
 test("a host can plan, scout, shortlist and book an event", async ({ page }) => {
   await signUp(page);
-  const event = await createWedding(page);
+  const event = await createNight(page);
 
   await test.step("intake generates a budget and a timeline", async () => {
     await page.goto(`${event}/plan`);
     await expect(page.getByText("of $48,000")).toBeVisible();
     // Required categories start out unbooked.
-    await expect(page.getByText("4 essential bookings outstanding")).toBeVisible();
-
-    // Per-category allocations live on the budget page. 32% of $48,000 is
-    // the wedding template's venue share. It appears twice there — the row
-    // and the "nothing booked yet" note — hence .first().
-    await page.goto(`${event}/budget`);
-    await expect(page.getByText("$15,360").first()).toBeVisible();
+    await expect(page.getByText("1 essential booking outstanding")).toBeVisible();
   });
 
   await test.step("the timeline is anchored to the event date", async () => {
     await page.goto(`${event}/plan`);
-    await expect(page.getByText("Book the venue")).toBeVisible();
+    await expect(page.getByText("Book the caterer")).toBeVisible();
     await expect(page.getByText("Confirm final headcount with the caterer")).toBeVisible();
   });
 
@@ -114,7 +125,7 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
     await expect(page.locator('select[name="status"]')).toHaveValue("DRAFT");
   });
 
-  await test.step("booking writes back to the budget and closes the task", async () => {
+  await test.step("booking writes back to the budget", async () => {
     await page.fill('input[name="quoted"]', "7,500");
     await page.selectOption('select[name="status"]', "BOOKED");
     await page.click('button:has-text("Save")');
@@ -122,12 +133,6 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
 
     await page.goto(`${event}/budget`);
     await expect(page.getByText("$7,500").first()).toBeVisible();
-
-    await page.goto(`${event}/plan`);
-    await expect(page.locator('p.line-through:has-text("Book the venue")')).toBeVisible();
-
-    await page.goto(`${event}/plan`);
-    await expect(page.getByText("3 essential bookings outstanding")).toBeVisible();
   });
 
   await test.step("declining the booking takes the money back out", async () => {

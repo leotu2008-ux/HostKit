@@ -53,7 +53,7 @@ describe("event templates", () => {
 describe("generatePlan — budget", () => {
   it("splits the budget without losing a cent", () => {
     const plan = generatePlan(
-      { type: "WEDDING", date: inDays(300), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(100), budgetTotalCents: 2_500_000 },
       NOW,
     );
     const total = plan.categories.reduce((a, c) => a + c.allocatedCents, 0);
@@ -62,16 +62,16 @@ describe("generatePlan — budget", () => {
 
   it("conserves an awkward total that divides badly", () => {
     const plan = generatePlan(
-      { type: "WEDDING", date: inDays(300), budgetTotalCents: 1_000_001 },
+      { type: "FUNDRAISER", date: inDays(100), budgetTotalCents: 1_000_001 },
       NOW,
     );
     const total = plan.categories.reduce((a, c) => a + c.allocatedCents, 0);
     expect(total).toBe(1_000_001);
   });
 
-  it("gives the venue the largest share of a wedding", () => {
+  it("gives the venue the largest share of a fundraiser", () => {
     const plan = generatePlan(
-      { type: "WEDDING", date: inDays(300), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(100), budgetTotalCents: 2_500_000 },
       NOW,
     );
     const top = [...plan.categories].sort(
@@ -103,7 +103,7 @@ describe("generatePlan — budget", () => {
 describe("generatePlan — timeline", () => {
   it("generates a booking task for every required category", () => {
     const plan = generatePlan(
-      { type: "WEDDING", date: inDays(300), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(100), budgetTotalCents: 2_500_000 },
       NOW,
     );
     for (const required of plan.required) {
@@ -116,7 +116,7 @@ describe("generatePlan — timeline", () => {
 
   it("orders tasks soonest-first", () => {
     const plan = generatePlan(
-      { type: "WEDDING", date: inDays(300), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(100), budgetTotalCents: 2_500_000 },
       NOW,
     );
     const offsets = plan.tasks.map((t) => t.offsetDays);
@@ -124,10 +124,10 @@ describe("generatePlan — timeline", () => {
   });
 
   it("never schedules a task before today, even on a rushed event", () => {
-    // A wedding in six weeks: the 365-day template must compress, not emit
+    // A fundraiser in six weeks: the 120-day template must compress, not emit
     // tasks that were due before the host ever opened the app.
     const plan = generatePlan(
-      { type: "WEDDING", date: inDays(42), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(42), budgetTotalCents: 2_500_000 },
       NOW,
     );
     for (const task of plan.tasks) {
@@ -139,15 +139,15 @@ describe("generatePlan — timeline", () => {
 
   it("compresses the horizon to the runway that actually exists", () => {
     const rushed = generatePlan(
-      { type: "WEDDING", date: inDays(42), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(42), budgetTotalCents: 2_500_000 },
       NOW,
     );
     const relaxed = generatePlan(
-      { type: "WEDDING", date: inDays(365), budgetTotalCents: 2_500_000 },
+      { type: "FUNDRAISER", date: inDays(200), budgetTotalCents: 2_500_000 },
       NOW,
     );
     expect(rushed.horizonDays).toBe(42);
-    expect(relaxed.horizonDays).toBe(365);
+    expect(relaxed.horizonDays).toBe(120);
     // Same tasks, tighter spacing.
     expect(rushed.tasks.length).toBe(relaxed.tasks.length);
     expect(rushed.tasks[0].offsetDays).toBeLessThan(

@@ -2,12 +2,39 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { claimMatches, readDraftClaims } from "@/lib/drafts";
+import { schoolFor } from "@/lib/schools";
 
 /** The signed-in user, or null. */
 export async function getCurrentUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
   return { id: session.user.id, email: session.user.email ?? "", name: session.user.name ?? "" };
+}
+
+/**
+ * The signed-in user's full profile row — school, class year, bio — or null.
+ * The session token only carries id/name/email, so anything that needs the
+ * student side reads the database.
+ */
+export async function currentProfile() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const row = await db.user.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      schoolDomain: true,
+      classYear: true,
+      bio: true,
+      imageUrl: true,
+      phone: true,
+      phoneVerifiedAt: true,
+    },
+  });
+  if (!row) return null;
+  return { ...row, school: schoolFor(row.schoolDomain) };
 }
 
 /** The signed-in user, or a redirect to sign-in. Use in any protected page. */

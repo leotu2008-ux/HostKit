@@ -46,13 +46,17 @@ export function AddCollaboratorForm({
       <Field label={nameLabel}>
         <Input name="name" required maxLength={80} />
       </Field>
-      {kind !== "VENUE" ? (
+      <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Email" hint="Optional.">
           <Input name="email" type="email" autoComplete="email" />
         </Field>
-      ) : (
-        <input type="hidden" name="email" value="" />
-      )}
+        <Field label="Phone" hint="Optional.">
+          <Input name="phone" type="tel" autoComplete="tel" />
+        </Field>
+      </div>
+      <Field label="Website" hint="Optional.">
+        <Input name="website" type="url" placeholder="https://" />
+      </Field>
       <Field label={detailLabel ?? "Note"} hint="Optional.">
         <Input
           name="detail"

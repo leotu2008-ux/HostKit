@@ -34,7 +34,7 @@ createdb hostkit
 
 cp .env.example .env        # then set DATABASE_URL and AUTH_SECRET
 npm run db:migrate          # apply migrations
-npm run db:seed             # 78 venues and vendors across 3 cities
+npm run db:seed             # 72 venues and vendors across 3 cities
 
 npm run dev                 # http://localhost:3000
 ```
@@ -89,6 +89,114 @@ against that `DATABASE_URL` locally.
 
 Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 
+## Students
+
+Sign up with a school `.edu` email and HostKit treats you as a student of that
+school (`lib/schools.ts` maps domains to names and home cities; the domain is
+trusted, not verified yet). Your events are tagged with your school
+automatically, Discover leads with **At [School]** above the city feed, and
+both apps detect your city once from your location (nearest known city, no
+geocoding service). Tagging only surfaces events — anyone nearby can register.
+Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
+`docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
+
+## Your account
+
+Both apps open on **Home**: the HostKit brand, **Your events** — what you
+host and what you've registered for, soonest first (`lib/mine.ts`) — quick
+actions, and a taste of what's on nearby. **Discover** (`/discover`) is the
+full feed with the city picker. The logo (and your avatar) opens the account
+menu: profile, your events, past events, settings, sign out; on phones the
+tab bar is Home · Discover · Create · Events · Profile.
+
+- **Profile picture** and **event covers** are uploads (`lib/images.ts`):
+  JPEG/PNG/WebP up to 5 MB, downscaled in the client first. They go to
+  Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set, otherwise into Postgres
+  and out through `/api/images/:id`, so local dev needs no storage service.
+  Without a photo an event keeps the cover drawn from its id.
+- **Phone number**, verified by a texted code (`lib/phone.ts`): six digits,
+  hashed, ten minutes, five tries, one code a minute. Twilio sends the text
+  when configured; otherwise the code is logged and — outside production —
+  returned so the flow works locally. Hosts see registrants' verified numbers
+  on the guest list.
+- **Registering puts the event on your calendar and sets reminders.** On
+  iOS the app adds it with write-only EventKit access (it never reads your
+  calendar) and schedules local notifications for the evening before and an
+  hour before — no server push; reminders re-sync from "Your events" on
+  every Discover load, so a moved date moves the reminder. Both are toggles
+  in Settings. On the web, registering shows Apple/Outlook (`.ics`, from
+  `/e/:id/calendar.ics`) and Google Calendar links (`lib/calendar.ts`).
+  Times are floating local time — 7:30 PM stays 7:30 PM.
+- Everything is set in Inter, on the web and in the app.
+
+## Hosting an event
+
+**Registering needs an account.** Guests sign in or create one on the event
+page and HostKit registers the account's email — that's the address blasts go
+to (`lib/registration.ts`).
+
+**Create** asks the essentials and, optionally, a venue: search real places
+near your city (Apple Maps on both apps) or skip it if you already have one.
+A picked venue becomes the event's address and the first row in Outreach.
+
+**Manage event** (`/events/:id`, and the Manage screen in the iOS app) has four
+tabs:
+
+| Tab | What's there |
+| --- | --- |
+| **Overview** | Going / checked-in / capacity, a "next up" checklist, the guest list with check-in |
+| **Outreach** | Venue, speakers, vendors and cohosts in one list, each with a drafted first message (`lib/outreach.ts`), Copy / email / call, confirm or remove, add someone |
+| **Blasts** | Email everyone going, those who haven't replied, or all — `{name}` becomes their first name. Sends via Resend when configured, otherwise hands you the addresses and message to paste (`lib/blasts.ts`, `lib/blast-send.ts`) |
+| **Promote** | Publish and visibility, the share link, a QR code for posters and the door, paste-ready copy for a story or group chat (`lib/promote.ts`, `lib/qr.ts`) |
+
+Optional services, both off by default (see `.env.example`):
+
+| Variable | Enables |
+| --- | --- |
+| `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). The iOS app uses MapKit directly and needs nothing |
+| `RESEND_API_KEY`, `RESEND_FROM` | Real email blasts (resend.com, after verifying a sending domain). Without them blasts are recorded and copied by hand |
+| `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob (Vercel → Storage → Blob). Without it photos are stored in Postgres |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes. Without them the code is logged (and returned in development) |
+
+## iOS app
+
+`ios/` is a native SwiftUI app (iOS 26) on the same backend: Discover and
+register, a host timeline, publish, guest check-in, and create — with Apple
+Intelligence drafting event descriptions on-device and Siri shortcuts for the
+door. Open `ios/HostKit.xcodeproj`; see [`ios/README.md`](ios/README.md).
+
+It talks to the website through a small JSON API under `/api/v1`:
+
+| Route | What it does |
+| --- | --- |
+| `POST /api/v1/auth/signup` | Name + email + password → account and token, in one step |
+| `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
+| `GET /api/v1/me` | The token's user |
+| `GET /api/v1/discover?city=` | Upcoming public, published events; with a token also `mine` (hosting + going) and a student's `campus` |
+| `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
+| `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
+| `POST /api/v1/events/:id/register` | Register the signed-in account (401 without a token) |
+| `POST /api/v1/events/:id/publish` | Publish / unpublish, optional `visibility` — needs sign-in; claims a draft on the way |
+| `POST /api/v1/drafts/claim` | Attach a device's drafts to the signed-in host |
+| `GET /api/v1/events/:id/guests` | Guest list and door counts |
+| `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo |
+| `GET /api/v1/venues/search?q=&city=` | Venue search (Apple Maps); `{ venues: [], unavailable: true }` when keys are missing |
+| `GET /api/v1/events/:id/outreach` · `POST` | Everyone to reach, with drafted messages · add a venue / speaker / cohost |
+| `PATCH /api/v1/events/:id/outreach/:rowId` · `DELETE` | Confirm / pending / declined · remove |
+| `GET /api/v1/events/:id/blasts` · `POST` | Segments with counts, past blasts, `canSend` · send one (returns recipients when it couldn't email) |
+| `PUT /api/v1/me/avatar` · `DELETE` | Profile picture — the image is the request body, with its `Content-Type` |
+| `PUT /api/v1/events/:id/cover` · `DELETE` | Event cover photo, same shape; honours the drafts header |
+| `POST /api/v1/me/phone` · `DELETE` | `{ phone }` → texts a code (`devCode` in development without Twilio) · remove the number |
+| `POST /api/v1/me/phone/verify` | `{ code }` → the number goes on the account |
+
+Like the website's draft cookie, a signed-out device proves it made a draft
+by sending `X-HostKit-Drafts: id.token,id.token` (`lib/api/drafts.ts`).
+
+Web and API share their rules: `lib/event-create.ts` builds an event and its
+plan, and `lib/registration.ts` decides who can register — an existing guest is
+never renamed and a declined guest can't be flipped back by someone who knows
+their email.
+
 ## How it's put together
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Prisma 7 → Postgres ·
@@ -117,8 +225,8 @@ A few decisions worth knowing about:
   duplicate the whole search stack.
 - **Event templates live in code, not the database.** They're typed planning
   logic that evolves with the app, and a change should be reviewable in a diff.
-- **Timeline positions are fractions of a planning horizon**, so a wedding
-  booked six weeks out compresses the 365-day template into the 42 days that
+- **Timeline positions are fractions of a planning horizon**, so a fundraiser
+  booked six weeks out compresses the 120-day template into the 42 days that
   actually exist rather than emitting overdue tasks.
 - **The planning headcount starts from your estimate** and only moves for a
   real signal — a regret, or a guest list that outgrows the estimate. Using the
@@ -133,7 +241,7 @@ A few decisions worth knowing about:
 
 This is a working demo, not a production service. Specifically:
 
-- **The catalog is invented.** All 78 venues and vendors are fiction — plausible
+- **The catalog is invented.** All 72 venues and vendors are fiction — plausible
   names, prices and ratings chosen to exercise the scoring logic. None are real
   businesses. Listing artwork is generated locally from the listing id rather
   than photographed.
@@ -145,15 +253,16 @@ This is a working demo, not a production service. Specifically:
 - **Discovery scores in application code**, not SQL. At catalog scale (tens per
   city) that's the right trade, since the price that matters is computed
   per-event; tens of thousands of listings would want it precomputed.
-- **Light and dark.** Paper by default; Dark uses a warm night palette. System
-  follows the device. The choice is saved in this browser.
+- **Light and dark follow the device.** The website switches on
+  `prefers-color-scheme` and the iOS app on the system appearance; neither has
+  an in-app override, so both always match the phone or computer they're on.
 - `npm audit` reports advisories inside the Prisma **CLI's** dependency tree
   (`mysql2`, a driver this project never uses, and `deepmerge-ts`). They are
   build-time only and reach neither the server runtime nor the browser bundle.
 
 ## Tests
 
-143 unit tests cover the pure logic, including the boundaries that bite:
+148 unit tests cover the pure logic, including the boundaries that bite:
 per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
 event whose date has passed, an unallocated category, an RSVP round that has
 barely started.

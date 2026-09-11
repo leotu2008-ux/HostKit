@@ -31,7 +31,7 @@ export default async function SignUpPage({
       <p className="mt-1 mb-6 text-sm text-ink-soft">
         {publish
           ? "Create an account to publish this night."
-          : "One account covers every event you host."}
+          : "One account covers every event you host. Students: sign up with your school .edu email to see campus events first."}
       </p>
       <AuthForm
         action={signUpAction}

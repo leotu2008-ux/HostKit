@@ -9,10 +9,13 @@ import type { EventType, ListingCategory } from "@/generated/prisma/enums";
  * here means a template change is reviewable in a diff.
  *
  * Timeline positions are expressed as a FRACTION of the planning horizon
- * rather than in absolute days. A wedding and a dinner party both "send
+ * rather than in absolute days. A fundraiser and a dinner party both "send
  * invitations at 40% of the way in"; only the horizon differs. This also means
- * a wedding booked 45 days out compresses sensibly instead of generating a
+ * a fundraiser booked 45 days out compresses sensibly instead of generating a
  * pile of tasks whose due dates are already in the past — see lib/plan.ts.
+ *
+ * HostKit is for student, professional and fun events, so there are no
+ * wedding or family-occasion templates here.
  */
 
 export type BudgetWeight = {
@@ -52,13 +55,11 @@ const BOOKING_POSITION: Partial<Record<ListingCategory, number>> = {
   VIDEOGRAPHY: 0.64,
   MUSIC_DJ: 0.6,
   AV_PRODUCTION: 0.58,
-  OFFICIANT: 0.56,
   BAR_SERVICE: 0.5,
   STAFFING: 0.46,
   FLORALS: 0.44,
   DECOR_STYLING: 0.42,
   CAKE_DESSERT: 0.4,
-  HAIR_MAKEUP: 0.38,
   RENTALS: 0.34,
   TRANSPORT: 0.3,
   INVITATIONS: 0.55,
@@ -115,56 +116,6 @@ export const SPINE_TASKS: TaskTemplate[] = [
 ];
 
 export const EVENT_TEMPLATES: Record<EventType, EventTemplate> = {
-  WEDDING: {
-    type: "WEDDING",
-    blurb: "The long one. A year of lead time is normal, and the venue sets everything else.",
-    horizonDays: 365,
-    defaultDurationHours: 8,
-    defaultGuestCount: 100,
-    budget: [
-      { category: "VENUE", weight: 0.32 },
-      { category: "CATERING", weight: 0.24 },
-      { category: "PHOTOGRAPHY", weight: 0.1 },
-      { category: "FLORALS", weight: 0.08 },
-      { category: "MUSIC_DJ", weight: 0.06 },
-      { category: "VIDEOGRAPHY", weight: 0.05 },
-      { category: "HAIR_MAKEUP", weight: 0.04 },
-      { category: "CAKE_DESSERT", weight: 0.03 },
-      { category: "INVITATIONS", weight: 0.03 },
-      { category: "DECOR_STYLING", weight: 0.03 },
-      { category: "OFFICIANT", weight: 0.02 },
-    ],
-    required: ["VENUE", "CATERING", "PHOTOGRAPHY", "OFFICIANT"],
-    extraTasks: [
-      { title: "Sort the marriage licence", at: 0.2 },
-      { title: "Menu tasting with the caterer", at: 0.3 },
-      { title: "Agree the shot list with your photographer", at: 0.12 },
-      { title: "Confirm the ceremony order with your officiant", at: 0.1 },
-      { title: "Final dress and suit fittings", at: 0.09 },
-    ],
-  },
-
-  ENGAGEMENT: {
-    type: "ENGAGEMENT",
-    blurb: "A wedding's warm-up act — same shape, a quarter of the runway.",
-    horizonDays: 120,
-    defaultDurationHours: 5,
-    defaultGuestCount: 60,
-    budget: [
-      { category: "VENUE", weight: 0.3 },
-      { category: "CATERING", weight: 0.28 },
-      { category: "PHOTOGRAPHY", weight: 0.14 },
-      { category: "FLORALS", weight: 0.1 },
-      { category: "MUSIC_DJ", weight: 0.1 },
-      { category: "CAKE_DESSERT", weight: 0.08 },
-    ],
-    required: ["VENUE", "CATERING", "PHOTOGRAPHY"],
-    extraTasks: [
-      { title: "Decide whether you're doing speeches", at: 0.25 },
-      { title: "Agree a photo list with both families", at: 0.12 },
-    ],
-  },
-
   BIRTHDAY: {
     type: "BIRTHDAY",
     blurb: "Short runway, high energy. Food and music carry the night.",
@@ -228,27 +179,6 @@ export const EVENT_TEMPLATES: Record<EventType, EventTemplate> = {
       { title: "Confirm the run of show and who speaks", at: 0.35 },
       { title: "Brief the photographer on must-have shots", at: 0.1 },
       { title: "Prepare the press and VIP list", at: 0.45 },
-    ],
-  },
-
-  BABY_SHOWER: {
-    type: "BABY_SHOWER",
-    blurb: "Daytime, intimate, and it lives or dies on the food and the room.",
-    horizonDays: 60,
-    defaultDurationHours: 4,
-    defaultGuestCount: 25,
-    budget: [
-      { category: "CATERING", weight: 0.3 },
-      { category: "VENUE", weight: 0.25 },
-      { category: "DECOR_STYLING", weight: 0.15 },
-      { category: "CAKE_DESSERT", weight: 0.12 },
-      { category: "FLORALS", weight: 0.1 },
-      { category: "INVITATIONS", weight: 0.08 },
-    ],
-    required: ["VENUE", "CATERING"],
-    extraTasks: [
-      { title: "Check the date against the parent-to-be's calendar", at: 0.9 },
-      { title: "Plan games and the gift moment", at: 0.25 },
     ],
   },
 

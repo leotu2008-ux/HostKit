@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Lets the app talk to `npm run dev` on this Mac (http://localhost:3000)
+	     while production stays HTTPS-only. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>HostKit uses your location once to pick the nearest city, so Discover shows events near you.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>HostKit adds events you register for to your calendar. It never reads what’s already there.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Inter-Regular.ttf</string>
+		<string>Inter-Medium.ttf</string>
+		<string>Inter-SemiBold.ttf</string>
+		<string>Inter-Bold.ttf</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

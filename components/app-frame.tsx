@@ -1,32 +1,59 @@
+import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { AccountMenu } from "@/components/account-menu";
+import { Avatar } from "@/components/avatar";
 import { InstallPrompt } from "@/components/install-prompt";
-import { TabBar } from "@/components/tab-bar";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { getCurrentUser } from "@/lib/session";
-import { parsePreference, THEME_COOKIE } from "@/lib/theme";
+import { DesktopNav, TabBar } from "@/components/tab-bar";
+import { signOutAction } from "@/lib/actions/auth";
+import { currentProfile } from "@/lib/session";
 
+/**
+ * The app shell. Phones get a compact header and the bottom tab bar; wider
+ * screens get a full-width top bar with the same destinations and a Create
+ * button, so the desktop site is a real layout rather than a phone column.
+ * The logo and the avatar both open the account menu.
+ */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  const themePref = parsePreference((await cookies()).get(THEME_COOKIE)?.value);
+  const user = await currentProfile();
+  const menuUser = user
+    ? { name: user.name, email: user.email, imageUrl: user.imageUrl, school: user.school, classYear: user.classYear }
+    : null;
 
   return (
-    <div className="app-frame flex min-h-dvh w-full max-w-[430px] flex-col bg-paper">
-      <header className="no-print sticky top-0 z-40 border-b border-line bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="flex h-12 items-center justify-between gap-2 px-4">
-          <Link href="/" className="font-display text-[19px] text-ink">
-            Host<span className="text-clay">Kit</span>
-          </Link>
-          <div className="flex min-w-0 items-center">
-            <ThemeToggle compact initial={themePref} />
-            {user ? (
-              <span className="max-w-[9rem] truncate text-[13px] text-ink-mute">
-                {user.name}
+    <div className="flex min-h-dvh w-full flex-col">
+      <header className="no-print sticky top-0 z-40 border-b border-line/70 bg-paper/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 md:px-8">
+          <AccountMenu user={menuUser} signOut={signOutAction} align="left" label="Account menu">
+            <span className="flex items-center gap-2 font-event text-[21px] text-ink">
+              <Image
+                src="/logo.png"
+                alt=""
+                width={28}
+                height={28}
+                priority
+                className="h-7 w-7 rounded-[8px] ring-1 ring-line"
+              />
+              <span>
+                Host<span className="text-clay">Kit</span>
               </span>
+            </span>
+          </AccountMenu>
+          <DesktopNav />
+          <div className="ml-auto flex min-w-0 items-center gap-1.5">
+            <Link
+              href="/events/new"
+              className="hidden h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper hover:opacity-90 md:inline-flex"
+            >
+              Create event
+            </Link>
+            {user ? (
+              <AccountMenu user={menuUser} signOut={signOutAction} align="right" label={`${user.name} — account menu`}>
+                <Avatar name={user.name} imageUrl={user.imageUrl} size={36} />
+              </AccountMenu>
             ) : (
               <Link
                 href="/signin"
-                className="rounded-full px-3 py-1.5 text-[13px] font-medium text-clay"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-ink-soft hover:text-ink"
               >
                 Sign in
               </Link>
@@ -34,7 +61,9 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
+        {children}
+      </div>
       <InstallPrompt />
       <TabBar />
     </div>

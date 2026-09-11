@@ -1,4 +1,8 @@
-import type { EventType, ListingCategory } from "@/generated/prisma/enums";
+import type {
+  CollaboratorKind,
+  EventType,
+  ListingCategory,
+} from "@/generated/prisma/enums";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 
 /**
@@ -75,16 +79,6 @@ const QUESTIONS: Partial<Record<ListingCategory, string[]>> = {
     "What sizes work for this many guests?",
     "Can you handle dietary requirements?",
   ],
-  HAIR_MAKEUP: [
-    "Are you free on the morning of the date?",
-    "Is a trial included?",
-    "How many people can you do, and how long do you need?",
-  ],
-  OFFICIANT: [
-    "Are you free on the date?",
-    "How much of the ceremony can we write ourselves?",
-    "What paperwork do we need to sort, and by when?",
-  ],
   RENTALS: [
     "Do you have availability for the date?",
     "Is delivery, setup and collection included?",
@@ -136,13 +130,37 @@ export function describeDate(event: OutreachEvent): string {
   return `The date is ${formatDate(event.date)}`;
 }
 
+/** What to ask people who aren't catalog vendors. */
+const KIND_QUESTIONS: Record<CollaboratorKind, string[]> = {
+  VENUE: QUESTIONS.VENUE!,
+  SPEAKER: [
+    "Are you free on the date, and roughly how long would you want on stage?",
+    "Is there anything you'd need from us — AV, a mic, slides?",
+    "Do you have a short bio and a headshot we can use to promote it?",
+  ],
+  COHOST: [
+    "Are you in for the date?",
+    "Which parts would you want to own — door, promo, the run of show?",
+    "Anyone you'd want to bring in?",
+  ],
+};
+
+/**
+ * Drafts the first message to anyone the host is lining up: a catalog
+ * listing (questions by vendor category), a venue, speaker or cohost
+ * (questions by kind), or someone with neither (general questions).
+ */
 export function composeInquiry(
   event: OutreachEvent,
-  listing: { name: string; category: ListingCategory },
+  target: { name: string; category?: ListingCategory | null; role?: CollaboratorKind | null },
   hostName: string,
 ): { subject: string; body: string } {
   const eventLabel = EVENT_TYPE_LABEL[event.type].toLowerCase();
-  const questions = QUESTIONS[listing.category] ?? DEFAULT_QUESTIONS;
+  const questions =
+    (target.category ? QUESTIONS[target.category] : undefined) ??
+    (target.role ? KIND_QUESTIONS[target.role] : undefined) ??
+    DEFAULT_QUESTIONS;
+  const listing = target;
 
   const subject = event.date
     ? `${EVENT_TYPE_LABEL[event.type]} inquiry — ${formatDate(event.date)}, ${event.guestCount} guests`

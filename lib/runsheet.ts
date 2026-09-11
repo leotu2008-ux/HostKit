@@ -23,12 +23,9 @@ export type RunSheetDraft = {
 
 /** When this kind of event typically starts, in local hours. */
 const DEFAULT_START_HOUR: Record<EventType, number> = {
-  WEDDING: 15,
-  ENGAGEMENT: 17,
   BIRTHDAY: 19,
   CORPORATE_OFFSITE: 9,
   LAUNCH_PARTY: 18,
-  BABY_SHOWER: 13,
   DINNER_PARTY: 19,
   FUNDRAISER: 18,
 };
@@ -50,29 +47,11 @@ const LOAD_IN_MINUTES: Partial<Record<ListingCategory, number>> = {
   STAFFING: 90,
   PHOTOGRAPHY: 60,
   VIDEOGRAPHY: 60,
-  HAIR_MAKEUP: 300,
-  OFFICIANT: 45,
   TRANSPORT: 30,
 };
 
 /** The running order after guests arrive, per event type. */
 const RUNNING_ORDER: Record<EventType, Array<[number, string]>> = {
-  WEDDING: [
-    [0, "Guests arrive"],
-    [30, "Ceremony"],
-    [60, "Drinks and group photos"],
-    [120, "Call guests through to dinner"],
-    [135, "Dinner served"],
-    [225, "Speeches"],
-    [270, "Cut the cake"],
-    [285, "First dance, band or DJ starts"],
-  ],
-  ENGAGEMENT: [
-    [0, "Guests arrive"],
-    [45, "Drinks and canapés"],
-    [90, "Toast"],
-    [120, "Music on"],
-  ],
   BIRTHDAY: [
     [0, "Guests arrive"],
     [45, "Food served"],
@@ -94,12 +73,6 @@ const RUNNING_ORDER: Record<EventType, Array<[number, string]>> = {
     [60, "Presentation"],
     [90, "Press photos"],
     [120, "Open floor"],
-  ],
-  BABY_SHOWER: [
-    [0, "Guests arrive"],
-    [30, "Food and drinks"],
-    [75, "Games"],
-    [120, "Gifts and cake"],
   ],
   DINNER_PARTY: [
     [0, "Guests arrive"],

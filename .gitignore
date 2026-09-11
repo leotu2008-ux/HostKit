@@ -52,3 +52,6 @@ next-env.d.ts
 
 # local screenshot helper
 /tools
+
+# Xcode per-user state
+xcuserdata/

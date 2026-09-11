@@ -5,14 +5,16 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
 
 const TABS = [
-  { href: "/", label: "Discover", icon: DiscoverIcon, match: "discover" },
+  { href: "/", label: "Home", icon: HomeIcon, match: "home" },
+  { href: "/discover", label: "Discover", icon: DiscoverIcon, match: "discover" },
   { href: "/events/new", label: "Create", icon: CreateIcon, match: "create" },
-  { href: "/events", label: "Nights", icon: NightsIcon, match: "nights" },
-  { href: "/profile", label: "You", icon: YouIcon, match: "you" },
+  { href: "/events", label: "Events", icon: NightsIcon, match: "nights" },
+  { href: "/profile", label: "Profile", icon: YouIcon, match: "you" },
 ] as const;
 
 function tabActive(pathname: string, match: (typeof TABS)[number]["match"]) {
-  if (match === "discover") return pathname === "/";
+  if (match === "home") return pathname === "/";
+  if (match === "discover") return pathname.startsWith("/discover");
   if (match === "create") return pathname === "/events/new";
   if (match === "nights") {
     return (
@@ -23,6 +25,7 @@ function tabActive(pathname: string, match: (typeof TABS)[number]["match"]) {
   if (match === "you") {
     return (
       pathname === "/profile" ||
+      pathname === "/settings" ||
       pathname === "/signin" ||
       pathname === "/signup"
     );
@@ -36,16 +39,47 @@ export function shouldShowTabBar(pathname: string) {
   return true;
 }
 
+/** Top-bar navigation for wide screens; the tab bar covers phones. */
+export function DesktopNav() {
+  const pathname = usePathname();
+  const links = [
+    { href: "/", label: "Home", match: "home" },
+    { href: "/discover", label: "Discover", match: "discover" },
+    { href: "/events", label: "My events", match: "nights" },
+  ] as const;
+
+  return (
+    <nav className="no-print hidden items-center gap-1 md:flex" aria-label="Main">
+      {links.map((link) => {
+        const active = tabActive(pathname, link.match);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={active ? "page" : undefined}
+            className={cx(
+              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              active ? "bg-sunk text-ink" : "text-ink-soft hover:text-ink",
+            )}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function TabBar() {
   const pathname = usePathname();
   if (!shouldShowTabBar(pathname)) return null;
 
   return (
     <nav
-      className="no-print sticky bottom-0 z-40 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-paper/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {TABS.map((tab) => {
           const active = tabActive(pathname, tab.match);
           const Icon = tab.icon;
@@ -67,6 +101,19 @@ export function TabBar() {
         })}
       </ul>
     </nav>
+  );
+}
+
+function HomeIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 11.5 12 5l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-4V15h-5v5.5h-4A1.5 1.5 0 0 1 4 19v-7.5Z"
+        stroke="currentColor"
+        strokeWidth={active ? 2 : 1.6}
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

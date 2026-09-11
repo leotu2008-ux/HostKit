@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getCurrentUser, requireEvent, requireUser } from "@/lib/session";
-import { generatePlan } from "@/lib/plan";
+import { currentProfile, getCurrentUser, requireEvent, requireUser } from "@/lib/session";
+import { createEventWithPlan } from "@/lib/event-create";
 import { parseCents } from "@/lib/money";
 import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
@@ -31,6 +31,11 @@ const schema = z.object({
   ticketType: z.enum(TICKETS),
   ticketPrice: z.string().trim().optional(),
   visibility: z.enum(VISIBILITY),
+  // Filled by the venue picker when the host chose a place.
+  venueName: z.string().trim().max(120).optional(),
+  venuePhone: z.string().trim().max(40).optional(),
+  venueWebsite: z.string().trim().max(300).optional(),
+  venueExternalId: z.string().trim().max(200).optional(),
 });
 
 function parseCoord(raw: string | undefined): number | null {
@@ -51,7 +56,7 @@ export async function createEventAction(
   _prev: EventFormState,
   formData: FormData,
 ): Promise<EventFormState> {
-  const user = await getCurrentUser();
+  const user = await currentProfile();
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -86,53 +91,37 @@ export async function createEventAction(
   const address = input.address || null;
   const claimToken = user ? null : newClaimToken();
 
-  const plan = generatePlan({ type, date, budgetTotalCents });
-
-  const event = await db.$transaction(async (tx) => {
-    const created = await tx.event.create({
-      data: {
-        ownerId: user?.id ?? null,
-        claimToken,
-        title: input.title,
-        type,
-        date,
-        durationHours: input.durationHours,
-        guestCount: input.guestCount,
-        city: input.city,
-        address,
-        lat,
-        lng,
-        budgetTotalCents,
-        description: input.description || null,
-        vibe: input.description || null,
-        ticketType: input.ticketType,
-        ticketPriceCents,
-        visibility: input.visibility,
-        published: false,
-      },
-    });
-
-    await tx.budgetCategory.createMany({
-      data: plan.categories.map((c) => ({
-        eventId: created.id,
-        category: c.category,
-        name: c.name,
-        allocatedCents: c.allocatedCents,
-      })),
-    });
-
-    await tx.task.createMany({
-      data: plan.tasks.map((t) => ({
-        eventId: created.id,
-        title: t.title,
-        notes: t.notes ?? null,
-        offsetDays: t.offsetDays,
-        category: t.category ?? null,
-        dueDate: t.dueDate,
-      })),
-    });
-
-    return created;
+  const event = await createEventWithPlan({
+    ownerId: user?.id ?? null,
+    claimToken,
+    title: input.title,
+    type,
+    date,
+    durationHours: input.durationHours,
+    guestCount: input.guestCount,
+    city: input.city,
+    address,
+    lat,
+    lng,
+    budgetTotalCents,
+    description: input.description || null,
+    ticketType: input.ticketType,
+    ticketPriceCents,
+    visibility: input.visibility,
+    published: false,
+    schoolDomain: user?.schoolDomain ?? null,
+    venue: input.venueName
+      ? {
+          name: input.venueName,
+          address,
+          phone: input.venuePhone || null,
+          website: input.venueWebsite || null,
+          externalId: input.venueExternalId || null,
+          lat,
+          lng,
+          source: "APPLE_MAPS",
+        }
+      : null,
   });
 
   if (claimToken) {
@@ -172,6 +161,21 @@ export async function unpublishEventAction(formData: FormData) {
   await db.event.update({
     where: { id: event.id },
     data: { published: false },
+  });
+  refresh();
+}
+
+const VISIBILITY_VALUES = ["PUBLIC", "UNLISTED", "PRIVATE"] as const;
+
+/** Who can find the night. Changing it doesn't publish or unpublish. */
+export async function setVisibilityAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const raw = String(formData.get("visibility") ?? "");
+  if (!(VISIBILITY_VALUES as readonly string[]).includes(raw)) return;
+  const { event } = await requireEvent(eventId);
+  await db.event.update({
+    where: { id: event.id },
+    data: { visibility: raw as (typeof VISIBILITY_VALUES)[number] },
   });
   refresh();
 }

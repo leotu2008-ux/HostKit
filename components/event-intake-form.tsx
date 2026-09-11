@@ -2,220 +2,276 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import type { EventType } from "@/generated/prisma/enums";
 import { createEventAction } from "@/lib/actions/events";
-import { ALL_EVENT_TYPES, CITIES, EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { CITIES } from "@/lib/catalog";
 import { EVENT_TEMPLATES } from "@/lib/templates";
-import { LocationField } from "@/components/location-field";
-import {
-  Button,
-  Field,
-  FormError,
-  Input,
-  Select,
-  Textarea,
-  cx,
-} from "@/components/ui";
+
+/** The planner template behind every night. There's no picker any more; the
+ *  dinner-party plan is a sensible split for a typical night out. */
+const DEFAULT_TYPE = "DINNER_PARTY";
+const template = EVENT_TEMPLATES[DEFAULT_TYPE];
+
+/** Capacity: type a number, or nudge it with − and +. */
+function CapacityField({ name, defaultValue }: { name: string; defaultValue: number }) {
+  const [value, setValue] = useState(defaultValue);
+  const clamp = (n: number) => Math.min(100_000, Math.max(1, n));
+  const bump = (delta: number) => setValue((v) => clamp((Number.isFinite(v) ? v : 0) + delta));
+  const bumpClass =
+    "flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface text-lg text-ink hover:border-line-strong disabled:opacity-40";
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={() => bump(-1)} aria-label="Fewer" className={bumpClass} disabled={value <= 1}>
+        −
+      </button>
+      <input
+        name={name}
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={100000}
+        required
+        value={Number.isFinite(value) ? value : ""}
+        onChange={(e) => setValue(e.target.value === "" ? NaN : Number(e.target.value))}
+        onBlur={() => setValue((v) => clamp(Number.isFinite(v) ? v : defaultValue))}
+        aria-label="Capacity"
+        className={cx(compact, "w-24 text-center")}
+      />
+      <button type="button" onClick={() => bump(1)} aria-label="More" className={bumpClass}>
+        +
+      </button>
+    </div>
+  );
+}
+import { CoverArt } from "@/components/cover-art";
+import { VenueField } from "@/components/venue-field";
+import { Button, FormError, Input, cx } from "@/components/ui";
 
 function Submit({ signedIn }: { signedIn: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" disabled={pending}>
+    <Button type="submit" size="lg" className="w-full" disabled={pending}>
       {pending ? "Saving…" : signedIn ? "Save this night" : "Save draft"}
     </Button>
   );
 }
 
+/** A labelled row inside a grouped panel, label left and control right. */
+function Row({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5">
+      <span>
+        <span className="block text-[15px] font-medium text-ink">{label}</span>
+        {hint ? <span className="block text-[13px] text-ink-mute">{hint}</span> : null}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+const compact =
+  "min-h-10 rounded-lg border border-line bg-sunk px-3 text-[15px] text-ink focus:border-clay focus:outline-none";
+
+function Segmented<T extends string>({
+  name,
+  value,
+  onChange,
+  options,
+}: {
+  name: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: ReadonlyArray<{ value: T; label: string }>;
+}) {
+  return (
+    <div className="flex rounded-lg bg-sunk p-1">
+      <input type="hidden" name={name} value={value} />
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={cx(
+            "min-h-9 rounded-md px-3 text-sm font-medium",
+            value === option.value
+              ? "bg-surface text-ink shadow-[0_1px_3px_rgb(0_0_0/0.08)]"
+              : "text-ink-soft",
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
   const [state, formAction] = useActionState(createEventAction, undefined);
-  const [type, setType] = useState<EventType>("DINNER_PARTY");
+  const [city, setCity] = useState<string>(CITIES[0]);
   const [ticketType, setTicketType] = useState<"FREE" | "PAID">("FREE");
-  const template = EVENT_TEMPLATES[type];
+  const [visibility, setVisibility] = useState<"PUBLIC" | "UNLISTED" | "PRIVATE">(
+    "UNLISTED",
+  );
+  const [title, setTitle] = useState("");
+  const coverSeed = title.replace(/[^a-zA-Z0-9_-]/g, "") || "new-night";
 
   return (
-    <form action={formAction} className="space-y-8">
-      <FormError>{state?.error}</FormError>
-      <input type="hidden" name="type" value={type} />
+    <form
+      action={formAction}
+      className="grid gap-8 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-10"
+    >
+      <input type="hidden" name="type" value={DEFAULT_TYPE} />
 
-      <Field label="Name" hint="What guests will see.">
-        <Input name="title" required maxLength={120} placeholder="Rooftop Jazz Night" />
-      </Field>
-
-      <fieldset className="grid gap-5">
-        <legend className="mb-1 text-sm font-medium text-ink">Time</legend>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Date">
-            <Input name="date" type="date" />
-          </Field>
-          <Field label="Start">
-            <Input name="time" type="time" />
-          </Field>
+      <aside className="space-y-4">
+        <div className="aspect-square overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-28px_rgb(0_0_0/0.45)]">
+          <CoverArt id={coverSeed} title={title || "New event"} />
         </div>
-        <Field label="How many hours?" hint="Used to price hourly venues.">
-          <Input
-            key={`hours-${type}`}
-            name="durationHours"
-            type="number"
-            min={1}
-            max={24}
-            defaultValue={template.defaultDurationHours}
-            required
-          />
-        </Field>
-      </fieldset>
+        <p className="text-[13px] text-ink-mute">
+          The cover is drawn from the name — every night gets its own.
+        </p>
+      </aside>
 
-      <LocationField />
+      <div className="min-w-0 space-y-5">
+        <FormError>{state?.error}</FormError>
 
-      <Field label="City" hint="Where HostKit scouts venues and vendors.">
-        <Select name="city" defaultValue={CITIES[0]}>
-          {CITIES.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </Select>
-      </Field>
+        <input
+          name="title"
+          required
+          maxLength={120}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Event name"
+          aria-label="Event name"
+          className="font-event w-full bg-transparent text-[34px] leading-tight text-ink placeholder:text-ink-mute/60 focus:outline-none md:text-[42px]"
+        />
 
-      <Field label="Description">
-        <Textarea
+        <div className="divide-y divide-line rounded-card border border-line bg-surface">
+          <Row label="Date">
+            <input name="date" type="date" className={compact} />
+          </Row>
+          <Row label="Start">
+            <input name="time" type="time" className={compact} />
+          </Row>
+          <Row label="Hours" hint="Used to price hourly venues.">
+            <input
+              name="durationHours"
+              type="number"
+              min={1}
+              max={24}
+              defaultValue={template.defaultDurationHours}
+              required
+              className={cx(compact, "w-24")}
+            />
+          </Row>
+        </div>
+
+        <div className="space-y-5 rounded-card border border-line bg-surface p-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink">City</span>
+            <select
+              name="city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className={cx(compact, "w-full")}
+            >
+              {CITIES.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1.5 block text-sm text-ink-mute">
+              Where the night is, and where HostKit looks for venues.
+            </span>
+          </label>
+          <VenueField city={city} />
+        </div>
+
+        <textarea
           name="description"
           rows={4}
-          placeholder="Warm lights, a quartet, and the city as the backdrop."
+          aria-label="Description"
+          placeholder="Add a description — what should guests expect?"
+          className="w-full rounded-card border border-line bg-surface px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-ink-mute focus:border-clay focus:outline-none"
         />
-      </Field>
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium text-ink">Ticketing</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              { value: "FREE", label: "Free" },
-              { value: "PAID", label: "Paid" },
-            ] as const
-          ).map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={ticketType === option.value}
-              onClick={() => setTicketType(option.value)}
-              className={cx(
-                "min-h-12 rounded-lg border px-3 text-sm font-medium",
-                ticketType === option.value
-                  ? "border-clay bg-clay-wash text-clay-deep"
-                  : "border-line bg-surface text-ink-soft",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <input type="hidden" name="ticketType" value={ticketType} />
-        {ticketType === "PAID" ? (
-          <div className="mt-3">
-            <Field label="Price" hint="HostKit tracks the price; you collect it yourself.">
-              <Input name="ticketPrice" inputMode="decimal" placeholder="25" required />
-            </Field>
-          </div>
-        ) : (
-          <input type="hidden" name="ticketPrice" value="" />
-        )}
-      </fieldset>
-
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium text-ink">Visibility</legend>
-        <div className="space-y-2">
-          {(
-            [
-              {
-                value: "PUBLIC",
-                label: "Public",
-                hint: "On Discover once you publish.",
-              },
-              {
-                value: "UNLISTED",
-                label: "Unlisted",
-                hint: "Anyone with the link, not on Discover.",
-              },
-              {
-                value: "PRIVATE",
-                label: "Private",
-                hint: "Only you, even after you publish.",
-              },
-            ] as const
-          ).map((option) => (
-            <label
-              key={option.value}
-              className="flex min-h-12 items-start gap-3 rounded-card border border-line bg-surface px-4 py-3"
-            >
-              <input
-                type="radio"
-                name="visibility"
-                value={option.value}
-                defaultChecked={option.value === "UNLISTED"}
-                className="mt-1 h-4 w-4 accent-clay"
+        <div>
+          <p className="mb-2 text-[13px] font-medium text-ink-soft">Event options</p>
+          <div className="divide-y divide-line rounded-card border border-line bg-surface">
+            <Row label="Tickets">
+              <Segmented
+                name="ticketType"
+                value={ticketType}
+                onChange={setTicketType}
+                options={[
+                  { value: "FREE", label: "Free" },
+                  { value: "PAID", label: "Paid" },
+                ]}
               />
-              <span>
-                <span className="block text-sm font-medium text-ink">
-                  {option.label}
-                </span>
-                <span className="text-sm text-ink-mute">{option.hint}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <Field label="Capacity" hint="How many people this night can hold.">
-        <Input
-          key={`guests-${type}`}
-          name="guestCount"
-          type="number"
-          min={1}
-          max={100000}
-          defaultValue={template.defaultGuestCount}
-          required
-        />
-      </Field>
-
-      <fieldset>
-        <legend className="font-display mb-2 text-lg text-ink">
-          Kind of night
-        </legend>
-        <p className="mb-3 text-sm text-ink-soft">{template.blurb}</p>
-        <div className="grid grid-cols-2 gap-2">
-          {ALL_EVENT_TYPES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setType(option)}
-              aria-pressed={type === option}
-              className={cx(
-                "min-h-12 rounded-lg border px-3 py-3 text-sm font-medium",
-                type === option
-                  ? "border-clay bg-clay-wash text-clay-deep"
-                  : "border-line bg-surface text-ink-soft",
-              )}
+            </Row>
+            {ticketType === "PAID" ? (
+              <Row label="Price" hint="HostKit shows it; you collect it.">
+                <Input
+                  name="ticketPrice"
+                  inputMode="decimal"
+                  placeholder="25"
+                  required
+                  className="min-h-10 w-28"
+                />
+              </Row>
+            ) : (
+              <input type="hidden" name="ticketPrice" value="" />
+            )}
+            <Row label="Capacity">
+              <CapacityField name="guestCount" defaultValue={template.defaultGuestCount} />
+            </Row>
+            <Row
+              label="Visibility"
+              hint={
+                visibility === "PUBLIC"
+                  ? "On Discover once you publish."
+                  : visibility === "UNLISTED"
+                    ? "Anyone with the link."
+                    : "Only you, even after you publish."
+              }
             >
-              {EVENT_TYPE_LABEL[option]}
-            </button>
-          ))}
+              <Segmented
+                name="visibility"
+                value={visibility}
+                onChange={setVisibility}
+                options={[
+                  { value: "PUBLIC", label: "Public" },
+                  { value: "UNLISTED", label: "Unlisted" },
+                  { value: "PRIVATE", label: "Private" },
+                ]}
+              />
+            </Row>
+            <Row label="Planning budget" hint="Optional. Splits venue and vendor spend.">
+              <Input
+                name="budget"
+                inputMode="decimal"
+                placeholder="5,000"
+                className="min-h-10 w-32"
+              />
+            </Row>
+          </div>
         </div>
-      </fieldset>
 
-      <Field
-        label="Planning budget"
-        hint="Optional. Splits venue and vendor spend on the planner."
-      >
-        <Input name="budget" inputMode="decimal" placeholder="5,000" />
-      </Field>
+        <p className="text-[13px] text-ink-mute">
+          {signedIn
+            ? "This stays a draft until you publish it."
+            : "You can build this night now. Publishing it needs an account."}
+        </p>
 
-      <p className="rounded-card bg-sunk px-4 py-3 text-sm text-ink-soft">
-        {signedIn
-          ? "This stays a draft until you publish from the dashboard."
-          : "You can build this night now. Publishing — putting it on Discover or sharing a live link — needs an account."}
-      </p>
-
-      <div className="flex items-center gap-4 border-t border-line pt-6">
         <Submit signedIn={signedIn} />
       </div>
     </form>

@@ -1,77 +1,83 @@
-import { cookies } from "next/headers";
-import { signOutAction } from "@/lib/actions/auth";
-import { getCurrentUser } from "@/lib/session";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button, ButtonLink } from "@/components/ui";
-import { parsePreference, THEME_COOKIE } from "@/lib/theme";
+import { currentProfile } from "@/lib/session";
+import { removeAvatarAction, setAvatarAction } from "@/lib/actions/photos";
+import { Avatar } from "@/components/avatar";
+import { ImageUpload } from "@/components/image-upload";
+import { ProfileForm } from "@/components/profile-form";
+import { Badge, ButtonLink, Card } from "@/components/ui";
 
-export const metadata = { title: "You" };
+export const metadata = { title: "Profile" };
 
+/** Mirrors the iOS app's Profile screen (behind the logo). */
 export default async function ProfilePage() {
-  const user = await getCurrentUser();
-  const themePref = parsePreference((await cookies()).get(THEME_COOKIE)?.value);
-
-  if (!user) {
-    return (
-      <div className="px-4 py-10">
-        <h1 className="font-display text-[28px] text-ink">You</h1>
-        <p className="mt-2 text-[15px] text-ink-soft">
-          Sign in to host nights, check guests in, and pick up a plan in
-          progress.
-        </p>
-        <div className="mt-6 flex flex-col gap-2">
-          <ButtonLink href="/signin" size="lg" className="w-full">
-            Sign in
-          </ButtonLink>
-          <ButtonLink href="/signup" variant="secondary" size="lg" className="w-full">
-            Create an account
-          </ButtonLink>
-        </div>
-        <div className="mt-10">
-          <ThemeToggle initial={themePref} />
-        </div>
-      </div>
-    );
-  }
+  const user = await currentProfile();
 
   return (
-    <div className="px-4 py-6">
-      <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
+    <div className="mx-auto max-w-xl px-4 py-6 md:py-10">
+      <h1 className="font-display text-[30px] leading-tight text-ink md:text-[36px]">
         Profile
-      </p>
-      <h1 className="font-display mt-1 text-[28px] text-ink">{user.name}</h1>
-      <p className="mt-1 text-[15px] text-ink-soft">{user.email}</p>
+      </h1>
 
-      <div className="mt-8">
-        <ThemeToggle initial={themePref} />
-      </div>
+      {user ? (
+        <>
+          <Card className="mt-6 p-5">
+            <div className="flex items-center gap-4">
+              <Avatar name={user.name} imageUrl={user.imageUrl} size={56} />
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold text-ink">{user.name}</p>
+                <p className="truncate text-[15px] text-ink-soft">{user.email}</p>
+                {user.school ? (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <Badge tone="clay">{user.school.name}</Badge>
+                    {user.classYear ? <Badge>Class of {user.classYear}</Badge> : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            {user.bio ? (
+              <p className="mt-4 text-[15px] text-ink-soft">{user.bio}</p>
+            ) : null}
+            <ImageUpload
+              upload={setAvatarAction}
+              remove={removeAvatarAction}
+              hasImage={Boolean(user.imageUrl)}
+              label="Change photo"
+              className="mt-4"
+            />
+          </Card>
 
-      <ul className="mt-8 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-        <li>
-          <ButtonLink
-            href="/events"
-            variant="ghost"
-            className="h-14 w-full justify-start rounded-none px-4"
-          >
-            My events
-          </ButtonLink>
-        </li>
-        <li>
-          <ButtonLink
-            href="/events/new"
-            variant="ghost"
-            className="h-14 w-full justify-start rounded-none px-4"
-          >
-            Create a night
-          </ButtonLink>
-        </li>
-      </ul>
-
-      <form action={signOutAction} className="mt-8">
-        <Button type="submit" variant="secondary" size="lg" className="w-full">
-          Sign out
-        </Button>
-      </form>
+          <Card className="mt-4 p-5">
+            <h2 className="mb-4 font-display text-lg text-ink">Edit profile</h2>
+            <ProfileForm
+              name={user.name}
+              classYear={user.classYear}
+              bio={user.bio}
+              isStudent={Boolean(user.school)}
+            />
+            <p className="mt-3 text-[13px] text-ink-mute">
+              {user.school
+                ? `Your school comes from your ${user.schoolDomain} email.`
+                : "Sign up with a school .edu email to see campus events first."}
+            </p>
+          </Card>
+        </>
+      ) : (
+        <Card className="mt-6 p-6 text-center">
+          <p className="text-lg font-semibold text-ink">Host your own nights</p>
+          <p className="mx-auto mt-1 max-w-sm text-[15px] text-ink-soft">
+            Sign in to see the events you host, check guests in, and publish
+            new ones — here or in the iOS app. Students: use your school .edu
+            email to see what’s on at your campus first.
+          </p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <ButtonLink href="/signin" size="lg">
+              Sign in
+            </ButtonLink>
+            <ButtonLink href="/signup" variant="secondary" size="lg">
+              Create an account
+            </ButtonLink>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
