@@ -2,7 +2,7 @@
 export const SPLASH_STORAGE_KEY = "hostkit-splash-seen";
 
 /**
- * Whether this visit should play the fade in / hold / fade out splash.
+ * Whether this visit should play the pop-in / hold / fade out splash.
  * Reduced motion skips it so the app is there on first paint.
  */
 export function shouldPlaySplash(

@@ -10,7 +10,7 @@ test("plays the launch splash once, then reveals Discover", async ({ page }) => 
     "src",
     /HostKit_Logo/,
   );
-  await expect(splash).toBeHidden({ timeout: 4000 });
+  await expect(splash).toBeHidden({ timeout: 3000 });
 
   await expect(page.getByRole("link", { name: "HostKit" })).toBeVisible();
   await expect

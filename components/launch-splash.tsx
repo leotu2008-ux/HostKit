@@ -4,13 +4,13 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { SPLASH_STORAGE_KEY } from "@/lib/splash";
 
-const FALLBACK_MS = 2600;
+const FALLBACK_MS = 1800;
 
 /**
- * First-load splash: black screen, HostKit mark fades in, holds, fades out,
- * then the phone shell is revealed. Visibility is driven by `data-splash` on
- * `<html>` (set before paint); this component only records that the session
- * has seen it once the overlay animation finishes.
+ * First-load splash: black screen, HostKit mark pops in (scale + fade),
+ * holds, fades out, then the phone shell is revealed. Visibility is driven
+ * by `data-splash` on `<html>` (set before paint); this component only
+ * records that the session has seen it once the overlay animation finishes.
  */
 export function LaunchSplash() {
   const overlayRef = useRef<HTMLDivElement>(null);
