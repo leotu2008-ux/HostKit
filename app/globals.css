@@ -49,36 +49,15 @@
   --radius-card: 1rem;
 }
 
-:root,
-html[data-theme="light"] {
+:root {
   color-scheme: light;
 }
 
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --color-paper: #0e0e0f;
-  --color-surface: #18181a;
-  --color-sunk: #222225;
-  --color-ink: #f4f4f3;
-  --color-ink-soft: #b8b6b2;
-  --color-ink-mute: #8b8985;
-  --color-line: #2a2a2d;
-  --color-line-strong: #3c3c40;
-  --color-clay: #e5643a;
-  --color-clay-deep: #c64a22;
-  --color-clay-wash: #36201a;
-  --color-forest: #7fcca6;
-  --color-forest-wash: #16271f;
-  --color-amber: #efbd5c;
-  --color-amber-wash: #2c2413;
-  --color-danger: #f28a80;
-  --color-danger-wash: #361b19;
-}
-
-/* Before the bootstrap script runs, follow the device when no explicit
-   light/dark cookie has been applied to <html>. */
+/* Dark follows the device's own appearance setting, like the iOS app. There
+   is no in-site override, so the website always matches the phone or
+   computer it's opened on. */
 @media (prefers-color-scheme: dark) {
-  html:not([data-theme="light"]) {
+  :root {
     color-scheme: dark;
     --color-paper: #0e0e0f;
     --color-surface: #18181a;

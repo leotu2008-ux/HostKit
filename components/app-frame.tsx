@@ -1,10 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/session";
-import { parsePreference, THEME_COOKIE } from "@/lib/theme";
 
 function initials(name: string) {
   return (
@@ -24,7 +21,6 @@ function initials(name: string) {
  */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  const themePref = parsePreference((await cookies()).get(THEME_COOKIE)?.value);
 
   return (
     <div className="flex min-h-dvh w-full flex-col">
@@ -51,7 +47,6 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
             >
               Create event
             </Link>
-            <ThemeToggle compact initial={themePref} />
             {user ? (
               <Link
                 href="/profile"

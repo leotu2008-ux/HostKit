@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
-import Script from "next/script";
 import { Fraunces, Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
-import { parsePreference, THEME_BOOTSTRAP, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -32,33 +29,23 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
+// Light and dark come straight from the device (see globals.css), so the
+// browser chrome follows the same media query.
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f8f8f7" },
     { media: "(prefers-color-scheme: dark)", color: "#0e0e0f" },
   ],
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const pref = parsePreference(
-    (await cookies()).get(THEME_COOKIE)?.value,
-  );
-
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${inter.variable} h-full`}
-      data-theme={pref === "system" ? undefined : pref}
-      data-theme-pref={pref}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={`${fraunces.variable} ${inter.variable} h-full`}>
       <body className="min-h-full bg-paper">
-        <Script id="hostkit-theme" strategy="beforeInteractive">
-          {THEME_BOOTSTRAP}
-        </Script>
         <AppFrame>{children}</AppFrame>
       </body>
     </html>

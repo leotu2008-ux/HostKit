@@ -145,8 +145,12 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
           {days.length === 0 ? (
             <div className="mt-5">
               <EmptyState
-                title="Nothing listed yet"
-                body="Be the first: create a night, make it public, and publish it."
+                title={user ? "No other events yet" : "Nothing listed yet"}
+                body={
+                  user
+                    ? "Your own public nights are under Your nights. Other hosts’ will show up here."
+                    : "Be the first: create a night, make it public, and publish it."
+                }
                 action={<ButtonLink href="/events/new">Create a night</ButtonLink>}
               />
             </div>

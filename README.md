@@ -171,15 +171,16 @@ This is a working demo, not a production service. Specifically:
 - **Discovery scores in application code**, not SQL. At catalog scale (tens per
   city) that's the right trade, since the price that matters is computed
   per-event; tens of thousands of listings would want it precomputed.
-- **Light and dark.** Paper by default; Dark uses a warm night palette. System
-  follows the device. The choice is saved in this browser.
+- **Light and dark follow the device.** The website switches on
+  `prefers-color-scheme` and the iOS app on the system appearance; neither has
+  an in-app override, so both always match the phone or computer they're on.
 - `npm audit` reports advisories inside the Prisma **CLI's** dependency tree
   (`mysql2`, a driver this project never uses, and `deepmerge-ts`). They are
   build-time only and reach neither the server runtime nor the browser bundle.
 
 ## Tests
 
-148 unit tests cover the pure logic, including the boundaries that bite:
+144 unit tests cover the pure logic, including the boundaries that bite:
 per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
 event whose date has passed, an unallocated category, an RSVP round that has
 barely started.
