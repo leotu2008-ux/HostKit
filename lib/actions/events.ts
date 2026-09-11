@@ -1,9 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUser, requireEvent } from "@/lib/session";
 import { generatePlan, startOfDay } from "@/lib/plan";
 import { parseCents } from "@/lib/money";
 import { ALL_EVENT_TYPES, CITIES, EVENT_TYPE_LABEL } from "@/lib/catalog";
@@ -19,6 +20,7 @@ const schema = z.object({
   city: z.enum(CITIES as unknown as [string, ...string[]]),
   budget: z.string().trim(),
   vibe: z.string().trim().max(280).optional(),
+  published: z.string().optional(),
 });
 
 export async function createEventAction(
@@ -71,6 +73,7 @@ export async function createEventAction(
         city: input.city,
         budgetTotalCents,
         vibe: input.vibe || null,
+        published: input.published === "on",
       },
     });
 
@@ -98,4 +101,15 @@ export async function createEventAction(
   });
 
   redirect(`/events/${event.id}`);
+}
+
+export async function setPublishedAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const { event } = await requireEvent(eventId);
+  const published = String(formData.get("published") ?? "") === "on";
+  await db.event.update({
+    where: { id: event.id },
+    data: { published },
+  });
+  refresh();
 }

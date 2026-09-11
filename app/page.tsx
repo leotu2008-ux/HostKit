@@ -1,109 +1,139 @@
-import { redirect } from "next/navigation";
-import { SiteHeader } from "@/components/site-header";
-import { ButtonLink } from "@/components/ui";
+import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { EventCard } from "@/components/event-card";
+import { ButtonLink, EmptyState } from "@/components/ui";
 
-const STEPS = [
-  {
-    step: "01",
-    title: "Tell us about the event",
-    body: "Type, date, headcount, city, budget. Six questions, about a minute.",
-  },
-  {
-    step: "02",
-    title: "Get a plan, not a blank page",
-    body: "A timeline counted back from your date, a budget split across the categories your event actually needs, and a checklist of what's still unfilled.",
-  },
-  {
-    step: "03",
-    title: "Scout venues and vendors",
-    body: "Every listing is priced against your event — your headcount, your hours, your budget. Not a directory of hourly rates you have to do maths on.",
-  },
-  {
-    step: "04",
-    title: "Shortlist, ask, book",
-    body: "Compare your finalists side by side, send an inquiry with the details already filled in, and log the quote. Booking writes straight back into your budget and ticks off the task.",
-  },
-];
+export const metadata = { title: "Discover" };
 
-export default async function LandingPage() {
-  if (await getCurrentUser()) redirect("/events");
+export default async function DiscoverPage() {
+  const user = await getCurrentUser();
+
+  const [mine, nearby] = await Promise.all([
+    user
+      ? db.event.findMany({
+          where: { ownerId: user.id },
+          orderBy: [{ date: "asc" }, { createdAt: "desc" }],
+          take: 8,
+          include: {
+            _count: {
+              select: { guests: { where: { rsvpStatus: "ATTENDING" } } },
+            },
+          },
+        })
+      : Promise.resolve([]),
+    db.event.findMany({
+      where: {
+        published: true,
+        ...(user ? { ownerId: { not: user.id } } : {}),
+      },
+      orderBy: [{ date: "asc" }, { createdAt: "desc" }],
+      take: 24,
+      include: {
+        owner: { select: { name: true } },
+        _count: {
+          select: { guests: { where: { rsvpStatus: "ATTENDING" } } },
+        },
+      },
+    }),
+  ]);
 
   return (
-    <>
-      <SiteHeader />
+    <main className="flex-1 px-4 pb-8 pt-5">
+      <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
+        Discover
+      </p>
+      <h1 className="font-display mt-1 text-[28px] leading-tight text-ink">
+        {user ? "What are you hosting next?" : "Find a night."}
+      </h1>
+      <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+        {user
+          ? "Your drafts and published nights, plus what’s happening nearby."
+          : "Public events with a tap to register. Hosts plan the rest in HostKit."}
+      </p>
 
-      <main className="flex-1">
-        <section className="mx-auto max-w-6xl px-5 pt-16 pb-20 sm:pt-24">
-          <p className="mb-4 text-sm font-medium tracking-wide text-clay uppercase">
-            Plan your event end to end
-          </p>
-          <h1 className="font-display max-w-3xl text-4xl leading-[1.08] text-ink sm:text-6xl">
-            Everything an event needs, in the order it needs it.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
-            HostKit turns six answers into a real plan — the timeline, the
-            budget, and a shortlist of venues and vendors priced against your
-            actual event. Then it keeps the whole thing in one place while you
-            book it.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <ButtonLink href="/signup" size="lg">
-              Plan an event
-            </ButtonLink>
-            <ButtonLink href="/signin" variant="secondary" size="lg">
-              Sign in
+      {user ? (
+        <section className="mt-7">
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="font-display text-lg text-ink">Your nights</h2>
+            <ButtonLink href="/events/new" size="sm">
+              Create
             </ButtonLink>
           </div>
-        </section>
-
-        <section className="border-t border-line bg-surface">
-          <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
-            <h2 className="font-display text-2xl text-ink sm:text-3xl">
-              How it works
-            </h2>
-            <ol className="mt-10 grid gap-x-10 gap-y-10 sm:grid-cols-2">
-              {STEPS.map(({ step, title, body }) => (
-                <li key={step} className="flex gap-5">
-                  <span className="font-display tabular shrink-0 text-2xl text-clay">
-                    {step}
-                  </span>
-                  <div>
-                    <h3 className="font-display text-lg text-ink">{title}</h3>
-                    <p className="mt-1.5 leading-relaxed text-ink-soft">
-                      {body}
-                    </p>
-                  </div>
+          {mine.length === 0 ? (
+            <EmptyState
+              title="No events yet"
+              body="Six questions. HostKit builds the plan — you can publish it to Discover when you’re ready."
+              action={<ButtonLink href="/events/new">Create event</ButtonLink>}
+            />
+          ) : (
+            <ul className="space-y-2.5">
+              {mine.map((event) => (
+                <li key={event.id}>
+                  <EventCard
+                    href={`/events/${event.id}`}
+                    event={{
+                      id: event.id,
+                      title: event.title,
+                      city: event.city,
+                      date: event.date,
+                      durationHours: event.durationHours,
+                      going: event._count.guests,
+                    }}
+                  />
                 </li>
               ))}
-            </ol>
-          </div>
+            </ul>
+          )}
         </section>
+      ) : (
+        <div className="mt-6 flex gap-2">
+          <ButtonLink href="/signup" size="lg" className="flex-1">
+            Plan an event
+          </ButtonLink>
+          <ButtonLink href="/signin" variant="secondary" size="lg" className="flex-1">
+            Sign in
+          </ButtonLink>
+        </div>
+      )}
 
-        <section className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
-          <div className="rounded-card border border-line bg-forest px-7 py-12 text-center sm:px-12">
-            <h2 className="font-display text-2xl text-white sm:text-3xl">
-              Your next event starts with six questions.
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-forest-wash">
-              No credit card, no vendor spam. Just a plan you can actually work
-              from.
-            </p>
-            <div className="mt-7 flex justify-center">
-              <ButtonLink href="/signup" size="lg">
-                Get started
-              </ButtonLink>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-line py-8">
-        <p className="mx-auto max-w-6xl px-5 text-sm text-ink-mute">
-          HostKit — a demo project. Venue and vendor listings are invented
-          sample data, not real businesses.
+      <section className="mt-8">
+        <h2 className="font-display text-lg text-ink">Happening nearby</h2>
+        <p className="mt-1 mb-3 text-sm text-ink-mute">
+          Public nights you can register for — no account required.
         </p>
-      </footer>
-    </>
+        {nearby.length === 0 ? (
+          <EmptyState
+            title="Nothing listed this month"
+            body="Be the first. Create a night and turn on Publish to Discover."
+            action={
+              user ? (
+                <ButtonLink href="/events/new">Create event</ButtonLink>
+              ) : (
+                <ButtonLink href="/signup">Plan an event</ButtonLink>
+              )
+            }
+          />
+        ) : (
+          <ul className="space-y-2.5">
+            {nearby.map((event) => (
+              <li key={event.id}>
+                <EventCard
+                  href={`/e/${event.id}`}
+                  event={{
+                    id: event.id,
+                    title: event.title,
+                    city: event.city,
+                    date: event.date,
+                    durationHours: event.durationHours,
+                    going: event._count.guests,
+                    hostName: event.owner.name,
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
   );
 }

@@ -44,7 +44,7 @@ export function EventIntakeForm() {
         </legend>
         <p className="mb-4 text-sm text-ink-soft">{template.blurb}</p>
         <input type="hidden" name="type" value={type} />
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2">
           {ALL_EVENT_TYPES.map((option) => (
             <button
               key={option}
@@ -52,7 +52,7 @@ export function EventIntakeForm() {
               onClick={() => setType(option)}
               aria-pressed={type === option}
               className={cx(
-                "rounded-lg border px-3 py-3 text-sm font-medium transition-colors",
+                "min-h-12 rounded-lg border px-3 py-3 text-sm font-medium transition-colors",
                 type === option
                   ? "border-clay bg-clay-wash text-clay-deep"
                   : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink",
@@ -142,6 +142,23 @@ export function EventIntakeForm() {
           />
         </Field>
       </fieldset>
+
+      <label className="flex min-h-12 items-start gap-3 rounded-card border border-line bg-surface px-4 py-3">
+        <input
+          type="checkbox"
+          name="published"
+          defaultChecked
+          className="mt-1 h-5 w-5 accent-clay"
+        />
+        <span>
+          <span className="block text-sm font-medium text-ink">
+            Publish to Discover
+          </span>
+          <span className="text-sm text-ink-mute">
+            Guests can find this night and register. Uncheck to keep it unlisted.
+          </span>
+        </span>
+      </label>
 
       <div className="flex items-center gap-4 border-t border-line pt-6">
         <Submit />

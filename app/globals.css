@@ -54,15 +54,27 @@
   color-scheme: light;
 }
 
-html {
-  background: var(--color-paper);
-}
-
+html,
 body {
-  background: var(--color-paper);
+  min-height: 100%;
+  background: var(--color-sunk);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 480px) {
+  body {
+    display: flex;
+    justify-content: center;
+  }
+
+  .app-frame {
+    min-height: 100dvh;
+    box-shadow:
+      0 0 0 1px var(--color-line),
+      0 24px 80px rgb(28 25 23 / 0.08);
+  }
 }
 
 /* Fraunces is a variable font with optical-size, softness and "wonk" axes.
@@ -97,6 +109,11 @@ body {
     display: none !important;
   }
   body {
+    display: block;
     background: #fff;
+  }
+  .app-frame {
+    max-width: none;
+    box-shadow: none;
   }
 }

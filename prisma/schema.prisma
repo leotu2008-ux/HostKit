@@ -64,6 +64,8 @@ model Event {
   city             String
   budgetTotalCents Int
   vibe             String?
+  /// When true, the event appears on Discover and has a public /e/[id] page.
+  published        Boolean     @default(false)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
@@ -77,6 +79,7 @@ model Event {
   runSheetItems    RunSheetItem[]
 
   @@index([ownerId])
+  @@index([published, date])
 }
 
 // ---------------------------------------------------------------------------
@@ -298,6 +301,8 @@ model Guest {
   note       String?
   rsvpToken  String     @unique @default(cuid())
   respondedAt DateTime?
+  /// Set when door staff tap Check in. Null means not yet through the door.
+  checkedInAt DateTime?
   createdAt  DateTime   @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
