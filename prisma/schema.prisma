@@ -24,10 +24,41 @@ model User {
   schoolDomain String?
   classYear    Int?
   bio          String?
+  /// Profile picture, stored by lib/images.ts (Vercel Blob, or /api/images/:id).
+  imageUrl     String?
+  /// E.164, set only once a code sent to it has been confirmed.
+  phone           String?   @unique
+  phoneVerifiedAt DateTime?
   createdAt    DateTime @default(now())
 
-  events        Event[]
-  registrations Guest[]
+  events             Event[]
+  registrations      Guest[]
+  phoneVerifications PhoneVerification[]
+}
+
+/// A one-time code on its way to a phone number. Rows are short-lived:
+/// confirmed or expired ones are deleted by lib/phone.ts.
+model PhoneVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Uploaded image bytes — only used when Vercel Blob isn't configured, so
+/// local development works without any storage service.
+model Image {
+  id          String   @id @default(cuid())
+  bytes       Bytes
+  contentType String
+  createdAt   DateTime @default(now())
 }
 
 /// Who can see a live night. Drafts are unpublished regardless of this.
@@ -117,6 +148,8 @@ model Event {
   /// The host's school, copied at create (or claim). Surfaces the night to
   /// that school's students first; it never restricts who can attend.
   schoolDomain     String?
+  /// A photo the host chose; when null the cover is drawn from the id.
+  coverUrl         String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
