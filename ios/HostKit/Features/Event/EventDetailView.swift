@@ -6,7 +6,6 @@ struct EventDetailView: View {
     @Environment(\.openURL) private var openURL
     @State private var event: HostEvent
     @State private var isRegistering = false
-    @State private var didRegister = false
 
     init(event: HostEvent) {
         _event = State(initialValue: event)
@@ -31,11 +30,26 @@ struct EventDetailView: View {
                     Text(event.title)
                         .font(.event(34))
                         .fixedSize(horizontal: false, vertical: true)
-                    if let host = event.hostName {
+                    if let club = event.club {
+                        NavigationLink {
+                            ClubView(handle: club.handle)
+                        } label: {
+                            HStack(spacing: 8) {
+                                HostAvatar(name: club.name, imageURL: club.imageURL, size: 24)
+                                Text("Hosted by \(club.name)").font(.inter(.subheadline))
+                                Image(systemName: "chevron.right").font(.inter(.caption)).foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    } else if let host = event.hostName {
                         HStack(spacing: 8) {
                             HostAvatar(name: host, size: 24)
                             Text("Hosted by \(host)").font(.inter(.subheadline))
                         }
+                    }
+                    if event.published {
+                        GoingRow(attendees: event.attendees ?? [], total: event.going)
+                            .padding(.top, 4)
                     }
                 }
 
@@ -83,9 +97,9 @@ struct EventDetailView: View {
         }
         .safeAreaInset(edge: .bottom) { registerBar }
         .sheet(isPresented: $isRegistering) {
-            RegisterSheet(event: event) {
-                didRegister = true
-                event.going += 1
+            RegisterSheet(event: event) { state in
+                event.registration = state
+                if state == .going { event.going += 1 }
             }
         }
         .task { await refresh() }
@@ -100,16 +114,25 @@ struct EventDetailView: View {
                     Text(event.ticketLabel).font(.inter(.caption)).foregroundStyle(.secondary)
                 }
                 Spacer()
-                if didRegister || event.isRegistered {
+                switch event.registrationState {
+                case .going:
                     Label("You’re in", systemImage: "checkmark.circle.fill")
                         .font(.inter(.subheadline, .semibold))
                         .foregroundStyle(.green)
-                } else if event.isFull {
-                    Text("Full").font(.inter(.subheadline, .semibold)).foregroundStyle(.secondary)
-                } else {
-                    Button("Register") { isRegistering = true }
-                        .buttonStyle(.glassProminent)
-                        .controlSize(.large)
+                case .pending:
+                    Label("Requested", systemImage: "clock")
+                        .font(.inter(.subheadline, .semibold))
+                        .foregroundStyle(.orange)
+                case .waitlisted:
+                    Label("On the waitlist", systemImage: "person.2.wave.2")
+                        .font(.inter(.subheadline, .semibold))
+                        .foregroundStyle(.orange)
+                case .none:
+                    Button(event.requiresApproval ?? false ? "Request to join" : event.isFull ? "Join waitlist" : "Register") {
+                        isRegistering = true
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
                 }
             }
             .padding(.horizontal, 18)

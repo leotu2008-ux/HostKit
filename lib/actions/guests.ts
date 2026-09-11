@@ -5,10 +5,11 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseGuestList } from "@/lib/guests";
+import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
 
 export type GuestFormState = { error?: string; added?: number } | undefined;
 
-const RSVP_STATUSES = ["INVITED", "ATTENDING", "DECLINED", "MAYBE"] as const;
+const RSVP_STATUSES = ["INVITED", "ATTENDING", "DECLINED", "MAYBE", "PENDING", "WAITLISTED"] as const;
 
 export async function addGuestsAction(
   _prev: GuestFormState,
@@ -67,6 +68,9 @@ export async function updateGuestAction(formData: FormData) {
   });
   if (!parsed.success) return;
 
+  const before = await db.guest.findFirst({ where: { id: guestId, eventId }, select: { rsvpStatus: true } });
+  if (!before) return;
+
   await db.guest.updateMany({
     where: { id: guestId, eventId },
     data: {
@@ -76,6 +80,7 @@ export async function updateGuestAction(formData: FormData) {
       respondedAt: parsed.data.rsvpStatus === "INVITED" ? null : new Date(),
     },
   });
+  if (releasesSeat(before.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(eventId);
   refresh();
 }
 
@@ -84,7 +89,9 @@ export async function removeGuestAction(formData: FormData) {
   const guestId = String(formData.get("guestId") ?? "");
   await requireEvent(eventId);
 
+  const before = await db.guest.findFirst({ where: { id: guestId, eventId }, select: { rsvpStatus: true } });
   await db.guest.deleteMany({ where: { id: guestId, eventId } });
+  if (before && releasesSeat(before.rsvpStatus, null)) await promoteWaitlist(eventId);
   refresh();
 }
 
@@ -92,6 +99,9 @@ export async function removeGuestAction(formData: FormData) {
  * The guest's own RSVP, submitted from the public page. Deliberately NOT
  * behind requireEvent: the token IS the authorisation, and a guest must never
  * need an account to reply to an invitation.
+ *
+ * Someone waiting on the host (a request, or the waitlist) can bow out from
+ * here, but can't let themselves in — that's the host's call, or the line's.
  */
 export async function submitRsvpAction(
   _prev: GuestFormState,
@@ -111,6 +121,14 @@ export async function submitRsvpAction(
   const guest = await db.guest.findUnique({ where: { rsvpToken: token } });
   if (!guest) return { error: "This invitation link is no longer valid." };
 
+  const waiting = guest.rsvpStatus === "PENDING" || guest.rsvpStatus === "WAITLISTED";
+  if (waiting && parsed.data.rsvpStatus !== "DECLINED") {
+    return { error: "The host will confirm your spot — you can only step back from here." };
+  }
+  if (!waiting && (parsed.data.rsvpStatus === "PENDING" || parsed.data.rsvpStatus === "WAITLISTED")) {
+    return { error: "Pick whether you can make it." };
+  }
+
   await db.guest.update({
     where: { id: guest.id },
     data: {
@@ -122,6 +140,7 @@ export async function submitRsvpAction(
       respondedAt: new Date(),
     },
   });
+  if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(guest.eventId);
 
   refresh();
   return undefined;

@@ -129,6 +129,33 @@ tab bar is Home · Discover · Create · Events · Profile.
   Times are floating local time — 7:30 PM stays 7:30 PM.
 - Everything is set in Inter, on the web and in the app.
 
+## Clubs, requests and the Inbox
+
+- **Clubs** (`lib/clubs.ts`) are pages people follow, run by an owner and
+  admins: `/c/handle` on the web, a club page in the app. Any signed-in user
+  can start one (`/clubs/new`); a student's club is tagged with their school
+  and surfaces there. Events can be posted **as** a club from Create, the
+  club's admins run those events alongside the owner, and followers see the
+  club's events under **From clubs you follow** on Home.
+- **Approval and the waitlist** (`lib/registration.ts`, `lib/waitlist.ts`):
+  Promote → "Approve registrations" turns registrations into requests the
+  host answers from Overview. A full event takes registrations onto a
+  waitlist and lets the longest-waiting in automatically whenever a seat
+  frees. Register and promote run with the event row locked.
+- **Who's going**: event pages show the first few attending account
+  registrations — first name and photo — unless they've turned "Show me on
+  guest lists" off in Settings (`lib/attendees.ts`).
+- **Inbox** (`lib/notify.ts`): a club you follow posts, someone asks to join
+  your event, a host confirms your spot, a spot opens for you, a host sends
+  a blast — each lands in the Inbox (bell in the header; Home on iOS), goes
+  by email for the ones worth an email when Resend is configured, and by
+  **push** when `APNS_*` is set. Push needs a paid Apple developer team: add
+  the Push Notifications capability and an `aps-environment` entitlement,
+  set `HostKitPushEnabled = true` in `ios/Config/Info.plist`, and the app
+  registers its token; until then nothing on the phone changes.
+- **SMS blasts**: with Twilio configured the composer offers "Also text N
+  guests with a verified phone" (200 per blast).
+
 ## Hosting an event
 
 **Registering needs an account.** Guests sign in or create one on the event
@@ -156,7 +183,8 @@ Optional services, both off by default (see `.env.example`):
 | `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). The iOS app uses MapKit directly and needs nothing |
 | `RESEND_API_KEY`, `RESEND_FROM` | Real email blasts (resend.com, after verifying a sending domain). Without them blasts are recorded and copied by hand |
 | `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob (Vercel → Storage → Blob). Without it photos are stored in Postgres |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes. Without them the code is logged (and returned in development) |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes and SMS blasts. Without them the code is logged (and returned in development) and blasts are email-only |
+| `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APNS_ENV` | Push notifications to the iOS app (a .p8 key from developer.apple.com → Keys; `APNS_ENV` is `sandbox` or `production`). Needs a paid developer team; until then notifications stay in the Inbox and email |
 
 ## iOS app
 
@@ -175,7 +203,7 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `GET /api/v1/discover?city=` | Upcoming public, published events; with a token also `mine` (hosting + going) and a student's `campus` |
 | `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
 | `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
-| `POST /api/v1/events/:id/register` | Register the signed-in account (401 without a token) |
+| `POST /api/v1/events/:id/register` | Register the signed-in account → `{ state: going \| pending \| waitlisted }` (401 without a token) |
 | `POST /api/v1/events/:id/publish` | Publish / unpublish, optional `visibility` — needs sign-in; claims a draft on the way |
 | `POST /api/v1/drafts/claim` | Attach a device's drafts to the signed-in host |
 | `GET /api/v1/events/:id/guests` | Guest list and door counts |
@@ -188,6 +216,12 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `PUT /api/v1/events/:id/cover` · `DELETE` | Event cover photo, same shape; honours the drafts header |
 | `POST /api/v1/me/phone` · `DELETE` | `{ phone }` → texts a code (`devCode` in development without Twilio) · remove the number |
 | `POST /api/v1/me/phone/verify` | `{ code }` → the number goes on the account |
+| `PATCH /api/v1/events/:id/guests/:guestId` | `{ status }` — approve / decline a request, change a reply; frees seats to the waitlist |
+| `GET/POST /api/v1/clubs` | Clubs you manage + suggestions for your school or city · start one |
+| `GET/PATCH /api/v1/clubs/:handle` | A club page (club, upcoming events, admins) · edit details |
+| `POST/DELETE /api/v1/clubs/:handle/follow` · `…/members` · `PUT/DELETE …/avatar` | Follow / unfollow · add or remove admins · the club's picture |
+| `GET /api/v1/me/notifications` · `POST …/read` | The Inbox with the unread count · mark read |
+| `PUT/DELETE /api/v1/me/push-token` | The iOS device token (answers `pushEnabled`) |
 
 Like the website's draft cookie, a signed-out device proves it made a draft
 by sending `X-HostKit-Drafts: id.token,id.token` (`lib/api/drafts.ts`).

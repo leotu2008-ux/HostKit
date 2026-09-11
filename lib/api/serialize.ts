@@ -26,6 +26,7 @@ export function serializeUser(user: {
   imageUrl?: string | null;
   phone?: string | null;
   phoneVerifiedAt?: Date | null;
+  showOnGuestLists?: boolean;
 }) {
   return {
     id: user.id,
@@ -37,6 +38,7 @@ export function serializeUser(user: {
     imageUrl: user.imageUrl ?? null,
     phone: user.phone ?? null,
     phoneVerified: Boolean(user.phone && user.phoneVerifiedAt),
+    showOnGuestLists: user.showOnGuestLists ?? true,
   };
 }
 
@@ -62,8 +64,64 @@ type EventRow = {
   ownerId: string | null;
   schoolDomain: string | null;
   coverUrl?: string | null;
+  requiresApproval?: boolean;
   owner?: { name: string } | null;
+  club?: { handle: string; name: string; imageUrl: string | null } | null;
 };
+
+export type RegistrationState = "none" | "going" | "pending" | "waitlisted";
+
+/** The club an event was posted as. */
+export type ApiEventClub = { handle: string; name: string; imageUrl: string | null; webPath: string };
+
+/** A club page, as the apps list and show it. */
+export type ApiClub = {
+  id: string;
+  handle: string;
+  name: string;
+  blurb: string | null;
+  imageUrl: string | null;
+  coverUrl: string | null;
+  school: ApiSchool | null;
+  city: string | null;
+  followers: number;
+  isFollowing: boolean;
+  canManage: boolean;
+  webPath: string;
+};
+
+export function serializeClub(
+  club: {
+    id: string;
+    handle: string;
+    name: string;
+    blurb: string | null;
+    imageUrl: string | null;
+    coverUrl: string | null;
+    schoolDomain: string | null;
+    city: string | null;
+    _count: { followers: number };
+  },
+  viewer: { following: Set<string>; managed: Set<string> },
+): ApiClub {
+  return {
+    id: club.id,
+    handle: club.handle,
+    name: club.name,
+    blurb: club.blurb,
+    imageUrl: club.imageUrl,
+    coverUrl: club.coverUrl,
+    school: serializeSchool(club.schoolDomain),
+    city: club.city,
+    followers: club._count.followers,
+    isFollowing: viewer.following.has(club.id),
+    canManage: viewer.managed.has(club.id),
+    webPath: `/c/${club.handle}`,
+  };
+}
+
+/** A face on the event page. */
+export type ApiAttendee = { id: string; firstName: string; imageUrl: string | null };
 
 export type ApiEvent = {
   id: string;
@@ -97,6 +155,14 @@ export type ApiEvent = {
   isOwner: boolean;
   /** True when the signed-in account is registered as attending. */
   registered: boolean;
+  /** Going, asked (pending), or waitlisted — the fuller version of `registered`. */
+  registration: RegistrationState;
+  /** Registrations wait for the host's approval. */
+  requiresApproval: boolean;
+  /** The first few people going (opted-in account registrations); empty in lists. */
+  attendees: ApiAttendee[];
+  /** The club this was posted as, when it was. */
+  club: ApiEventClub | null;
   /** A photo the host uploaded; null means draw the cover from the id. */
   coverUrl: string | null;
   webPath: string;
@@ -106,8 +172,11 @@ export function serializeEvent(
   event: EventRow,
   going: number,
   canManage: boolean,
-  registered = false,
+  registration: RegistrationState | boolean = "none",
+  attendees: ApiAttendee[] = [],
 ): ApiEvent {
+  const state: RegistrationState =
+    typeof registration === "boolean" ? (registration ? "going" : "none") : registration;
   return {
     id: event.id,
     title: event.title,
@@ -129,7 +198,13 @@ export function serializeEvent(
     hostName: event.owner?.name ?? null,
     school: serializeSchool(event.schoolDomain),
     isOwner: canManage,
-    registered,
+    registered: state === "going",
+    registration: state,
+    requiresApproval: event.requiresApproval ?? false,
+    attendees,
+    club: event.club
+      ? { handle: event.club.handle, name: event.club.name, imageUrl: event.club.imageUrl, webPath: `/c/${event.club.handle}` }
+      : null,
     coverUrl: event.coverUrl ?? null,
     webPath: `/e/${event.id}`,
   };
@@ -178,4 +253,11 @@ export function serializeGuest(guest: {
 /** Counts attending guests alongside an event query. */
 export const goingCount = {
   _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" as const } } } },
+};
+
+/** Everything `serializeEvent` reads beyond the event row itself. */
+export const eventInclude = {
+  owner: { select: { name: true } },
+  club: { select: { handle: true, name: true, imageUrl: true } },
+  ...goingCount,
 };

@@ -42,6 +42,8 @@ export type NewEvent = {
   schoolDomain: string | null;
   /** Optional — hosts who already have a place just type the address. */
   venue?: VenuePick | null;
+  /** "Posted as" a club the creator manages. The club's school wins. */
+  clubId?: string | null;
 };
 
 /**
@@ -53,17 +55,22 @@ export type NewEvent = {
  * async actions, and both the web form and the iOS API need it.
  */
 export async function createEventWithPlan(input: NewEvent) {
-  const { venue, ...fields } = input;
+  const { venue, clubId, ...fields } = input;
   const plan = generatePlan({
     type: input.type,
     date: input.date,
     budgetTotalCents: input.budgetTotalCents,
   });
+  const club = clubId
+    ? await db.club.findUnique({ where: { id: clubId }, select: { schoolDomain: true } })
+    : null;
 
   return db.$transaction(async (tx) => {
     const created = await tx.event.create({
       data: {
         ...fields,
+        clubId: clubId ?? null,
+        schoolDomain: club ? club.schoolDomain : fields.schoolDomain,
         vibe: fields.description,
         // A picked venue is the address unless the host typed a different one.
         address: fields.address ?? venue?.address ?? null,

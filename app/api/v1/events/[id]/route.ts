@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { isPublicPageVisible } from "@/lib/listing";
 import { requestOwnsDraft } from "@/lib/api/drafts";
-import { isRegistered } from "@/lib/registration";
+import { registrationState } from "@/lib/registration";
+import { attendeesPreview } from "@/lib/attendees";
 import { apiError, apiUser, json } from "@/lib/api/http";
-import { goingCount, serializeEvent } from "@/lib/api/serialize";
+import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 
 /** One night: anyone can read a live public or unlisted night; the owner, or
  *  the device that drafted it, can also read drafts and private nights. */
@@ -16,7 +17,7 @@ export async function GET(
 
   const event = await db.event.findUnique({
     where: { id },
-    include: { owner: { select: { name: true } }, ...goingCount },
+    include: eventInclude,
   });
   // Same answer for "doesn't exist" and "not yours to see", so ids of
   // private nights can't be confirmed.
@@ -28,6 +29,11 @@ export async function GET(
     return apiError("Not found.", 404);
   }
 
-  const registered = await isRegistered(event.id, viewer?.id ?? null);
-  return json({ event: serializeEvent(event, event._count.guests, canManage, registered) });
+  const [registration, preview] = await Promise.all([
+    registrationState(event.id, viewer?.id ?? null),
+    attendeesPreview(event.id),
+  ]);
+  return json({
+    event: serializeEvent(event, event._count.guests, canManage, registration, preview.attendees),
+  });
 }

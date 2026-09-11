@@ -5,7 +5,11 @@ import { db } from "@/lib/db";
 import { canAccessEvent, getCurrentUser } from "@/lib/session";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
-import { isRegistered } from "@/lib/registration";
+import { registrationState } from "@/lib/registration";
+import { waitlistPositionFor } from "@/lib/waitlist";
+import { attendeesPreview, type Attendee } from "@/lib/attendees";
+import { GoingRow } from "@/components/going-row";
+import { Avatar } from "@/components/avatar";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
@@ -46,21 +50,39 @@ function timeRange(date: Date | null, hours: number): string {
   return `${formatEventTime(date)} – ${formatEventTime(end)}`;
 }
 
-function HostedBy({ name, going }: { name: string | null; going: number }) {
+function HostedBy({
+  name,
+  club,
+  preview,
+}: {
+  name: string | null;
+  club: { handle: string; name: string; imageUrl: string | null } | null;
+  preview: { attendees: Attendee[]; total: number };
+}) {
   return (
     <div className="border-t border-line pt-5">
       <p className="text-[13px] font-medium text-ink-mute">Hosted by</p>
-      <div className="mt-2.5 flex items-center gap-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
-          {(name ?? "?").slice(0, 1).toUpperCase()}
-        </span>
-        <span className="font-medium text-ink">
-          {name ?? "A host still signing in"}
-        </span>
+      {club ? (
+        <Link href={`/c/${club.handle}`} className="mt-2.5 flex items-center gap-3 hover:text-clay">
+          <Avatar name={club.name} imageUrl={club.imageUrl} size={32} className="rounded-lg" />
+          <span className="min-w-0">
+            <span className="block font-medium text-ink">{club.name}</span>
+            <span className="block text-[12px] text-ink-mute">Club page →</span>
+          </span>
+        </Link>
+      ) : (
+        <div className="mt-2.5 flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
+            {(name ?? "?").slice(0, 1).toUpperCase()}
+          </span>
+          <span className="font-medium text-ink">
+            {name ?? "A host still signing in"}
+          </span>
+        </div>
+      )}
+      <div className="mt-4">
+        <GoingRow attendees={preview.attendees} total={preview.total} />
       </div>
-      <p className="mt-4 text-[14px] text-ink-soft">
-        <span className="tabular font-medium text-ink">{going}</span> going
-      </p>
     </div>
   );
 }
@@ -77,6 +99,7 @@ export default async function PublicEventPage({
     where: { id },
     include: {
       owner: { select: { id: true, name: true } },
+      club: { select: { handle: true, name: true, imageUrl: true } },
       _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" } } } },
     },
   });
@@ -85,12 +108,20 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const alreadyGoing = await isRegistered(event.id, user?.id ?? null);
+  const [registration, preview] = await Promise.all([
+    registrationState(event.id, user?.id ?? null),
+    attendeesPreview(event.id),
+  ]);
+  const alreadyGoing = registration === "going";
+  const waitlistPlace =
+    registration === "waitlisted" ? await waitlistPositionFor(event.id, user?.id ?? null) : null;
 
   const school = schoolFor(event.schoolDomain);
   const going = event._count.guests;
   const spotsLeft = Math.max(0, event.guestCount - going);
-  const canRegister = event.published && !alreadyGoing && spotsLeft > 0;
+  // With a waitlist, a full night still takes registrations.
+  const canRegister = event.published && registration === "none";
+  const registerMode = event.requiresApproval ? "request" : spotsLeft === 0 ? "waitlist" : "register";
   const ticketLabel =
     event.ticketType === "PAID" ? formatCents(event.ticketPriceCents) : "Free";
   // Calendar links only make sense once the night has a date.
@@ -119,7 +150,7 @@ export default async function PublicEventPage({
             <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" />
           </div>
           <div className="hidden md:block">
-            <HostedBy name={event.owner?.name ?? null} going={going} />
+            <HostedBy name={event.owner?.name ?? null} club={event.club} preview={preview} />
           </div>
         </aside>
 
@@ -207,14 +238,30 @@ export default async function PublicEventPage({
                   </p>
                   {calendar ? <AddToCalendar links={calendar} /> : null}
                 </div>
-              ) : spotsLeft === 0 ? (
-                <p className="font-medium text-amber">
-                  This night is full. Ask the host about a waitlist.
-                </p>
+              ) : registration === "pending" ? (
+                <div>
+                  <p className="font-medium text-amber">Request sent.</p>
+                  <p className="mt-1 text-[15px] text-ink-soft">
+                    The host confirms each guest — you’ll hear at {user?.email} once they do.
+                  </p>
+                </div>
+              ) : registration === "waitlisted" ? (
+                <div>
+                  <p className="font-medium text-amber">
+                    You’re {waitlistPlace ? `#${waitlistPlace}` : ""} on the waitlist.
+                  </p>
+                  <p className="mt-1 text-[15px] text-ink-soft">
+                    When a spot opens you’re in automatically — we’ll tell you at {user?.email}.
+                  </p>
+                </div>
               ) : (
                 <>
                   <p className="mb-4 text-[15px] text-ink-soft">
-                    Welcome! Register below to save your spot
+                    {registerMode === "waitlist"
+                      ? "This night is full. Join the waitlist and you’re in automatically when a spot opens"
+                      : registerMode === "request"
+                        ? "The host approves each guest. Ask to join below"
+                        : "Welcome! Register below to save your spot"}
                     {event.ticketType === "PAID"
                       ? ` — tickets are ${ticketLabel}, paid to the host`
                       : ""}
@@ -224,6 +271,7 @@ export default async function PublicEventPage({
                     eventId={event.id}
                     viewer={user ? { name: user.name, email: user.email } : null}
                     calendar={calendar}
+                    mode={registerMode}
                   />
                 </>
               )}
@@ -242,7 +290,7 @@ export default async function PublicEventPage({
           </section>
 
           <div className="mt-10 md:hidden">
-            <HostedBy name={event.owner?.name ?? null} going={going} />
+            <HostedBy name={event.owner?.name ?? null} club={event.club} preview={preview} />
           </div>
 
           {isOwner ? (
@@ -268,7 +316,7 @@ export default async function PublicEventPage({
               href="#register"
               className="inline-flex min-h-11 items-center rounded-full bg-clay px-6 text-sm font-medium text-white"
             >
-              Register
+              {registerMode === "request" ? "Request" : registerMode === "waitlist" ? "Waitlist" : "Register"}
             </a>
           </div>
         </div>

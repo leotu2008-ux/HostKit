@@ -26,6 +26,8 @@ export async function GET(
       checkedIn: guests.filter((g) => g.checkedInAt).length,
       invited: guests.filter((g) => g.rsvpStatus === "INVITED").length,
       declined: guests.filter((g) => g.rsvpStatus === "DECLINED").length,
+      pending: guests.filter((g) => g.rsvpStatus === "PENDING").length,
+      waitlisted: guests.filter((g) => g.rsvpStatus === "WAITLISTED").length,
     },
   });
 }

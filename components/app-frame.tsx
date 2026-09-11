@@ -6,6 +6,7 @@ import { InstallPrompt } from "@/components/install-prompt";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
 import { signOutAction } from "@/lib/actions/auth";
 import { currentProfile } from "@/lib/session";
+import { unreadCount } from "@/lib/notify";
 
 /**
  * The app shell. Phones get a compact header and the bottom tab bar; wider
@@ -15,6 +16,7 @@ import { currentProfile } from "@/lib/session";
  */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
   const user = await currentProfile();
+  const unread = user ? await unreadCount(user.id) : 0;
   const menuUser = user
     ? { name: user.name, email: user.email, imageUrl: user.imageUrl, school: user.school, classYear: user.classYear }
     : null;
@@ -46,6 +48,28 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
             >
               Create event
             </Link>
+            {user ? (
+              <Link
+                href="/inbox"
+                aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-ink-soft hover:bg-sunk hover:text-ink"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                </svg>
+                {unread > 0 ? (
+                  <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-clay px-1 text-[10px] font-semibold text-white">
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+              </Link>
+            ) : null}
             {user ? (
               <AccountMenu user={menuUser} signOut={signOutAction} align="right" label={`${user.name} — account menu`}>
                 <Avatar name={user.name} imageUrl={user.imageUrl} size={36} />

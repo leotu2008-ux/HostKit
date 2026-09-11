@@ -10,9 +10,23 @@ struct SettingsView: View {
     @State private var remindersOn = Session.remindersEnabled
     @State private var calendarOn = Session.calendarEnabled
     @State private var remindersDenied = false
+    @State private var showOnGuestLists = Session.user?.showOnGuestLists ?? true
 
     var body: some View {
         Form {
+            if model.isSignedIn {
+                Section {
+                    Toggle("Show me on guest lists", isOn: $showOnGuestLists)
+                        .onChange(of: showOnGuestLists) { _, on in
+                            Task { try? await model.setShowOnGuestLists(on) }
+                        }
+                } header: {
+                    Text("Who’s going")
+                } footer: {
+                    Text("Event pages show the first few people going — first name and photo. Turn this off to sit that out.")
+                }
+            }
+
             Section {
                 Toggle("Remind me before events", isOn: $remindersOn)
                     .onChange(of: remindersOn) { _, on in

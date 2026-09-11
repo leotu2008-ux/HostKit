@@ -1,24 +1,32 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
-import { recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
+import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
 import { sendBlast } from "@/lib/blast-send";
 import { isEmailConfigured } from "@/lib/email/resend";
+import { isSmsConfigured } from "@/lib/sms/twilio";
 
 async function feed(eventId: string) {
   const [blasts, guests] = await Promise.all([
     db.blast.findMany({ where: { eventId }, orderBy: { sentAt: "desc" } }),
     db.guest.findMany({
       where: { eventId },
-      select: { name: true, email: true, rsvpStatus: true },
+      select: {
+        name: true,
+        email: true,
+        rsvpStatus: true,
+        user: { select: { phone: true, phoneVerifiedAt: true } },
+      },
     }),
   ]);
   return {
     canSend: isEmailConfigured(),
+    canText: isSmsConfigured(),
     segments: SEGMENT_KEYS.map((key) => ({
       key,
       label: SEGMENTS[key],
       count: recipientsFor(key, guests).length,
+      phoneCount: phoneRecipientsFor(key, guests).length,
     })),
     blasts: blasts.map((b) => ({
       id: b.id,
@@ -26,13 +34,14 @@ async function feed(eventId: string) {
       subject: b.subject,
       body: b.body,
       recipientCount: b.recipientCount,
+      smsCount: b.smsCount,
       provider: b.provider,
       sentAt: b.sentAt.toISOString(),
     })),
   };
 }
 
-/** Past blasts, the segments with live counts, and whether email is on. */
+/** Past blasts, the segments with live counts, and whether email / SMS are on. */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -48,6 +57,7 @@ const sendSchema = z.object({
   segment: z.enum(SEGMENT_KEYS as [Segment, ...Segment[]]),
   subject: z.string().trim().min(1).max(150),
   body: z.string().trim().min(1).max(5000),
+  sms: z.boolean().optional(),
 });
 
 /** Sends a blast (or records it for manual sending) and returns who it

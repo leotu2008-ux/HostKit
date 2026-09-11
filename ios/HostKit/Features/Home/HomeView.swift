@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var feed = DiscoverFeed(events: [])
     @State private var isLoading = true
     @State private var isSigningIn = false
+    @State private var isInboxOpen = false
     @State private var path: [HostEvent] = []
 
     private var city: String? { Session.city.flatMap { $0.isEmpty ? nil : $0 } }
@@ -41,6 +42,10 @@ struct HomeView: View {
 
                     YourEventsSection(events: feed.mine, isLoading: isLoading) { isSigningIn = true }
 
+                    if !feed.following.isEmpty {
+                        preview(title: "From clubs you follow", events: Array(feed.following.prefix(3)))
+                    }
+
                     quickActions
 
                     if let school = feed.school, !feed.campus.isEmpty {
@@ -61,11 +66,16 @@ struct HomeView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if model.isSignedIn {
+                        Button("Inbox", systemImage: model.unreadCount > 0 ? "bell.badge" : "bell") { isInboxOpen = true }
+                            .badge(model.unreadCount)
+                    }
                     Button("Create event", systemImage: "plus") { router.tab = .create }
                 }
             }
             .sheet(isPresented: $isSigningIn) { SignInView() }
+            .sheet(isPresented: $isInboxOpen) { InboxView() }
             .task(id: "\(city ?? "")|\(model.user?.id ?? "")") { await load() }
             .refreshable { await load() }
         }
@@ -130,5 +140,6 @@ struct HomeView: View {
         feed = await model.discover(city: city)
         isLoading = false
         await model.syncReminders(with: feed)
+        await model.refreshUnread()
     }
 }

@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
-import { goingCount, serializeEvent } from "@/lib/api/serialize";
+import { serializeEvent } from "@/lib/api/serialize";
+import { publishEvent } from "@/lib/publish";
 
 const schema = z.object({
   published: z.boolean(),
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional(),
+  requiresApproval: z.boolean().optional(),
 });
 
 /**
@@ -26,16 +27,12 @@ export async function POST(
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) return apiError("Say whether to publish.", 400);
 
-  const updated = await db.event.update({
-    where: { id: event.id },
-    data: {
-      published: parsed.data.published,
-      ...(parsed.data.visibility ? { visibility: parsed.data.visibility } : {}),
-      ...(event.ownerId === null
-        ? { ownerId: user.id, schoolDomain: user.schoolDomain }
-        : {}),
-    },
-    include: { owner: { select: { name: true } }, ...goingCount },
+  const { event: updated } = await publishEvent({
+    eventId: event.id,
+    user: { id: user.id, schoolDomain: user.schoolDomain },
+    published: parsed.data.published,
+    visibility: parsed.data.visibility,
+    requiresApproval: parsed.data.requiresApproval,
   });
   return json({ event: serializeEvent(updated, updated._count.guests, true) });
 }

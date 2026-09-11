@@ -52,5 +52,15 @@ export async function manageableEvent(
   if (!event) return null;
   if (userId && event.ownerId === userId) return event;
   if (requestOwnsDraft(request, event)) return event;
+  // Admins of the club an event was posted as run it too.
+  if (userId && event.clubId && (await isClubMember(userId, event.clubId))) return event;
   return null;
+}
+
+export async function isClubMember(userId: string, clubId: string): Promise<boolean> {
+  const row = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId, userId } },
+    select: { role: true },
+  });
+  return row !== null;
 }

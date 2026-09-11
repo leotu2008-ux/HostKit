@@ -23,6 +23,8 @@ const RSVP_LABEL: Record<RsvpStatus, string> = {
   ATTENDING: "Coming",
   DECLINED: "Can't come",
   MAYBE: "Maybe",
+  PENDING: "Requested",
+  WAITLISTED: "Waitlist",
 };
 
 const RSVP_TONE: Record<RsvpStatus, Tone> = {
@@ -30,6 +32,8 @@ const RSVP_TONE: Record<RsvpStatus, Tone> = {
   ATTENDING: "forest",
   DECLINED: "danger",
   MAYBE: "amber",
+  PENDING: "amber",
+  WAITLISTED: "neutral",
 };
 
 export default async function GuestsPage({

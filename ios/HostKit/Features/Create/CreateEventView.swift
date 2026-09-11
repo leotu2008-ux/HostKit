@@ -35,6 +35,10 @@ struct CreateEventView: View {
     @State private var isDrafting = false
     @State private var errorMessage: String?
 
+    /// "Post as": the clubs this host manages, and the one picked.
+    @State private var myClubs: [Club] = []
+    @State private var clubId: String = ""
+
     /// A cover photo, uploaded right after the event exists.
     @State private var isPickingCover = false
     @State private var coverItem: PhotosPickerItem?
@@ -92,6 +96,17 @@ struct CreateEventView: View {
                     Text(coverPreview == nil
                         ? "Tap the cover to add a photo, or keep the one drawn from the name."
                         : "Your photo goes up as soon as the event is created.")
+                }
+
+                if !myClubs.isEmpty {
+                    Section {
+                        Picker("Post as", selection: $clubId) {
+                            Text("Yourself").tag("")
+                            ForEach(myClubs) { club in Text(club.name).tag(club.id) }
+                        }
+                    } footer: {
+                        Text("Followers of the club hear about it, and its admins can run it with you.")
+                    }
                 }
 
                 Section("When") {
@@ -216,6 +231,13 @@ struct CreateEventView: View {
                     if address.isEmpty, let full = picked.address { address = full }
                 }
             }
+            .task(id: model.user?.id) {
+                guard model.isSignedIn, let feed = try? await model.api.clubs() else {
+                    myClubs = []
+                    return
+                }
+                myClubs = feed.mine
+            }
             .photosPicker(isPresented: $isPickingCover, selection: $coverItem, matching: .images)
             .onChange(of: coverItem) { _, item in
                 guard let item else { return }
@@ -288,7 +310,8 @@ struct CreateEventView: View {
             visibility: visibility,
             budgetCents: budget.isEmpty ? nil : cents(budget),
             publish: publishNow,
-            venue: venue)
+            venue: venue,
+            clubId: clubId.isEmpty ? nil : clubId)
         do {
             var created = try await model.createEvent(request)
             if let coverJPEG {

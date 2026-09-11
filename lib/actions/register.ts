@@ -3,16 +3,17 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/session";
-import { registerGuest } from "@/lib/registration";
+import { registerGuest, type RegistrationState } from "@/lib/registration";
 
-export type RegisterState = { error?: string; ok?: boolean } | undefined;
+export type RegisterState = { error?: string; ok?: boolean; state?: RegistrationState } | undefined;
 
 const schema = z.object({ eventId: z.string().min(1) });
 
 /**
  * The public Register button. Needs an account — the event registers the
  * account's email, which is what the host's blasts go to. The rules live in
- * lib/registration.ts so the iOS app follows the same ones.
+ * lib/registration.ts so the iOS app follows the same ones. The result says
+ * whether you're in, waiting for the host, or on the waitlist.
  */
 export async function registerForEventAction(
   _prev: RegisterState,
@@ -26,5 +27,5 @@ export async function registerForEventAction(
   if (!result.ok) return { error: result.error };
 
   refresh();
-  return { ok: true };
+  return { ok: true, state: result.state };
 }

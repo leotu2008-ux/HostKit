@@ -28,13 +28,27 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     let isOwner: Bool
     /// True when the signed-in account is registered as attending.
     var registered: Bool?
+    /// Going / pending / waitlisted; older servers only send `registered`.
+    var registration: RegistrationState?
+    /// Registrations wait for the host's approval.
+    var requiresApproval: Bool?
+    /// The first few people going (opted-in account registrations); empty in lists.
+    var attendees: [Attendee]?
+    /// The club this was posted as, when it was.
+    var club: EventClub?
+
+    /// Who to show as the host: the club, else the person.
+    var hostLabel: String? { club?.name ?? hostName }
     /// A photo the host uploaded; nil means the cover is drawn from the id.
     var coverUrl: String?
     let webPath: String
 
     var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+    var registrationState: RegistrationState {
+        registration ?? ((registered ?? false) ? .going : .none)
+    }
 
-    var isRegistered: Bool { registered ?? false }
+    var isRegistered: Bool { registrationState == .going }
 
     var endsAt: Date? {
         startsAt.map { $0.addingTimeInterval(TimeInterval(durationHours * 3600)) }
@@ -114,6 +128,17 @@ nonisolated enum RsvpStatus: String, Codable, Sendable {
     case attending = "ATTENDING"
     case declined = "DECLINED"
     case maybe = "MAYBE"
+    /// Asked to join; the host hasn't decided.
+    case pending = "PENDING"
+    /// Wants in; the event is full.
+    case waitlisted = "WAITLISTED"
+    /// A status this build doesn't know — never fail the whole list over it.
+    case unknown = "UNKNOWN"
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = RsvpStatus(rawValue: raw) ?? .unknown
+    }
 
     var label: String {
         switch self {
@@ -121,7 +146,122 @@ nonisolated enum RsvpStatus: String, Codable, Sendable {
         case .attending: "Going"
         case .declined: "Not going"
         case .maybe: "Maybe"
+        case .pending: "Requested"
+        case .waitlisted: "Waitlist"
+        case .unknown: "—"
         }
+    }
+}
+
+/// The club an event was posted as. Mirrors `ApiEventClub`.
+nonisolated struct EventClub: Codable, Hashable, Sendable {
+    let handle: String
+    let name: String
+    let imageUrl: String?
+    let webPath: String
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+}
+
+/// A club page. Mirrors `ApiClub` in `lib/api/serialize.ts`.
+nonisolated struct Club: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let handle: String
+    var name: String
+    var blurb: String?
+    var imageUrl: String?
+    var coverUrl: String?
+    var school: School?
+    var city: String?
+    var followers: Int
+    var isFollowing: Bool
+    var canManage: Bool
+    let webPath: String
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+}
+
+nonisolated struct ClubMemberRow: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let name: String
+    let imageUrl: String?
+    let role: String
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+}
+
+nonisolated struct ClubPage: Decodable, Sendable {
+    var club: Club
+    var events: [HostEvent]
+    var members: [ClubMemberRow]
+}
+
+nonisolated struct ClubsFeed: Decodable, Sendable {
+    var mine: [Club]
+    var suggested: [Club]
+}
+
+nonisolated struct NewClubRequest: Encodable, Sendable {
+    let name: String
+    let handle: String
+    let blurb: String?
+    let city: String?
+}
+
+/// Something that happened to you. Mirrors `/api/v1/me/notifications`.
+nonisolated struct Notice: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let kind: String
+    let title: String
+    let body: String
+    let eventId: String?
+    let clubId: String?
+    var readAt: Date?
+    let createdAt: Date
+
+    var isUnread: Bool { readAt == nil }
+    var symbol: String {
+        switch kind {
+        case "club_published": "megaphone"
+        case "registration_request": "hand.raised"
+        case "registration_approved": "checkmark.seal"
+        case "waitlist_promoted": "ticket"
+        case "blast": "envelope"
+        default: "bell"
+        }
+    }
+}
+
+nonisolated struct InboxFeed: Decodable, Sendable {
+    var items: [Notice]
+    var unread: Int
+}
+
+/// A face on the event page. Mirrors `ApiAttendee` in `lib/api/serialize.ts`.
+nonisolated struct Attendee: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let firstName: String
+    let imageUrl: String?
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+
+    /// "Ada, Grace and 12 others are going" — same rules as `goingSentence` on the web.
+    static func sentence(_ names: [String], total: Int) -> String {
+        if total == 0 { return "Be the first to register" }
+        let shown = Array(names.prefix(2))
+        let rest = total - shown.count
+        let verb = total == 1 ? "is" : "are"
+        if shown.isEmpty { return "\(total) \(verb) going" }
+        if rest <= 0 { return "\(shown.joined(separator: " and ")) \(verb) going" }
+        return "\(shown.joined(separator: ", ")) and \(rest) \(rest == 1 ? "other" : "others") are going"
+    }
+}
+
+/// Where the signed-in viewer stands with an event. Mirrors `registration`
+/// in `lib/api/serialize.ts`; unknown values decode as `.none`.
+nonisolated enum RegistrationState: String, Codable, Sendable {
+    case none, going, pending, waitlisted
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = RegistrationState(rawValue: raw) ?? .none
     }
 }
 
@@ -149,6 +289,8 @@ nonisolated struct GuestSummary: Codable, Hashable, Sendable {
     var checkedIn: Int
     var invited: Int
     var declined: Int
+    var pending: Int?
+    var waitlisted: Int?
 }
 
 /// Mirrors `lib/schools.ts`.
@@ -170,6 +312,8 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     /// E.164, present only once a texted code confirmed it.
     var phone: String?
     var phoneVerified: Bool?
+    /// Whether their first name and photo may appear in "who's going".
+    var showOnGuestLists: Bool?
 
     var isStudent: Bool { school != nil }
     var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
@@ -182,6 +326,10 @@ nonisolated struct DiscoverFeed: Decodable, Sendable {
     var campus: [HostEvent] = []
     /// What the viewer hosts or is going to, soonest first. Empty signed out.
     var mine: [HostEvent] = []
+    /// Upcoming events from clubs the viewer follows.
+    var following: [HostEvent] = []
+    /// Clubs worth following at the viewer's school or in the city.
+    var clubs: [Club] = []
     var school: School?
 }
 
@@ -243,6 +391,8 @@ nonisolated struct BlastSegment: Codable, Identifiable, Hashable, Sendable {
     let key: String
     let label: String
     let count: Int
+    /// Guests in the segment with a verified phone.
+    var phoneCount: Int?
     var id: String { key }
 }
 
@@ -252,6 +402,7 @@ nonisolated struct Blast: Codable, Identifiable, Hashable, Sendable {
     let subject: String
     let body: String
     let recipientCount: Int
+    var smsCount: Int?
     let provider: String
     let sentAt: Date
 }
@@ -263,11 +414,14 @@ nonisolated struct BlastRecipient: Codable, Hashable, Sendable {
 
 nonisolated struct BlastsFeed: Decodable, Sendable {
     var canSend: Bool
+    /// Twilio is configured, so "Also text" is on offer.
+    var canText: Bool?
     var segments: [BlastSegment]
     var blasts: [Blast]
     /// Present on the response to a send.
     var provider: String?
     var recipients: [BlastRecipient]?
+    var smsCount: Int?
 }
 
 /// A venue picked from MapKit on Create. Mirrors `VenuePick` on the server.
@@ -298,6 +452,8 @@ nonisolated struct NewEventRequest: Encodable, Sendable {
     var budgetCents: Int?
     var publish: Bool
     var venue: VenuePick?
+    /// Post as a club the host manages.
+    var clubId: String?
 }
 
 /// The cities HostKit knows; matches `CITIES` and `CITY_CENTERS` in

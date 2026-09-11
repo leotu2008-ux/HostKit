@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct HostKitApp: App {
+    @UIApplicationDelegateAdaptor(PushRegistration.self) private var pushRegistration
     @State private var model = AppModel()
 
     init() {

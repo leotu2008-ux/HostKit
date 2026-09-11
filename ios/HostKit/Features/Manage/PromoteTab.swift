@@ -31,12 +31,19 @@ struct PromoteTab: View {
                     ForEach(EventVisibility.allCases) { Text($0.label).tag($0) }
                 }
                 .disabled(isSaving)
+                Toggle("Approve registrations", isOn: Binding(
+                    get: { event.requiresApproval ?? false },
+                    set: { value in Task { await setApproval(value) } }))
+                    .disabled(isSaving)
             } header: {
                 Text("Status")
             } footer: {
-                Text(event.published
+                Text((event.published
                     ? "Live. \(event.visibility.hint)\(event.school.map { " Shown first to \($0.short) students." } ?? "")"
                     : "A draft — guests can't see it or register until you publish.")
+                    + ((event.requiresApproval ?? false)
+                        ? " People ask to join and you confirm each one on Overview; once it's full the rest join a waitlist."
+                        : " Anyone can register until it's full; after that they join a waitlist and move up as spots open."))
             }
 
             Section {
@@ -114,6 +121,22 @@ struct PromoteTab: View {
         defer { isSaving = false }
         do {
             event = try await model.setPublished(event, value)
+            onChange(event)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func setApproval(_ value: Bool) async {
+        guard model.isSignedIn else {
+            requestSignIn()
+            return
+        }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            event = try await model.setApproval(event, value)
             onChange(event)
             errorMessage = nil
         } catch {

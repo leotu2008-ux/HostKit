@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
+import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
 import { isEmailConfigured } from "@/lib/email/resend";
+import { isSmsConfigured } from "@/lib/sms/twilio";
 import { BlastComposer } from "@/components/blast-composer";
 import { Badge, Card, EmptyState, SectionHeading } from "@/components/ui";
 
@@ -13,12 +14,20 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
   const [guests, blasts] = await Promise.all([
     db.guest.findMany({
       where: { eventId: event.id },
-      select: { name: true, email: true, rsvpStatus: true },
+      select: {
+        name: true,
+        email: true,
+        rsvpStatus: true,
+        user: { select: { phone: true, phoneVerifiedAt: true } },
+      },
     }),
     db.blast.findMany({ where: { eventId: event.id }, orderBy: { sentAt: "desc" } }),
   ]);
   const counts = Object.fromEntries(
     SEGMENT_KEYS.map((key) => [key, recipientsFor(key, guests).length]),
+  ) as Record<Segment, number>;
+  const phoneCounts = Object.fromEntries(
+    SEGMENT_KEYS.map((key) => [key, phoneRecipientsFor(key, guests).length]),
   ) as Record<Segment, number>;
 
   return (
@@ -33,7 +42,9 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
             eventId={event.id}
             eventTitle={event.title}
             counts={counts}
+            phoneCounts={phoneCounts}
             canSend={isEmailConfigured()}
+            canText={isSmsConfigured()}
           />
         </Card>
       </section>
@@ -53,7 +64,7 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
                   </Badge>
                 </div>
                 <p className="text-[13px] text-ink-mute">
-                  {SEGMENTS[blast.segment as Segment] ?? blast.segment} · {blast.recipientCount} ·{" "}
+                  {SEGMENTS[blast.segment as Segment] ?? blast.segment} · {blast.recipientCount} emailed{blast.smsCount > 0 ? ` · ${blast.smsCount} texted` : ""} ·{" "}
                   {blast.sentAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </p>
               </div>

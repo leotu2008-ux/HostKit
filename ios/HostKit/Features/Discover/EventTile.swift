@@ -9,7 +9,11 @@ struct EventTile: View {
         if event.isOwner {
             return event.published ? ("Hosting", .accentColor) : ("Draft", .secondary)
         }
-        return ("Going", .green)
+        switch event.registrationState {
+        case .pending: return ("Requested", .orange)
+        case .waitlisted: return ("Waitlist", .orange)
+        default: return ("Going", .green)
+        }
     }
 
     var body: some View {

@@ -43,11 +43,17 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 
 | Tab | Screens |
 | --- | --- |
-| **Home** | The brand at the top, "Your events" (hosting + going), where-to-next actions, and a preview of what's at your school and around your city |
-| **Discover** | Campus and city feeds grouped by day with the city picker, event page with register sheet |
-| **Events** | Your events as a timeline (upcoming / past) and Manage — Overview (guest list, check-in, tap the cover to add a photo) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list) · Promote (publish, visibility, share link, QR code, promo copy) |
-| **Create** | The event form, with an optional MapKit venue search and a cover photo |
-| **Profile** | Photo, name, school; past events; settings (reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri); sign in / out. The same menu opens from the HostKit mark top-left on every tab |
+| **Home** | The brand at the top, the Inbox bell, "Your events" (hosting, going, requested, waitlisted), events from clubs you follow, where-to-next actions, and a preview of what's at your school and around your city |
+| **Discover** | Clubs at your school, campus and city feeds grouped by day with the city picker; event page with who's going, the club, and a register bar that knows about approval and the waitlist |
+| **Events** | Your events as a timeline (upcoming / past) and Manage — Overview (requests to approve, the waitlist, guest list, check-in, tap the cover to add a photo) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list, also text verified phones) · Promote (publish, visibility, approve registrations, share link, QR code, promo copy) |
+| **Create** | The event form, with "Post as" a club you manage, an optional MapKit venue search and a cover photo |
+| **Profile** | Photo, name, school; past events; clubs (yours, and a page to start one); settings (who's going, reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri); sign in / out. The same menu opens from the HostKit mark top-left on every tab |
+
+Push notifications are wired but off: `App/PushRegistration.swift` only asks
+iOS for a device token when `Info.plist` has `HostKitPushEnabled = true`,
+which goes in together with the Push Notifications capability and the
+`aps-environment` entitlement on a paid developer team. Until then the
+Inbox (bell on Home) and local reminders do the job.
 
 Registering for an event adds it to your calendar (`App/CalendarSync.swift`,
 write-only EventKit access) and schedules two local notifications — the

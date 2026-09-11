@@ -19,32 +19,39 @@ function Submit({ canSend }: { canSend: boolean }) {
 /**
  * Write one message to a slice of the guest list. With email configured it
  * goes out; otherwise HostKit records it and hands over the recipients to
- * paste into whatever the host uses.
+ * paste into whatever the host uses. With Twilio configured, guests with a
+ * verified phone can be texted too.
  */
 export function BlastComposer({
   eventId,
   eventTitle,
   counts,
+  phoneCounts,
   canSend,
+  canText,
 }: {
   eventId: string;
   eventTitle: string;
   counts: Record<Segment, number>;
+  phoneCounts?: Record<Segment, number>;
   canSend: boolean;
+  canText?: boolean;
 }) {
   const [state, formAction] = useActionState<BlastFormState, FormData>(sendBlastAction, undefined);
   const [segment, setSegment] = useState<Segment>("going");
   const [subject, setSubject] = useState(`${eventTitle}: an update`);
   const [body, setBody] = useState("Hi {name},\n\n");
+  const phones = phoneCounts?.[segment] ?? 0;
 
   if (state?.sent) {
-    const { provider, count, emails } = state.sent;
+    const { provider, count, emails, smsCount } = state.sent;
     return (
       <div className="space-y-4 rounded-card border border-line bg-forest-wash/60 p-5">
         <p className="font-display text-lg text-forest">
           {provider === "resend"
             ? `Sent to ${count} ${count === 1 ? "guest" : "guests"}.`
             : `Recorded for ${count} ${count === 1 ? "guest" : "guests"}.`}
+          {smsCount > 0 ? ` Texted ${smsCount}.` : ""}
         </p>
         {provider === "manual" ? (
           <>
@@ -102,6 +109,13 @@ export function BlastComposer({
       <Field label="Message" hint="{name} becomes each guest’s first name.">
         <Textarea name="body" rows={8} value={body} onChange={(e) => setBody(e.target.value)} maxLength={5000} required />
       </Field>
+
+      {canText ? (
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input type="checkbox" name="sms" disabled={phones === 0} className="h-4 w-4 accent-clay" />
+          Also text {phones} {phones === 1 ? "guest" : "guests"} with a verified phone
+        </label>
+      ) : null}
 
       {!canSend ? (
         <p className="rounded-lg bg-amber-wash px-3 py-2 text-[13px] text-amber">

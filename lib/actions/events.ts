@@ -9,6 +9,8 @@ import { createEventWithPlan } from "@/lib/event-create";
 import { parseCents } from "@/lib/money";
 import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
+import { publishEvent } from "@/lib/publish";
+import { canManageClub } from "@/lib/clubs";
 
 export type EventFormState = { error?: string } | undefined;
 
@@ -36,6 +38,8 @@ const schema = z.object({
   venuePhone: z.string().trim().max(40).optional(),
   venueWebsite: z.string().trim().max(300).optional(),
   venueExternalId: z.string().trim().max(200).optional(),
+  // "Post as" — a club the host manages, or empty for themselves.
+  clubId: z.string().trim().optional(),
 });
 
 function parseCoord(raw: string | undefined): number | null {
@@ -90,9 +94,14 @@ export async function createEventAction(
   const lng = parseCoord(input.lng);
   const address = input.address || null;
   const claimToken = user ? null : newClaimToken();
+  const clubId = input.clubId || null;
+  if (clubId && !(user && (await canManageClub(user.id, clubId)))) {
+    return { error: "You don't run that club." };
+  }
 
   const event = await createEventWithPlan({
     ownerId: user?.id ?? null,
+    clubId,
     claimToken,
     title: input.title,
     type,
@@ -140,27 +149,24 @@ export async function publishEventAction(formData: FormData) {
     );
   }
   const { event } = await requireEvent(eventId);
-  if (!event.ownerId) {
-    await db.event.update({
-      where: { id: event.id },
-      data: { ownerId: user.id, published: true },
-    });
-  } else {
-    await db.event.update({
-      where: { id: event.id },
-      data: { published: true },
-    });
-  }
+  const profile = await currentProfile();
+  await publishEvent({
+    eventId: event.id,
+    user: { id: user.id, schoolDomain: profile?.schoolDomain ?? null },
+    published: true,
+  });
   refresh();
 }
 
 export async function unpublishEventAction(formData: FormData) {
   const eventId = String(formData.get("eventId") ?? "");
-  await requireUser(`/events/${eventId}`);
+  const user = await requireUser(`/events/${eventId}`);
   const { event } = await requireEvent(eventId);
-  await db.event.update({
-    where: { id: event.id },
-    data: { published: false },
+  const profile = await currentProfile();
+  await publishEvent({
+    eventId: event.id,
+    user: { id: user.id, schoolDomain: profile?.schoolDomain ?? null },
+    published: false,
   });
   refresh();
 }
@@ -177,6 +183,15 @@ export async function setVisibilityAction(formData: FormData) {
     where: { id: event.id },
     data: { visibility: raw as (typeof VISIBILITY_VALUES)[number] },
   });
+  refresh();
+}
+
+/** Whether registrations wait for the host's approval. */
+export async function setApprovalAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const on = String(formData.get("requiresApproval") ?? "") === "on";
+  const { event } = await requireEvent(eventId);
+  await db.event.update({ where: { id: event.id }, data: { requiresApproval: on } });
   refresh();
 }
 

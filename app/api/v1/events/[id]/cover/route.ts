@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent } from "@/lib/api/http";
-import { goingCount, serializeEvent } from "@/lib/api/serialize";
+import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 import { deleteImage, storeImage, validateImage } from "@/lib/images";
 
-const include = { owner: { select: { name: true } }, ...goingCount };
+const include = eventInclude;
 
 /** The request body is the image itself, with its Content-Type. Works for
  *  drafts on a signed-out device too (X-HostKit-Drafts). */

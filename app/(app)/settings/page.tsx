@@ -1,4 +1,5 @@
 import { signOutAction } from "@/lib/actions/auth";
+import { setGuestListVisibilityAction } from "@/lib/actions/profile";
 import { currentProfile } from "@/lib/session";
 import { PhoneForm } from "@/components/phone-form";
 import { Button, Card } from "@/components/ui";
@@ -20,6 +21,36 @@ export default async function SettingsPage() {
           Add your mobile so hosts can reach you about events you’re going to. Verified with a text.
         </p>
         <PhoneForm phone={user.phone} verified={Boolean(user.phone && user.phoneVerifiedAt)} />
+      </Card>
+
+      <Card className="mt-4 p-5">
+        <h2 className="font-display text-lg text-ink">Who’s going</h2>
+        <p className="mt-1 mb-4 text-[15px] text-ink-soft">
+          Event pages show the first few people going — first name and photo. You can sit that out.
+        </p>
+        <form action={setGuestListVisibilityAction} className="flex items-center gap-3">
+          <input type="hidden" name="showOnGuestLists" value={user.showOnGuestLists ? "off" : "on"} />
+          <button
+            type="submit"
+            role="switch"
+            aria-checked={user.showOnGuestLists}
+            className={
+              user.showOnGuestLists
+                ? "relative h-6 w-11 shrink-0 rounded-full bg-clay transition-colors"
+                : "relative h-6 w-11 shrink-0 rounded-full bg-line-strong transition-colors"
+            }
+          >
+            <span
+              aria-hidden
+              className={
+                user.showOnGuestLists
+                  ? "absolute top-0.5 left-[22px] h-5 w-5 rounded-full bg-white"
+                  : "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white"
+              }
+            />
+          </button>
+          <span className="text-sm font-medium text-ink">Show me on guest lists</span>
+        </form>
       </Card>
 
       <Card className="mt-4 p-5">

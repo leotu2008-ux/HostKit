@@ -38,7 +38,14 @@ nonisolated struct APIClient: Sendable {
     }
 
     func updateProfile(name: String, classYear: Int?, bio: String?) async throws -> HostUser {
-        let body = try Self.encode(ProfilePatch(name: name, classYear: classYear, bio: bio))
+        let body = try Self.encode(ProfilePatch(name: name, classYear: classYear, bio: bio, showOnGuestLists: nil))
+        let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
+        return envelope.user
+    }
+
+    /// Only this one setting; the server leaves everything else alone.
+    func setShowOnGuestLists(_ on: Bool) async throws -> HostUser {
+        let body = try Self.encode(ProfilePatch(name: nil, classYear: nil, bio: nil, showOnGuestLists: on))
         let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
         return envelope.user
     }
@@ -49,8 +56,20 @@ nonisolated struct APIClient: Sendable {
     }
 
     /// Registers the signed-in account. The server refuses without a token.
-    func register(eventID: String) async throws {
-        let _: OKEnvelope = try await send("POST", "/api/v1/events/\(eventID)/register", body: try Self.encode([String: String]()))
+    /// Registers and says where you landed: going, pending (host approves),
+    /// or waitlisted (the event is full). Older servers answer without a state.
+    func register(eventID: String) async throws -> RegistrationState {
+        let envelope: RegisterEnvelope = try await send(
+            "POST", "/api/v1/events/\(eventID)/register", body: try Self.encode([String: String]()))
+        return envelope.state ?? .going
+    }
+
+    /// The host decides for one guest: approve/decline a request, or change a reply.
+    func setGuestStatus(eventID: String, guestID: String, status: RsvpStatus) async throws -> Guest {
+        let envelope: GuestEnvelope = try await send(
+            "PATCH", "/api/v1/events/\(eventID)/guests/\(guestID)",
+            body: try Self.encode(["status": status.rawValue]))
+        return envelope.guest
     }
 
     // MARK: Host
@@ -88,8 +107,10 @@ nonisolated struct APIClient: Sendable {
         return envelope.claimed
     }
 
-    func setPublished(eventID: String, published: Bool, visibility: EventVisibility? = nil) async throws -> HostEvent {
-        let body = try Self.encode(PublishBody(published: published, visibility: visibility))
+    func setPublished(
+        eventID: String, published: Bool, visibility: EventVisibility? = nil, requiresApproval: Bool? = nil
+    ) async throws -> HostEvent {
+        let body = try Self.encode(PublishBody(published: published, visibility: visibility, requiresApproval: requiresApproval))
         let envelope: EventEnvelope = try await send("POST", "/api/v1/events/\(eventID)/publish", body: body)
         return envelope.event
     }
@@ -122,10 +143,10 @@ nonisolated struct APIClient: Sendable {
         try await send("GET", "/api/v1/events/\(eventID)/blasts")
     }
 
-    func sendBlast(eventID: String, segment: String, subject: String, body: String) async throws -> BlastsFeed {
+    func sendBlast(eventID: String, segment: String, subject: String, body: String, sms: Bool = false) async throws -> BlastsFeed {
         try await send(
             "POST", "/api/v1/events/\(eventID)/blasts",
-            body: try Self.encode(["segment": segment, "subject": subject, "body": body]))
+            body: try Self.encode(BlastBody(segment: segment, subject: subject, body: body, sms: sms)))
     }
 
     func guests(eventID: String) async throws -> GuestsEnvelope {
@@ -164,6 +185,54 @@ nonisolated struct APIClient: Sendable {
     func removeCover(eventID: String) async throws -> HostEvent {
         let envelope: EventEnvelope = try await send("DELETE", "/api/v1/events/\(eventID)/cover")
         return envelope.event
+    }
+
+    // MARK: Clubs
+
+    func clubs(city: String? = nil) async throws -> ClubsFeed {
+        var path = "/api/v1/clubs"
+        if let city, let encoded = city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            path += "?city=\(encoded)"
+        }
+        return try await send("GET", path)
+    }
+
+    func club(handle: String) async throws -> ClubPage {
+        try await send("GET", "/api/v1/clubs/\(handle)")
+    }
+
+    func createClub(_ request: NewClubRequest) async throws -> Club {
+        let envelope: ClubEnvelope = try await send("POST", "/api/v1/clubs", body: try Self.encode(request))
+        return envelope.club
+    }
+
+    func setFollowing(handle: String, _ following: Bool) async throws -> Club {
+        let envelope: ClubEnvelope = try await send(following ? "POST" : "DELETE", "/api/v1/clubs/\(handle)/follow")
+        return envelope.club
+    }
+
+    func setClubPhoto(handle: String, _ data: Data, contentType: String) async throws -> Club {
+        let envelope: ClubEnvelope = try await send(
+            "PUT", "/api/v1/clubs/\(handle)/avatar", body: data, contentType: contentType)
+        return envelope.club
+    }
+
+    // MARK: Inbox & push
+
+    func inbox() async throws -> InboxFeed {
+        try await send("GET", "/api/v1/me/notifications")
+    }
+
+    /// Marks the given notices (or all, when nil) read; returns the unread count.
+    func markRead(ids: [String]? = nil) async throws -> Int {
+        let body = try Self.encode(ReadBody(ids: ids))
+        let envelope: ReadEnvelope = try await send("POST", "/api/v1/me/notifications/read", body: body)
+        return envelope.unread
+    }
+
+    func registerPushToken(_ token: String) async throws {
+        let _: OKEnvelope = try await send(
+            "PUT", "/api/v1/me/push-token", body: try Self.encode(["token": token, "platform": "ios"]))
     }
 
     // MARK: Phone verification
@@ -265,13 +334,38 @@ nonisolated struct UserEnvelope: Decodable, Sendable { let user: HostUser }
 nonisolated struct PublishBody: Encodable, Sendable {
     let published: Bool
     let visibility: EventVisibility?
+    let requiresApproval: Bool?
+}
+nonisolated struct ClubEnvelope: Decodable, Sendable { let club: Club }
+nonisolated struct BlastBody: Encodable, Sendable {
+    let segment: String
+    let subject: String
+    let body: String
+    let sms: Bool
+}
+nonisolated struct ReadBody: Encodable, Sendable { let ids: [String]? }
+nonisolated struct ReadEnvelope: Decodable, Sendable { let ok: Bool; let unread: Int }
+nonisolated struct RegisterEnvelope: Decodable, Sendable {
+    let ok: Bool
+    let state: RegistrationState?
 }
 nonisolated struct PhoneBody: Encodable, Sendable { let phone: String }
 nonisolated struct CodeBody: Encodable, Sendable { let code: String }
+/// Keys that are nil are left out, so the server only touches what's sent.
 nonisolated struct ProfilePatch: Encodable, Sendable {
-    let name: String
+    let name: String?
     let classYear: Int?
     let bio: String?
+    let showOnGuestLists: Bool?
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: Keys.self)
+        if let name { try c.encode(name, forKey: .name) }
+        if name != nil { try c.encode(classYear, forKey: .classYear) }
+        if name != nil { try c.encode(bio, forKey: .bio) }
+        if let showOnGuestLists { try c.encode(showOnGuestLists, forKey: .showOnGuestLists) }
+    }
+    private enum Keys: String, CodingKey { case name, classYear, bio, showOnGuestLists }
 }
 nonisolated struct GuestEnvelope: Decodable, Sendable { let guest: Guest }
 nonisolated struct GuestsEnvelope: Decodable, Sendable {

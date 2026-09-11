@@ -11,6 +11,10 @@ export type GuestSummary = {
   declined: number;
   maybe: number;
   awaiting: number;
+  /** Asked to join an approval-required night; the host hasn't decided. */
+  pending: number;
+  /** Wanted in when the night was full; promoted in order as seats free. */
+  waitlisted: number;
   /** Heads confirmed coming, including plus-ones. */
   confirmedHeads: number;
   /** Heads that have actively said no, including their plus-ones. */
@@ -37,15 +41,21 @@ export function summarizeGuests(guests: GuestLike[]): GuestSummary {
   const declined = by("DECLINED");
   const maybe = by("MAYBE");
   const awaiting = by("INVITED");
+  const pending = by("PENDING");
+  const waitlisted = by("WAITLISTED");
 
   const confirmedHeads = attending.reduce((sum, g) => sum + heads(g), 0);
   const declinedHeads = declined.reduce((sum, g) => sum + heads(g), 0);
+  // Someone who asked to join is likely coming, so they count toward the
+  // planning number like an unanswered invite; the waitlist doesn't fit.
   const expectedHeads =
     confirmedHeads +
     maybe.reduce((sum, g) => sum + heads(g), 0) +
-    awaiting.reduce((sum, g) => sum + heads(g), 0);
+    awaiting.reduce((sum, g) => sum + heads(g), 0) +
+    pending.reduce((sum, g) => sum + heads(g), 0);
 
   const responded = attending.length + declined.length + maybe.length;
+  const askable = guests.length - waitlisted.length;
 
   return {
     invited: guests.length,
@@ -53,13 +63,13 @@ export function summarizeGuests(guests: GuestLike[]): GuestSummary {
     declined: declined.length,
     maybe: maybe.length,
     awaiting: awaiting.length,
+    pending: pending.length,
+    waitlisted: waitlisted.length,
     confirmedHeads,
     declinedHeads,
     expectedHeads,
     responded,
-    responseRate: guests.length
-      ? Math.round((responded / guests.length) * 100)
-      : 0,
+    responseRate: askable ? Math.round((responded / askable) * 100) : 0,
   };
 }
 

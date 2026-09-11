@@ -15,6 +15,7 @@ import {
   TicketIcon,
 } from "@/components/date-tile";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
+import { decideRequestAction } from "@/lib/actions/waitlist";
 import { Badge, Button, ButtonLink, Card, EmptyState, type Tone } from "@/components/ui";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
@@ -23,6 +24,8 @@ const GUEST_STATUS: Record<RsvpStatus, { label: string; tone: Tone }> = {
   ATTENDING: { label: "Going", tone: "forest" },
   MAYBE: { label: "Maybe", tone: "amber" },
   DECLINED: { label: "Not going", tone: "danger" },
+  PENDING: { label: "Requested", tone: "amber" },
+  WAITLISTED: { label: "Waitlist", tone: "neutral" },
 };
 
 function initials(name: string) {
@@ -67,6 +70,12 @@ export default async function EventOverviewPage({
   const going = guests.filter((g) => g.rsvpStatus === "ATTENDING").length;
   const checkedIn = guests.filter((g) => g.checkedInAt).length;
   const invited = guests.filter((g) => g.rsvpStatus === "INVITED").length;
+  const requests = guests
+    .filter((g) => g.rsvpStatus === "PENDING")
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const waitlist = guests
+    .filter((g) => g.rsvpStatus === "WAITLISTED")
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   const needle = q.toLowerCase();
   const shown = needle
     ? guests.filter(
@@ -80,7 +89,9 @@ export default async function EventOverviewPage({
     { label: "Going", value: going },
     { label: "Checked in", value: checkedIn },
     { label: "Capacity", value: event.guestCount },
-    { label: "Awaiting reply", value: invited },
+    requests.length + waitlist.length > 0
+      ? { label: "Waiting", value: requests.length + waitlist.length }
+      : { label: "Awaiting reply", value: invited },
   ];
 
   // What still needs doing, each pointing at the tab that does it.
@@ -159,6 +170,69 @@ export default async function EventOverviewPage({
               </Link>
             ))}
           </Card>
+
+          {requests.length > 0 ? (
+            <Card className="overflow-hidden">
+              <div className="border-b border-line px-5 py-4">
+                <h2 className="font-display text-lg text-ink">Requests</h2>
+                <p className="text-[13px] text-ink-mute">
+                  {requests.length} waiting for a yes. Approving into a full night puts them on the waitlist.
+                </p>
+              </div>
+              <ul className="divide-y divide-line">
+                {requests.map((guest) => (
+                  <li key={guest.id} className="flex items-center gap-3 px-5 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
+                      {initials(guest.name)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-ink">{guest.name}</p>
+                      <p className="truncate text-[13px] text-ink-mute">{guest.email ?? "No email"}</p>
+                    </div>
+                    <form action={decideRequestAction} className="flex gap-2">
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input type="hidden" name="guestId" value={guest.id} />
+                      <Button type="submit" name="decision" value="approve" size="sm">
+                        Approve
+                      </Button>
+                      <Button type="submit" name="decision" value="decline" variant="ghost" size="sm">
+                        Decline
+                      </Button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+
+          {waitlist.length > 0 ? (
+            <Card className="overflow-hidden">
+              <div className="border-b border-line px-5 py-4">
+                <h2 className="font-display text-lg text-ink">Waitlist</h2>
+                <p className="text-[13px] text-ink-mute">
+                  {waitlist.length} in line, oldest first. They move up automatically when a spot opens.
+                </p>
+              </div>
+              <ol className="divide-y divide-line">
+                {waitlist.map((guest, index) => (
+                  <li key={guest.id} className="flex items-center gap-3 px-5 py-3">
+                    <span className="tabular w-6 text-right text-[13px] text-ink-mute">{index + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-ink">{guest.name}</p>
+                      <p className="truncate text-[13px] text-ink-mute">{guest.email ?? "No email"}</p>
+                    </div>
+                    <form action={decideRequestAction} className="flex gap-2">
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input type="hidden" name="guestId" value={guest.id} />
+                      <Button type="submit" name="decision" value="approve" variant="secondary" size="sm">
+                        Let in
+                      </Button>
+                    </form>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          ) : null}
 
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">

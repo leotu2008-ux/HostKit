@@ -16,7 +16,7 @@ struct EventRow: View {
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                Text([event.hostName.map { "By \($0)" }, Cities.short(event.city)]
+                Text([event.hostLabel.map { "By \($0)" }, Cities.short(event.city)]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(.inter(.footnote))
                     .foregroundStyle(.secondary)
