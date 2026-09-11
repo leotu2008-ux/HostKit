@@ -125,6 +125,7 @@ async function main() {
     await seedCatalog();
   }
   await seedDemoNights();
+  await seedCampusDemo();
 }
 
 async function seedCatalog() {
@@ -299,6 +300,104 @@ async function seedDemoNights() {
   }
 
   console.log(`Seeded ${samples.length} public demo nights for ${DEMO_EMAIL}.`);
+}
+
+const STUDENT_EMAIL = "sam@babson.edu";
+
+/** A demo Babson student with a couple of campus nights, so the student side
+ *  of Discover has something to show. Same password as the demo host. */
+async function seedCampusDemo() {
+  const existing = await db.user.findUnique({ where: { email: STUDENT_EMAIL } });
+  if (existing) {
+    const nights = await db.event.count({ where: { ownerId: existing.id } });
+    if (nights > 0) {
+      console.log("Campus demo already seeded; skipping.");
+      return;
+    }
+  }
+
+  const student =
+    existing ??
+    (await db.user.create({
+      data: {
+        email: STUDENT_EMAIL,
+        name: "Sam Okafor",
+        passwordHash: await bcrypt.hash("hostkit-demo", 10),
+        schoolDomain: "babson.edu",
+        classYear: new Date().getFullYear() + 2,
+        bio: "Runs the entrepreneurship club's Thursday nights.",
+      },
+    }));
+
+  const samples = [
+    {
+      title: "Thursday Pitch Night",
+      type: "LAUNCH_PARTY" as const,
+      guestCount: 60,
+      durationHours: 3,
+      budget: 800_00,
+      vibe: "Five student founders, three minutes each, one very loud crowd. Free pizza, no slides longer than ten.",
+      address: "Olin Hall, Babson Park",
+      daysFromNow: 5,
+    },
+    {
+      title: "End-of-Term Rooftop Social",
+      type: "BIRTHDAY" as const,
+      guestCount: 120,
+      durationHours: 4,
+      budget: 2_500_00,
+      vibe: "Exams are done. A DJ, a taco truck, and the whole class on one roof.",
+      address: "Roger's Pub, Babson Park",
+      daysFromNow: 19,
+    },
+  ];
+
+  for (const sample of samples) {
+    const date = new Date();
+    date.setHours(19, 0, 0, 0);
+    date.setDate(date.getDate() + sample.daysFromNow);
+    const plan = generatePlan({ type: sample.type, date, budgetTotalCents: sample.budget });
+
+    const created = await db.event.create({
+      data: {
+        ownerId: student.id,
+        schoolDomain: "babson.edu",
+        title: sample.title,
+        type: sample.type,
+        date,
+        durationHours: sample.durationHours,
+        guestCount: sample.guestCount,
+        city: "Boston, MA",
+        address: sample.address,
+        budgetTotalCents: sample.budget,
+        vibe: sample.vibe,
+        description: sample.vibe,
+        published: true,
+        visibility: "PUBLIC",
+        ticketType: "FREE",
+      },
+    });
+    await db.budgetCategory.createMany({
+      data: plan.categories.map((c) => ({
+        eventId: created.id,
+        category: c.category,
+        name: c.name,
+        allocatedCents: c.allocatedCents,
+      })),
+    });
+    await db.task.createMany({
+      data: plan.tasks.map((t) => ({
+        eventId: created.id,
+        title: t.title,
+        notes: t.notes ?? null,
+        offsetDays: t.offsetDays,
+        category: t.category ?? null,
+        dueDate: t.dueDate,
+      })),
+    });
+  }
+
+  console.log(`Seeded ${samples.length} campus nights for ${STUDENT_EMAIL}.`);
 }
 
 main()

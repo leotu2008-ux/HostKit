@@ -67,18 +67,31 @@ final class AppModel {
 
     // MARK: Data
 
-    func discover(city: String?) async -> [HostEvent] {
+    func discover(city: String?) async -> DiscoverFeed {
         do {
-            let events = try await api.discover(city: city)
+            let feed = try await api.discover(city: city)
             sampleNotice = nil
-            return events
+            return feed
         } catch let error as APIError where error.isUnreachable {
             sampleNotice = "\(error.message) Showing sample events."
-            return SampleData.events.filter { city == nil || $0.city == city }
+            return DiscoverFeed(events: SampleData.events.filter { city == nil || $0.city == city })
         } catch {
             sampleNotice = error.localizedDescription
-            return []
+            return DiscoverFeed(events: [])
         }
+    }
+
+    /// Re-reads the profile from the server (school, class year, bio).
+    func refreshProfile() async {
+        guard isSignedIn, let fresh = try? await api.me() else { return }
+        Session.user = fresh
+        user = fresh
+    }
+
+    func updateProfile(name: String, classYear: Int?, bio: String?) async throws {
+        let updated = try await api.updateProfile(name: name, classYear: classYear, bio: bio)
+        Session.user = updated
+        user = updated
     }
 
     func event(id: String) async throws -> HostEvent {

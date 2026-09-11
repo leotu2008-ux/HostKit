@@ -22,6 +22,9 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     let visibility: EventVisibility
     var published: Bool
     let hostName: String?
+    /// The host's school, when the host is a student. Surfacing only —
+    /// anyone can attend.
+    var school: School?
     let isOwner: Bool
     let webPath: String
 
@@ -131,10 +134,30 @@ nonisolated struct GuestSummary: Codable, Hashable, Sendable {
     var declined: Int
 }
 
+/// Mirrors `lib/schools.ts`.
+nonisolated struct School: Codable, Hashable, Sendable {
+    let domain: String
+    let name: String
+    let short: String
+    let city: String?
+}
+
 nonisolated struct HostUser: Codable, Hashable, Sendable {
     let id: String
-    let name: String
+    var name: String
     let email: String
+    var school: School?
+    var classYear: Int?
+    var bio: String?
+
+    var isStudent: Bool { school != nil }
+}
+
+/// What Discover shows: the city feed, plus the student's campus nights.
+nonisolated struct DiscoverFeed: Decodable, Sendable {
+    var events: [HostEvent]
+    var campus: [HostEvent] = []
+    var school: School?
 }
 
 nonisolated struct NewEventRequest: Encodable, Sendable {
@@ -153,11 +176,41 @@ nonisolated struct NewEventRequest: Encodable, Sendable {
     var publish: Bool
 }
 
-/// The cities the catalog covers; matches `CITIES` in `lib/catalog.ts`.
+/// The cities HostKit knows; matches `CITIES` and `CITY_CENTERS` in
+/// `lib/catalog.ts`.
 nonisolated enum Cities {
-    static let all = ["New York, NY", "Los Angeles, CA", "Austin, TX"]
+    static let all = ["New York, NY", "Los Angeles, CA", "Austin, TX", "Boston, MA"]
+
+    private static let centers: [String: (lat: Double, lng: Double)] = [
+        "New York, NY": (40.7128, -74.006),
+        "Los Angeles, CA": (34.0522, -118.2437),
+        "Austin, TX": (30.2672, -97.7431),
+        "Boston, MA": (42.3601, -71.0589),
+    ]
+
+    /// Same rule as the website: the closest centre within 60 miles.
+    private static let radiusMiles = 60.0
 
     static func short(_ city: String) -> String {
         city.split(separator: ",").first.map(String.init) ?? city
+    }
+
+    static func nearest(lat: Double, lng: Double) -> String? {
+        var best: (city: String, miles: Double)?
+        for city in all {
+            guard let c = centers[city] else { continue }
+            let miles = milesBetween(lat, lng, c.lat, c.lng)
+            if best == nil || miles < best!.miles { best = (city, miles) }
+        }
+        guard let best, best.miles <= radiusMiles else { return nil }
+        return best.city
+    }
+
+    private static func milesBetween(_ lat1: Double, _ lng1: Double, _ lat2: Double, _ lng2: Double) -> Double {
+        let toRad = { (d: Double) in d * .pi / 180 }
+        let dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1)
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(toRad(lat1)) * cos(toRad(lat2)) * sin(dLng / 2) * sin(dLng / 2)
+        return 3958.8 * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 }

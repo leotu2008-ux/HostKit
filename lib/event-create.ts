@@ -24,6 +24,8 @@ export type NewEvent = {
   ticketPriceCents: number;
   visibility: EventVisibility;
   published: boolean;
+  /** The host's school, so the night surfaces to that campus first. */
+  schoolDomain: string | null;
 };
 
 /**

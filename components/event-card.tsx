@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CoverArt } from "@/components/cover-art";
 import { formatEventWhen } from "@/lib/when";
+import { schoolFor } from "@/lib/schools";
 import { cx } from "@/components/ui";
 
 export type EventCardEvent = {
@@ -13,6 +14,8 @@ export type EventCardEvent = {
   hostName?: string;
   /** Short state label for the host's own list ("Draft", "Public"…). */
   status?: string;
+  /** The host's school, shown as a chip. */
+  schoolDomain?: string | null;
 };
 
 /**
@@ -29,6 +32,7 @@ export function EventCard({
   href: string;
   className?: string;
 }) {
+  const school = schoolFor(event.schoolDomain);
   return (
     <Link
       href={href}
@@ -48,8 +52,13 @@ export function EventCard({
           {event.hostName ? `By ${event.hostName} · ` : ""}
           {event.city}
         </p>
-        {typeof event.going === "number" || event.status ? (
+        {typeof event.going === "number" || event.status || school ? (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {school ? (
+              <span className="rounded-full bg-clay-wash px-2 py-0.5 text-[11px] font-medium text-clay-deep">
+                {school.short}
+              </span>
+            ) : null}
             {event.status ? (
               <span className="rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium text-ink-soft">
                 {event.status}

@@ -17,6 +17,20 @@ nonisolated enum Session {
     private static let serverKey = "hostkit.serverURL"
     private static let userKey = "hostkit.user"
     private static let draftsKey = "hostkit.drafts"
+    private static let cityKey = "hostkit.city"
+
+    /// The city Discover opens on: chosen by the host, or detected once from
+    /// the phone's location. Empty string means "Everywhere" was chosen.
+    static var city: String? {
+        get { UserDefaults.standard.string(forKey: cityKey) }
+        set {
+            if let newValue {
+                UserDefaults.standard.set(newValue, forKey: cityKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: cityKey)
+            }
+        }
+    }
     private static let tokenAccount = "hostkit.apiToken"
 
     static var serverURL: URL {

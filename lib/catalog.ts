@@ -54,15 +54,55 @@ export function categoryLabel(category: ListingCategory) {
   return CATEGORY_LABEL[category];
 }
 
-/** Cities the seeded catalog covers. Kept next to the catalog vocabulary so
- *  the intake form and the seed script can never drift apart. */
+/** Cities HostKit knows. The first three have a seeded venue catalog; Boston
+ *  is here for the student side. Kept next to the catalog vocabulary so the
+ *  intake form, the API and the seed script can never drift apart. */
 export const CITIES = [
   "New York, NY",
   "Los Angeles, CA",
   "Austin, TX",
+  "Boston, MA",
 ] as const;
 
 export type City = (typeof CITIES)[number];
+
+/** City centres, for "which city am I in?" without a geocoding service. */
+export const CITY_CENTERS: Record<City, { lat: number; lng: number }> = {
+  "New York, NY": { lat: 40.7128, lng: -74.006 },
+  "Los Angeles, CA": { lat: 34.0522, lng: -118.2437 },
+  "Austin, TX": { lat: 30.2672, lng: -97.7431 },
+  "Boston, MA": { lat: 42.3601, lng: -71.0589 },
+};
+
+/** How far from a centre still counts as "in" that city, in miles. Wellesley
+ *  is 13 miles from downtown Boston; 60 covers a metro without crossing to
+ *  the next one. */
+const CITY_RADIUS_MILES = 60;
+
+/** The nearest known city to a point, or null if none is close enough. */
+export function nearestCity(lat: number, lng: number): City | null {
+  let best: { city: City; miles: number } | null = null;
+  for (const city of CITIES) {
+    const centre = CITY_CENTERS[city];
+    const miles = milesBetween(lat, lng, centre.lat, centre.lng);
+    if (!best || miles < best.miles) best = { city, miles };
+  }
+  return best && best.miles <= CITY_RADIUS_MILES ? best.city : null;
+}
+
+export function isCity(value: string | null | undefined): value is City {
+  return (CITIES as readonly string[]).includes(value ?? "");
+}
+
+function milesBetween(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export const INQUIRY_STATUS_LABEL: Record<InquiryStatus, string> = {
   DRAFT: "Draft",

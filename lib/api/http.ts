@@ -32,9 +32,11 @@ export async function apiUser(request: Request) {
   if (!payload) return null;
   return db.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true },
   });
 }
+
+export type ApiUserRow = NonNullable<Awaited<ReturnType<typeof apiUser>>>;
 
 /**
  * An event this request may manage: one the signed-in user owns, or a draft

@@ -5,6 +5,34 @@ import type {
   TicketType,
 } from "@/generated/prisma/enums";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { schoolFor } from "@/lib/schools";
+
+export type ApiSchool = { domain: string; name: string; short: string; city: string | null };
+
+export function serializeSchool(domain: string | null | undefined): ApiSchool | null {
+  const school = schoolFor(domain);
+  return school
+    ? { domain: school.domain, name: school.name, short: school.short, city: school.city }
+    : null;
+}
+
+export function serializeUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  schoolDomain: string | null;
+  classYear: number | null;
+  bio: string | null;
+}) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    school: serializeSchool(user.schoolDomain),
+    classYear: user.classYear,
+    bio: user.bio,
+  };
+}
 
 /** The fields the API reads from an event row, so callers can pass any
  *  Prisma query that selects at least these. */
@@ -26,6 +54,7 @@ type EventRow = {
   visibility: EventVisibility;
   published: boolean;
   ownerId: string | null;
+  schoolDomain: string | null;
   owner?: { name: string } | null;
 };
 
@@ -53,6 +82,9 @@ export type ApiEvent = {
   visibility: EventVisibility;
   published: boolean;
   hostName: string | null;
+  /** The host's school, when the host is a student. Surfacing only — anyone
+   *  can attend. */
+  school: ApiSchool | null;
   /** True when this request may manage the event: the owner, or the device
    *  that drafted it and hasn't signed in yet. */
   isOwner: boolean;
@@ -83,6 +115,7 @@ export function serializeEvent(
     visibility: event.visibility,
     published: event.published,
     hostName: event.owner?.name ?? null,
+    school: serializeSchool(event.schoolDomain),
     isOwner: canManage,
     webPath: `/e/${event.id}`,
   };

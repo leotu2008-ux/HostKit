@@ -6,6 +6,7 @@ struct ProfileView: View {
     @State private var server = ""
     @State private var serverError: String?
     @State private var isSigningIn = false
+    @State private var isEditing = false
     @State private var showSiriTip = true
 
     var body: some View {
@@ -15,15 +16,30 @@ struct ProfileView: View {
                     if let user = model.user, model.isSignedIn {
                         HStack(spacing: 14) {
                             HostAvatar(name: user.name, size: 52)
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text(user.name).font(.title3.weight(.semibold))
                                 Text(user.email).font(.subheadline).foregroundStyle(.secondary)
+                                if let school = user.school {
+                                    HStack(spacing: 6) {
+                                        StatusPill(text: school.name, tint: .accentColor)
+                                        if let year = user.classYear {
+                                            StatusPill(text: "Class of \(year)")
+                                        }
+                                    }
+                                }
                             }
                         }
                         .padding(.vertical, 4)
+                        if let bio = user.bio, !bio.isEmpty {
+                            Text(bio).font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Button("Edit profile") { isEditing = true }
                         Button("Sign out", role: .destructive) { model.signOut() }
                     } else {
                         Button("Sign in") { isSigningIn = true }
+                        Text("Students: sign up with your school .edu email to see what’s on at your campus first.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -66,7 +82,11 @@ struct ProfileView: View {
             }
             .navigationTitle("You")
             .onAppear { server = model.serverURL.absoluteString }
+            .task(id: model.user?.id) { await model.refreshProfile() }
             .sheet(isPresented: $isSigningIn) { SignInView() }
+            .sheet(isPresented: $isEditing) {
+                if let user = model.user { EditProfileSheet(user: user) }
+            }
         }
     }
 

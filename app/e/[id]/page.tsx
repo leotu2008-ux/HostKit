@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { canAccessEvent, getCurrentUser } from "@/lib/session";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { schoolFor } from "@/lib/schools";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
@@ -86,6 +87,7 @@ export default async function PublicEventPage({
       })
     : null;
 
+  const school = schoolFor(event.schoolDomain);
   const going = event._count.guests;
   const spotsLeft = Math.max(0, event.guestCount - going);
   const canRegister = event.published && !alreadyGoing && spotsLeft > 0;
@@ -121,6 +123,14 @@ export default async function PublicEventPage({
               : "Draft preview"}
             {" · "}
             {EVENT_TYPE_LABEL[event.type]}
+            {school ? (
+              <>
+                {" · "}
+                <span className="rounded-full bg-clay-wash px-2 py-0.5 text-[12px] font-medium text-clay-deep">
+                  {school.name}
+                </span>
+              </>
+            ) : null}
           </p>
           <h1 className="font-event mt-2 text-[36px] leading-[1.08] text-ink md:text-[50px]">
             {event.title}

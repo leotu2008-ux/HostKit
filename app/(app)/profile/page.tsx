@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { signOutAction } from "@/lib/actions/auth";
-import { getCurrentUser } from "@/lib/session";
-import { Button, ButtonLink, Card } from "@/components/ui";
+import { currentProfile } from "@/lib/session";
+import { ProfileForm } from "@/components/profile-form";
+import { Badge, Button, ButtonLink, Card } from "@/components/ui";
 
 export const metadata = { title: "You" };
 
@@ -24,7 +25,7 @@ const LINKS = [
 
 /** Mirrors the iOS app's You tab. */
 export default async function ProfilePage() {
-  const user = await getCurrentUser();
+  const user = await currentProfile();
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6 md:py-10">
@@ -34,14 +35,40 @@ export default async function ProfilePage() {
 
       {user ? (
         <>
-          <Card className="mt-6 flex items-center gap-4 p-5">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-lg font-semibold text-white">
-              {initials(user.name)}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-lg font-semibold text-ink">{user.name}</p>
-              <p className="truncate text-[15px] text-ink-soft">{user.email}</p>
+          <Card className="mt-6 p-5">
+            <div className="flex items-center gap-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-lg font-semibold text-white">
+                {initials(user.name)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold text-ink">{user.name}</p>
+                <p className="truncate text-[15px] text-ink-soft">{user.email}</p>
+                {user.school ? (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <Badge tone="clay">{user.school.name}</Badge>
+                    {user.classYear ? <Badge>Class of {user.classYear}</Badge> : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
+            {user.bio ? (
+              <p className="mt-4 text-[15px] text-ink-soft">{user.bio}</p>
+            ) : null}
+          </Card>
+
+          <Card className="mt-4 p-5">
+            <h2 className="mb-4 font-display text-lg text-ink">Edit profile</h2>
+            <ProfileForm
+              name={user.name}
+              classYear={user.classYear}
+              bio={user.bio}
+              isStudent={Boolean(user.school)}
+            />
+            <p className="mt-3 text-[13px] text-ink-mute">
+              {user.school
+                ? `Your school comes from your ${user.schoolDomain} email.`
+                : "Sign up with a school .edu email to see campus events first."}
+            </p>
           </Card>
 
           <Card className="mt-4 divide-y divide-line overflow-hidden">
@@ -73,7 +100,8 @@ export default async function ProfilePage() {
           <p className="text-lg font-semibold text-ink">Host your own nights</p>
           <p className="mx-auto mt-1 max-w-sm text-[15px] text-ink-soft">
             Sign in to see the events you host, check guests in, and publish
-            new ones — here or in the iOS app.
+            new ones — here or in the iOS app. Students: use your school .edu
+            email to see what’s on at your campus first.
           </p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <ButtonLink href="/signin" size="lg">

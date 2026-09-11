@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   for (const draft of parsed.data.drafts) {
     const result = await db.event.updateMany({
       where: { id: draft.id, claimToken: draft.token, ownerId: null },
-      data: { ownerId: user.id },
+      data: { ownerId: user.id, schoolDomain: user.schoolDomain },
     });
     if (result.count > 0) claimed.push(draft.id);
   }

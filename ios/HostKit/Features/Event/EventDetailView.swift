@@ -22,7 +22,10 @@ struct EventDetailView: View {
                     .padding(.horizontal, 24)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(event.published ? event.typeLabel : "Draft preview · \(event.typeLabel)")
+                    Text([
+                        event.published ? event.typeLabel : "Draft preview · \(event.typeLabel)",
+                        event.school?.name,
+                    ].compactMap { $0 }.joined(separator: " · "))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                     Text(event.title)

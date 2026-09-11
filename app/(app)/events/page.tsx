@@ -130,6 +130,7 @@ export default async function EventsPage({
                         date: event.date,
                         durationHours: event.durationHours,
                         going: event._count.guests,
+                        schoolDomain: event.schoolDomain,
                         status: event.published
                           ? event.visibility === "PUBLIC"
                             ? "Public"

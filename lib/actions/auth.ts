@@ -6,6 +6,7 @@ import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { safeNextPath } from "@/lib/listing";
+import { schoolDomainFor } from "@/lib/schools";
 
 export type AuthFormState = { error?: string } | undefined;
 
@@ -34,8 +35,14 @@ export async function signUpAction(
     return { error: "That email is already registered. Try signing in." };
   }
 
+  // A .edu address makes this a student account; the domain picks the school.
   await db.user.create({
-    data: { name, email, passwordHash: await bcrypt.hash(password, 10) },
+    data: {
+      name,
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      schoolDomain: schoolDomainFor(email),
+    },
   });
 
   return attemptSignIn(email, password, formData);

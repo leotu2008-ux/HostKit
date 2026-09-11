@@ -1,8 +1,35 @@
-import { apiError, apiUser, json } from "@/lib/api/http";
+import { db } from "@/lib/db";
+import { apiError, apiUser, json, readJson } from "@/lib/api/http";
+import { serializeUser } from "@/lib/api/serialize";
+import { normalizeProfile, profileSchema } from "@/lib/profile";
 
 /** Who the bearer token belongs to — lets the app check a saved session. */
 export async function GET(request: Request) {
   const user = await apiUser(request);
   if (!user) return apiError("Sign in first.", 401);
-  return json({ user });
+  return json({ user: serializeUser(user) });
+}
+
+/** Edits name, class year and bio. School comes from the email and can't
+ *  be changed here. */
+export async function PATCH(request: Request) {
+  const user = await apiUser(request);
+  if (!user) return apiError("Sign in first.", 401);
+
+  const body = (await readJson(request)) as Record<string, unknown> | null;
+  const parsed = profileSchema.safeParse({
+    name: body?.name ?? user.name,
+    classYear: body?.classYear ?? "",
+    bio: body?.bio ?? "",
+  });
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0]?.message ?? "Check the details.", 400);
+  }
+
+  const updated = await db.user.update({
+    where: { id: user.id },
+    data: normalizeProfile(parsed.data),
+    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true },
+  });
+  return json({ user: serializeUser(updated) });
 }

@@ -27,7 +27,9 @@ export async function POST(
     where: { id: event.id },
     data: {
       published: parsed.data.published,
-      ...(event.ownerId === null ? { ownerId: user.id } : {}),
+      ...(event.ownerId === null
+        ? { ownerId: user.id, schoolDomain: user.schoolDomain }
+        : {}),
     },
     include: { owner: { select: { name: true } }, ...goingCount },
   });

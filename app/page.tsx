@@ -1,58 +1,96 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import { CITIES } from "@/lib/catalog";
+import { currentProfile } from "@/lib/session";
+import { CITIES, isCity, type City } from "@/lib/catalog";
+import { CITY_COOKIE } from "@/lib/city-cookie";
 import { groupByDay } from "@/lib/day-groups";
 import { upcomingOnly } from "@/lib/upcoming";
+import { CityDetector } from "@/components/city-detector";
 import { EventCard } from "@/components/event-card";
 import { ButtonLink, EmptyState, cx } from "@/components/ui";
 
 export const metadata = { title: "Discover" };
 
-export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
-  const user = await getCurrentUser();
-  const query = await searchParams;
-  const rawCity = Array.isArray(query.city) ? query.city[0] : query.city;
-  const city = (CITIES as readonly string[]).includes(rawCity ?? "")
-    ? rawCity!
-    : null;
+const include = {
+  owner: { select: { name: true } },
+  _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" as const } } } },
+};
+const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
 
-  const [mine, nearby] = await Promise.all([
+function toCard(event: {
+  id: string;
+  title: string;
+  city: string;
+  date: Date | null;
+  durationHours: number;
+  schoolDomain: string | null;
+  owner?: { name: string } | null;
+  _count: { guests: number };
+}) {
+  return {
+    id: event.id,
+    title: event.title,
+    city: event.city,
+    date: event.date,
+    durationHours: event.durationHours,
+    going: event._count.guests,
+    hostName: event.owner?.name,
+    schoolDomain: event.schoolDomain,
+  };
+}
+
+export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
+  const [user, query, jar] = await Promise.all([currentProfile(), searchParams, cookies()]);
+
+  // Explicit choice → remembered detection → the student's home city → everywhere.
+  const rawCity = Array.isArray(query.city) ? query.city[0] : query.city;
+  const remembered = jar.get(CITY_COOKIE)?.value;
+  let city: City | null = null;
+  if (rawCity === "all") city = null;
+  else if (isCity(rawCity)) city = rawCity;
+  else if (isCity(remembered)) city = remembered;
+  else city = user?.school?.city ?? null;
+  const explicit = rawCity === "all" || isCity(rawCity);
+
+  const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
+
+  const [mine, campus, nearby] = await Promise.all([
     user
       ? db.event.findMany({
           where: { ownerId: user.id, ...upcomingOnly() },
-          orderBy: [{ date: "asc" }, { createdAt: "desc" }],
+          orderBy,
           take: 4,
-          include: {
-            _count: {
-              select: { guests: { where: { rsvpStatus: "ATTENDING" } } },
-            },
-          },
+          include,
+        })
+      : Promise.resolve([]),
+    user?.schoolDomain
+      ? db.event.findMany({
+          where: { ...live, schoolDomain: user.schoolDomain, ownerId: { not: user.id } },
+          orderBy,
+          take: 12,
+          include,
         })
       : Promise.resolve([]),
     db.event.findMany({
       where: {
-        published: true,
-        visibility: "PUBLIC",
+        ...live,
         ...(city ? { city } : {}),
         ...(user ? { ownerId: { not: user.id } } : {}),
-        ...upcomingOnly(),
       },
-      orderBy: [{ date: "asc" }, { createdAt: "desc" }],
+      orderBy,
       take: 30,
-      include: {
-        owner: { select: { name: true } },
-        _count: {
-          select: { guests: { where: { rsvpStatus: "ATTENDING" } } },
-        },
-      },
+      include,
     }),
   ]);
 
   const days = groupByDay(nearby);
+  const cityShort = city ? city.split(",")[0] : null;
+  const school = user?.school ?? null;
 
   return (
     <main className="relative isolate flex-1">
+      {!explicit ? <CityDetector /> : null}
       {/* A soft wash of the brand colours behind the header. */}
       <div
         aria-hidden
@@ -61,7 +99,11 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
 
       <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-12 md:px-8 md:pt-14">
         <h1 className="font-display text-[34px] leading-[1.1] text-ink md:text-[46px]">
-          {user ? "What’s on next" : "Discover events"}
+          {school
+            ? `What’s on at ${school.short}`
+            : user
+              ? "What’s on next"
+              : "Discover events"}
         </h1>
         <p className="mt-2 max-w-xl text-[16px] leading-relaxed text-ink-soft">
           Student socials, professional mixers, and nights just for fun —
@@ -98,16 +140,36 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
                   <li key={event.id}>
                     <EventCard
                       href={`/events/${event.id}`}
-                      event={{
-                        id: event.id,
-                        title: event.title,
-                        city: event.city,
-                        date: event.date,
-                        durationHours: event.durationHours,
-                        going: event._count.guests,
-                        status: event.published ? "Published" : "Draft",
-                      }}
+                      event={{ ...toCard(event), hostName: undefined, status: event.published ? "Published" : "Draft" }}
                     />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
+
+        {school ? (
+          <section className="mt-12">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="font-display text-xl text-ink">At {school.short}</h2>
+                <p className="text-[13px] text-ink-mute">
+                  Nights hosted by {school.name} students. Everyone’s welcome.
+                </p>
+              </div>
+            </div>
+            {campus.length === 0 ? (
+              <EmptyState
+                title={`Nothing at ${school.short} yet`}
+                body="Host the first one — your events are tagged with your school automatically."
+                action={<ButtonLink href="/events/new">Create event</ButtonLink>}
+              />
+            ) : (
+              <ul className="grid gap-3 md:grid-cols-2">
+                {campus.map((event) => (
+                  <li key={event.id}>
+                    <EventCard href={`/e/${event.id}`} event={toCard(event)} />
                   </li>
                 ))}
               </ul>
@@ -118,7 +180,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
         <section className="mt-12">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-display text-xl text-ink">
-              Upcoming{city ? ` in ${city.split(",")[0]}` : ""}
+              {cityShort ? `Around ${cityShort}` : "Upcoming everywhere"}
             </h2>
             <nav className="flex flex-wrap gap-1.5" aria-label="City">
               {[null, ...CITIES].map((option) => {
@@ -126,7 +188,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
                 return (
                   <Link
                     key={option ?? "all"}
-                    href={option ? `/?city=${encodeURIComponent(option)}` : "/"}
+                    href={option ? `/?city=${encodeURIComponent(option)}` : "/?city=all"}
                     aria-current={active ? "page" : undefined}
                     className={cx(
                       "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
@@ -167,18 +229,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/">) {
                   <ul className="space-y-3 md:border-l md:border-dashed md:border-line-strong md:pl-6">
                     {day.items.map((event) => (
                       <li key={event.id}>
-                        <EventCard
-                          href={`/e/${event.id}`}
-                          event={{
-                            id: event.id,
-                            title: event.title,
-                            city: event.city,
-                            date: event.date,
-                            durationHours: event.durationHours,
-                            going: event._count.guests,
-                            hostName: event.owner?.name,
-                          }}
-                        />
+                        <EventCard href={`/e/${event.id}`} event={toCard(event)} />
                       </li>
                     ))}
                   </ul>

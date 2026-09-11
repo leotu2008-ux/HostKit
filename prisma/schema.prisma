@@ -19,6 +19,11 @@ model User {
   email        String   @unique
   name         String
   passwordHash String
+  /// The `.edu` domain the account signed up with, e.g. "babson.edu". Set
+  /// means "student"; lib/schools.ts turns it into a school and a home city.
+  schoolDomain String?
+  classYear    Int?
+  bio          String?
   createdAt    DateTime @default(now())
 
   events Event[]
@@ -100,6 +105,9 @@ model Event {
   published        Boolean         @default(false)
   /// Lets a signed-out host keep editing a draft until they sign in to publish.
   claimToken       String?         @unique
+  /// The host's school, copied at create (or claim). Surfaces the night to
+  /// that school's students first; it never restricts who can attend.
+  schoolDomain     String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -115,6 +123,7 @@ model Event {
 
   @@index([ownerId])
   @@index([published, visibility, date])
+  @@index([schoolDomain, published, date])
 }
 
 /// People and places the host is lining up, separate from catalog scouting.

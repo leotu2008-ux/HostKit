@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getCurrentUser, requireEvent, requireUser } from "@/lib/session";
+import { currentProfile, getCurrentUser, requireEvent, requireUser } from "@/lib/session";
 import { createEventWithPlan } from "@/lib/event-create";
 import { parseCents } from "@/lib/money";
 import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
@@ -51,7 +51,7 @@ export async function createEventAction(
   _prev: EventFormState,
   formData: FormData,
 ): Promise<EventFormState> {
-  const user = await getCurrentUser();
+  const user = await currentProfile();
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -104,6 +104,7 @@ export async function createEventAction(
     ticketPriceCents,
     visibility: input.visibility,
     published: false,
+    schoolDomain: user?.schoolDomain ?? null,
   });
 
   if (claimToken) {

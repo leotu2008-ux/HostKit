@@ -4,6 +4,8 @@
 <dict>
 	<!-- Lets the app talk to `npm run dev` on this Mac (http://localhost:3000)
 	     while production stays HTTPS-only. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>HostKit uses your location once to pick the nearest city, so Discover shows events near you.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

@@ -24,13 +24,23 @@ nonisolated struct APIClient: Sendable {
 
     // MARK: Public nights
 
-    func discover(city: String?) async throws -> [HostEvent] {
+    func discover(city: String?) async throws -> DiscoverFeed {
         var path = "/api/v1/discover"
         if let city, let encoded = city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
             path += "?city=\(encoded)"
         }
-        let envelope: EventsEnvelope = try await send("GET", path)
-        return envelope.events
+        return try await send("GET", path)
+    }
+
+    func me() async throws -> HostUser {
+        let envelope: UserEnvelope = try await send("GET", "/api/v1/me")
+        return envelope.user
+    }
+
+    func updateProfile(name: String, classYear: Int?, bio: String?) async throws -> HostUser {
+        let body = try Self.encode(ProfilePatch(name: name, classYear: classYear, bio: bio))
+        let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
+        return envelope.user
     }
 
     func event(id: String) async throws -> HostEvent {
@@ -168,6 +178,12 @@ nonisolated struct CreateEnvelope: Decodable, Sendable {
     let claimToken: String?
 }
 nonisolated struct ClaimEnvelope: Decodable, Sendable { let claimed: [String] }
+nonisolated struct UserEnvelope: Decodable, Sendable { let user: HostUser }
+nonisolated struct ProfilePatch: Encodable, Sendable {
+    let name: String
+    let classYear: Int?
+    let bio: String?
+}
 nonisolated struct GuestEnvelope: Decodable, Sendable { let guest: Guest }
 nonisolated struct GuestsEnvelope: Decodable, Sendable {
     let guests: [Guest]

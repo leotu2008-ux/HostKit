@@ -108,6 +108,7 @@ export async function POST(request: Request) {
     visibility: input.visibility,
     // Publishing is the one step that needs an account.
     published: user ? (input.publish ?? false) : false,
+    schoolDomain: user?.schoolDomain ?? null,
   });
 
   return json(

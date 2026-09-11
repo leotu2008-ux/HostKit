@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { issueToken } from "@/lib/api/token";
 import { apiError, json, readJson } from "@/lib/api/http";
+import { serializeUser } from "@/lib/api/serialize";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -34,6 +35,6 @@ export async function POST(request: Request) {
 
   return json({
     token: issueToken(user.id),
-    user: { id: user.id, name: user.name, email: user.email },
+    user: serializeUser(user),
   });
 }

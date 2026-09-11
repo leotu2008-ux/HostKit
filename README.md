@@ -89,6 +89,17 @@ against that `DATABASE_URL` locally.
 
 Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 
+## Students
+
+Sign up with a school `.edu` email and HostKit treats you as a student of that
+school (`lib/schools.ts` maps domains to names and home cities; the domain is
+trusted, not verified yet). Your events are tagged with your school
+automatically, Discover leads with **At [School]** above the city feed, and
+both apps detect your city once from your location (nearest known city, no
+geocoding service). Tagging only surfaces events — anyone nearby can register.
+Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
+`docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
+
 ## iOS app
 
 `ios/` is a native SwiftUI app (iOS 26) on the same backend: Discover and
