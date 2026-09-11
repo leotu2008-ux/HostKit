@@ -27,9 +27,9 @@ export async function canAccessEvent(
   userId: string | null,
 ) {
   if (userId && event.ownerId === userId) return true;
-  if (event.ownerId) return false;
   const claims = await readDraftClaims();
-  return claimMatches(claims, event.id, event.claimToken);
+  if (claimMatches(claims, event.id, event.claimToken)) return true;
+  return false;
 }
 
 /**

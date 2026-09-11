@@ -7,9 +7,8 @@ import { db } from "@/lib/db";
 import { getCurrentUser, requireEvent, requireUser } from "@/lib/session";
 import { generatePlan } from "@/lib/plan";
 import { parseCents } from "@/lib/money";
-import { ALL_EVENT_TYPES, CITIES, EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
-import { safeNextPath } from "@/lib/listing";
 
 export type EventFormState = { error?: string } | undefined;
 
@@ -155,7 +154,7 @@ export async function publishEventAction(formData: FormData) {
   if (!event.ownerId) {
     await db.event.update({
       where: { id: event.id },
-      data: { ownerId: user.id, claimToken: null, published: true },
+      data: { ownerId: user.id, published: true },
     });
   } else {
     await db.event.update({
@@ -182,9 +181,3 @@ export async function setPublishedAction(formData: FormData) {
   if (published) return publishEventAction(formData);
   return unpublishEventAction(formData);
 }
-
-export function publishNextPath(raw: unknown, eventId: string) {
-  return safeNextPath(raw, `/events/${eventId}`);
-}
-
-export { EVENT_TYPE_LABEL };

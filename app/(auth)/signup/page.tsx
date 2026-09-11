@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { signUpAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/session";
+import { safeNextPath } from "@/lib/listing";
 
 export const metadata = { title: "Create an account" };
 
@@ -11,8 +12,16 @@ export default async function SignUpPage({
 }: {
   searchParams: Promise<{ next?: string; publish?: string }>;
 }) {
-  if (await getCurrentUser()) redirect("/events/claim");
   const query = await searchParams;
+  if (await getCurrentUser()) {
+    if (query.publish === "1") {
+      const params = new URLSearchParams();
+      if (query.next) params.set("next", query.next);
+      params.set("publish", "1");
+      redirect(`/events/claim?${params}`);
+    }
+    redirect(safeNextPath(query.next, "/events"));
+  }
   const next = query.next;
   const publish = query.publish === "1";
 
