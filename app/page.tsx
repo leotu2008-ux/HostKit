@@ -6,6 +6,7 @@ import { currentProfile } from "@/lib/session";
 import { isCity } from "@/lib/catalog";
 import { CITY_COOKIE } from "@/lib/city-cookie";
 import { myUpcomingEvents } from "@/lib/mine";
+import { followingEvents } from "@/lib/clubs";
 import { upcomingOnly } from "@/lib/upcoming";
 import { CityDetector } from "@/components/city-detector";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
@@ -16,6 +17,7 @@ export const metadata = { title: "Home" };
 
 const include = {
   owner: { select: { name: true } },
+  club: { select: { handle: true, name: true, imageUrl: true } },
   _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" as const } } } },
 };
 const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
@@ -44,7 +46,7 @@ export default async function HomePage() {
   const city = isCity(remembered) ? remembered : (user?.school?.city ?? null);
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [mine, nearby, campus] = await Promise.all([
+  const [mine, nearby, campus, following] = await Promise.all([
     user ? myUpcomingEvents(user.id, 12) : Promise.resolve([]),
     db.event.findMany({
       where: { ...live, ...(city ? { city } : {}), ...(user ? { ownerId: { not: user.id } } : {}) },
@@ -60,6 +62,7 @@ export default async function HomePage() {
           include,
         })
       : Promise.resolve([]),
+    user ? followingEvents(user.id, 4) : Promise.resolve([]),
   ]);
   const school = user?.school ?? null;
   const cityShort = city ? city.split(",")[0] : null;
@@ -143,6 +146,24 @@ export default async function HomePage() {
             </ul>
           )}
         </section>
+
+        {following.length > 0 ? (
+          <section className="mt-10">
+            <div className="mb-3 flex items-end justify-between">
+              <h2 className="font-display text-xl text-ink">From clubs you follow</h2>
+              <Link href="/clubs" className="text-sm font-medium text-ink-soft hover:text-ink">
+                Your clubs →
+              </Link>
+            </div>
+            <ul className="grid gap-3 md:grid-cols-2">
+              {following.map((event) => (
+                <li key={event.id}>
+                  <EventCard href={`/e/${event.id}`} event={toCard(event)} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         <section className="mt-10">
           <h2 className="font-display mb-3 text-xl text-ink">Where to next</h2>

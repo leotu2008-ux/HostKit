@@ -4,7 +4,7 @@ import { requestOwnsDraft } from "@/lib/api/drafts";
 import { registrationState } from "@/lib/registration";
 import { attendeesPreview } from "@/lib/attendees";
 import { apiError, apiUser, json } from "@/lib/api/http";
-import { goingCount, serializeEvent } from "@/lib/api/serialize";
+import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 
 /** One night: anyone can read a live public or unlisted night; the owner, or
  *  the device that drafted it, can also read drafts and private nights. */
@@ -17,7 +17,7 @@ export async function GET(
 
   const event = await db.event.findUnique({
     where: { id },
-    include: { owner: { select: { name: true } }, ...goingCount },
+    include: eventInclude,
   });
   // Same answer for "doesn't exist" and "not yours to see", so ids of
   // private nights can't be confirmed.

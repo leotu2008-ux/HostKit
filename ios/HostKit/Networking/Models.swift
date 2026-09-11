@@ -34,6 +34,11 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var requiresApproval: Bool?
     /// The first few people going (opted-in account registrations); empty in lists.
     var attendees: [Attendee]?
+    /// The club this was posted as, when it was.
+    var club: EventClub?
+
+    /// Who to show as the host: the club, else the person.
+    var hostLabel: String? { club?.name ?? hostName }
     /// A photo the host uploaded; nil means the cover is drawn from the id.
     var coverUrl: String?
     let webPath: String
@@ -148,6 +153,59 @@ nonisolated enum RsvpStatus: String, Codable, Sendable {
     }
 }
 
+/// The club an event was posted as. Mirrors `ApiEventClub`.
+nonisolated struct EventClub: Codable, Hashable, Sendable {
+    let handle: String
+    let name: String
+    let imageUrl: String?
+    let webPath: String
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+}
+
+/// A club page. Mirrors `ApiClub` in `lib/api/serialize.ts`.
+nonisolated struct Club: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let handle: String
+    var name: String
+    var blurb: String?
+    var imageUrl: String?
+    var coverUrl: String?
+    var school: School?
+    var city: String?
+    var followers: Int
+    var isFollowing: Bool
+    var canManage: Bool
+    let webPath: String
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+}
+
+nonisolated struct ClubMemberRow: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let name: String
+    let imageUrl: String?
+    let role: String
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+}
+
+nonisolated struct ClubPage: Decodable, Sendable {
+    var club: Club
+    var events: [HostEvent]
+    var members: [ClubMemberRow]
+}
+
+nonisolated struct ClubsFeed: Decodable, Sendable {
+    var mine: [Club]
+    var suggested: [Club]
+}
+
+nonisolated struct NewClubRequest: Encodable, Sendable {
+    let name: String
+    let handle: String
+    let blurb: String?
+    let city: String?
+}
+
 /// A face on the event page. Mirrors `ApiAttendee` in `lib/api/serialize.ts`.
 nonisolated struct Attendee: Codable, Identifiable, Hashable, Sendable {
     let id: String
@@ -239,6 +297,10 @@ nonisolated struct DiscoverFeed: Decodable, Sendable {
     var campus: [HostEvent] = []
     /// What the viewer hosts or is going to, soonest first. Empty signed out.
     var mine: [HostEvent] = []
+    /// Upcoming events from clubs the viewer follows.
+    var following: [HostEvent] = []
+    /// Clubs worth following at the viewer's school or in the city.
+    var clubs: [Club] = []
     var school: School?
 }
 
@@ -355,6 +417,8 @@ nonisolated struct NewEventRequest: Encodable, Sendable {
     var budgetCents: Int?
     var publish: Bool
     var venue: VenuePick?
+    /// Post as a club the host manages.
+    var clubId: String?
 }
 
 /// The cities HostKit knows; matches `CITIES` and `CITY_CENTERS` in

@@ -24,6 +24,13 @@ struct DiscoverView: View {
                         NoticeBanner(text: notice)
                     }
 
+                    if !feed.clubs.isEmpty {
+                        ClubsStrip(
+                            title: feed.school.map { "Clubs at \($0.short)" }
+                                ?? city.map { "Clubs in \(Cities.short($0))" } ?? "Clubs",
+                            clubs: feed.clubs)
+                    }
+
                     if let school = feed.school {
                         campusSection(school)
                     }
@@ -67,6 +74,9 @@ struct DiscoverView: View {
             .navigationTitle(feed.school.map { "At \($0.short)" } ?? "Discover")
             .navigationDestination(for: HostEvent.self) { event in
                 EventDetailView(event: event)
+            }
+            .navigationDestination(for: Club.self) { club in
+                ClubView(handle: club.handle)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }

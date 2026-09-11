@@ -6,7 +6,8 @@ import { createEventWithPlan } from "@/lib/event-create";
 import { claimMatches, newClaimToken } from "@/lib/drafts";
 import { requestDrafts } from "@/lib/api/drafts";
 import { apiError, apiUser, json, readJson } from "@/lib/api/http";
-import { goingCount, serializeEvent } from "@/lib/api/serialize";
+import { canManageClub, managedClubIds } from "@/lib/clubs";
+import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 
 /**
  * The nights this request can manage, soonest first: everything the
@@ -17,17 +18,19 @@ export async function GET(request: Request) {
   const drafts = requestDrafts(request);
   if (!user && drafts.length === 0) return apiError("Sign in first.", 401);
 
+  const clubIds = await managedClubIds(user?.id ?? null);
   const events = await db.event.findMany({
     where: {
       OR: [
         ...(user ? [{ ownerId: user.id }] : []),
+        ...(clubIds.length > 0 ? [{ clubId: { in: clubIds } }] : []),
         ...(drafts.length > 0
           ? [{ id: { in: drafts.map((d) => d.id) }, ownerId: null }]
           : []),
       ],
     },
     orderBy: [{ date: "asc" }, { createdAt: "desc" }],
-    include: { owner: { select: { name: true } }, ...goingCount },
+    include: eventInclude,
   });
 
   return json({
@@ -36,6 +39,7 @@ export async function GET(request: Request) {
       .filter(
         (event) =>
           (user && event.ownerId === user.id) ||
+          (event.clubId !== null && clubIds.includes(event.clubId)) ||
           claimMatches(drafts, event.id, event.claimToken),
       )
       .map((event) => serializeEvent(event, event._count.guests, true)),
@@ -56,6 +60,8 @@ const createSchema = z.object({
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]),
   budgetCents: z.number().int().min(0).max(1_000_000_000).optional(),
   publish: z.boolean().optional(),
+  /** Post as a club the signed-in host manages. */
+  clubId: z.string().min(1).nullable().optional(),
   /** A place picked from MapKit / Apple Maps. Optional. */
   venue: z
     .object({
@@ -102,8 +108,13 @@ export async function POST(request: Request) {
 
   const claimToken = user ? null : newClaimToken();
 
+  if (input.clubId && !(user && (await canManageClub(user.id, input.clubId)))) {
+    return apiError("You don't run that club.", 403);
+  }
+
   const created = await createEventWithPlan({
     ownerId: user?.id ?? null,
+    clubId: input.clubId ?? null,
     claimToken,
     title: input.title,
     type: input.type as EventType,
@@ -136,13 +147,10 @@ export async function POST(request: Request) {
     schoolDomain: user?.schoolDomain ?? null,
   });
 
+  const full = await db.event.findUniqueOrThrow({ where: { id: created.id }, include: eventInclude });
   return json(
     {
-      event: serializeEvent(
-        { ...created, owner: user ? { name: user.name } : null },
-        0,
-        true,
-      ),
+      event: serializeEvent(full, 0, true),
       ...(claimToken ? { claimToken } : {}),
     },
     201,

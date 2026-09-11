@@ -1,0 +1,124 @@
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
+import { canManageClub, clubByHandle, followedClubIds } from "@/lib/clubs";
+import { schoolFor } from "@/lib/schools";
+import { upcomingOnly } from "@/lib/upcoming";
+import { eventInclude } from "@/lib/api/serialize";
+import { Avatar } from "@/components/avatar";
+import { EventCard, toEventCard } from "@/components/event-card";
+import { FollowButton } from "@/components/follow-button";
+import { Badge, ButtonLink, EmptyState } from "@/components/ui";
+
+export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }) {
+  const club = await clubByHandle((await params).handle);
+  return { title: club ? club.name : "Club" };
+}
+
+/** A club's public page: who they are, what's coming up, follow. */
+export default async function ClubPage({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle } = await params;
+  const [user, club] = await Promise.all([getCurrentUser(), clubByHandle(handle)]);
+  if (!club) notFound();
+
+  const [following, canManage, events, members] = await Promise.all([
+    followedClubIds(user?.id ?? null),
+    canManageClub(user?.id ?? null, club.id),
+    db.event.findMany({
+      where: { clubId: club.id, published: true, visibility: { not: "PRIVATE" }, ...upcomingOnly() },
+      orderBy: [{ date: "asc" }, { createdAt: "desc" }],
+      take: 20,
+      include: eventInclude,
+    }),
+    db.clubMember.findMany({
+      where: { clubId: club.id },
+      orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+      select: { role: true, user: { select: { id: true, name: true, imageUrl: true } } },
+    }),
+  ]);
+  const school = schoolFor(club.schoolDomain);
+
+  return (
+    <main className="relative isolate flex-1">
+      <div className="relative h-40 w-full bg-sunk md:h-56">
+        {club.coverUrl ? (
+          <Image src={club.coverUrl} alt="" fill sizes="100vw" className="object-cover" priority />
+        ) : (
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-clay)_28%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-amber)_22%,transparent),transparent)]"
+          />
+        )}
+      </div>
+
+      <div className="mx-auto w-full max-w-5xl px-4 pb-16 md:px-8">
+        <div className="-mt-10 flex flex-wrap items-end gap-4 md:-mt-12">
+          <Avatar name={club.name} imageUrl={club.imageUrl} size={88} className="rounded-2xl ring-4 ring-paper" />
+          <div className="min-w-0 flex-1 pb-1">
+            <h1 className="font-display text-[30px] leading-tight text-ink md:text-[38px]">{club.name}</h1>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-[14px] text-ink-soft">
+              <span className="font-mono text-ink-mute">/c/{club.handle}</span>
+              {school ? <Badge tone="clay">{school.name}</Badge> : null}
+              {club.city ? <span>{club.city.split(",")[0]}</span> : null}
+              <span>
+                <span className="tabular font-medium text-ink">{club._count.followers}</span>{" "}
+                {club._count.followers === 1 ? "follower" : "followers"}
+              </span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 pb-1">
+            {canManage ? (
+              <ButtonLink href={`/c/${club.handle}/edit`} variant="secondary" size="sm">
+                Manage
+              </ButtonLink>
+            ) : null}
+            <FollowButton handle={club.handle} following={following.has(club.id)} />
+          </div>
+        </div>
+
+        {club.blurb ? <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-soft">{club.blurb}</p> : null}
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <section>
+            <h2 className="font-display mb-3 text-xl text-ink">Coming up</h2>
+            {events.length === 0 ? (
+              <EmptyState
+                title="Nothing scheduled yet"
+                body={canManage ? "Post an event as the club and it lands here for followers." : "Follow to hear the moment they post one."}
+                action={canManage ? <ButtonLink href="/events/new">Create an event</ButtonLink> : undefined}
+              />
+            ) : (
+              <ul className="grid gap-3 md:grid-cols-2">
+                {events.map((event) => (
+                  <li key={event.id}>
+                    <EventCard href={`/e/${event.id}`} event={toEventCard(event)} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <aside>
+            <h2 className="font-display mb-3 text-xl text-ink">Run by</h2>
+            <ul className="space-y-3">
+              {members.map((m) => (
+                <li key={m.user.id} className="flex items-center gap-3">
+                  <Avatar name={m.user.name} imageUrl={m.user.imageUrl} size={36} />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-ink">{m.user.name}</span>
+                    <span className="block text-[12px] text-ink-mute">{m.role === "OWNER" ? "Owner" : "Admin"}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-[13px] text-ink-mute">
+              Run a club too? <Link href="/clubs/new" className="text-clay">Start a page</Link>.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}

@@ -114,7 +114,14 @@ function Segmented<T extends string>({
   );
 }
 
-export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
+export function EventIntakeForm({
+  signedIn,
+  clubs = [],
+}: {
+  signedIn: boolean;
+  /** Clubs the host manages — "Post as". */
+  clubs?: Array<{ id: string; name: string }>;
+}) {
   const [state, formAction] = useActionState(createEventAction, undefined);
   const [city, setCity] = useState<string>(CITIES[0]);
   const [ticketType, setTicketType] = useState<"FREE" | "PAID">("FREE");
@@ -153,6 +160,21 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
           aria-label="Event name"
           className="font-event w-full bg-transparent text-[34px] leading-tight text-ink placeholder:text-ink-mute/60 focus:outline-none md:text-[42px]"
         />
+
+        {clubs.length > 0 ? (
+          <div className="divide-y divide-line rounded-card border border-line bg-surface">
+            <Row label="Post as" hint="Followers of the club hear about it.">
+              <select name="clubId" defaultValue="" className={compact}>
+                <option value="">Yourself</option>
+                {clubs.map((club) => (
+                  <option key={club.id} value={club.id}>
+                    {club.name}
+                  </option>
+                ))}
+              </select>
+            </Row>
+          </div>
+        ) : null}
 
         <div className="divide-y divide-line rounded-card border border-line bg-surface">
           <Row label="Date">

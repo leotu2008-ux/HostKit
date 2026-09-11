@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { goingCount } from "@/lib/api/serialize";
+import { eventInclude } from "@/lib/api/serialize";
 import { stateOf } from "@/lib/registration";
 import { upcomingOnly } from "@/lib/upcoming";
 
@@ -22,9 +22,8 @@ export async function myUpcomingEvents(userId: string, take = 12) {
     orderBy: [{ date: "asc" }, { createdAt: "desc" }],
     take,
     include: {
-      owner: { select: { name: true } },
+      ...eventInclude,
       guests: { where: { userId }, select: { rsvpStatus: true }, take: 1 },
-      ...goingCount,
     },
   });
   return rows.map(({ guests, ...event }) => {

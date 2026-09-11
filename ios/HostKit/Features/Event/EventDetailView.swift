@@ -30,7 +30,18 @@ struct EventDetailView: View {
                     Text(event.title)
                         .font(.event(34))
                         .fixedSize(horizontal: false, vertical: true)
-                    if let host = event.hostName {
+                    if let club = event.club {
+                        NavigationLink {
+                            ClubView(handle: club.handle)
+                        } label: {
+                            HStack(spacing: 8) {
+                                HostAvatar(name: club.name, imageURL: club.imageURL, size: 24)
+                                Text("Hosted by \(club.name)").font(.inter(.subheadline))
+                                Image(systemName: "chevron.right").font(.inter(.caption)).foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    } else if let host = event.hostName {
                         HStack(spacing: 8) {
                             HostAvatar(name: host, size: 24)
                             Text("Hosted by \(host)").font(.inter(.subheadline))

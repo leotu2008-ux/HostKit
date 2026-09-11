@@ -9,6 +9,7 @@ import { registrationState } from "@/lib/registration";
 import { waitlistPositionFor } from "@/lib/waitlist";
 import { attendeesPreview, type Attendee } from "@/lib/attendees";
 import { GoingRow } from "@/components/going-row";
+import { Avatar } from "@/components/avatar";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
@@ -51,22 +52,34 @@ function timeRange(date: Date | null, hours: number): string {
 
 function HostedBy({
   name,
+  club,
   preview,
 }: {
   name: string | null;
+  club: { handle: string; name: string; imageUrl: string | null } | null;
   preview: { attendees: Attendee[]; total: number };
 }) {
   return (
     <div className="border-t border-line pt-5">
       <p className="text-[13px] font-medium text-ink-mute">Hosted by</p>
-      <div className="mt-2.5 flex items-center gap-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
-          {(name ?? "?").slice(0, 1).toUpperCase()}
-        </span>
-        <span className="font-medium text-ink">
-          {name ?? "A host still signing in"}
-        </span>
-      </div>
+      {club ? (
+        <Link href={`/c/${club.handle}`} className="mt-2.5 flex items-center gap-3 hover:text-clay">
+          <Avatar name={club.name} imageUrl={club.imageUrl} size={32} className="rounded-lg" />
+          <span className="min-w-0">
+            <span className="block font-medium text-ink">{club.name}</span>
+            <span className="block text-[12px] text-ink-mute">Club page →</span>
+          </span>
+        </Link>
+      ) : (
+        <div className="mt-2.5 flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
+            {(name ?? "?").slice(0, 1).toUpperCase()}
+          </span>
+          <span className="font-medium text-ink">
+            {name ?? "A host still signing in"}
+          </span>
+        </div>
+      )}
       <div className="mt-4">
         <GoingRow attendees={preview.attendees} total={preview.total} />
       </div>
@@ -86,6 +99,7 @@ export default async function PublicEventPage({
     where: { id },
     include: {
       owner: { select: { id: true, name: true } },
+      club: { select: { handle: true, name: true, imageUrl: true } },
       _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" } } } },
     },
   });
@@ -136,7 +150,7 @@ export default async function PublicEventPage({
             <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" />
           </div>
           <div className="hidden md:block">
-            <HostedBy name={event.owner?.name ?? null} preview={preview} />
+            <HostedBy name={event.owner?.name ?? null} club={event.club} preview={preview} />
           </div>
         </aside>
 
@@ -276,7 +290,7 @@ export default async function PublicEventPage({
           </section>
 
           <div className="mt-10 md:hidden">
-            <HostedBy name={event.owner?.name ?? null} preview={preview} />
+            <HostedBy name={event.owner?.name ?? null} club={event.club} preview={preview} />
           </div>
 
           {isOwner ? (

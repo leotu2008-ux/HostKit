@@ -62,6 +62,11 @@ struct AccountMenu: View {
 
                 Section {
                     NavigationLink {
+                        ClubsListView()
+                    } label: {
+                        Label("Clubs", systemImage: "person.3")
+                    }
+                    NavigationLink {
                         SettingsView()
                     } label: {
                         Label("Settings", systemImage: "gearshape")

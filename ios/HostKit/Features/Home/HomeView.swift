@@ -41,6 +41,10 @@ struct HomeView: View {
 
                     YourEventsSection(events: feed.mine, isLoading: isLoading) { isSigningIn = true }
 
+                    if !feed.following.isEmpty {
+                        preview(title: "From clubs you follow", events: Array(feed.following.prefix(3)))
+                    }
+
                     quickActions
 
                     if let school = feed.school, !feed.campus.isEmpty {

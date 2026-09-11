@@ -6,7 +6,9 @@ import { CITIES, isCity, type City } from "@/lib/catalog";
 import { CITY_COOKIE } from "@/lib/city-cookie";
 import { groupByDay } from "@/lib/day-groups";
 import { upcomingOnly } from "@/lib/upcoming";
+import { suggestedClubs } from "@/lib/clubs";
 import { CityDetector } from "@/components/city-detector";
+import { ClubCard } from "@/components/club-card";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
 import { ButtonLink, EmptyState, cx } from "@/components/ui";
 
@@ -14,6 +16,7 @@ export const metadata = { title: "Discover" };
 
 const include = {
   owner: { select: { name: true } },
+  club: { select: { handle: true, name: true, imageUrl: true } },
   _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" as const } } } },
 };
 const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
@@ -34,7 +37,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
 
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [campus, nearby] = await Promise.all([
+  const [campus, nearby, clubs] = await Promise.all([
     user?.schoolDomain
       ? db.event.findMany({
           where: { ...live, schoolDomain: user.schoolDomain, ownerId: { not: user.id } },
@@ -53,6 +56,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
       take: 30,
       include,
     }),
+    suggestedClubs({ schoolDomain: user?.schoolDomain ?? null, city }, 8),
   ]);
 
   const days = groupByDay(nearby);
@@ -75,6 +79,26 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
           Student socials, professional mixers, and nights just for fun —
           register in a tap.
         </p>
+
+        {clubs.length > 0 ? (
+          <section className="mt-10">
+            <div className="mb-3 flex items-end justify-between">
+              <h2 className="font-display text-xl text-ink">
+                {school ? `Clubs at ${school.short}` : cityShort ? `Clubs in ${cityShort}` : "Clubs"}
+              </h2>
+              <Link href="/clubs" className="text-sm font-medium text-ink-soft hover:text-ink">
+                See all →
+              </Link>
+            </div>
+            <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
+              {clubs.map((club) => (
+                <li key={club.id} className="shrink-0">
+                  <ClubCard club={club} compact />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {school ? (
           <section className="mt-10">

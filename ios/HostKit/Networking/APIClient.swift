@@ -187,6 +187,36 @@ nonisolated struct APIClient: Sendable {
         return envelope.event
     }
 
+    // MARK: Clubs
+
+    func clubs(city: String? = nil) async throws -> ClubsFeed {
+        var path = "/api/v1/clubs"
+        if let city, let encoded = city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            path += "?city=\(encoded)"
+        }
+        return try await send("GET", path)
+    }
+
+    func club(handle: String) async throws -> ClubPage {
+        try await send("GET", "/api/v1/clubs/\(handle)")
+    }
+
+    func createClub(_ request: NewClubRequest) async throws -> Club {
+        let envelope: ClubEnvelope = try await send("POST", "/api/v1/clubs", body: try Self.encode(request))
+        return envelope.club
+    }
+
+    func setFollowing(handle: String, _ following: Bool) async throws -> Club {
+        let envelope: ClubEnvelope = try await send(following ? "POST" : "DELETE", "/api/v1/clubs/\(handle)/follow")
+        return envelope.club
+    }
+
+    func setClubPhoto(handle: String, _ data: Data, contentType: String) async throws -> Club {
+        let envelope: ClubEnvelope = try await send(
+            "PUT", "/api/v1/clubs/\(handle)/avatar", body: data, contentType: contentType)
+        return envelope.club
+    }
+
     // MARK: Phone verification
 
     func startPhone(_ phone: String) async throws -> PhoneStart {
@@ -288,6 +318,7 @@ nonisolated struct PublishBody: Encodable, Sendable {
     let visibility: EventVisibility?
     let requiresApproval: Bool?
 }
+nonisolated struct ClubEnvelope: Decodable, Sendable { let club: Club }
 nonisolated struct RegisterEnvelope: Decodable, Sendable {
     let ok: Bool
     let state: RegistrationState?

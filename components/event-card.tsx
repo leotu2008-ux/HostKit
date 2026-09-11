@@ -30,6 +30,7 @@ export function toEventCard(event: {
   schoolDomain: string | null;
   coverUrl: string | null;
   owner?: { name: string } | null;
+  club?: { name: string } | null;
   _count: { guests: number };
 }): EventCardEvent {
   return {
@@ -39,7 +40,7 @@ export function toEventCard(event: {
     date: event.date,
     durationHours: event.durationHours,
     going: event._count.guests,
-    hostName: event.owner?.name,
+    hostName: event.club?.name ?? event.owner?.name,
     schoolDomain: event.schoolDomain,
     coverUrl: event.coverUrl,
   };

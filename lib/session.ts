@@ -51,12 +51,20 @@ export async function requireUser(next?: string) {
 }
 
 export async function canAccessEvent(
-  event: { id: string; ownerId: string | null; claimToken: string | null },
+  event: { id: string; ownerId: string | null; claimToken: string | null; clubId?: string | null },
   userId: string | null,
 ) {
   if (userId && event.ownerId === userId) return true;
   const claims = await readDraftClaims();
   if (claimMatches(claims, event.id, event.claimToken)) return true;
+  // Admins of the club an event was posted as run it too.
+  if (userId && event.clubId) {
+    const member = await db.clubMember.findUnique({
+      where: { clubId_userId: { clubId: event.clubId, userId } },
+      select: { role: true },
+    });
+    if (member) return true;
+  }
   return false;
 }
 
