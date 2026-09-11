@@ -106,7 +106,7 @@ export default async function ListingPage({
         </div>
       </div>
 
-      <div className="mt-7 grid gap-10 lg:grid-cols-[1fr_320px]">
+      <div className="mt-7 grid gap-10">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="clay">{CATEGORY_LABEL[listing.category]}</Badge>
@@ -172,7 +172,7 @@ export default async function ListingPage({
           ) : null}
         </div>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside>
           <Card className="p-5">
             {fit && event ? (
               <>

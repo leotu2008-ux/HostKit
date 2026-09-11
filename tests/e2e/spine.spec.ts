@@ -65,6 +65,9 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
       page.getByText(/priced for 90 guests over 8 hours/),
     ).toBeVisible();
 
+    // The filter panel starts collapsed so results come first; open it.
+    await page.locator('summary:has-text("Filters")').click();
+
     // Filtering to venues narrows the results.
     await page.locator('button[aria-pressed]:has-text("Venue")').first().click();
     await page.waitForFunction(() => location.search.includes("category=VENUE"));

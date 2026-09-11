@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guests · Rooftop Jazz Night · HostKit prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #fbf8f4; --surface: #ffffff; --sunk: #f4efe8;
+      --ink: #1c1917; --ink-soft: #57504a; --ink-mute: #8b8179;
+      --line: #e9e1d7; --line-strong: #d8cec1;
+      --clay: #c4502e; --clay-deep: #a03f22; --clay-wash: #fbeee8;
+      --forest: #2a4a40; --forest-wash: #e8f0ec;
+      --amber: #9a6b10; --amber-wash: #fbf1dc;
+      --danger: #8e2a20; --danger-wash: #fbeae8;
+      --radius-card: 0.875rem;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+    a { color: inherit; }
+    button, input, select { font-family: inherit; }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .display { font-family: var(--font-display); letter-spacing: -0.02em; }
+    :where(a, button, input, select):focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; border-radius: 4px; }
+
+    .proto {
+      background: var(--amber-wash); color: var(--amber); text-align: center;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 8px 16px; border-bottom: 1px solid #ead9b3;
+    }
+    .site {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; padding: 0 20px; max-width: 1152px; margin: 0 auto;
+    }
+    .wordmark { font-family: var(--font-display); font-size: 22px; text-decoration: none; }
+    .wordmark span { color: var(--clay); }
+    .wrap { max-width: 1152px; margin: 0 auto; padding: 0 20px 80px; }
+    .event-chrome { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 20px 0 8px; }
+    .thumb { width: 72px; height: 48px; border-radius: 8px; background: linear-gradient(135deg, #2a4a40, #c4502e 60%, #9a6b10); }
+    h1 { margin: 0; font-size: 28px; }
+    .meta { margin: 4px 0 0; font-size: 14px; color: var(--ink-soft); }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); }
+    .tabs a {
+      flex-shrink: 0; padding: 12px; font-size: 14px; font-weight: 500; text-decoration: none;
+      color: var(--ink-soft); border-bottom: 2px solid transparent;
+    }
+    .tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--clay); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border-radius: 999px; font-weight: 500; font-size: 13px; text-decoration: none; border: 0; cursor: pointer;
+      height: 36px; padding: 0 14px;
+    }
+    .btn-primary { background: var(--clay); color: #fff; }
+    .btn-secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); }
+    .btn-ghost { background: transparent; color: var(--ink-soft); }
+    .btn-ghost:hover, .btn-secondary:hover { background: var(--sunk); }
+    .btn-tiny { height: 28px; padding: 0 10px; font-size: 12px; }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 16px; }
+    .chip {
+      border: 0; cursor: pointer; border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 500;
+      background: var(--sunk); color: var(--ink-soft);
+    }
+    .chip[aria-pressed="true"] { background: var(--clay-wash); color: var(--clay-deep); }
+    .chip .n { font-variant-numeric: tabular-nums; margin-left: 4px; color: var(--ink-mute); }
+    .chip[aria-pressed="true"] .n { color: var(--clay); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+    .search {
+      flex: 1; min-width: 220px; height: 40px; border-radius: 8px;
+      border: 1px solid var(--line-strong); background: var(--surface);
+      padding: 0 12px; font-size: 14px; color: var(--ink);
+    }
+    .sort { height: 40px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); padding: 0 10px; font-size: 14px; }
+
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      text-align: left; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--ink-mute); padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface);
+    }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tr:last-child td { border-bottom: 0; }
+    tr:hover td { background: var(--sunk); }
+    .name { font-weight: 500; }
+    .email { color: var(--ink-soft); font-size: 13px; }
+    .badge {
+      display: inline-flex; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 500; white-space: nowrap;
+    }
+    .going { background: var(--forest-wash); color: var(--forest); }
+    .pending { background: var(--amber-wash); color: var(--amber); }
+    .wait { background: var(--clay-wash); color: var(--clay-deep); }
+    .invited { background: var(--sunk); color: var(--ink-soft); }
+    .no { background: var(--danger-wash); color: var(--danger); }
+    .in { background: var(--forest); color: #fff; }
+    .row-actions { display: flex; gap: 6px; }
+
+    .drawer {
+      display: none; position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 40%, transparent); z-index: 40;
+      place-items: center; padding: 20px;
+    }
+    .drawer.open { display: grid; }
+    .sheet {
+      background: var(--paper); border-radius: var(--radius-card); padding: 28px; max-width: 390px; width: 100%;
+      border: 1px solid var(--line);
+    }
+    .viewfinder {
+      aspect-ratio: 1; border-radius: 12px; margin: 16px 0;
+      background: repeating-linear-gradient(0deg, #161310 0 8px, #221e1a 8px 16px);
+      position: relative; overflow: hidden;
+    }
+    .viewfinder::after {
+      content: ""; position: absolute; inset: 18%; border: 2px solid #e06a45; border-radius: 8px;
+    }
+    .last { font-size: 14px; color: var(--ink-soft); }
+
+    @media (max-width: 720px) {
+      .hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="proto">Design prototype — HostKit tablet companion · canonical UI is mobile-*.html · not affiliated with Luma</div>
+  <div class="site">
+    <a class="wordmark display" href="manage-overview.html">Host<span>Kit</span></a>
+    <a class="btn btn-secondary" href="create-event.html">Create event</a>
+  </div>
+  <div class="wrap">
+    <header class="event-chrome">
+      <div class="thumb" aria-hidden="true"></div>
+      <div>
+        <h1 class="display">Rooftop Jazz Night</h1>
+        <p class="meta">Guests · planning for 90 · 86 going including plus-ones</p>
+      </div>
+    </header>
+    <nav class="tabs" aria-label="Manage event">
+      <a href="manage-overview.html">Overview</a>
+      <a href="guests.html" aria-current="page">Guests</a>
+      <a href="#registration">Registration</a>
+      <a href="#blasts">Blasts</a>
+      <a href="manage-overview.html">Insights</a>
+      <a href="manage-overview.html">More</a>
+    </nav>
+
+    <div class="filters" role="group" aria-label="Status filters">
+      <button class="chip" type="button" aria-pressed="true" data-filter="all">All <span class="n">124</span></button>
+      <button class="chip" type="button" aria-pressed="false" data-filter="going">Going <span class="n">86</span></button>
+      <button class="chip" type="button" aria-pressed="false" data-filter="pending">Pending <span class="n">4</span></button>
+      <button class="chip" type="button" aria-pressed="false" data-filter="wait">Waitlist <span class="n">7</span></button>
+      <button class="chip" type="button" aria-pressed="false" data-filter="invited">Invited <span class="n">12</span></button>
+      <button class="chip" type="button" aria-pressed="false" data-filter="no">Not going <span class="n">3</span></button>
+      <button class="chip" type="button" aria-pressed="false" data-filter="in">Checked in <span class="n">12</span></button>
+    </div>
+
+    <div class="toolbar">
+      <input class="search" type="search" id="q" placeholder="Search name, email, or domain…" />
+      <select class="sort" aria-label="Sort">
+        <option>Recently registered</option>
+        <option>Name A–Z</option>
+        <option>Status</option>
+        <option>Check-in time</option>
+      </select>
+      <button class="btn btn-secondary" type="button">Approve</button>
+      <button class="btn btn-secondary" type="button">Decline</button>
+      <button class="btn btn-secondary" type="button">CSV update</button>
+      <button class="btn btn-primary" type="button" id="open-checkin">QR check-in</button>
+      <button class="btn btn-ghost" type="button">Export CSV</button>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" aria-label="Select all" /></th>
+            <th>Name</th>
+            <th class="hide-sm">Email</th>
+            <th>Status</th>
+            <th>Guests</th>
+            <th class="hide-sm">Registered</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr data-status="in" data-search="taylor kim taylor.kim@mail.test">
+            <td><input type="checkbox" aria-label="Select Taylor Kim" /></td>
+            <td class="name">Taylor Kim</td>
+            <td class="email hide-sm">taylor.kim@mail.test</td>
+            <td><span class="badge in">Checked in</span></td>
+            <td class="tabular">1</td>
+            <td class="hide-sm">Sep 2</td>
+            <td></td>
+          </tr>
+          <tr data-status="going" data-search="maya chen maya@lantern.test lantern.test">
+            <td><input type="checkbox" aria-label="Select Maya Chen" /></td>
+            <td class="name">Maya Chen</td>
+            <td class="email hide-sm">maya@lantern.test</td>
+            <td><span class="badge going">Going</span></td>
+            <td class="tabular">2</td>
+            <td class="hide-sm">Host</td>
+            <td></td>
+          </tr>
+          <tr data-status="going" data-search="sam okonkwo sam.okonkwo@mail.test">
+            <td><input type="checkbox" aria-label="Select Sam Okonkwo" /></td>
+            <td class="name">Sam Okonkwo</td>
+            <td class="email hide-sm">sam.okonkwo@mail.test</td>
+            <td><span class="badge going">Going</span></td>
+            <td class="tabular">1</td>
+            <td class="hide-sm">Sep 4</td>
+            <td></td>
+          </tr>
+          <tr data-status="pending" data-search="jordan blake jordan.blake@studio.test studio.test">
+            <td><input type="checkbox" aria-label="Select Jordan Blake" /></td>
+            <td class="name">Jordan Blake</td>
+            <td class="email hide-sm">jordan.blake@studio.test</td>
+            <td><span class="badge pending">Pending</span></td>
+            <td class="tabular">1</td>
+            <td class="hide-sm">Sep 10</td>
+            <td class="row-actions">
+              <button class="btn btn-tiny btn-primary" type="button">Approve</button>
+              <button class="btn btn-tiny btn-secondary" type="button">Decline</button>
+            </td>
+          </tr>
+          <tr data-status="pending" data-search="riley nguyen riley@nguyen.example">
+            <td><input type="checkbox" aria-label="Select Riley Nguyen" /></td>
+            <td class="name">Riley Nguyen</td>
+            <td class="email hide-sm">riley@nguyen.example</td>
+            <td><span class="badge pending">Pending</span></td>
+            <td class="tabular">2</td>
+            <td class="hide-sm">Sep 11</td>
+            <td class="row-actions">
+              <button class="btn btn-tiny btn-primary" type="button">Approve</button>
+              <button class="btn btn-tiny btn-secondary" type="button">Decline</button>
+            </td>
+          </tr>
+          <tr data-status="wait" data-search="priya shah priya.shah@mail.test">
+            <td><input type="checkbox" aria-label="Select Priya Shah" /></td>
+            <td class="name">Priya Shah</td>
+            <td class="email hide-sm">priya.shah@mail.test</td>
+            <td><span class="badge wait">Waitlist</span></td>
+            <td class="tabular">1</td>
+            <td class="hide-sm">Sep 11</td>
+            <td></td>
+          </tr>
+          <tr data-status="invited" data-search="alex rivera alex.rivera@mail.test">
+            <td><input type="checkbox" aria-label="Select Alex Rivera" /></td>
+            <td class="name">Alex Rivera</td>
+            <td class="email hide-sm">alex.rivera@mail.test</td>
+            <td><span class="badge invited">Invited</span></td>
+            <td class="tabular">1</td>
+            <td class="hide-sm">—</td>
+            <td></td>
+          </tr>
+          <tr data-status="no" data-search="chris dale chris.dale@mail.test">
+            <td><input type="checkbox" aria-label="Select Chris Dale" /></td>
+            <td class="name">Chris Dale</td>
+            <td class="email hide-sm">chris.dale@mail.test</td>
+            <td><span class="badge no">Not going</span></td>
+            <td class="tabular">1</td>
+            <td class="hide-sm">Sep 6</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="registration" style="margin-top:48px">
+      <h2 class="display" style="font-size:22px;margin:0 0 8px">Registration (spec excerpt)</h2>
+      <p style="color:var(--ink-soft);font-size:14px;max-width:40rem">Free admission, capacity 90, waitlist on, approval required when the night is over 80% full. Paid tickets are shown as coming soon — HostKit does not collect money. Full layout in SCREENS.md.</p>
+    </section>
+    <section id="blasts" style="margin-top:32px">
+      <h2 class="display" style="font-size:22px;margin:0 0 8px">Blasts (spec excerpt)</h2>
+      <p style="color:var(--ink-soft);font-size:14px;max-width:40rem">Composer would sit here: segment Going, subject “Doors at 7:15”, clay CTA from Midnight Garden. Demo copies a draft — nothing is sent.</p>
+    </section>
+  </div>
+
+  <div class="drawer" id="checkin" role="dialog" aria-labelledby="checkin-title" aria-modal="true">
+    <div class="sheet">
+      <p class="proto" style="border-radius:8px;margin:0 0 12px">Check-in mobile · prototype</p>
+      <h2 id="checkin-title" class="display" style="margin:0;font-size:22px">Rooftop Jazz Night</h2>
+      <p class="last">12 checked in · 86 going</p>
+      <div class="viewfinder" aria-hidden="true"></div>
+      <input class="search" style="width:100%" placeholder="Search name or email…" />
+      <p class="last" style="margin-top:16px"><strong>Last:</strong> Taylor Kim · Going · 7:12 PM</p>
+      <button class="btn btn-secondary" type="button" id="close-checkin" style="margin-top:16px;width:100%">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const chips = [...document.querySelectorAll(".chip")];
+    const rows = [...document.querySelectorAll("#rows tr")];
+    const q = document.getElementById("q");
+    let filter = "all";
+    function apply() {
+      const term = q.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        const status = row.dataset.status;
+        const hay = row.dataset.search;
+        const okStatus = filter === "all" || status === filter;
+        const okSearch = !term || hay.includes(term);
+        row.style.display = okStatus && okSearch ? "" : "none";
+      });
+    }
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
+        chip.setAttribute("aria-pressed", "true");
+        filter = chip.dataset.filter;
+        apply();
+      });
+    });
+    q.addEventListener("input", apply);
+    const drawer = document.getElementById("checkin");
+    document.getElementById("open-checkin").addEventListener("click", () => drawer.classList.add("open"));
+    document.getElementById("close-checkin").addEventListener("click", () => drawer.classList.remove("open"));
+    drawer.addEventListener("click", (e) => { if (e.target === drawer) drawer.classList.remove("open"); });
+  </script>
+</body>
+</html>

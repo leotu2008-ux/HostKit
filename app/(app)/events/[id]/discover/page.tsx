@@ -20,6 +20,9 @@ export default async function DiscoverPage({
   const { event } = await requireEvent(id);
 
   const filters = parseFilters(query);
+  const activeFilterCount =
+    [filters.category, filters.maxCents, filters.neighborhood, filters.amenity]
+      .filter((v) => v !== null).length + (filters.hideUnfit ? 0 : 1);
   // Flatten to the single-valued shape the filter rail builds URLs from.
   const flatQuery = Object.fromEntries(
     Object.entries(query).flatMap(([key, value]) => {
@@ -52,15 +55,51 @@ export default async function DiscoverPage({
   ].map((c) => c.category);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-      <aside className="lg:sticky lg:top-24 lg:self-start">
-        <DiscoverFilters
-          query={flatQuery}
-          categories={categories}
-          neighborhoods={neighborhoods}
-          amenities={amenities}
-        />
-      </aside>
+    <div className="space-y-6">
+      {/* The app is a phone-width column at every viewport, so the filter
+          rail can't sit beside the results. Collapsed by default — a host
+          should see venues first, not eight controls — and held open while
+          any filter is active, so picking one doesn't slam the panel shut on
+          the re-render. */}
+      <details
+        open={activeFilterCount > 0 || filters.sort !== "fit"}
+        className="group rounded-card border border-line bg-surface"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-2">
+            Filters
+            {activeFilterCount > 0 ? (
+              <span className="rounded-full bg-clay-wash px-2 py-0.5 text-xs text-clay-deep">
+                {activeFilterCount} on
+              </span>
+            ) : null}
+          </span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden
+            className="text-ink-mute transition-transform group-open:rotate-180"
+          >
+            <path
+              d="M4 6l4 4 4-4"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </summary>
+        <div className="border-t border-line px-4 py-4">
+          <DiscoverFilters
+            query={flatQuery}
+            categories={categories}
+            neighborhoods={neighborhoods}
+            amenities={amenities}
+          />
+        </div>
+      </details>
 
       <div>
         <p className="mb-5 text-sm text-ink-soft">
@@ -75,7 +114,7 @@ export default async function DiscoverPage({
             body="Try widening the price, or turn off “hide what can’t work” to see the near misses."
           />
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5">
             {scored.map(({ listing, fit }) => (
               <ListingCard
                 key={listing.id}

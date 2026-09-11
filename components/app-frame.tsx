@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
 import { Avatar } from "@/components/avatar";
+import { InstallPrompt } from "@/components/install-prompt";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
 import { signOutAction } from "@/lib/actions/auth";
 import { currentProfile } from "@/lib/session";
@@ -63,6 +64,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-0 flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </div>
+      <InstallPrompt />
       <TabBar />
     </div>
   );

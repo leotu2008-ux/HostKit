@@ -49,7 +49,7 @@ export default async function GuestsPage({
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4">
         <Card className="p-5">
           <p className="text-sm text-ink-soft">Planning for</p>
           <p className="font-display tabular mt-1 text-2xl text-ink">
