@@ -226,7 +226,7 @@ HostKit is a **phone app** first. Tokens above still apply; these rules are extr
 | Frame | `390 × 844` | Spec and HTML phone mocks |
 | Status | 44px | Simulated 9:41 |
 | Header | 52px | Wordmark / back / avatar |
-| Tab bar | 64px + 20px safe | Four tabs; Create is a 48px clay circle overlapping by 10px |
+| Tab bar | 64px + 20px safe | Four tabs; Create is a 40px clay circle *in* the bar (no overlap) |
 | Touch | ≥ 44px | Chips, rows, icon buttons |
 | Sheet | 12px top radius | More, register, check-in result |
 

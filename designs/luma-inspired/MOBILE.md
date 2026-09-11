@@ -12,7 +12,7 @@ Prototype banner sits **outside** the phone in HTML mocks so it doesn’t eat th
 
 ## Bottom tab shell
 
-Four tabs, paper bar, 1px `line` on top, 64px content + 20px home-indicator safe area (84px total). Active label `ink` + clay mark. Inactive `ink-mute`. Create circle sits ~8px above the bar (stationery, not a social-app FAB farm).
+Four tabs, paper bar, 1px `line` on top, 64px content + 20px home-indicator safe area (84px total). Active label `ink` + clay mark. Inactive `ink-mute`. **Create** is a 48px clay circle *in* the bar (not a floating social-app FAB — it must not cover list rows).
 
 ```
 ┌────────────── 390 × 844 ──────────────┐
@@ -21,9 +21,7 @@ Four tabs, paper bar, 1px `line` on top, 64px content + 20px home-indicator safe
 │                                       │
 │              (screen)                 │
 │                                       │
-│     ╭──╮                              │
-│ Nights│＋│ Door  More                  │  84 tab+safe
-│       ╰──╯ clay                       │
+│ Nights   ＋   Door   More              │  84 tab+safe
 └───────────────────────────────────────┘
 ```
 
