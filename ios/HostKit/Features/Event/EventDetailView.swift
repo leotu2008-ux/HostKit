@@ -6,7 +6,6 @@ struct EventDetailView: View {
     @Environment(\.openURL) private var openURL
     @State private var event: HostEvent
     @State private var isRegistering = false
-    @State private var didRegister = false
 
     init(event: HostEvent) {
         _event = State(initialValue: event)
@@ -83,9 +82,9 @@ struct EventDetailView: View {
         }
         .safeAreaInset(edge: .bottom) { registerBar }
         .sheet(isPresented: $isRegistering) {
-            RegisterSheet(event: event) {
-                didRegister = true
-                event.going += 1
+            RegisterSheet(event: event) { state in
+                event.registration = state
+                if state == .going { event.going += 1 }
             }
         }
         .task { await refresh() }
@@ -100,16 +99,25 @@ struct EventDetailView: View {
                     Text(event.ticketLabel).font(.inter(.caption)).foregroundStyle(.secondary)
                 }
                 Spacer()
-                if didRegister || event.isRegistered {
+                switch event.registrationState {
+                case .going:
                     Label("You’re in", systemImage: "checkmark.circle.fill")
                         .font(.inter(.subheadline, .semibold))
                         .foregroundStyle(.green)
-                } else if event.isFull {
-                    Text("Full").font(.inter(.subheadline, .semibold)).foregroundStyle(.secondary)
-                } else {
-                    Button("Register") { isRegistering = true }
-                        .buttonStyle(.glassProminent)
-                        .controlSize(.large)
+                case .pending:
+                    Label("Requested", systemImage: "clock")
+                        .font(.inter(.subheadline, .semibold))
+                        .foregroundStyle(.orange)
+                case .waitlisted:
+                    Label("On the waitlist", systemImage: "person.2.wave.2")
+                        .font(.inter(.subheadline, .semibold))
+                        .foregroundStyle(.orange)
+                case .none:
+                    Button(event.requiresApproval ?? false ? "Request to join" : event.isFull ? "Join waitlist" : "Register") {
+                        isRegistering = true
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
                 }
             }
             .padding(.horizontal, 18)

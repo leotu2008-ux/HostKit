@@ -45,8 +45,12 @@ export function RsvpForm({
     submitRsvpAction,
     undefined,
   );
+  // Waiting on the host (a request, or the waitlist): the only move from
+  // here is to step back — the host, or the line, lets people in.
+  const waiting = current === "PENDING" || current === "WAITLISTED";
+  const choices = waiting ? CHOICES.filter((c) => c.value === "DECLINED") : CHOICES;
   const [choice, setChoice] = useState<RsvpStatus>(
-    current === "INVITED" ? "ATTENDING" : current,
+    current === "INVITED" ? "ATTENDING" : waiting ? "DECLINED" : current,
   );
 
   return (
@@ -57,10 +61,21 @@ export function RsvpForm({
 
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-ink">
-          Can you make it?
+          {waiting
+            ? current === "PENDING"
+              ? "Your request is with the host"
+              : "You're on the waitlist"
+            : "Can you make it?"}
         </legend>
+        {waiting ? (
+          <p className="mb-3 text-[13px] text-ink-mute">
+            {current === "PENDING"
+              ? "They'll confirm your spot. Changed your mind?"
+              : "You'll be let in automatically when a spot opens. Changed your mind?"}
+          </p>
+        ) : null}
         <div className="space-y-2">
-          {CHOICES.map((option) => (
+          {choices.map((option) => (
             <button
               key={option.value}
               type="button"

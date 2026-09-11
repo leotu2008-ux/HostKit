@@ -62,8 +62,11 @@ type EventRow = {
   ownerId: string | null;
   schoolDomain: string | null;
   coverUrl?: string | null;
+  requiresApproval?: boolean;
   owner?: { name: string } | null;
 };
+
+export type RegistrationState = "none" | "going" | "pending" | "waitlisted";
 
 export type ApiEvent = {
   id: string;
@@ -97,6 +100,10 @@ export type ApiEvent = {
   isOwner: boolean;
   /** True when the signed-in account is registered as attending. */
   registered: boolean;
+  /** Going, asked (pending), or waitlisted — the fuller version of `registered`. */
+  registration: RegistrationState;
+  /** Registrations wait for the host's approval. */
+  requiresApproval: boolean;
   /** A photo the host uploaded; null means draw the cover from the id. */
   coverUrl: string | null;
   webPath: string;
@@ -106,8 +113,10 @@ export function serializeEvent(
   event: EventRow,
   going: number,
   canManage: boolean,
-  registered = false,
+  registration: RegistrationState | boolean = "none",
 ): ApiEvent {
+  const state: RegistrationState =
+    typeof registration === "boolean" ? (registration ? "going" : "none") : registration;
   return {
     id: event.id,
     title: event.title,
@@ -129,7 +138,9 @@ export function serializeEvent(
     hostName: event.owner?.name ?? null,
     school: serializeSchool(event.schoolDomain),
     isOwner: canManage,
-    registered,
+    registered: state === "going",
+    registration: state,
+    requiresApproval: event.requiresApproval ?? false,
     coverUrl: event.coverUrl ?? null,
     webPath: `/e/${event.id}`,
   };

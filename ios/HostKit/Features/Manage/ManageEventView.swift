@@ -199,12 +199,30 @@ private struct OverviewTab: View {
     @State private var busyGuestID: String?
     @State private var errorMessage: String?
 
+    private var requests: [Guest] { guests.filter { $0.status == .pending } }
+    private var waitlist: [Guest] { guests.filter { $0.status == .waitlisted } }
+
     private var filtered: [Guest] {
         let query = search.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return guests }
-        return guests.filter {
+        let listed = guests.filter { $0.status != .pending && $0.status != .waitlisted }
+        guard !query.isEmpty else { return listed }
+        return listed.filter {
             $0.name.localizedCaseInsensitiveContains(query)
                 || ($0.email?.localizedCaseInsensitiveContains(query) ?? false)
+        }
+    }
+
+    private func decide(_ guest: Guest, approve: Bool) async {
+        busyGuestID = guest.id
+        defer { busyGuestID = nil }
+        do {
+            _ = try await model.api.setGuestStatus(
+                eventID: event.id, guestID: guest.id, status: approve ? .attending : .declined)
+            // A decision can move the line; reload rather than patch.
+            await loadGuests()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -214,7 +232,11 @@ private struct OverviewTab: View {
                 HStack(spacing: 10) {
                     stat("Going", summary?.going ?? event.going)
                     stat("Checked in", summary?.checkedIn ?? 0)
-                    stat("Capacity", event.capacity)
+                    if requests.count + waitlist.count > 0 {
+                        stat("Waiting", requests.count + waitlist.count)
+                    } else {
+                        stat("Capacity", event.capacity)
+                    }
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
@@ -222,6 +244,54 @@ private struct OverviewTab: View {
 
             if let errorMessage {
                 Section { Text(errorMessage).foregroundStyle(.red) }
+            }
+
+            if !requests.isEmpty {
+                Section {
+                    ForEach(requests) { guest in
+                        HStack(spacing: 12) {
+                            HostAvatar(name: guest.name, size: 34)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(guest.name).font(.inter(.body, .medium))
+                                Text(guest.email ?? "No email").font(.inter(.caption)).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            Spacer()
+                            Button("Decline") { Task { await decide(guest, approve: false) } }
+                                .buttonStyle(.bordered).tint(.secondary)
+                            Button("Approve") { Task { await decide(guest, approve: true) } }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        .disabled(busyGuestID != nil)
+                        .font(.inter(.footnote, .semibold))
+                    }
+                } header: {
+                    Text("Requests")
+                } footer: {
+                    Text("Approving into a full night puts them on the waitlist.")
+                }
+            }
+
+            if !waitlist.isEmpty {
+                Section {
+                    ForEach(Array(waitlist.enumerated()), id: \.element.id) { index, guest in
+                        HStack(spacing: 12) {
+                            Text("\(index + 1)").font(.inter(.subheadline)).foregroundStyle(.secondary).frame(width: 22)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(guest.name).font(.inter(.body, .medium))
+                                Text(guest.email ?? "No email").font(.inter(.caption)).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            Spacer()
+                            Button("Let in") { Task { await decide(guest, approve: true) } }
+                                .buttonStyle(.bordered)
+                                .font(.inter(.footnote, .semibold))
+                        }
+                        .disabled(busyGuestID != nil)
+                    }
+                } header: {
+                    Text("Waitlist")
+                } footer: {
+                    Text("Oldest first. They move up automatically when a spot opens.")
+                }
             }
 
             Section {

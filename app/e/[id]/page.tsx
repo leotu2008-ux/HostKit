@@ -5,7 +5,8 @@ import { db } from "@/lib/db";
 import { canAccessEvent, getCurrentUser } from "@/lib/session";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
-import { isRegistered } from "@/lib/registration";
+import { registrationState } from "@/lib/registration";
+import { waitlistPositionFor } from "@/lib/waitlist";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
@@ -85,12 +86,17 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const alreadyGoing = await isRegistered(event.id, user?.id ?? null);
+  const registration = await registrationState(event.id, user?.id ?? null);
+  const alreadyGoing = registration === "going";
+  const waitlistPlace =
+    registration === "waitlisted" ? await waitlistPositionFor(event.id, user?.id ?? null) : null;
 
   const school = schoolFor(event.schoolDomain);
   const going = event._count.guests;
   const spotsLeft = Math.max(0, event.guestCount - going);
-  const canRegister = event.published && !alreadyGoing && spotsLeft > 0;
+  // With a waitlist, a full night still takes registrations.
+  const canRegister = event.published && registration === "none";
+  const registerMode = event.requiresApproval ? "request" : spotsLeft === 0 ? "waitlist" : "register";
   const ticketLabel =
     event.ticketType === "PAID" ? formatCents(event.ticketPriceCents) : "Free";
   // Calendar links only make sense once the night has a date.
@@ -207,14 +213,30 @@ export default async function PublicEventPage({
                   </p>
                   {calendar ? <AddToCalendar links={calendar} /> : null}
                 </div>
-              ) : spotsLeft === 0 ? (
-                <p className="font-medium text-amber">
-                  This night is full. Ask the host about a waitlist.
-                </p>
+              ) : registration === "pending" ? (
+                <div>
+                  <p className="font-medium text-amber">Request sent.</p>
+                  <p className="mt-1 text-[15px] text-ink-soft">
+                    The host confirms each guest — you’ll hear at {user?.email} once they do.
+                  </p>
+                </div>
+              ) : registration === "waitlisted" ? (
+                <div>
+                  <p className="font-medium text-amber">
+                    You’re {waitlistPlace ? `#${waitlistPlace}` : ""} on the waitlist.
+                  </p>
+                  <p className="mt-1 text-[15px] text-ink-soft">
+                    When a spot opens you’re in automatically — we’ll tell you at {user?.email}.
+                  </p>
+                </div>
               ) : (
                 <>
                   <p className="mb-4 text-[15px] text-ink-soft">
-                    Welcome! Register below to save your spot
+                    {registerMode === "waitlist"
+                      ? "This night is full. Join the waitlist and you’re in automatically when a spot opens"
+                      : registerMode === "request"
+                        ? "The host approves each guest. Ask to join below"
+                        : "Welcome! Register below to save your spot"}
                     {event.ticketType === "PAID"
                       ? ` — tickets are ${ticketLabel}, paid to the host`
                       : ""}
@@ -224,6 +246,7 @@ export default async function PublicEventPage({
                     eventId={event.id}
                     viewer={user ? { name: user.name, email: user.email } : null}
                     calendar={calendar}
+                    mode={registerMode}
                   />
                 </>
               )}
@@ -268,7 +291,7 @@ export default async function PublicEventPage({
               href="#register"
               className="inline-flex min-h-11 items-center rounded-full bg-clay px-6 text-sm font-medium text-white"
             >
-              Register
+              {registerMode === "request" ? "Request" : registerMode === "waitlist" ? "Waitlist" : "Register"}
             </a>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { goingCount, serializeEvent } from "@/lib/api/serialize";
 const schema = z.object({
   published: z.boolean(),
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional(),
+  requiresApproval: z.boolean().optional(),
 });
 
 /**
@@ -31,6 +32,9 @@ export async function POST(
     data: {
       published: parsed.data.published,
       ...(parsed.data.visibility ? { visibility: parsed.data.visibility } : {}),
+      ...(parsed.data.requiresApproval === undefined
+        ? {}
+        : { requiresApproval: parsed.data.requiresApproval }),
       ...(event.ownerId === null
         ? { ownerId: user.id, schoolDomain: user.schoolDomain }
         : {}),

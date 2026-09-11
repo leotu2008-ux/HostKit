@@ -49,8 +49,20 @@ nonisolated struct APIClient: Sendable {
     }
 
     /// Registers the signed-in account. The server refuses without a token.
-    func register(eventID: String) async throws {
-        let _: OKEnvelope = try await send("POST", "/api/v1/events/\(eventID)/register", body: try Self.encode([String: String]()))
+    /// Registers and says where you landed: going, pending (host approves),
+    /// or waitlisted (the event is full). Older servers answer without a state.
+    func register(eventID: String) async throws -> RegistrationState {
+        let envelope: RegisterEnvelope = try await send(
+            "POST", "/api/v1/events/\(eventID)/register", body: try Self.encode([String: String]()))
+        return envelope.state ?? .going
+    }
+
+    /// The host decides for one guest: approve/decline a request, or change a reply.
+    func setGuestStatus(eventID: String, guestID: String, status: RsvpStatus) async throws -> Guest {
+        let envelope: GuestEnvelope = try await send(
+            "PATCH", "/api/v1/events/\(eventID)/guests/\(guestID)",
+            body: try Self.encode(["status": status.rawValue]))
+        return envelope.guest
     }
 
     // MARK: Host
@@ -88,8 +100,10 @@ nonisolated struct APIClient: Sendable {
         return envelope.claimed
     }
 
-    func setPublished(eventID: String, published: Bool, visibility: EventVisibility? = nil) async throws -> HostEvent {
-        let body = try Self.encode(PublishBody(published: published, visibility: visibility))
+    func setPublished(
+        eventID: String, published: Bool, visibility: EventVisibility? = nil, requiresApproval: Bool? = nil
+    ) async throws -> HostEvent {
+        let body = try Self.encode(PublishBody(published: published, visibility: visibility, requiresApproval: requiresApproval))
         let envelope: EventEnvelope = try await send("POST", "/api/v1/events/\(eventID)/publish", body: body)
         return envelope.event
     }
@@ -265,6 +279,11 @@ nonisolated struct UserEnvelope: Decodable, Sendable { let user: HostUser }
 nonisolated struct PublishBody: Encodable, Sendable {
     let published: Bool
     let visibility: EventVisibility?
+    let requiresApproval: Bool?
+}
+nonisolated struct RegisterEnvelope: Decodable, Sendable {
+    let ok: Bool
+    let state: RegistrationState?
 }
 nonisolated struct PhoneBody: Encodable, Sendable { let phone: String }
 nonisolated struct CodeBody: Encodable, Sendable { let code: String }

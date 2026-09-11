@@ -30,6 +30,8 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var registered: Bool?
     /// Going / pending / waitlisted; older servers only send `registered`.
     var registration: RegistrationState?
+    /// Registrations wait for the host's approval.
+    var requiresApproval: Bool?
     /// A photo the host uploaded; nil means the cover is drawn from the id.
     var coverUrl: String?
     let webPath: String
@@ -179,6 +181,8 @@ nonisolated struct GuestSummary: Codable, Hashable, Sendable {
     var checkedIn: Int
     var invited: Int
     var declined: Int
+    var pending: Int?
+    var waitlisted: Int?
 }
 
 /// Mirrors `lib/schools.ts`.

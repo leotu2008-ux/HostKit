@@ -7,6 +7,7 @@ import type { RsvpStatus } from "@/generated/prisma/enums";
 export const SEGMENTS = {
   going: "Going",
   pending: "Haven't replied",
+  waitlist: "Waitlist",
   everyone: "Everyone on the list",
 } as const;
 
@@ -28,12 +29,16 @@ export function recipientsFor(
   const out: Recipient[] = [];
   for (const guest of guests) {
     if (!guest.email) continue;
+    // "Everyone" is everyone who might come — not the declined, and not the
+    // waitlist, who'd be confused by "doors at 7". The waitlist has its own.
     const wanted =
       segment === "everyone"
-        ? guest.rsvpStatus !== "DECLINED"
+        ? guest.rsvpStatus !== "DECLINED" && guest.rsvpStatus !== "WAITLISTED"
         : segment === "going"
           ? guest.rsvpStatus === "ATTENDING"
-          : guest.rsvpStatus === "INVITED";
+          : segment === "waitlist"
+            ? guest.rsvpStatus === "WAITLISTED"
+            : guest.rsvpStatus === "INVITED";
     if (!wanted) continue;
     const email = guest.email.toLowerCase();
     if (seen.has(email)) continue;

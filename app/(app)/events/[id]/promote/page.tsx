@@ -6,6 +6,7 @@ import { qrSvg } from "@/lib/qr";
 import { eventUrl, promoBlurb } from "@/lib/promote";
 import {
   publishEventAction,
+  setApprovalAction,
   setVisibilityAction,
   unpublishEventAction,
 } from "@/lib/actions/events";
@@ -106,6 +107,36 @@ export default async function PromotePage({ params }: PageProps<"/events/[id]/pr
                 {VISIBILITIES.find((v) => v.value === event.visibility)?.hint}
               </p>
             </div>
+
+            <form action={setApprovalAction} className="flex items-start gap-3">
+              <input type="hidden" name="eventId" value={event.id} />
+              <input type="hidden" name="requiresApproval" value={event.requiresApproval ? "off" : "on"} />
+              <button
+                type="submit"
+                role="switch"
+                aria-checked={event.requiresApproval}
+                className={cx(
+                  "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors",
+                  event.requiresApproval ? "bg-clay" : "bg-line-strong",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cx(
+                    "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-[left]",
+                    event.requiresApproval ? "left-[22px]" : "left-0.5",
+                  )}
+                />
+              </button>
+              <span>
+                <span className="block text-sm font-medium text-ink">Approve registrations</span>
+                <span className="block text-[13px] text-ink-mute">
+                  {event.requiresApproval
+                    ? "People ask to join; you confirm each one from Overview. When it's full, the rest join a waitlist."
+                    : "Anyone can register until it's full; after that they join a waitlist and move up as spots open."}
+                </span>
+              </span>
+            </form>
           </Card>
         </section>
 

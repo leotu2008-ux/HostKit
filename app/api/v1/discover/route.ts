@@ -4,7 +4,7 @@ import { apiUser, json } from "@/lib/api/http";
 import { goingCount, serializeEvent, serializeSchool } from "@/lib/api/serialize";
 import { myUpcomingEvents } from "@/lib/mine";
 import { upcomingOnly } from "@/lib/upcoming";
-import { registeredEventIds } from "@/lib/registration";
+import { registrationStates } from "@/lib/registration";
 
 const include = { owner: { select: { name: true } }, ...goingCount };
 const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     viewer ? myUpcomingEvents(viewer.id, 12) : Promise.resolve([]),
   ]);
 
-  const registered = await registeredEventIds(
+  const states = await registrationStates(
     [...events, ...campus, ...mine].map((e) => e.id),
     viewer?.id ?? null,
   );
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       e,
       e._count.guests,
       viewer !== null && e.ownerId === viewer.id,
-      registered.has(e.id),
+      states.get(e.id) ?? "none",
     );
   return json({
     events: events.map(out),

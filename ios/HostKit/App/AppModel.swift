@@ -160,21 +160,25 @@ final class AppModel {
     }
 
     /// Registers the signed-in account. Callers present sign-in first.
-    /// What happened on the phone after registering, for the confirmation.
+    /// What happened after registering, for the confirmation: where you
+    /// landed, and what the phone did about it.
     struct RegistrationExtras {
+        var state: RegistrationState = .going
         var reminderSet = false
         var calendarAdded = false
     }
 
-    /// Registers, then — if the settings allow — schedules the reminders and
-    /// puts the night on the calendar. Neither can fail the registration.
+    /// Registers, then — only once you're actually in, and if the settings
+    /// allow — schedules the reminders and puts the night on the calendar.
+    /// Neither can fail the registration.
     func register(for event: HostEvent) async throws -> RegistrationExtras {
+        var extras = RegistrationExtras()
         if SampleData.events.contains(where: { $0.id == event.id }) {
             try await Task.sleep(for: .milliseconds(500))
         } else {
-            try await api.register(eventID: event.id)
+            extras.state = try await api.register(eventID: event.id)
         }
-        var extras = RegistrationExtras()
+        guard extras.state == .going else { return extras }
         if Session.remindersEnabled, await Reminders.requestPermission() {
             await Reminders.schedule(for: event)
             extras.reminderSet = event.startsAt != nil
@@ -183,6 +187,11 @@ final class AppModel {
             extras.calendarAdded = await CalendarSync.add(event, link: api.webURL(for: event))
         }
         return extras
+    }
+
+    /// Whether registrations wait for the host's approval.
+    func setApproval(_ event: HostEvent, _ on: Bool) async throws -> HostEvent {
+        try await api.setPublished(eventID: event.id, published: event.published, requiresApproval: on)
     }
 
     /// Keeps reminders in step with the events you're going to (dates move).

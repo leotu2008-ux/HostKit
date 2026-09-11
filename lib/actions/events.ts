@@ -180,6 +180,15 @@ export async function setVisibilityAction(formData: FormData) {
   refresh();
 }
 
+/** Whether registrations wait for the host's approval. */
+export async function setApprovalAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const on = String(formData.get("requiresApproval") ?? "") === "on";
+  const { event } = await requireEvent(eventId);
+  await db.event.update({ where: { id: event.id }, data: { requiresApproval: on } });
+  refresh();
+}
+
 export async function setPublishedAction(formData: FormData) {
   const published = String(formData.get("published") ?? "") === "on";
   if (published) return publishEventAction(formData);
