@@ -43,7 +43,7 @@
   --color-danger-wash: #fcebe9;
 
   --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-event: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-event: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 1rem;
@@ -95,11 +95,10 @@ body {
   letter-spacing: -0.025em;
 }
 
-/* Event titles: the one serif moment. */
+/* Event titles: Inter too, a touch heavier and tighter than body text. */
 .font-event {
   font-family: var(--font-event);
-  font-variation-settings: "SOFT" 40, "WONK" 0;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 

@@ -26,7 +26,7 @@ struct EventDetailView: View {
                         event.published ? event.typeLabel : "Draft preview · \(event.typeLabel)",
                         event.school?.name,
                     ].compactMap { $0 }.joined(separator: " · "))
-                        .font(.subheadline.weight(.medium))
+                        .font(.inter(.subheadline, .medium))
                         .foregroundStyle(.secondary)
                     Text(event.title)
                         .font(.event(34))
@@ -34,7 +34,7 @@ struct EventDetailView: View {
                     if let host = event.hostName {
                         HStack(spacing: 8) {
                             HostAvatar(name: host, size: 24)
-                            Text("Hosted by \(host)").font(.subheadline)
+                            Text("Hosted by \(host)").font(.inter(.subheadline))
                         }
                     }
                 }
@@ -61,10 +61,10 @@ struct EventDetailView: View {
 
                 if let description = event.description, !description.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("About this event").font(.headline)
+                        Text("About this event").font(.inter(.headline, .semibold))
                         Divider()
                         Text(description)
-                            .font(.body)
+                            .font(.inter(.body))
                             .lineSpacing(3)
                     }
                 }
@@ -96,16 +96,16 @@ struct EventDetailView: View {
         if event.published {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("\(event.going) going").font(.subheadline.weight(.semibold))
-                    Text(event.ticketLabel).font(.caption).foregroundStyle(.secondary)
+                    Text("\(event.going) going").font(.inter(.subheadline, .semibold))
+                    Text(event.ticketLabel).font(.inter(.caption)).foregroundStyle(.secondary)
                 }
                 Spacer()
                 if didRegister || event.isRegistered {
                     Label("You’re in", systemImage: "checkmark.circle.fill")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.inter(.subheadline, .semibold))
                         .foregroundStyle(.green)
                 } else if event.isFull {
-                    Text("Full").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Full").font(.inter(.subheadline, .semibold)).foregroundStyle(.secondary)
                 } else {
                     Button("Register") { isRegistering = true }
                         .buttonStyle(.glassProminent)

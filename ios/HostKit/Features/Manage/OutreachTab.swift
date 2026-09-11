@@ -67,9 +67,9 @@ struct OutreachTab: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(row.name).font(.body.weight(.medium))
+                    Text(row.name).font(.inter(.body, .medium))
                     if let detail = row.detail {
-                        Text(detail).font(.footnote).foregroundStyle(.secondary)
+                        Text(detail).font(.inter(.footnote)).foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
@@ -84,7 +84,7 @@ struct OutreachTab: View {
                     Link(destination: url) { Label("Site", systemImage: "safari") }
                 }
             }
-            .font(.footnote.weight(.medium))
+            .font(.inter(.footnote, .medium))
             .buttonStyle(.borderless)
             .labelStyle(.titleAndIcon)
         }
@@ -146,7 +146,7 @@ private struct DraftMessageSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Subject: \(row.subject)")
-                    .font(.footnote)
+                    .font(.inter(.footnote))
                     .foregroundStyle(.secondary)
                 TextEditor(text: $message)
                     .font(.system(.footnote, design: .monospaced))

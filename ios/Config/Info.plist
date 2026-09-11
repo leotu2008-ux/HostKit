@@ -6,6 +6,13 @@
 	     while production stays HTTPS-only. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>HostKit uses your location once to pick the nearest city, so Discover shows events near you.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Inter-Regular.ttf</string>
+		<string>Inter-Medium.ttf</string>
+		<string>Inter-SemiBold.ttf</string>
+		<string>Inter-Bold.ttf</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

@@ -17,8 +17,8 @@ struct ProfileView: View {
                         HStack(spacing: 14) {
                             HostAvatar(name: user.name, size: 52)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(user.name).font(.title3.weight(.semibold))
-                                Text(user.email).font(.subheadline).foregroundStyle(.secondary)
+                                Text(user.name).font(.inter(.title3, .semibold))
+                                Text(user.email).font(.inter(.subheadline)).foregroundStyle(.secondary)
                                 if let school = user.school {
                                     HStack(spacing: 6) {
                                         StatusPill(text: school.name, tint: .accentColor)
@@ -31,14 +31,14 @@ struct ProfileView: View {
                         }
                         .padding(.vertical, 4)
                         if let bio = user.bio, !bio.isEmpty {
-                            Text(bio).font(.subheadline).foregroundStyle(.secondary)
+                            Text(bio).font(.inter(.subheadline)).foregroundStyle(.secondary)
                         }
                         Button("Edit profile") { isEditing = true }
                         Button("Sign out", role: .destructive) { model.signOut() }
                     } else {
                         Button("Sign in") { isSigningIn = true }
                         Text("Students: sign up with your school .edu email to see what’s on at your campus first.")
-                            .font(.footnote)
+                            .font(.inter(.footnote))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -47,7 +47,7 @@ struct ProfileView: View {
                     Section("Siri & Shortcuts") {
                         SiriTipView(intent: NextEventIntent(), isVisible: $showSiriTip)
                         Text("Try “Check in a guest with HostKit” at the door.")
-                            .font(.footnote)
+                            .font(.inter(.footnote))
                             .foregroundStyle(.secondary)
                     }
                 }

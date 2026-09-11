@@ -88,11 +88,11 @@ struct MyEventsView: View {
                         Image(systemName: "iphone")
                             .foregroundStyle(.secondary)
                         Text("Drafts live on this iPhone. Sign in when you’re ready to publish.")
-                            .font(.footnote)
+                            .font(.inter(.footnote))
                             .foregroundStyle(.secondary)
                         Spacer()
                         Button("Sign in") { isSigningIn = true }
-                            .font(.footnote.weight(.semibold))
+                            .font(.inter(.footnote, .semibold))
                     }
                     .padding(12)
                     .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 12))
@@ -123,9 +123,9 @@ struct MyEventsView: View {
                             }
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text(group.label).font(.headline)
+                                    Text(group.label).font(.inter(.headline, .semibold))
                                     if let relative = group.relative {
-                                        Text(relative).font(.subheadline).foregroundStyle(.secondary)
+                                        Text(relative).font(.inter(.subheadline)).foregroundStyle(.secondary)
                                     }
                                 }
                                 ForEach(group.events) { event in

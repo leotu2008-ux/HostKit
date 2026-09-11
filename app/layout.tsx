@@ -1,14 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
-});
-
+// One face everywhere — Inter — the same as the iOS app bundles.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -44,7 +39,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full bg-paper">
         <AppFrame>{children}</AppFrame>
       </body>

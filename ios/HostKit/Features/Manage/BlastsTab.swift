@@ -31,7 +31,7 @@ struct BlastsTab: View {
                         Label("Sent to \(recipients.count)", systemImage: "checkmark.seal.fill").foregroundStyle(.green)
                     } else {
                         Label("Recorded for \(recipients.count) — email isn't set up on this server", systemImage: "info.circle")
-                            .font(.subheadline)
+                            .font(.inter(.subheadline))
                         Button(copied ? "Copied addresses" : "Copy \(recipients.count) addresses", systemImage: "doc.on.doc") {
                             UIPasteboard.general.string = recipients.map(\.email).joined(separator: ", ")
                             copied = true
@@ -87,12 +87,12 @@ struct BlastsTab: View {
                 ForEach(feed.blasts) { blast in
                     VStack(alignment: .leading, spacing: 2) {
                         HStack {
-                            Text(blast.subject).font(.body.weight(.medium))
+                            Text(blast.subject).font(.inter(.body, .medium))
                             Spacer()
                             StatusPill(text: blast.provider == "resend" ? "Sent" : "Copied", tint: blast.provider == "resend" ? .green : .secondary)
                         }
                         Text("\(feed.segments.first { $0.key == blast.segment }?.label ?? blast.segment) · \(blast.recipientCount) · \(blast.sentAt.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.inter(.caption)).foregroundStyle(.secondary)
                     }
                 }
             }

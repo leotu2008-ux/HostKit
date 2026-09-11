@@ -41,13 +41,13 @@ struct PromoteTab: View {
 
             Section {
                 HStack {
-                    Text(link.absoluteString).font(.footnote).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    Text(link.absoluteString).font(.inter(.footnote)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     Spacer()
                     Button(copiedLink ? "Copied" : "Copy") {
                         UIPasteboard.general.string = link.absoluteString
                         copiedLink = true
                     }
-                    .font(.footnote.weight(.semibold))
+                    .font(.inter(.footnote, .semibold))
                 }
                 ShareLink(item: link, subject: Text(event.title)) {
                     Label("Share the link", systemImage: "square.and.arrow.up")
@@ -90,7 +90,7 @@ struct PromoteTab: View {
                         .disabled(isWriting)
                     }
                 }
-                .font(.footnote.weight(.medium))
+                .font(.inter(.footnote, .medium))
                 .buttonStyle(.borderless)
             } header: {
                 Text("For a story or group chat")

@@ -15,7 +15,7 @@ struct DiscoverView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
-                        .font(.subheadline)
+                        .font(.inter(.subheadline))
                         .foregroundStyle(.secondary)
 
                     if let notice = model.sampleNotice {
@@ -28,7 +28,7 @@ struct DiscoverView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(city.map { "Around \(Cities.short($0))" } ?? "Everywhere")
-                            .font(.title3.weight(.semibold))
+                            .font(.inter(.title3, .semibold))
                         cityPicker
                     }
 
@@ -43,9 +43,9 @@ struct DiscoverView: View {
                         ForEach(DayGroup.group(feed.events)) { group in
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text(group.label).font(.headline)
+                                    Text(group.label).font(.inter(.headline, .semibold))
                                     if let relative = group.relative {
-                                        Text(relative).font(.subheadline).foregroundStyle(.secondary)
+                                        Text(relative).font(.inter(.subheadline)).foregroundStyle(.secondary)
                                     }
                                 }
                                 ForEach(group.events) { event in
@@ -85,14 +85,14 @@ struct DiscoverView: View {
     private func campusSection(_ school: School) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("At \(school.short)").font(.title3.weight(.semibold))
+                Text("At \(school.short)").font(.inter(.title3, .semibold))
                 Text("Nights hosted by \(school.name) students. Everyone’s welcome.")
-                    .font(.footnote)
+                    .font(.inter(.footnote))
                     .foregroundStyle(.secondary)
             }
             if feed.campus.isEmpty {
                 Text("Nothing at \(school.short) yet — host the first one. Your events are tagged with your school automatically.")
-                    .font(.subheadline)
+                    .font(.inter(.subheadline))
                     .foregroundStyle(.secondary)
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,7 +119,7 @@ struct DiscoverView: View {
                         Session.city = option ?? ""
                     } label: {
                         Text(option.map(Cities.short) ?? "Everywhere")
-                            .font(.subheadline.weight(.medium))
+                            .font(.inter(.subheadline, .medium))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
                             .foregroundStyle(selected ? Color(uiColor: .systemBackground) : .primary)

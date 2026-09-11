@@ -38,7 +38,7 @@ struct RegisterSheet: View {
                                 VStack(alignment: .leading) {
                                     Text(event.title).font(.event(17))
                                     Text(EventDates.summary(for: event))
-                                        .font(.caption).foregroundStyle(.secondary)
+                                        .font(.inter(.caption)).foregroundStyle(.secondary)
                                 }
                             }
                         }

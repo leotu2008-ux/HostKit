@@ -69,14 +69,14 @@ struct CreateEventView: View {
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: "mappin.circle.fill").foregroundStyle(.tint)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(venue.name).font(.body.weight(.medium))
+                                Text(venue.name).font(.inter(.body, .medium))
                                 if let address = venue.address {
-                                    Text(address).font(.footnote).foregroundStyle(.secondary)
+                                    Text(address).font(.inter(.footnote)).foregroundStyle(.secondary)
                                 }
                             }
                             Spacer()
                             Button("Change") { isPickingVenue = true }
-                                .font(.footnote.weight(.semibold))
+                                .font(.inter(.footnote, .semibold))
                         }
                         Button("Remove venue", role: .destructive) {
                             self.venue = nil
@@ -104,7 +104,7 @@ struct CreateEventView: View {
                         .lineLimit(4...10)
                     if let reason = DescriptionWriter.unavailableReason {
                         Label(reason, systemImage: "apple.intelligence")
-                            .font(.footnote)
+                            .font(.inter(.footnote))
                             .foregroundStyle(.secondary)
                     } else {
                         Button {

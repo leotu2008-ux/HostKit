@@ -1,9 +1,9 @@
 import SwiftUI
 
 extension Font {
-    /// Event titles are the one serif moment, as on the website.
+    /// Event titles: Inter, a touch heavier than body text (`.font-event` on the website).
     static func event(_ size: CGFloat) -> Font {
-        .system(size: size, weight: .semibold, design: .serif)
+        .inter(size: size, .semibold)
     }
 }
 
@@ -26,13 +26,13 @@ struct DateTile: View {
     var body: some View {
         VStack(spacing: 0) {
             Text(date.map(EventDates.monthAbbreviation) ?? "TBA")
-                .font(.system(size: 9, weight: .bold))
+                .font(.inter(size: 9, .bold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 2)
                 .background(.quaternary.opacity(0.6))
             Text(date.map(EventDates.dayNumber) ?? "–")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.inter(size: 17, .semibold))
                 .frame(maxHeight: .infinity)
         }
         .frame(width: 44, height: 44)
@@ -49,7 +49,7 @@ struct IconTile: View {
 
     var body: some View {
         Image(systemName: systemName)
-            .font(.system(size: 17, weight: .medium))
+            .font(.inter(size: 17, .medium))
             .foregroundStyle(.secondary)
             .frame(width: 44, height: 44)
             .background(.background, in: .rect(cornerRadius: 10))
@@ -67,9 +67,9 @@ struct InfoRow<Tile: View>: View {
         HStack(spacing: 14) {
             tile
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.body.weight(.medium))
+                Text(title).font(.inter(.body, .medium))
                 if let detail {
-                    Text(detail).font(.subheadline).foregroundStyle(.secondary)
+                    Text(detail).font(.inter(.subheadline)).foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 0)
@@ -84,7 +84,7 @@ struct StatusPill: View {
 
     var body: some View {
         Text(text)
-            .font(.caption.weight(.medium))
+            .font(.inter(.caption, .medium))
             .foregroundStyle(tint)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -102,7 +102,7 @@ struct HostAvatar: View {
 
     var body: some View {
         Text(initials.isEmpty ? "?" : initials)
-            .font(.system(size: size * 0.38, weight: .semibold))
+            .font(.inter(size: size * 0.38, .semibold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(
@@ -153,7 +153,7 @@ struct NoticeBanner: View {
 
     var body: some View {
         Label(text, systemImage: "wifi.exclamationmark")
-            .font(.footnote)
+            .font(.inter(.footnote))
             .foregroundStyle(.secondary)
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

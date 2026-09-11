@@ -31,13 +31,13 @@ struct VenuePickerSheet: View {
                         dismiss()
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(venue.name).font(.body.weight(.medium)).foregroundStyle(.primary)
+                            Text(venue.name).font(.inter(.body, .medium)).foregroundStyle(.primary)
                             if let address = venue.address {
-                                Text(address).font(.footnote).foregroundStyle(.secondary)
+                                Text(address).font(.inter(.footnote)).foregroundStyle(.secondary)
                             }
                             if venue.phone != nil || venue.website != nil {
                                 Text([venue.phone, venue.website].compactMap { $0 }.joined(separator: " · "))
-                                    .font(.caption).foregroundStyle(.tertiary).lineLimit(1)
+                                    .font(.inter(.caption)).foregroundStyle(.tertiary).lineLimit(1)
                             }
                         }
                         .padding(.vertical, 2)

@@ -40,7 +40,7 @@ struct ManageEventView: View {
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.footnote)
+                    .font(.inter(.footnote))
                     .foregroundStyle(.red)
                     .padding(.horizontal)
             }
@@ -92,7 +92,7 @@ struct ManageEventView: View {
                 }
                 Text(event.title).font(.event(22)).lineLimit(2)
                 Text(EventDates.summary(for: event))
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.inter(.subheadline)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
             if !event.published {
@@ -185,8 +185,8 @@ private struct OverviewTab: View {
 
     private func stat(_ label: String, _ value: Int) -> some View {
         VStack(spacing: 2) {
-            Text(value, format: .number).font(.title2.weight(.semibold)).monospacedDigit()
-            Text(label).font(.caption).foregroundStyle(.secondary)
+            Text(value, format: .number).font(.inter(.title2, .semibold)).monospacedDigit()
+            Text(label).font(.inter(.caption)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -199,11 +199,11 @@ private struct OverviewTab: View {
         return HStack(spacing: 12) {
             HostAvatar(name: guest.name, size: 34)
             VStack(alignment: .leading, spacing: 2) {
-                Text(guest.name).font(.body.weight(.medium))
+                Text(guest.name).font(.inter(.body, .medium))
                 Text(isIn
                     ? "In at \(EventDates.localTime(guest.checkedInAt!))"
                     : [guest.status.label, guest.email].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption)
+                    .font(.inter(.caption))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }

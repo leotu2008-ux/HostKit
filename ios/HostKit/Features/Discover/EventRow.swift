@@ -9,7 +9,7 @@ struct EventRow: View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(EventDates.summary(for: event))
-                    .font(.footnote)
+                    .font(.inter(.footnote))
                     .foregroundStyle(.secondary)
                 Text(event.title)
                     .font(.event(19))
@@ -18,7 +18,7 @@ struct EventRow: View {
                     .multilineTextAlignment(.leading)
                 Text([event.hostName.map { "By \($0)" }, Cities.short(event.city)]
                     .compactMap { $0 }.joined(separator: " · "))
-                    .font(.footnote)
+                    .font(.inter(.footnote))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 HStack(spacing: 6) {
