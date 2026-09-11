@@ -24,7 +24,7 @@ end-to-end rather than a pile of separate tools.
 
 ## Running it
 
-Requires Node 20.9+ and PostgreSQL 16.
+Requires Node 20.19+ and PostgreSQL 16.
 
 ```bash
 npm install
@@ -54,8 +54,39 @@ confirmation step.
 | `npm run test:e2e` | End-to-end spine test (Playwright) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm run db:migrate` / `db:seed` / `db:reset` | Database |
+| `npm run db:migrate` / `db:seed` / `db:reset` | Database. Seed is a no-op if the catalog already has rows. |
 | `npm run db:studio` | Prisma Studio |
+| `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
+
+## Deploying to Vercel
+
+Vercel is already the right host (Next.js + serverless). The GitHub integration
+will fail the build until the project has a hosted Postgres and the Auth.js
+secret — the app is not a static site.
+
+Use **one** Vercel project for this repo. Extra projects on the same GitHub
+repo each get their own production deploy and will all fail independently.
+
+1. In that project, open **Storage** and connect **Prisma Postgres** (or Neon).
+   That injects `DATABASE_URL`.
+2. Add environment variables for **Production** and **Preview**:
+
+   | Variable | Value |
+   | --- | --- |
+   | `DATABASE_URL` | From Storage, if it was not added automatically |
+   | `AUTH_SECRET` | `openssl rand -base64 32` |
+   | `AUTH_TRUST_HOST` | `true` |
+   | `DIRECT_URL` | Optional. The provider's direct (non-pooled) URL, used by `prisma migrate` |
+
+3. Redeploy the production branch.
+
+`vercel-build` then generates Prisma Client, applies migrations, seeds the
+catalog if it is empty, and runs `next build`. Later deploys skip the seed so
+they do not duplicate listings. To rebuild the catalog from scratch, wipe the
+`Listing` rows (or the database) and redeploy, or run `npm run db:reset`
+against that `DATABASE_URL` locally.
+
+Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 
 ## How it's put together
 

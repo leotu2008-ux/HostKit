@@ -3,7 +3,8 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 // Next's dev server re-evaluates modules on every hot reload. Without this
 // cache each reload would open a fresh connection pool until Postgres refuses
-// new connections.
+// new connections. The same cache keeps a warm Vercel isolate from opening
+// a new pool on every request.
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
@@ -18,8 +19,21 @@ function createClient() {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
 
-export const db = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+function getClient() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createClient();
+  }
+  return globalForPrisma.prisma;
 }
+
+// Lazy so `next build` can import this module (and the auth pages that pull
+// it in) without a live DATABASE_URL. The error still fires on first query.
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, receiver);
+    return typeof value === "function"
+      ? (value as (...args: unknown[]) => unknown).bind(client)
+      : value;
+  },
+});
