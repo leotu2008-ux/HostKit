@@ -10,6 +10,7 @@ const TABS = [
   { href: "/budget", label: "Budget" },
   { href: "/discover", label: "Discover" },
   { href: "/shortlist", label: "Shortlist" },
+  { href: "/guests", label: "Guests" },
 ];
 
 export function EventNav({ eventId }: { eventId: string }) {

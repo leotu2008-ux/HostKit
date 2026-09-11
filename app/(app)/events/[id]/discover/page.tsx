@@ -28,7 +28,7 @@ export default async function DiscoverPage({
     }),
   );
   const [
-    { scored, totalInCity, savedIds },
+    { scored, totalInCity, savedIds, scorable },
     neighborhoods,
     amenities,
     budgetCategories,
@@ -65,7 +65,8 @@ export default async function DiscoverPage({
       <div>
         <p className="mb-5 text-sm text-ink-soft">
           {scored.length} of {totalInCity} in {event.city}, priced for{" "}
-          {event.guestCount} guests over {event.durationHours} hours.
+          {scorable.guestCount} guests over {event.durationHours} hours
+          {scorable.headSource === "rsvp" ? " (from your RSVPs)" : ""}.
         </p>
 
         {scored.length === 0 ? (

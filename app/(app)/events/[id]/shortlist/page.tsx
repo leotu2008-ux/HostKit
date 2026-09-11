@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { scoreListing } from "@/lib/scoring";
-import { daysUntil } from "@/lib/plan";
+import { planningContext } from "@/lib/event-context";
 import { formatCents } from "@/lib/money";
 import { CATEGORY_LABEL, INQUIRY_STATUS_LABEL } from "@/lib/catalog";
 import type { InquiryStatus, ListingCategory } from "@/generated/prisma/enums";
@@ -32,7 +32,7 @@ export default async function ShortlistPage({
   const { id } = await params;
   const { event } = await requireEvent(id);
 
-  const [saved, inquiries, budgetCategories] = await Promise.all([
+  const [saved, inquiries, budgetCategories, scorable] = await Promise.all([
     db.savedListing.findMany({
       where: { eventId: event.id },
       include: { listing: true },
@@ -40,17 +40,13 @@ export default async function ShortlistPage({
     }),
     db.inquiry.findMany({ where: { eventId: event.id } }),
     db.budgetCategory.findMany({ where: { eventId: event.id } }),
+    planningContext(event),
   ]);
 
   const allocation = new Map(
     budgetCategories.map((c) => [c.category, c.allocatedCents]),
   );
   const inquiryByListing = new Map(inquiries.map((i) => [i.listingId, i]));
-  const scorable = {
-    guestCount: event.guestCount,
-    durationHours: event.durationHours,
-    daysUntil: daysUntil(event.date),
-  };
 
   // Grouped by category, because the decision a host is actually making is
   // "which of these three venues", never "which of these 14 saved things".

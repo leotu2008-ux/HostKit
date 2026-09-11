@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { scoreListing, type ListingFit } from "@/lib/scoring";
-import { daysUntil } from "@/lib/plan";
+import { planningContext } from "@/lib/event-context";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { CATEGORY_LABEL } from "@/lib/catalog";
 import { ListingImage } from "@/components/listing-image";
@@ -80,11 +80,7 @@ export default async function ListingPage({
     });
     fit = scoreListing(
       listing,
-      {
-        guestCount: event.guestCount,
-        durationHours: event.durationHours,
-        daysUntil: daysUntil(event.date),
-      },
+      await planningContext(event),
       allocation?.allocatedCents ?? null,
     );
   }

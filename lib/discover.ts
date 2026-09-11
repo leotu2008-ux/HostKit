@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { isViable, scoreListing, type ListingFit } from "@/lib/scoring";
-import { daysUntil } from "@/lib/plan";
 import { bookingPosition } from "@/lib/templates";
+import { planningContext } from "@/lib/event-context";
 import type { DiscoverFilters } from "@/lib/discover-options";
 
 export * from "@/lib/discover-options";
@@ -31,7 +31,7 @@ export async function loadDiscovery(
   },
   filters: DiscoverFilters,
 ) {
-  const [listings, budgetCategories, saved] = await Promise.all([
+  const [listings, budgetCategories, saved, scorable] = await Promise.all([
     db.listing.findMany({
       where: {
         city: event.city,
@@ -47,18 +47,13 @@ export async function loadDiscovery(
       where: { eventId: event.id },
       select: { listingId: true },
     }),
+    planningContext(event),
   ]);
   const savedIds = new Set(saved.map((s) => s.listingId));
 
   const allocationByCategory = new Map(
     budgetCategories.map((c) => [c.category, c.allocatedCents]),
   );
-  const scorable = {
-    guestCount: event.guestCount,
-    durationHours: event.durationHours,
-    daysUntil: daysUntil(event.date),
-  };
-
   let scored: ScoredListing[] = listings.map((listing) => ({
     listing,
     fit: scoreListing(
@@ -97,7 +92,7 @@ export async function loadDiscovery(
     }
   });
 
-  return { scored, totalInCity: listings.length, savedIds };
+  return { scored, totalInCity: listings.length, savedIds, scorable };
 }
 
 /** Distinct neighborhoods available in a city, for the filter rail. */
