@@ -26,7 +26,8 @@ model User {
   bio          String?
   createdAt    DateTime @default(now())
 
-  events Event[]
+  events        Event[]
+  registrations Guest[]
 }
 
 /// Who can see a live night. Drafts are unpublished regardless of this.
@@ -51,6 +52,14 @@ enum CollaboratorStatus {
   PENDING
   CONFIRMED
   DECLINED
+}
+
+/// Where a collaborator came from: typed in by the host, picked from Apple
+/// Maps on Create, or a booked catalog listing.
+enum CollaboratorSource {
+  MANUAL
+  APPLE_MAPS
+  CATALOG
 }
 
 // ---------------------------------------------------------------------------
@@ -120,6 +129,7 @@ model Event {
   guests           Guest[]
   runSheetItems    RunSheetItem[]
   collaborators    EventCollaborator[]
+  blasts           Blast[]
 
   @@index([ownerId])
   @@index([published, visibility, date])
@@ -128,18 +138,44 @@ model Event {
 
 /// People and places the host is lining up, separate from catalog scouting.
 model EventCollaborator {
-  id        String              @id @default(cuid())
-  eventId   String
-  kind      CollaboratorKind
-  name      String
-  email     String?
-  detail    String?
-  status    CollaboratorStatus  @default(PENDING)
-  createdAt DateTime            @default(now())
+  id         String              @id @default(cuid())
+  eventId    String
+  kind       CollaboratorKind
+  name       String
+  email      String?
+  phone      String?
+  website    String?
+  detail     String?
+  status     CollaboratorStatus  @default(PENDING)
+  source     CollaboratorSource  @default(MANUAL)
+  /// The provider's id (an Apple Maps place id, or a catalog listing id).
+  externalId String?
+  lat        Float?
+  lng        Float?
+  createdAt  DateTime            @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId, kind])
+}
+
+/// One message from the host to a segment of the guest list. Recorded
+/// whether it went out through the email provider or was copied by hand.
+model Blast {
+  id             String   @id @default(cuid())
+  eventId        String
+  /// "going" | "pending" | "everyone" — see lib/blasts.ts.
+  segment        String
+  subject        String
+  body           String
+  recipientCount Int
+  /// "resend" when the provider sent it; "manual" when the host copied it.
+  provider       String
+  sentAt         DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, sentAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -351,6 +387,9 @@ enum RsvpStatus {
 model Guest {
   id         String     @id @default(cuid())
   eventId    String
+  /// Set when this row is a registration by an account (the public Register
+  /// button). Null for names the host added to the list themselves.
+  userId     String?
   name       String
   email      String?
   rsvpStatus RsvpStatus @default(INVITED)
@@ -364,8 +403,10 @@ model Guest {
   createdAt  DateTime   @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([eventId])
+  @@index([userId])
 }
 
 // ---------------------------------------------------------------------------

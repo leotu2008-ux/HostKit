@@ -7,6 +7,18 @@ extension Font {
     }
 }
 
+/// The HostKit mark, sized for a navigation bar's leading slot.
+struct LogoMark: View {
+    var body: some View {
+        Image("Logo")
+            .resizable()
+            .frame(width: 28, height: 28)
+            .clipShape(.rect(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+            .accessibilityLabel("HostKit")
+    }
+}
+
 /// A little calendar leaf: month on top, day below.
 struct DateTile: View {
     let date: Date?

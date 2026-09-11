@@ -67,6 +67,7 @@ struct DiscoverView: View {
                 EventDetailView(event: event)
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create event", systemImage: "plus") { isCreating = true }
                 }

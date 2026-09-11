@@ -26,7 +26,11 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     /// anyone can attend.
     var school: School?
     let isOwner: Bool
+    /// True when the signed-in account is registered as attending.
+    var registered: Bool?
     let webPath: String
+
+    var isRegistered: Bool { registered ?? false }
 
     var endsAt: Date? {
         startsAt.map { $0.addingTimeInterval(TimeInterval(durationHours * 3600)) }

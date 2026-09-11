@@ -100,7 +100,7 @@ struct EventDetailView: View {
                     Text(event.ticketLabel).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                if didRegister {
+                if didRegister || event.isRegistered {
                     Label("You’re in", systemImage: "checkmark.circle.fill")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.green)

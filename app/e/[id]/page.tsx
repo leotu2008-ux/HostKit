@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { canAccessEvent, getCurrentUser } from "@/lib/session";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
+import { isRegistered } from "@/lib/registration";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
@@ -80,12 +81,7 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const alreadyGoing = user?.email
-    ? await db.guest.findFirst({
-        where: { eventId: event.id, email: user.email, rsvpStatus: "ATTENDING" },
-        select: { id: true },
-      })
-    : null;
+  const alreadyGoing = await isRegistered(event.id, user?.id ?? null);
 
   const school = schoolFor(event.schoolDomain);
   const going = event._count.guests;
@@ -210,8 +206,7 @@ export default async function PublicEventPage({
                   </p>
                   <RegisterForm
                     eventId={event.id}
-                    defaultName={user?.name}
-                    defaultEmail={user?.email}
+                    viewer={user ? { name: user.name, email: user.email } : null}
                   />
                 </>
               )}

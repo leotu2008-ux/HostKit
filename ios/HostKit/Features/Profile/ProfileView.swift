@@ -81,6 +81,9 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("You")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { LogoMark() }
+            }
             .onAppear { server = model.serverURL.absoluteString }
             .task(id: model.user?.id) { await model.refreshProfile() }
             .sheet(isPresented: $isSigningIn) { SignInView() }

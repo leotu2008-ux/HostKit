@@ -7,37 +7,22 @@ import { registerGuest } from "@/lib/registration";
 
 export type RegisterState = { error?: string; ok?: boolean } | undefined;
 
-const schema = z.object({
-  eventId: z.string().min(1),
-  name: z.string().trim().min(1, "Tell us your name.").max(80),
-  email: z.string().trim().toLowerCase().email("Enter a valid email.").max(120),
-});
+const schema = z.object({ eventId: z.string().min(1) });
 
 /**
- * Public registration for a published night. Guests do not need an account —
- * same idea as the RSVP token, but the event page is the invitation. The
- * rules live in lib/registration.ts so the iOS app follows the same ones.
+ * The public Register button. Needs an account — the event registers the
+ * account's email, which is what the host's blasts go to. The rules live in
+ * lib/registration.ts so the iOS app follows the same ones.
  */
 export async function registerForEventAction(
   _prev: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
-  const parsed = schema.safeParse({
-    eventId: formData.get("eventId"),
-    name: formData.get("name"),
-    email: formData.get("email"),
-  });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = schema.safeParse({ eventId: formData.get("eventId") });
+  if (!parsed.success) return { error: "That event isn’t listed anymore." };
 
   const user = await getCurrentUser();
-  const result = await registerGuest({
-    eventId: parsed.data.eventId,
-    name: parsed.data.name,
-    email: parsed.data.email,
-    viewerId: user?.id ?? null,
-  });
+  const result = await registerGuest({ eventId: parsed.data.eventId, viewer: user });
   if (!result.ok) return { error: result.error };
 
   refresh();

@@ -131,11 +131,12 @@ final class AppModel {
         return updated
     }
 
-    func register(for event: HostEvent, name: String, email: String) async throws {
+    /// Registers the signed-in account. Callers present sign-in first.
+    func register(for event: HostEvent) async throws {
         if SampleData.events.contains(where: { $0.id == event.id }) {
             try await Task.sleep(for: .milliseconds(500))
             return
         }
-        try await api.register(eventID: event.id, name: name, email: email)
+        try await api.register(eventID: event.id)
     }
 }

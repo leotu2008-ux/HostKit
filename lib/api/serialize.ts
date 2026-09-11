@@ -88,6 +88,8 @@ export type ApiEvent = {
   /** True when this request may manage the event: the owner, or the device
    *  that drafted it and hasn't signed in yet. */
   isOwner: boolean;
+  /** True when the signed-in account is registered as attending. */
+  registered: boolean;
   webPath: string;
 };
 
@@ -95,6 +97,7 @@ export function serializeEvent(
   event: EventRow,
   going: number,
   canManage: boolean,
+  registered = false,
 ): ApiEvent {
   return {
     id: event.id,
@@ -117,6 +120,7 @@ export function serializeEvent(
     hostName: event.owner?.name ?? null,
     school: serializeSchool(event.schoolDomain),
     isOwner: canManage,
+    registered,
     webPath: `/e/${event.id}`,
   };
 }

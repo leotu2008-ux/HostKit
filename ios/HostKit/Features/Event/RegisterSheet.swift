@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// Registers the signed-in account for a night. Signed out, it shows the
+/// sign-in / create-account sheet first and continues once that's done — the
+/// host's updates go to the account's email, so there's no free-text form.
 struct RegisterSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -7,15 +10,10 @@ struct RegisterSheet: View {
     let event: HostEvent
     let onRegistered: () -> Void
 
-    @State private var name = ""
-    @State private var email = ""
+    @State private var isSigningIn = false
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var done = false
-
-    private var canSubmit: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && email.contains("@") && !isSubmitting
-    }
 
     var body: some View {
         NavigationStack {
@@ -25,7 +23,7 @@ struct RegisterSheet: View {
                         Label("You’re in", systemImage: "checkmark.seal.fill")
                             .foregroundStyle(.green)
                     } description: {
-                        Text("See you at \(event.title).")
+                        Text("See you at \(event.title). Updates from the host go to \(model.user?.email ?? "your email").")
                     } actions: {
                         Button("Done") { dismiss() }
                             .buttonStyle(.glassProminent)
@@ -44,21 +42,22 @@ struct RegisterSheet: View {
                                 }
                             }
                         }
-                        Section {
-                            TextField("Name", text: $name)
-                                .textContentType(.name)
-                            TextField("Email", text: $email)
-                                .textContentType(.emailAddress)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                        } footer: {
-                            Text("No account needed. The host sees your name and email.")
+                        if let user = model.user, model.isSignedIn {
+                            Section {
+                                LabeledContent("Registering as", value: user.name)
+                                LabeledContent("Email", value: user.email)
+                            } footer: {
+                                Text("The host sees your name and email, and sends updates there.")
+                            }
+                        } else {
+                            Section {
+                                Button("Sign in or create an account") { isSigningIn = true }
+                            } footer: {
+                                Text("Registering needs an account so the host can reach you about the night.")
+                            }
                         }
                         if let errorMessage {
-                            Section {
-                                Text(errorMessage).foregroundStyle(.red)
-                            }
+                            Section { Text(errorMessage).foregroundStyle(.red) }
                         }
                     }
                 }
@@ -72,10 +71,12 @@ struct RegisterSheet: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Register") { Task { await submit() } }
-                            .disabled(!canSubmit)
+                            .disabled(!model.isSignedIn || isSubmitting)
                     }
                 }
             }
+            .sheet(isPresented: $isSigningIn) { SignInView() }
+            .onAppear { if !model.isSignedIn { isSigningIn = true } }
         }
         .presentationDetents([.medium, .large])
     }
@@ -85,7 +86,7 @@ struct RegisterSheet: View {
         errorMessage = nil
         defer { isSubmitting = false }
         do {
-            try await model.register(for: event, name: name, email: email)
+            try await model.register(for: event)
             done = true
             onRegistered()
         } catch {

@@ -3,6 +3,7 @@ import { isCity } from "@/lib/catalog";
 import { apiUser, json } from "@/lib/api/http";
 import { goingCount, serializeEvent, serializeSchool } from "@/lib/api/serialize";
 import { upcomingOnly } from "@/lib/upcoming";
+import { registeredEventIds } from "@/lib/registration";
 
 const include = { owner: { select: { name: true } }, ...goingCount };
 const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
@@ -34,10 +35,20 @@ export async function GET(request: Request) {
       : Promise.resolve([]),
   ]);
 
-  const canManage = (ownerId: string | null) => viewer !== null && ownerId === viewer.id;
+  const registered = await registeredEventIds(
+    [...events, ...campus].map((e) => e.id),
+    viewer?.id ?? null,
+  );
+  const out = (e: (typeof events)[number]) =>
+    serializeEvent(
+      e,
+      e._count.guests,
+      viewer !== null && e.ownerId === viewer.id,
+      registered.has(e.id),
+    );
   return json({
-    events: events.map((e) => serializeEvent(e, e._count.guests, canManage(e.ownerId))),
-    campus: campus.map((e) => serializeEvent(e, e._count.guests, canManage(e.ownerId))),
+    events: events.map(out),
+    campus: campus.map(out),
     school: serializeSchool(viewer?.schoolDomain),
   });
 }

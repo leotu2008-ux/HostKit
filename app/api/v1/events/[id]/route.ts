@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { isPublicPageVisible } from "@/lib/listing";
 import { requestOwnsDraft } from "@/lib/api/drafts";
+import { isRegistered } from "@/lib/registration";
 import { apiError, apiUser, json } from "@/lib/api/http";
 import { goingCount, serializeEvent } from "@/lib/api/serialize";
 
@@ -27,5 +28,6 @@ export async function GET(
     return apiError("Not found.", 404);
   }
 
-  return json({ event: serializeEvent(event, event._count.guests, canManage) });
+  const registered = await isRegistered(event.id, viewer?.id ?? null);
+  return json({ event: serializeEvent(event, event._count.guests, canManage, registered) });
 }

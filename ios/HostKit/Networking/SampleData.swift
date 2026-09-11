@@ -37,6 +37,6 @@ nonisolated enum SampleData {
             startsAt: EventDates.wallClock(daysFromNow: days, hour: hour, minute: minute),
             durationHours: hours, capacity: capacity, going: going,
             ticketType: .free, ticketPriceCents: 0, visibility: .public, published: true,
-            hostName: host, school: nil, isOwner: false, webPath: "/e/\(id)")
+            hostName: host, school: nil, isOwner: false, registered: false, webPath: "/e/\(id)")
     }
 }

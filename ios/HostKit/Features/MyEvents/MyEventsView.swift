@@ -51,6 +51,7 @@ struct MyEventsView: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create event", systemImage: "plus") { isCreating = true }
                 }

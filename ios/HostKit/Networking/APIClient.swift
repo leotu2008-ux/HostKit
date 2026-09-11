@@ -48,9 +48,9 @@ nonisolated struct APIClient: Sendable {
         return envelope.event
     }
 
-    func register(eventID: String, name: String, email: String) async throws {
-        let body = try Self.encode(["name": name, "email": email])
-        let _: OKEnvelope = try await send("POST", "/api/v1/events/\(eventID)/register", body: body)
+    /// Registers the signed-in account. The server refuses without a token.
+    func register(eventID: String) async throws {
+        let _: OKEnvelope = try await send("POST", "/api/v1/events/\(eventID)/register", body: try Self.encode([String: String]()))
     }
 
     // MARK: Host
