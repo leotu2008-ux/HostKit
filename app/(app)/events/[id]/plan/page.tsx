@@ -1,0 +1,172 @@
+import { db } from "@/lib/db";
+import { requireEvent } from "@/lib/session";
+import { toggleTaskAction } from "@/lib/actions/tasks";
+import { daysBetween, startOfDay } from "@/lib/plan";
+import { CATEGORY_LABEL } from "@/lib/catalog";
+import { Badge, Card, SectionHeading, cx } from "@/components/ui";
+
+/** Groups the timeline into the buckets a host actually thinks in. */
+function bucketFor(dueDate: Date | null, now: Date): string {
+  if (!dueDate) return "Whenever";
+  const days = daysBetween(now, dueDate);
+  if (days < 0) return "Overdue";
+  if (days === 0) return "Today";
+  if (days <= 7) return "This week";
+  if (days <= 30) return "This month";
+  if (days <= 90) return "Next three months";
+  return "Later";
+}
+
+const BUCKET_ORDER = [
+  "Overdue",
+  "Today",
+  "This week",
+  "This month",
+  "Next three months",
+  "Later",
+  "Whenever",
+];
+
+export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
+  const { id } = await params;
+  const { event } = await requireEvent(id);
+  const now = startOfDay(new Date());
+
+  const tasks = await db.task.findMany({
+    where: { eventId: event.id },
+    orderBy: [{ status: "asc" }, { offsetDays: "desc" }],
+  });
+
+  const open = tasks.filter((t) => t.status === "TODO");
+  const done = tasks.filter((t) => t.status === "DONE");
+
+  const buckets = new Map<string, typeof tasks>();
+  for (const task of open) {
+    const key = bucketFor(task.dueDate, now);
+    buckets.set(key, [...(buckets.get(key) ?? []), task]);
+  }
+  const ordered = BUCKET_ORDER.filter((b) => buckets.has(b));
+
+  return (
+    <div className="space-y-10">
+      <section>
+        <SectionHeading
+          title="Timeline"
+          hint={
+            event.date
+              ? "Counted back from your event date. Tick things off as you go."
+              : "Add a date to the event and these will get real due dates."
+          }
+        />
+
+        {open.length === 0 ? (
+          <Card className="p-6 text-center text-ink-soft">
+            Everything is ticked off. Enjoy the party.
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {ordered.map((bucket) => (
+              <div key={bucket}>
+                <h3
+                  className={cx(
+                    "mb-3 text-sm font-semibold tracking-wide uppercase",
+                    bucket === "Overdue" ? "text-danger" : "text-ink-mute",
+                  )}
+                >
+                  {bucket}
+                </h3>
+                <Card className="divide-y divide-line">
+                  {buckets.get(bucket)!.map((task) => (
+                    <TaskRow key={task.id} task={task} eventId={event.id} />
+                  ))}
+                </Card>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {done.length > 0 ? (
+        <section>
+          <SectionHeading title={`Done (${done.length})`} />
+          <Card className="divide-y divide-line">
+            {done.map((task) => (
+              <TaskRow key={task.id} task={task} eventId={event.id} />
+            ))}
+          </Card>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function TaskRow({
+  task,
+  eventId,
+}: {
+  task: {
+    id: string;
+    title: string;
+    notes: string | null;
+    dueDate: Date | null;
+    status: string;
+    category: keyof typeof CATEGORY_LABEL | null;
+  };
+  eventId: string;
+}) {
+  const isDone = task.status === "DONE";
+  return (
+    <div className="flex items-start gap-3 p-4">
+      <form action={toggleTaskAction} className="pt-0.5">
+        <input type="hidden" name="eventId" value={eventId} />
+        <input type="hidden" name="taskId" value={task.id} />
+        <button
+          type="submit"
+          aria-label={isDone ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
+          className={cx(
+            "flex size-5 items-center justify-center rounded-md border transition-colors",
+            isDone
+              ? "border-forest bg-forest text-white"
+              : "border-line-strong hover:border-ink-mute",
+          )}
+        >
+          {isDone ? (
+            <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden="true">
+              <path
+                d="M3.5 8.5l3 3 6-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : null}
+        </button>
+      </form>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className={cx("text-ink", isDone && "text-ink-mute line-through")}>
+            {task.title}
+          </p>
+          {task.category ? (
+            <Badge>{CATEGORY_LABEL[task.category]}</Badge>
+          ) : null}
+        </div>
+        {task.notes && !isDone ? (
+          <p className="mt-1 text-sm text-ink-soft">{task.notes}</p>
+        ) : null}
+      </div>
+
+      <span className="tabular shrink-0 text-sm text-ink-mute">
+        {task.dueDate
+          ? task.dueDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : "—"}
+      </span>
+    </div>
+  );
+}
