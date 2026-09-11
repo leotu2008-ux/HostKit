@@ -102,6 +102,17 @@ final class AppModel {
         user = updated
     }
 
+    /// Unread notices, for the bell. Refreshed on Home loads and after the Inbox opens.
+    var unreadCount = 0
+
+    func refreshUnread() async {
+        guard isSignedIn else {
+            unreadCount = 0
+            return
+        }
+        if let feed = try? await api.inbox() { unreadCount = feed.unread }
+    }
+
     func setShowOnGuestLists(_ on: Bool) async throws {
         let updated = try await api.setShowOnGuestLists(on)
         Session.user = updated

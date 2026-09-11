@@ -15,6 +15,7 @@ export type MenuUser = {
 };
 
 const ROWS = [
+  { href: "/inbox", label: "Inbox", hint: "Requests, approvals, clubs you follow" },
   { href: "/profile", label: "Profile", hint: "Name, photo, bio" },
   { href: "/events", label: "My events", hint: "Upcoming nights you host" },
   { href: "/events?tab=past", label: "Past events", hint: "Everything you've hosted" },

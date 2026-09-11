@@ -1,5 +1,11 @@
 import { db } from "@/lib/db";
+import { notify } from "@/lib/notify";
 import type { RsvpStatus } from "@/generated/prisma/enums";
+
+async function eventTitle(eventId: string): Promise<string> {
+  const row = await db.event.findUnique({ where: { id: eventId }, select: { title: true } });
+  return row?.title ?? "the event";
+}
 
 /**
  * Approval requests and the waitlist. A seat frees whenever an ATTENDING
@@ -21,8 +27,22 @@ export function promotionPlan<T extends { createdAt: Date }>(waiting: T[], room:
 
 export type PromotedGuest = { id: string; userId: string | null; name: string; email: string | null };
 
-/** Fills freed seats from the waitlist. Returns who got in, for notifications. */
+/** Fills freed seats from the waitlist and tells the people who got in. */
 export async function promoteWaitlist(eventId: string): Promise<PromotedGuest[]> {
+  const promoted = await promoteWaitlistRows(eventId);
+  const userIds = promoted.map((g) => g.userId).filter((id): id is string => Boolean(id));
+  if (userIds.length > 0) {
+    await notify(userIds, {
+      kind: "waitlist_promoted",
+      title: `A spot opened at ${await eventTitle(eventId)} — you're in`,
+      body: "You were next on the waitlist. See you there.",
+      eventId,
+    });
+  }
+  return promoted;
+}
+
+async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
     const event = await tx.event.findUnique({ where: { id: eventId }, select: { guestCount: true } });
@@ -53,6 +73,27 @@ export type Decision = "going" | "waitlisted" | "declined";
  * when the guest wasn't waiting for a decision.
  */
 export async function decideRequest(
+  eventId: string,
+  guestId: string,
+  approve: boolean,
+): Promise<{ state: Decision; guest: PromotedGuest } | null> {
+  const decided = await decideRequestRow(eventId, guestId, approve);
+  if (decided?.guest.userId && decided.state !== "declined") {
+    const title = await eventTitle(eventId);
+    await notify([decided.guest.userId], {
+      kind: "registration_approved",
+      title: decided.state === "going" ? `You're in: ${title}` : `Approved for ${title} — you're on the waitlist`,
+      body:
+        decided.state === "going"
+          ? "The host confirmed your spot. See you there."
+          : "The host said yes, but it's full right now. You're in automatically when a spot opens.",
+      eventId,
+    });
+  }
+  return decided;
+}
+
+async function decideRequestRow(
   eventId: string,
   guestId: string,
   approve: boolean,

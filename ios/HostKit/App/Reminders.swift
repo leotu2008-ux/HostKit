@@ -101,7 +101,9 @@ final class ForegroundBanners: NSObject, UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        if let id = response.notification.request.content.userInfo["eventID"] as? String {
+        // Local reminders carry `eventID`; server pushes carry `eventId`.
+        let info = response.notification.request.content.userInfo
+        if let id = (info["eventID"] ?? info["eventId"]) as? String {
             await MainActor.run { Router.shared.openGuestEvent(id) }
         }
     }

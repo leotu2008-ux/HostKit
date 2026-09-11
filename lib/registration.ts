@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isPublicPageVisible } from "@/lib/listing";
+import { notify } from "@/lib/notify";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 /** Where an account stands with an event. Mirrors `RegistrationState` on iOS. */
@@ -87,11 +88,13 @@ export async function registerGuest(input: {
     where: { id: input.eventId },
     select: {
       id: true,
+      title: true,
       published: true,
       visibility: true,
       ownerId: true,
       guestCount: true,
       requiresApproval: true,
+      club: { select: { id: true, members: { select: { userId: true } } } },
     },
   });
   if (!event) return NOT_LISTED;
@@ -101,7 +104,7 @@ export async function registerGuest(input: {
 
   const email = viewer.email.trim().toLowerCase();
 
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${event.id} FOR UPDATE`;
 
     // Match by account first, then by email so a name the host typed in
@@ -157,6 +160,20 @@ export async function registerGuest(input: {
     }
     return { ok: true, state: decision as "going" | "pending" | "waitlisted", changed: true } as const;
   });
+
+  // A new request is the host's to answer — tell them and the club's admins.
+  if (result.ok && result.state === "pending" && result.changed) {
+    const hosts = [event.ownerId, ...(event.club?.members.map((m) => m.userId) ?? [])].filter(
+      (id): id is string => Boolean(id),
+    );
+    await notify(hosts, {
+      kind: "registration_request",
+      title: `${viewer.name.trim() || email} asked to join ${event.title}`,
+      body: "Approve or decline from the event's Overview.",
+      eventId: event.id,
+    });
+  }
+  return result;
 }
 
 /** Where this account stands with one event. */

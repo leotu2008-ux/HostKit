@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { eventInclude } from "@/lib/api/serialize";
+import { notify } from "@/lib/notify";
+import { formatEventWhen } from "@/lib/when";
 
 /**
  * The one place an event goes live (or back to draft), shared by the web
@@ -34,8 +36,28 @@ export async function publishEvent(input: {
   return { event, justPublished };
 }
 
-/** What a first publish sets in motion — telling a club's followers, once
- *  notifications exist. */
+/** A first publish of a club event tells the club's followers. */
 export async function afterPublish(eventId: string): Promise<void> {
-  void eventId;
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      title: true,
+      date: true,
+      durationHours: true,
+      city: true,
+      visibility: true,
+      ownerId: true,
+      club: { select: { id: true, name: true, followers: { select: { userId: true } } } },
+    },
+  });
+  if (!event?.club || event.visibility === "PRIVATE") return;
+  const followers = event.club.followers.map((f) => f.userId).filter((id) => id !== event.ownerId);
+  await notify(followers, {
+    kind: "club_published",
+    title: `${event.club.name} posted ${event.title}`,
+    body: `${formatEventWhen(event.date, event.durationHours)} · ${event.city.split(",")[0]}`,
+    eventId: event.id,
+    clubId: event.club.id,
+  });
 }

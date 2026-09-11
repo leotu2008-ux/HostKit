@@ -217,6 +217,24 @@ nonisolated struct APIClient: Sendable {
         return envelope.club
     }
 
+    // MARK: Inbox & push
+
+    func inbox() async throws -> InboxFeed {
+        try await send("GET", "/api/v1/me/notifications")
+    }
+
+    /// Marks the given notices (or all, when nil) read; returns the unread count.
+    func markRead(ids: [String]? = nil) async throws -> Int {
+        let body = try Self.encode(ReadBody(ids: ids))
+        let envelope: ReadEnvelope = try await send("POST", "/api/v1/me/notifications/read", body: body)
+        return envelope.unread
+    }
+
+    func registerPushToken(_ token: String) async throws {
+        let _: OKEnvelope = try await send(
+            "PUT", "/api/v1/me/push-token", body: try Self.encode(["token": token, "platform": "ios"]))
+    }
+
     // MARK: Phone verification
 
     func startPhone(_ phone: String) async throws -> PhoneStart {
@@ -319,6 +337,8 @@ nonisolated struct PublishBody: Encodable, Sendable {
     let requiresApproval: Bool?
 }
 nonisolated struct ClubEnvelope: Decodable, Sendable { let club: Club }
+nonisolated struct ReadBody: Encodable, Sendable { let ids: [String]? }
+nonisolated struct ReadEnvelope: Decodable, Sendable { let ok: Bool; let unread: Int }
 nonisolated struct RegisterEnvelope: Decodable, Sendable {
     let ok: Bool
     let state: RegistrationState?

@@ -206,6 +206,35 @@ nonisolated struct NewClubRequest: Encodable, Sendable {
     let city: String?
 }
 
+/// Something that happened to you. Mirrors `/api/v1/me/notifications`.
+nonisolated struct Notice: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let kind: String
+    let title: String
+    let body: String
+    let eventId: String?
+    let clubId: String?
+    var readAt: Date?
+    let createdAt: Date
+
+    var isUnread: Bool { readAt == nil }
+    var symbol: String {
+        switch kind {
+        case "club_published": "megaphone"
+        case "registration_request": "hand.raised"
+        case "registration_approved": "checkmark.seal"
+        case "waitlist_promoted": "ticket"
+        case "blast": "envelope"
+        default: "bell"
+        }
+    }
+}
+
+nonisolated struct InboxFeed: Decodable, Sendable {
+    var items: [Notice]
+    var unread: Int
+}
+
 /// A face on the event page. Mirrors `ApiAttendee` in `lib/api/serialize.ts`.
 nonisolated struct Attendee: Codable, Identifiable, Hashable, Sendable {
     let id: String

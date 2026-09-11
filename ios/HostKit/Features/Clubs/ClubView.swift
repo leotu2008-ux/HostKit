@@ -132,16 +132,25 @@ struct ClubView: View {
                 Spacer(minLength: 0)
             }
             HStack(spacing: 10) {
-                Button {
-                    Task { await toggleFollow(club) }
-                } label: {
-                    Label(club.isFollowing ? "Following" : "Follow",
-                          systemImage: club.isFollowing ? "checkmark" : "plus")
-                        .frame(maxWidth: .infinity)
+                if club.isFollowing {
+                    Button {
+                        Task { await toggleFollow(club) }
+                    } label: {
+                        Label("Following", systemImage: "checkmark").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glass)
+                    .controlSize(.large)
+                    .disabled(isBusy)
+                } else {
+                    Button {
+                        Task { await toggleFollow(club) }
+                    } label: {
+                        Label("Follow", systemImage: "plus").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .disabled(isBusy)
                 }
-                .buttonStyle(club.isFollowing ? .glass : .glassProminent)
-                .controlSize(.large)
-                .disabled(isBusy)
                 if club.canManage {
                     Button("Post an event", systemImage: "plus.circle") { router.tab = .create }
                         .buttonStyle(.glass)
