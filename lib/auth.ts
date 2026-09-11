@@ -13,6 +13,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // Credentials sign-in requires the JWT strategy; Auth.js does not support
   // database sessions for it.
   session: { strategy: "jwt" },
+  // Vercel sets the Host header safely; say so explicitly rather than
+  // depending on AUTH_TRUST_HOST being present in every environment.
+  trustHost: true,
   pages: { signIn: "/signin" },
   providers: [
     Credentials({

@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // generate does not need a live URL; migrate/seed do. Prefer a direct
+    // (non-pooled) URL when the host provides one.
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
   },
 });

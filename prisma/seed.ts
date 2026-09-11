@@ -118,14 +118,13 @@ function jitter(base: number, seed: number, spread = 0.09) {
 }
 
 async function main() {
-  console.log("Clearing existing catalog…");
-  // Events reference listings, so clear the dependent rows first. Users and
-  // their events are left alone: re-seeding the catalog should not wipe
-  // anyone's plan.
-  await db.inquiry.deleteMany();
-  await db.savedListing.deleteMany();
-  await db.budgetItem.updateMany({ data: { listingId: null } });
-  await db.listing.deleteMany();
+  const existing = await db.listing.count();
+  if (existing > 0) {
+    console.log(`Catalog already has ${existing} listings; skipping seed.`);
+    return;
+  }
+
+  console.log("Seeding catalog…");
 
   const rows: Array<Parameters<typeof db.listing.create>[0]["data"]> = [];
 
