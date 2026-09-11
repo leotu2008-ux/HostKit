@@ -44,11 +44,15 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
 
   await test.step("intake generates a budget and a timeline", async () => {
     await page.goto(`${event}/plan`);
-    // 32% of $48,000 is the wedding template's venue allocation.
-    await expect(page.getByText("$15,360")).toBeVisible();
     await expect(page.getByText("of $48,000")).toBeVisible();
     // Required categories start out unbooked.
     await expect(page.getByText("4 essential bookings outstanding")).toBeVisible();
+
+    // Per-category allocations live on the budget page. 32% of $48,000 is
+    // the wedding template's venue share. It appears twice there — the row
+    // and the "nothing booked yet" note — hence .first().
+    await page.goto(`${event}/budget`);
+    await expect(page.getByText("$15,360").first()).toBeVisible();
   });
 
   await test.step("the timeline is anchored to the event date", async () => {
@@ -62,6 +66,9 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
     await expect(
       page.getByText(/priced for 90 guests over 8 hours/),
     ).toBeVisible();
+
+    // The filter panel starts collapsed so results come first; open it.
+    await page.locator('summary:has-text("Filters")').click();
 
     // Filtering to venues narrows the results.
     await page.locator('button[aria-pressed]:has-text("Venue")').first().click();
@@ -119,7 +126,7 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
     await page.goto(`${event}/plan`);
     await expect(page.locator('p.line-through:has-text("Book the venue")')).toBeVisible();
 
-    await page.goto(event);
+    await page.goto(`${event}/plan`);
     await expect(page.getByText("3 essential bookings outstanding")).toBeVisible();
   });
 

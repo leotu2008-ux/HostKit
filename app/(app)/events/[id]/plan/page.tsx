@@ -70,7 +70,7 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
 
   return (
     <div className="space-y-10">
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className="grid gap-3">
         <Card className="p-4">
           <p className="text-sm text-ink-soft">Budget committed</p>
           <p className="font-display tabular mt-1 text-2xl text-ink">
