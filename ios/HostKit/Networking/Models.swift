@@ -391,6 +391,8 @@ nonisolated struct BlastSegment: Codable, Identifiable, Hashable, Sendable {
     let key: String
     let label: String
     let count: Int
+    /// Guests in the segment with a verified phone.
+    var phoneCount: Int?
     var id: String { key }
 }
 
@@ -400,6 +402,7 @@ nonisolated struct Blast: Codable, Identifiable, Hashable, Sendable {
     let subject: String
     let body: String
     let recipientCount: Int
+    var smsCount: Int?
     let provider: String
     let sentAt: Date
 }
@@ -411,11 +414,14 @@ nonisolated struct BlastRecipient: Codable, Hashable, Sendable {
 
 nonisolated struct BlastsFeed: Decodable, Sendable {
     var canSend: Bool
+    /// Twilio is configured, so "Also text" is on offer.
+    var canText: Bool?
     var segments: [BlastSegment]
     var blasts: [Blast]
     /// Present on the response to a send.
     var provider: String?
     var recipients: [BlastRecipient]?
+    var smsCount: Int?
 }
 
 /// A venue picked from MapKit on Create. Mirrors `VenuePick` on the server.

@@ -15,6 +15,7 @@ struct BlastsTab: View {
     @State private var result: BlastsFeed?
     @State private var errorMessage: String?
     @State private var copied = false
+    @State private var alsoText = false
 
     init(event: HostEvent) {
         self.event = event
@@ -22,6 +23,7 @@ struct BlastsTab: View {
     }
 
     private var count: Int { feed.segments.first { $0.key == segment }?.count ?? 0 }
+    private var phoneCount: Int { feed.segments.first { $0.key == segment }?.phoneCount ?? 0 }
 
     var body: some View {
         List {
@@ -29,7 +31,11 @@ struct BlastsTab: View {
                 Section {
                     if result.provider == "resend" {
                         Label("Sent to \(recipients.count)", systemImage: "checkmark.seal.fill").foregroundStyle(.green)
-                    } else {
+                    }
+                    if let texted = result.smsCount, texted > 0 {
+                        Label("Texted \(texted)", systemImage: "message.fill").foregroundStyle(.green)
+                    }
+                    if result.provider != "resend" {
                         Label("Recorded for \(recipients.count) — email isn't set up on this server", systemImage: "info.circle")
                             .font(.inter(.subheadline))
                         Button(copied ? "Copied addresses" : "Copy \(recipients.count) addresses", systemImage: "doc.on.doc") {
@@ -56,6 +62,10 @@ struct BlastsTab: View {
                     TextField("Subject", text: $subject)
                     TextField("Message", text: $message, axis: .vertical)
                         .lineLimit(5...12)
+                    if feed.canText ?? false {
+                        Toggle("Also text \(phoneCount) with a verified phone", isOn: $alsoText)
+                            .disabled(phoneCount == 0)
+                    }
                 } header: {
                     Text("Send an update")
                 } footer: {
@@ -91,7 +101,12 @@ struct BlastsTab: View {
                             Spacer()
                             StatusPill(text: blast.provider == "resend" ? "Sent" : "Copied", tint: blast.provider == "resend" ? .green : .secondary)
                         }
-                        Text("\(feed.segments.first { $0.key == blast.segment }?.label ?? blast.segment) · \(blast.recipientCount) · \(blast.sentAt.formatted(date: .abbreviated, time: .shortened))")
+                        Text([
+                            feed.segments.first { $0.key == blast.segment }?.label ?? blast.segment,
+                            "\(blast.recipientCount) emailed",
+                            (blast.smsCount ?? 0) > 0 ? "\(blast.smsCount!) texted" : nil,
+                            blast.sentAt.formatted(date: .abbreviated, time: .shortened),
+                        ].compactMap { $0 }.joined(separator: " · "))
                             .font(.inter(.caption)).foregroundStyle(.secondary)
                     }
                 }
@@ -116,7 +131,8 @@ struct BlastsTab: View {
         isSending = true
         defer { isSending = false }
         do {
-            let outcome = try await model.api.sendBlast(eventID: event.id, segment: segment, subject: subject, body: message)
+            let outcome = try await model.api.sendBlast(
+                eventID: event.id, segment: segment, subject: subject, body: message, sms: alsoText)
             feed = outcome
             result = outcome
             errorMessage = nil

@@ -143,10 +143,10 @@ nonisolated struct APIClient: Sendable {
         try await send("GET", "/api/v1/events/\(eventID)/blasts")
     }
 
-    func sendBlast(eventID: String, segment: String, subject: String, body: String) async throws -> BlastsFeed {
+    func sendBlast(eventID: String, segment: String, subject: String, body: String, sms: Bool = false) async throws -> BlastsFeed {
         try await send(
             "POST", "/api/v1/events/\(eventID)/blasts",
-            body: try Self.encode(["segment": segment, "subject": subject, "body": body]))
+            body: try Self.encode(BlastBody(segment: segment, subject: subject, body: body, sms: sms)))
     }
 
     func guests(eventID: String) async throws -> GuestsEnvelope {
@@ -337,6 +337,12 @@ nonisolated struct PublishBody: Encodable, Sendable {
     let requiresApproval: Bool?
 }
 nonisolated struct ClubEnvelope: Decodable, Sendable { let club: Club }
+nonisolated struct BlastBody: Encodable, Sendable {
+    let segment: String
+    let subject: String
+    let body: String
+    let sms: Bool
+}
 nonisolated struct ReadBody: Encodable, Sendable { let ids: [String]? }
 nonisolated struct ReadEnvelope: Decodable, Sendable { let ok: Bool; let unread: Int }
 nonisolated struct RegisterEnvelope: Decodable, Sendable {

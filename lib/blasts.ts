@@ -20,6 +20,43 @@ export function isSegment(value: unknown): value is Segment {
 }
 
 export type Recipient = { name: string; email: string };
+export type PhoneRecipient = { name: string; phone: string };
+
+/** Cap on texts per blast — Twilio sends one at a time. */
+export const SMS_CAP = 200;
+
+/** The segment's guests whose account has a verified phone, de-duplicated. */
+export function phoneRecipientsFor(
+  segment: Segment,
+  guests: Array<{
+    name: string;
+    rsvpStatus: RsvpStatus;
+    user?: { phone: string | null; phoneVerifiedAt: Date | null } | null;
+  }>,
+): PhoneRecipient[] {
+  const seen = new Set<string>();
+  const out: PhoneRecipient[] = [];
+  for (const guest of guests) {
+    const phone = guest.user?.phone && guest.user.phoneVerifiedAt ? guest.user.phone : null;
+    if (!phone || !inSegment(segment, guest.rsvpStatus) || seen.has(phone)) continue;
+    seen.add(phone);
+    out.push({ name: guest.name, phone });
+    if (out.length >= SMS_CAP) break;
+  }
+  return out;
+}
+
+export function inSegment(segment: Segment, status: RsvpStatus): boolean {
+  // "Everyone" is everyone who might come — not the declined, and not the
+  // waitlist, who'd be confused by "doors at 7". The waitlist has its own.
+  return segment === "everyone"
+    ? status !== "DECLINED" && status !== "WAITLISTED"
+    : segment === "going"
+      ? status === "ATTENDING"
+      : segment === "waitlist"
+        ? status === "WAITLISTED"
+        : status === "INVITED";
+}
 
 export function recipientsFor(
   segment: Segment,
@@ -29,17 +66,7 @@ export function recipientsFor(
   const out: Recipient[] = [];
   for (const guest of guests) {
     if (!guest.email) continue;
-    // "Everyone" is everyone who might come — not the declined, and not the
-    // waitlist, who'd be confused by "doors at 7". The waitlist has its own.
-    const wanted =
-      segment === "everyone"
-        ? guest.rsvpStatus !== "DECLINED" && guest.rsvpStatus !== "WAITLISTED"
-        : segment === "going"
-          ? guest.rsvpStatus === "ATTENDING"
-          : segment === "waitlist"
-            ? guest.rsvpStatus === "WAITLISTED"
-            : guest.rsvpStatus === "INVITED";
-    if (!wanted) continue;
+    if (!inSegment(segment, guest.rsvpStatus)) continue;
     const email = guest.email.toLowerCase();
     if (seen.has(email)) continue;
     seen.add(email);

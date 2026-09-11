@@ -9,7 +9,7 @@ import { sendBlast } from "@/lib/blast-send";
 export type BlastFormState =
   | {
       error?: string;
-      sent?: { provider: "resend" | "manual"; count: number; emails: string[] };
+      sent?: { provider: "resend" | "manual"; count: number; emails: string[]; smsCount: number };
     }
   | undefined;
 
@@ -18,6 +18,7 @@ const schema = z.object({
   segment: z.enum(SEGMENT_KEYS as [Segment, ...Segment[]]),
   subject: z.string().trim().min(1, "Give it a subject.").max(150),
   body: z.string().trim().min(1, "Write the message.").max(5000),
+  sms: z.string().optional(),
 });
 
 export async function sendBlastAction(
@@ -29,6 +30,7 @@ export async function sendBlastAction(
     segment: formData.get("segment"),
     subject: formData.get("subject"),
     body: formData.get("body"),
+    sms: formData.get("sms") ?? undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the message." };
 
@@ -42,6 +44,7 @@ export async function sendBlastAction(
       segment: parsed.data.segment,
       subject: parsed.data.subject,
       body: parsed.data.body,
+      sms: parsed.data.sms === "on",
     });
     refresh();
     return {
@@ -49,6 +52,7 @@ export async function sendBlastAction(
         provider: outcome.provider,
         count: outcome.recipients.length,
         emails: outcome.recipients.map((r) => r.email),
+        smsCount: outcome.smsCount,
       },
     };
   } catch (error) {
