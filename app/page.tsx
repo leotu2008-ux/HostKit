@@ -24,6 +24,7 @@ export default async function DiscoverPage() {
     db.event.findMany({
       where: {
         published: true,
+        visibility: "PUBLIC",
         ...(user ? { ownerId: { not: user.id } } : {}),
       },
       orderBy: [{ date: "asc" }, { createdAt: "desc" }],
@@ -87,7 +88,7 @@ export default async function DiscoverPage() {
         </section>
       ) : (
         <div className="mt-6 flex gap-2">
-          <ButtonLink href="/signup" size="lg" className="flex-1">
+          <ButtonLink href="/events/new" size="lg" className="flex-1">
             Plan an event
           </ButtonLink>
           <ButtonLink href="/signin" variant="secondary" size="lg" className="flex-1">
@@ -109,7 +110,7 @@ export default async function DiscoverPage() {
               user ? (
                 <ButtonLink href="/events/new">Create event</ButtonLink>
               ) : (
-                <ButtonLink href="/signup">Plan an event</ButtonLink>
+                <ButtonLink href="/events/new">Create a night</ButtonLink>
               )
             }
           />
@@ -126,7 +127,7 @@ export default async function DiscoverPage() {
                     date: event.date,
                     durationHours: event.durationHours,
                     going: event._count.guests,
-                    hostName: event.owner.name,
+                    hostName: event.owner?.name,
                   }}
                 />
               </li>

@@ -1,10 +1,10 @@
 import { EventIntakeForm } from "@/components/event-intake-form";
-import { requireUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 
 export const metadata = { title: "Create event" };
 
 export default async function NewEventPage() {
-  await requireUser();
+  const user = await getCurrentUser();
 
   return (
     <div className="px-4 py-6">
@@ -12,13 +12,13 @@ export default async function NewEventPage() {
         Create
       </p>
       <h1 className="font-display mt-1 text-[28px] leading-tight text-ink">
-        Plan a night
+        A night, on paper
       </h1>
       <p className="mt-2 mb-8 text-[15px] leading-relaxed text-ink-soft">
-        Six questions plus a publish toggle. HostKit builds the timeline and
-        budget; Discover is optional until you list it.
+        Name, time, place, tickets. You can do this before you have an
+        account — publishing is the step that needs a sign-in.
       </p>
-      <EventIntakeForm />
+      <EventIntakeForm signedIn={Boolean(user)} />
     </div>
   );
 }

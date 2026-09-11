@@ -4,30 +4,55 @@ import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireUser, requireEvent } from "@/lib/session";
-import { generatePlan, startOfDay } from "@/lib/plan";
+import { getCurrentUser, requireEvent, requireUser } from "@/lib/session";
+import { generatePlan } from "@/lib/plan";
 import { parseCents } from "@/lib/money";
 import { ALL_EVENT_TYPES, CITIES, EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
+import { safeNextPath } from "@/lib/listing";
 
 export type EventFormState = { error?: string } | undefined;
 
+const VISIBILITY = ["PUBLIC", "UNLISTED", "PRIVATE"] as const;
+const TICKETS = ["FREE", "PAID"] as const;
+
 const schema = z.object({
   type: z.enum(ALL_EVENT_TYPES as [string, ...string[]]),
-  title: z.string().trim().max(120).optional(),
+  title: z.string().trim().min(1, "Name this night.").max(120),
   date: z.string().trim(),
-  guestCount: z.coerce.number().int().min(1, "At least one guest.").max(100_000),
+  time: z.string().trim(),
+  guestCount: z.coerce.number().int().min(1, "At least one person.").max(100_000),
   durationHours: z.coerce.number().int().min(1).max(24),
   city: z.enum(CITIES as unknown as [string, ...string[]]),
-  budget: z.string().trim(),
-  vibe: z.string().trim().max(280).optional(),
-  published: z.string().optional(),
+  address: z.string().trim().max(200).optional(),
+  lat: z.string().optional(),
+  lng: z.string().optional(),
+  budget: z.string().trim().optional(),
+  description: z.string().trim().max(2000).optional(),
+  ticketType: z.enum(TICKETS),
+  ticketPrice: z.string().trim().optional(),
+  visibility: z.enum(VISIBILITY),
 });
+
+function parseCoord(raw: string | undefined): number | null {
+  if (!raw || raw.trim() === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseStart(date: string, time: string): Date | null {
+  if (!date) return null;
+  const clock = time && /^\d{2}:\d{2}$/.test(time) ? time : "12:00";
+  const parsedDate = new Date(`${date}T${clock}:00`);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+  return parsedDate;
+}
 
 export async function createEventAction(
   _prev: EventFormState,
   formData: FormData,
 ): Promise<EventFormState> {
-  const user = await requireUser();
+  const user = await getCurrentUser();
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -35,45 +60,56 @@ export async function createEventAction(
   }
   const input = parsed.data;
 
-  const budgetTotalCents = parseCents(input.budget);
-  if (budgetTotalCents === null || budgetTotalCents === 0) {
-    return { error: "Enter a budget, even a rough one — the plan is built from it." };
+  let budgetTotalCents = 0;
+  if (input.budget) {
+    const cents = parseCents(input.budget);
+    if (cents === null) return { error: "That planning budget doesn't look right." };
+    budgetTotalCents = cents;
   }
 
-  // An empty date input is a legitimate answer: plenty of events start before
-  // the date is settled, and generatePlan handles a null date.
-  let date: Date | null = null;
-  if (input.date) {
-    const parsedDate = new Date(`${input.date}T12:00:00`);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return { error: "That date doesn't look right." };
+  let ticketPriceCents = 0;
+  if (input.ticketType === "PAID") {
+    const cents = parseCents(input.ticketPrice ?? "");
+    if (cents === null || cents === 0) {
+      return { error: "Add a ticket price, or switch ticketing to Free." };
     }
-    date = startOfDay(parsedDate);
+    ticketPriceCents = cents;
+  }
+
+  const date = parseStart(input.date, input.time);
+  if (input.date && !date) {
+    return { error: "That date and time don't look right." };
   }
 
   const type = input.type as (typeof ALL_EVENT_TYPES)[number];
-  const title =
-    input.title && input.title.length > 0
-      ? input.title
-      : `${EVENT_TYPE_LABEL[type]} in ${input.city.split(",")[0]}`;
+  const lat = parseCoord(input.lat);
+  const lng = parseCoord(input.lng);
+  const address = input.address || null;
+  const claimToken = user ? null : newClaimToken();
 
   const plan = generatePlan({ type, date, budgetTotalCents });
 
-  // One transaction: an event that exists without its plan would show the
-  // host an empty dashboard with no way to regenerate it.
   const event = await db.$transaction(async (tx) => {
     const created = await tx.event.create({
       data: {
-        ownerId: user.id,
-        title,
+        ownerId: user?.id ?? null,
+        claimToken,
+        title: input.title,
         type,
         date,
         durationHours: input.durationHours,
         guestCount: input.guestCount,
         city: input.city,
+        address,
+        lat,
+        lng,
         budgetTotalCents,
-        vibe: input.vibe || null,
-        published: input.published === "on",
+        description: input.description || null,
+        vibe: input.description || null,
+        ticketType: input.ticketType,
+        ticketPriceCents,
+        visibility: input.visibility,
+        published: false,
       },
     });
 
@@ -100,16 +136,55 @@ export async function createEventAction(
     return created;
   });
 
+  if (claimToken) {
+    await rememberDraftClaim({ id: event.id, token: claimToken });
+  }
+
   redirect(`/events/${event.id}`);
 }
 
-export async function setPublishedAction(formData: FormData) {
+export async function publishEventAction(formData: FormData) {
   const eventId = String(formData.get("eventId") ?? "");
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect(
+      `/signin?next=${encodeURIComponent(`/events/${eventId}`)}&publish=1`,
+    );
+  }
   const { event } = await requireEvent(eventId);
-  const published = String(formData.get("published") ?? "") === "on";
+  if (!event.ownerId) {
+    await db.event.update({
+      where: { id: event.id },
+      data: { ownerId: user.id, claimToken: null, published: true },
+    });
+  } else {
+    await db.event.update({
+      where: { id: event.id },
+      data: { published: true },
+    });
+  }
+  refresh();
+}
+
+export async function unpublishEventAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  await requireUser(`/events/${eventId}`);
+  const { event } = await requireEvent(eventId);
   await db.event.update({
     where: { id: event.id },
-    data: { published },
+    data: { published: false },
   });
   refresh();
 }
+
+export async function setPublishedAction(formData: FormData) {
+  const published = String(formData.get("published") ?? "") === "on";
+  if (published) return publishEventAction(formData);
+  return unpublishEventAction(formData);
+}
+
+export function publishNextPath(raw: unknown, eventId: string) {
+  return safeNextPath(raw, `/events/${eventId}`);
+}
+
+export { EVENT_TYPE_LABEL };

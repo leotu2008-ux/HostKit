@@ -3,9 +3,13 @@ import { EventNav } from "@/components/event-nav";
 import { requireEvent } from "@/lib/session";
 import { daysUntil, describeCountdown } from "@/lib/plan";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { VISIBILITY_LABEL } from "@/lib/listing";
 import { Badge } from "@/components/ui";
 import { CoverArt } from "@/components/cover-art";
-import { setPublishedAction } from "@/lib/actions/events";
+import {
+  publishEventAction,
+  unpublishEventAction,
+} from "@/lib/actions/events";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
@@ -18,7 +22,7 @@ export default async function EventLayout({
   params,
 }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
-  const { event } = await requireEvent(id);
+  const { event, user } = await requireEvent(id);
   const days = daysUntil(event.date);
 
   return (
@@ -38,28 +42,53 @@ export default async function EventLayout({
           </div>
           <p className="mt-1 text-[13px] text-ink-soft">
             {EVENT_TYPE_LABEL[event.type]} · {event.city}
+            {" · "}
+            {event.published ? VISIBILITY_LABEL[event.visibility] : "Draft"}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <Link
-              href={`/e/${event.id}`}
-              className="text-[13px] font-medium text-clay"
-            >
-              Preview
-            </Link>
-            <form action={setPublishedAction} className="flex items-center">
-              <input type="hidden" name="eventId" value={event.id} />
-              {event.published ? (
-                <input type="hidden" name="published" value="" />
-              ) : (
-                <input type="hidden" name="published" value="on" />
-              )}
-              <button
-                type="submit"
-                className="min-h-11 text-[13px] font-medium text-ink-soft"
+            {event.visibility !== "PRIVATE" || event.published ? (
+              <Link
+                href={`/e/${event.id}`}
+                className="text-[13px] font-medium text-clay"
               >
-                {event.published ? "Unlist from Discover" : "Publish to Discover"}
-              </button>
-            </form>
+                Preview
+              </Link>
+            ) : (
+              <Link
+                href={`/e/${event.id}`}
+                className="text-[13px] font-medium text-clay"
+              >
+                Preview
+              </Link>
+            )}
+            {event.published ? (
+              <form action={unpublishEventAction}>
+                <input type="hidden" name="eventId" value={event.id} />
+                <button
+                  type="submit"
+                  className="min-h-11 text-[13px] font-medium text-ink-soft"
+                >
+                  Unpublish
+                </button>
+              </form>
+            ) : user ? (
+              <form action={publishEventAction}>
+                <input type="hidden" name="eventId" value={event.id} />
+                <button
+                  type="submit"
+                  className="min-h-11 text-[13px] font-medium text-clay"
+                >
+                  Publish
+                </button>
+              </form>
+            ) : (
+              <Link
+                href={`/signin?next=${encodeURIComponent(`/events/${event.id}`)}&publish=1`}
+                className="min-h-11 text-[13px] font-medium text-clay"
+              >
+                Sign in to publish
+              </Link>
+            )}
           </div>
         </div>
       </header>

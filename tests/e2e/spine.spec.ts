@@ -18,6 +18,7 @@ async function signUp(page: Page) {
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', PASSWORD);
   await page.click('button[type="submit"]');
+  await page.waitForURL((url) => url.pathname === "/events" || url.pathname.startsWith("/events/claim") || url.pathname === "/events");
   await page.waitForURL("**/events");
   return email;
 }
@@ -27,10 +28,12 @@ async function createWedding(page: Page) {
   await page.click('button:has-text("Wedding")');
   const date = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
   await page.fill('input[name="date"]', date);
+  await page.fill('input[name="title"]', "Sam & Ali's wedding");
+  await page.fill('input[name="time"]', "18:00");
+  await page.fill('input[name="address"]', "200 Kent Ave, Brooklyn, NY");
   await page.fill('input[name="guestCount"]', "90");
   await page.fill('input[name="budget"]', "48,000");
-  await page.fill('input[name="title"]', "Sam & Ali's wedding");
-  await page.click('button:has-text("Build my plan")');
+  await page.click('button:has-text("Save this night")');
   await page.waitForURL((url) => /\/events\/[a-z0-9]{8,}$/.test(url.pathname));
   return page.url();
 }
@@ -40,6 +43,7 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
   const event = await createWedding(page);
 
   await test.step("intake generates a budget and a timeline", async () => {
+    await page.goto(`${event}/plan`);
     // 32% of $48,000 is the wedding template's venue allocation.
     await expect(page.getByText("$15,360")).toBeVisible();
     await expect(page.getByText("of $48,000")).toBeVisible();

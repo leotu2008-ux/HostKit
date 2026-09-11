@@ -32,12 +32,20 @@ export async function registerForEventAction(
 
   const event = await db.event.findUnique({
     where: { id: parsed.data.eventId },
-    select: { id: true, published: true, ownerId: true, guestCount: true },
+    select: {
+      id: true,
+      published: true,
+      visibility: true,
+      ownerId: true,
+      guestCount: true,
+    },
   });
   if (!event) return { error: "That event isn’t listed anymore." };
 
   const user = await getCurrentUser();
-  const canSee = event.published || user?.id === event.ownerId;
+  const canSee =
+    (event.published && event.visibility !== "PRIVATE") ||
+    user?.id === event.ownerId;
   if (!canSee) return { error: "That event isn’t listed anymore." };
 
   const existing = await db.guest.findFirst({

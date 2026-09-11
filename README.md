@@ -151,7 +151,7 @@ This is a working demo, not a production service. Specifically:
 
 ## Tests
 
-137 unit tests cover the pure logic, including the boundaries that bite:
+143 unit tests cover the pure logic, including the boundaries that bite:
 per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
 event whose date has passed, an unallocated category, an RSVP round that has
 barely started.

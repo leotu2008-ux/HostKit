@@ -273,7 +273,10 @@ async function seedDemoNights() {
         city: sample.city,
         budgetTotalCents: sample.budget,
         vibe: sample.vibe,
+        description: sample.vibe,
         published: true,
+        visibility: "PUBLIC",
+        ticketType: "FREE",
       },
     });
 

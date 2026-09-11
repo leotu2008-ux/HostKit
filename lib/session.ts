@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { claimMatches, readDraftClaims } from "@/lib/drafts";
 
 /** The signed-in user, or null. */
 export async function getCurrentUser() {
@@ -10,25 +11,42 @@ export async function getCurrentUser() {
 }
 
 /** The signed-in user, or a redirect to sign-in. Use in any protected page. */
-export async function requireUser() {
+export async function requireUser(next?: string) {
   const user = await getCurrentUser();
-  if (!user) redirect("/signin");
+  if (!user) {
+    const dest = next
+      ? `/signin?next=${encodeURIComponent(next)}`
+      : "/signin";
+    redirect(dest);
+  }
   return user;
 }
 
+export async function canAccessEvent(
+  event: { id: string; ownerId: string | null; claimToken: string | null },
+  userId: string | null,
+) {
+  if (userId && event.ownerId === userId) return true;
+  if (event.ownerId) return false;
+  const claims = await readDraftClaims();
+  return claimMatches(claims, event.id, event.claimToken);
+}
+
 /**
- * Loads an event the current user owns, or redirects.
+ * Loads an event the current user owns, or a draft this browser claimed.
  *
- * Every event-scoped page and action goes through this rather than a bare
- * findUnique, so ownership is enforced in one place. Returning 404-style
- * behaviour (redirect to the event list) for someone else's event also avoids
- * confirming that an id exists.
+ * Returning the event list for someone else's event avoids confirming that
+ * an id exists. Signed-out drafts stay on the cookie until they sign in.
  */
 export async function requireEvent(eventId: string) {
-  const user = await requireUser();
-  const event = await db.event.findFirst({
-    where: { id: eventId, ownerId: user.id },
-  });
+  const user = await getCurrentUser();
+  const event = await db.event.findFirst({ where: { id: eventId } });
   if (!event) redirect("/events");
+
+  const allowed = await canAccessEvent(event, user?.id ?? null);
+  if (!allowed) {
+    if (!user) redirect(`/signin?next=${encodeURIComponent(`/events/${eventId}`)}`);
+    redirect("/events");
+  }
   return { user, event };
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
 
 const PRIMARY = [
-  { href: "", label: "Overview" },
+  { href: "", label: "Dashboard" },
   { href: "/guests", label: "Guests" },
   { href: "/check-in", label: "Door" },
 ];

@@ -18,6 +18,8 @@ export function AuthForm({
   action,
   submitLabel,
   includeName,
+  next,
+  publish,
 }: {
   action: (
     state: AuthFormState,
@@ -25,11 +27,15 @@ export function AuthForm({
   ) => Promise<AuthFormState>;
   submitLabel: string;
   includeName?: boolean;
+  next?: string;
+  publish?: boolean;
 }) {
   const [state, formAction] = useActionState(action, undefined);
 
   return (
     <form action={formAction} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
+      {publish ? <input type="hidden" name="publish" value="1" /> : null}
       <FormError>{state?.error}</FormError>
       {includeName ? (
         <Field label="Your name">
