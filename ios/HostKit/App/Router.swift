@@ -9,10 +9,12 @@ final class Router {
     static let shared = Router()
 
     enum Tab: Hashable {
-        case home, discover, events, create, profile
+        case home, discover, events, profile
     }
 
     var tab: Tab = .home
+    /// The Create form, presented as a sheet over whatever tab is showing.
+    var isCreating = false
     /// A host event to open on the Events tab, set by intents and by Create.
     var openEventID: String?
     /// An event you're going to, opened on Discover from a tapped reminder.
@@ -24,10 +26,14 @@ final class Router {
         switch UserDefaults.standard.string(forKey: "hostkit-tab") {
         case "discover": tab = .discover
         case "events": tab = .events
-        case "create": tab = .create
+        case "create": isCreating = true
         case "profile": tab = .profile
         default: break
         }
+    }
+
+    func startCreate() {
+        isCreating = true
     }
 
     func openHostEvent(_ id: String) {

@@ -71,7 +71,7 @@ struct HomeView: View {
                         Button("Inbox", systemImage: model.unreadCount > 0 ? "bell.badge" : "bell") { isInboxOpen = true }
                             .badge(model.unreadCount)
                     }
-                    Button("Create event", systemImage: "plus") { router.tab = .create }
+                    Button("Create event", systemImage: "plus") { router.startCreate() }
                 }
             }
             .sheet(isPresented: $isSigningIn) { SignInView() }
@@ -85,7 +85,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Where to next").font(.inter(.title3, .semibold))
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                action("Create an event", "plus.circle.fill", "Publish when ready") { router.tab = .create }
+                action("Create an event", "plus.circle.fill", "Publish when ready") { router.startCreate() }
                 action("Discover", "sparkles", "Near you and at school") { router.tab = .discover }
                 action("My events", "calendar", "Upcoming and past") { router.tab = .events }
                 action("Profile", "person.crop.circle", "Photo, phone, settings") { router.tab = .profile }

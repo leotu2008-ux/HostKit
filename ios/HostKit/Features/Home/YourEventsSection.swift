@@ -27,7 +27,7 @@ struct YourEventsSection: View {
                         .font(.inter(.footnote))
                         .foregroundStyle(.secondary)
                     HStack(spacing: 8) {
-                        Button("Create event") { router.tab = .create }
+                        Button("Create event") { router.startCreate() }
                             .buttonStyle(.glassProminent)
                         Button("Sign in", action: onSignIn)
                             .buttonStyle(.glass)
@@ -44,7 +44,7 @@ struct YourEventsSection: View {
                         .font(.inter(.subheadline))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Create") { router.tab = .create }
+                    Button("Create") { router.startCreate() }
                         .font(.inter(.footnote, .semibold))
                         .buttonStyle(.glass)
                 }
