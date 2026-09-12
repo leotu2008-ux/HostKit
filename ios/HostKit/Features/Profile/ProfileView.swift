@@ -14,11 +14,16 @@ struct ProfileView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(user.name).font(.inter(.title3, .semibold))
                             Text(user.email).font(.inter(.subheadline)).foregroundStyle(.secondary)
-                            if let school = user.school {
+                            if user.school != nil || user.company != nil {
                                 HStack(spacing: 6) {
-                                    StatusPill(text: school.name, tint: .accentColor)
-                                    if let year = user.classYear {
-                                        StatusPill(text: "Class of \(year)")
+                                    if let school = user.school {
+                                        StatusPill(text: school.name, tint: .accentColor)
+                                        if let year = user.classYear {
+                                            StatusPill(text: "Class of \(year)")
+                                        }
+                                    }
+                                    if let company = user.company, !company.isEmpty {
+                                        StatusPill(text: company)
                                     }
                                 }
                             }
@@ -31,8 +36,8 @@ struct ProfileView: View {
                     Button("Edit profile") { isEditing = true }
                 } footer: {
                     Text(user.school != nil
-                        ? "Your school comes from your \(user.school!.domain) email."
-                        : "Students: sign up with your school .edu email to see what’s on at your campus first.")
+                        ? "Your events are tagged \(user.school!.short), and Discover leads with what’s on there."
+                        : "Add your school to see your campus first — official events included — or your company.")
                 }
             }
         }

@@ -352,6 +352,8 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     var school: School?
     var classYear: Int?
     var bio: String?
+    /// Where they work; for hosts who aren't students, or are and work too.
+    var company: String?
     var imageUrl: String?
     /// E.164, present only once a texted code confirmed it.
     var phone: String?

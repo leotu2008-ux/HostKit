@@ -6,21 +6,23 @@ struct EditProfileSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
+    @State private var schoolDomain: String
     @State private var classYear: String
+    @State private var company: String
     @State private var bio: String
+    @State private var schools: [SchoolOption] = []
     @State private var isSaving = false
     @State private var errorMessage: String?
 
     @State private var photoItem: PhotosPickerItem?
     @State private var isUploadingPhoto = false
 
-    private let isStudent: Bool
-
     init(user: HostUser) {
         _name = State(initialValue: user.name)
+        _schoolDomain = State(initialValue: user.school?.domain ?? "")
         _classYear = State(initialValue: user.classYear.map(String.init) ?? "")
+        _company = State(initialValue: user.company ?? "")
         _bio = State(initialValue: user.bio ?? "")
-        isStudent = user.isStudent
     }
 
     var body: some View {
@@ -53,17 +55,34 @@ struct EditProfileSheet: View {
                 Section {
                     TextField("Name", text: $name)
                         .textContentType(.name)
-                    if isStudent {
-                        TextField("Class year", text: $classYear)
-                            .keyboardType(.numberPad)
-                    }
                     TextField("About you", text: $bio, axis: .vertical)
                         .lineLimit(2...4)
                 } footer: {
-                    Text(isStudent
-                        ? "Your school comes from your email and can't be changed here."
-                        : "One line is plenty.")
+                    Text("One line is plenty.")
                 }
+
+                Section {
+                    Picker("School", selection: $schoolDomain) {
+                        Text("Not a student").tag("")
+                        ForEach(schools) { school in
+                            Text(school.name).tag(school.domain)
+                        }
+                        if !schoolDomain.isEmpty, !schools.contains(where: { $0.domain == schoolDomain }) {
+                            Text(schoolDomain).tag(schoolDomain)
+                        }
+                    }
+                    if !schoolDomain.isEmpty {
+                        TextField("Class year", text: $classYear)
+                            .keyboardType(.numberPad)
+                    }
+                    TextField("Company", text: $company)
+                        .textContentType(.organizationName)
+                } header: {
+                    Text("School and work")
+                } footer: {
+                    Text("Your school puts your campus first on Discover, official events included. Company is for where you work — optional either way.")
+                }
+
                 if let errorMessage {
                     Section { Text(errorMessage).foregroundStyle(.red) }
                 }
@@ -83,8 +102,11 @@ struct EditProfileSheet: View {
                 guard let item else { return }
                 Task { await uploadPhoto(item) }
             }
+            .task {
+                if schools.isEmpty { schools = (try? await model.api.schools()) ?? [] }
+            }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
 
     private func uploadPhoto(_ item: PhotosPickerItem) async {
@@ -119,11 +141,14 @@ struct EditProfileSheet: View {
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }
+        let trimmedCompany = company.trimmingCharacters(in: .whitespaces)
         do {
             try await model.updateProfile(
                 name: name.trimmingCharacters(in: .whitespaces),
-                classYear: Int(classYear.trimmingCharacters(in: .whitespaces)),
-                bio: bio.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : bio)
+                classYear: schoolDomain.isEmpty ? nil : Int(classYear.trimmingCharacters(in: .whitespaces)),
+                bio: bio.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : bio,
+                company: trimmedCompany.isEmpty ? nil : trimmedCompany,
+                schoolDomain: schoolDomain)
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

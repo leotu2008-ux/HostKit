@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { updateProfileAction, type ProfileFormState } from "@/lib/actions/profile";
-import { Button, Field, FormError, Input, Textarea } from "@/components/ui";
+import { SCHOOLS } from "@/lib/schools";
+import { Button, Field, FormError, Input, Select, Textarea } from "@/components/ui";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -14,21 +15,30 @@ function Submit() {
   );
 }
 
+/**
+ * Name, school (or none), class year, company, bio. School drives the
+ * campus feeds; company is for hosts who aren't students — or are, and
+ * work too.
+ */
 export function ProfileForm({
   name,
+  schoolDomain,
   classYear,
+  company,
   bio,
-  isStudent,
 }: {
   name: string;
+  schoolDomain: string | null;
   classYear: number | null;
+  company: string | null;
   bio: string | null;
-  isStudent: boolean;
 }) {
   const [state, formAction] = useActionState<ProfileFormState, FormData>(
     updateProfileAction,
     undefined,
   );
+  const [school, setSchool] = useState(schoolDomain ?? "");
+  const knownSchool = SCHOOLS.some((s) => s.domain === school);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -39,7 +49,18 @@ export function ProfileForm({
       <Field label="Name">
         <Input name="name" defaultValue={name} required maxLength={80} />
       </Field>
-      {isStudent ? (
+      <Field label="School" hint="Your campus feed follows this. Pick “Not a student” if that's you.">
+        <Select name="schoolDomain" value={school} onChange={(e) => setSchool(e.target.value)} className="w-72">
+          <option value="">Not a student</option>
+          {SCHOOLS.map((s) => (
+            <option key={s.domain} value={s.domain}>
+              {s.name}
+            </option>
+          ))}
+          {school && !knownSchool ? <option value={school}>{school}</option> : null}
+        </Select>
+      </Field>
+      {school ? (
         <Field label="Class year" hint="Optional — shows on your events.">
           <Input
             name="classYear"
@@ -51,6 +72,9 @@ export function ProfileForm({
           />
         </Field>
       ) : null}
+      <Field label="Company" hint="Where you work. Optional.">
+        <Input name="company" defaultValue={company ?? ""} maxLength={80} placeholder="Acme Inc." />
+      </Field>
       <Field label="About you" hint="One line. Optional.">
         <Textarea name="bio" rows={2} maxLength={200} defaultValue={bio ?? ""} />
       </Field>

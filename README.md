@@ -100,7 +100,8 @@ geocoding service). Tagging only surfaces events — anyone nearby can register.
 Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
 `docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
 
-You can also **pick or change your school** in Settings (web and iOS), which
+You can also **pick or change your school** on your Profile (web and iOS),
+alongside a **company** for hosts who work rather than study — which
 matters because of the next part.
 
 ### Official campus events

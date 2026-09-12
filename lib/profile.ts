@@ -15,6 +15,8 @@ export const profileSchema = z.object({
     .union([z.literal(""), z.null(), z.coerce.number().int().min(thisYear - 8).max(thisYear + 8)])
     .optional(),
   bio: z.string().trim().max(200).nullable().optional(),
+  /** Where they work; "" or null clears it. */
+  company: z.string().trim().max(80).nullable().optional(),
   showOnGuestLists: z
     .union([z.boolean(), z.literal("on"), z.literal("off"), z.literal("")])
     .optional(),
@@ -35,6 +37,7 @@ export type ProfileInput = {
   name?: string;
   classYear?: number | null;
   bio?: string | null;
+  company?: string | null;
   showOnGuestLists?: boolean;
   schoolDomain?: string | null;
 };
@@ -47,6 +50,7 @@ export function normalizeProfile(parsed: z.infer<typeof profileSchema>): Profile
     out.classYear = typeof parsed.classYear === "number" ? parsed.classYear : null;
   }
   if (parsed.bio !== undefined) out.bio = parsed.bio || null;
+  if (parsed.company !== undefined) out.company = parsed.company || null;
   if (parsed.showOnGuestLists !== undefined) {
     out.showOnGuestLists =
       parsed.showOnGuestLists === true || parsed.showOnGuestLists === "on";

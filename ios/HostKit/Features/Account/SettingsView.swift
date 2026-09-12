@@ -11,48 +11,10 @@ struct SettingsView: View {
     @State private var calendarOn = Session.calendarEnabled
     @State private var remindersDenied = false
     @State private var showOnGuestLists = Session.user?.showOnGuestLists ?? true
-    @State private var schools: [SchoolOption] = []
-    @State private var schoolDomain: String = Session.user?.school?.domain ?? ""
-    @State private var schoolError: String?
 
     var body: some View {
         Form {
             if model.isSignedIn {
-                Section {
-                    Picker("School", selection: $schoolDomain) {
-                        Text("Not a student").tag("")
-                        ForEach(schools) { school in
-                            Text(school.hasOfficialEvents ? school.name : "\(school.name) (no official feed yet)")
-                                .tag(school.domain)
-                        }
-                        if !schoolDomain.isEmpty, !schools.contains(where: { $0.domain == schoolDomain }) {
-                            Text(schoolDomain).tag(schoolDomain)
-                        }
-                    }
-                    .onChange(of: schoolDomain) { old, new in
-                        guard old != new, new != (model.user?.school?.domain ?? "") else { return }
-                        Task {
-                            do {
-                                try await model.setSchool(new.isEmpty ? nil : new)
-                                schoolError = nil
-                            } catch {
-                                schoolError = error.localizedDescription
-                                schoolDomain = model.user?.school?.domain ?? ""
-                            }
-                        }
-                    }
-                    if let schoolError {
-                        Text(schoolError).font(.inter(.footnote)).foregroundStyle(.red)
-                    }
-                } header: {
-                    Text("Your school")
-                } footer: {
-                    Text("Discover leads with your campus, your events are tagged with it, and the school’s official calendar shows up under At [School].")
-                }
-                .task {
-                    if schools.isEmpty { schools = (try? await model.api.schools()) ?? [] }
-                }
-
                 Section {
                     Toggle("Show me on guest lists", isOn: $showOnGuestLists)
                         .onChange(of: showOnGuestLists) { _, on in

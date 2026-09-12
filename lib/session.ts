@@ -28,6 +28,7 @@ export async function currentProfile() {
       schoolDomain: true,
       classYear: true,
       bio: true,
+      company: true,
       imageUrl: true,
       phone: true,
       phoneVerifiedAt: true,
