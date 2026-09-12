@@ -101,8 +101,10 @@ Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
 `docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
 
 You can also **pick or change your school** on your Profile (web and iOS),
-alongside a **company** for hosts who work rather than study — which
-matters because of the next part.
+alongside a **company** for hosts who work rather than study, and your
+**X, LinkedIn and Instagram** under Connect (paste a handle or a profile
+link; `lib/socials.ts` keeps just the handle and rebuilds the link). The
+school matters because of the next part.
 
 ### Official campus events
 

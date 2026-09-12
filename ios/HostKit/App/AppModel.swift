@@ -96,9 +96,9 @@ final class AppModel {
         user = fresh
     }
 
-    func updateProfile(name: String, classYear: Int?, bio: String?, company: String?, schoolDomain: String) async throws {
+    func updateProfile(name: String, classYear: Int?, bio: String?, company: String?, schoolDomain: String, socials: Socials) async throws {
         let updated = try await api.updateProfile(
-            name: name, classYear: classYear, bio: bio, company: company, schoolDomain: schoolDomain)
+            name: name, classYear: classYear, bio: bio, company: company, schoolDomain: schoolDomain, socials: socials)
         Session.user = updated
         user = updated
     }

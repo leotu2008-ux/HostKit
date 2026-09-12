@@ -33,6 +33,23 @@ struct ProfileView: View {
                     if let bio = user.bio, !bio.isEmpty {
                         Text(bio).font(.inter(.subheadline)).foregroundStyle(.secondary)
                     }
+                    if let socials = user.socials, !socials.isEmpty {
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 8) {
+                                ForEach(socials.links, id: \.url) { link in
+                                    Link(destination: link.url) {
+                                        Label(link.display, systemImage: link.symbol)
+                                            .font(.inter(.caption, .medium))
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(.quaternary.opacity(0.5), in: .capsule)
+                                    }
+                                    .accessibilityLabel("\(link.label): \(link.display)")
+                                }
+                            }
+                        }
+                        .scrollIndicators(.hidden)
+                    }
                     Button("Edit profile") { isEditing = true }
                 } footer: {
                     Text(user.school != nil

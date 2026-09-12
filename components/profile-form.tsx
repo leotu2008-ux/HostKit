@@ -26,12 +26,14 @@ export function ProfileForm({
   classYear,
   company,
   bio,
+  socials,
 }: {
   name: string;
   schoolDomain: string | null;
   classYear: number | null;
   company: string | null;
   bio: string | null;
+  socials: { x: string | null; linkedin: string | null; instagram: string | null };
 }) {
   const [state, formAction] = useActionState<ProfileFormState, FormData>(
     updateProfileAction,
@@ -78,6 +80,32 @@ export function ProfileForm({
       <Field label="About you" hint="One line. Optional.">
         <Textarea name="bio" rows={2} maxLength={200} defaultValue={bio ?? ""} />
       </Field>
+
+      <fieldset className="space-y-3 rounded-xl border border-line p-4">
+        <legend className="px-1 text-[13px] font-medium text-ink-soft">Connect</legend>
+        <p className="text-[13px] text-ink-mute">
+          Paste a handle or a profile link. They show on your profile as links.
+        </p>
+        <Field label="X">
+          <Input name="x" defaultValue={socials.x ?? ""} placeholder="@handle or x.com/handle" maxLength={200} />
+        </Field>
+        <Field label="LinkedIn">
+          <Input
+            name="linkedin"
+            defaultValue={socials.linkedin ?? ""}
+            placeholder="linkedin.com/in/handle"
+            maxLength={200}
+          />
+        </Field>
+        <Field label="Instagram">
+          <Input
+            name="instagram"
+            defaultValue={socials.instagram ?? ""}
+            placeholder="@handle or instagram.com/handle"
+            maxLength={200}
+          />
+        </Field>
+      </fieldset>
       <Submit />
     </form>
   );

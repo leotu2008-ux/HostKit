@@ -24,6 +24,9 @@ export function serializeUser(user: {
   classYear: number | null;
   bio: string | null;
   company?: string | null;
+  xHandle?: string | null;
+  linkedinHandle?: string | null;
+  instagramHandle?: string | null;
   imageUrl?: string | null;
   phone?: string | null;
   phoneVerifiedAt?: Date | null;
@@ -37,6 +40,12 @@ export function serializeUser(user: {
     classYear: user.classYear,
     bio: user.bio,
     company: user.company ?? null,
+    /** Bare handles; null when not set. Links: x.com/<h>, linkedin.com/in/<h>, instagram.com/<h>. */
+    socials: {
+      x: user.xHandle ?? null,
+      linkedin: user.linkedinHandle ?? null,
+      instagram: user.instagramHandle ?? null,
+    },
     imageUrl: user.imageUrl ?? null,
     phone: user.phone ?? null,
     phoneVerified: Boolean(user.phone && user.phoneVerifiedAt),

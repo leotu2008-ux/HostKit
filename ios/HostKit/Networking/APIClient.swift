@@ -38,9 +38,10 @@ nonisolated struct APIClient: Sendable {
     }
 
     /// The whole editable profile. `schoolDomain` "" means not a student.
-    func updateProfile(name: String, classYear: Int?, bio: String?, company: String?, schoolDomain: String) async throws -> HostUser {
+    func updateProfile(name: String, classYear: Int?, bio: String?, company: String?, schoolDomain: String, socials: Socials) async throws -> HostUser {
         let body = try Self.encode(ProfilePatch(
-            name: name, classYear: classYear, bio: bio, company: company, schoolDomain: schoolDomain, showOnGuestLists: nil))
+            name: name, classYear: classYear, bio: bio, company: company, schoolDomain: schoolDomain,
+            socials: socials, showOnGuestLists: nil))
         let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
         return envelope.user
     }
@@ -383,6 +384,8 @@ nonisolated struct ProfilePatch: Encodable, Sendable {
     let bio: String?
     var company: String? = nil
     var schoolDomain: String? = nil
+    /// Raw text from the Connect fields; the server boils them down to handles.
+    var socials: Socials? = nil
     let showOnGuestLists: Bool?
 
     func encode(to encoder: Encoder) throws {
@@ -392,9 +395,14 @@ nonisolated struct ProfilePatch: Encodable, Sendable {
         if name != nil { try c.encode(bio, forKey: .bio) }
         if name != nil { try c.encode(company ?? "", forKey: .company) }
         if let schoolDomain { try c.encode(schoolDomain, forKey: .schoolDomain) }
+        if let socials {
+            try c.encode(socials.x ?? "", forKey: .x)
+            try c.encode(socials.linkedin ?? "", forKey: .linkedin)
+            try c.encode(socials.instagram ?? "", forKey: .instagram)
+        }
         if let showOnGuestLists { try c.encode(showOnGuestLists, forKey: .showOnGuestLists) }
     }
-    private enum Keys: String, CodingKey { case name, classYear, bio, company, schoolDomain, showOnGuestLists }
+    private enum Keys: String, CodingKey { case name, classYear, bio, company, schoolDomain, x, linkedin, instagram, showOnGuestLists }
 }
 nonisolated struct SchoolPatch: Encodable, Sendable { let schoolDomain: String }
 nonisolated struct SchoolsEnvelope: Decodable, Sendable { let schools: [SchoolOption] }

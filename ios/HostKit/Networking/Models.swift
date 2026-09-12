@@ -308,6 +308,29 @@ nonisolated struct School: Codable, Hashable, Sendable {
     let city: String?
 }
 
+/// X, LinkedIn and Instagram handles on a profile, with the links rebuilt
+/// the way lib/socials.ts does.
+nonisolated struct Socials: Codable, Hashable, Sendable {
+    var x: String?
+    var linkedin: String?
+    var instagram: String?
+
+    var isEmpty: Bool { x == nil && linkedin == nil && instagram == nil }
+
+    /// (label, "@handle" or handle, url, SF Symbol) for each set handle.
+    var links: [(label: String, display: String, url: URL, symbol: String)] {
+        var out: [(String, String, URL, String)] = []
+        if let x, let url = URL(string: "https://x.com/\(x)") { out.append(("X", "@\(x)", url, "xmark")) }
+        if let linkedin, let url = URL(string: "https://www.linkedin.com/in/\(linkedin)") {
+            out.append(("LinkedIn", linkedin, url, "briefcase"))
+        }
+        if let instagram, let url = URL(string: "https://www.instagram.com/\(instagram)") {
+            out.append(("Instagram", "@\(instagram)", url, "camera"))
+        }
+        return out.map { (label: $0.0, display: $0.1, url: $0.2, symbol: $0.3) }
+    }
+}
+
 /// A school the person can pick in Settings (`GET /api/v1/schools`).
 nonisolated struct SchoolOption: Codable, Hashable, Identifiable, Sendable {
     let domain: String
@@ -354,6 +377,8 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     var bio: String?
     /// Where they work; for hosts who aren't students, or are and work too.
     var company: String?
+    /// Bare handles (no "@"); older servers don't send this.
+    var socials: Socials?
     var imageUrl: String?
     /// E.164, present only once a texted code confirmed it.
     var phone: String?
