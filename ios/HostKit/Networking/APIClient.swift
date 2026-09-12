@@ -110,6 +110,17 @@ nonisolated struct APIClient: Sendable {
         return (envelope.token, envelope.user)
     }
 
+    /// Asks for a password-reset link by email. Always succeeds, on purpose.
+    func forgotPassword(email: String) async throws {
+        let _: OKEnvelope = try await send("POST", "/api/v1/auth/forgot", body: try Self.encode(["email": email]))
+    }
+
+    /// Re-sends the email verification link. `true` when already verified.
+    func resendVerification() async throws -> Bool {
+        let envelope: VerifyEnvelope = try await send("POST", "/api/v1/auth/verify")
+        return envelope.verified
+    }
+
     func myEvents() async throws -> [HostEvent] {
         let envelope: EventsEnvelope = try await send("GET", "/api/v1/events")
         return envelope.events
@@ -416,4 +427,5 @@ nonisolated struct TokenEnvelope: Decodable, Sendable {
     let user: HostUser
 }
 nonisolated struct OKEnvelope: Decodable, Sendable { let ok: Bool }
+nonisolated struct VerifyEnvelope: Decodable, Sendable { let ok: Bool; let verified: Bool }
 nonisolated struct ErrorEnvelope: Decodable, Sendable { let error: String }

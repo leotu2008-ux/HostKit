@@ -17,6 +17,19 @@ struct SignInView: View {
     @State private var password = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+    @State private var resetSent = false
+
+    private func forgot() async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+        do {
+            try await model.api.forgotPassword(email: email.trimmingCharacters(in: .whitespaces))
+            resetSent = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     private var isStudentEmail: Bool {
         email.lowercased().trimmingCharacters(in: .whitespaces).hasSuffix(".edu")
@@ -61,6 +74,18 @@ struct SignInView: View {
                         Text(isStudentEmail
                             ? "A school email — you’ll see what’s on at your campus first."
                             : "At least 8 characters for the password. Students: sign up with your school .edu email to see campus events first.")
+                    }
+                }
+
+                if mode == .signIn {
+                    Section {
+                        if resetSent {
+                            Text("If that address has an account, a reset link is on its way. Open it on any device, then sign in here.")
+                                .font(.inter(.footnote)).foregroundStyle(.secondary)
+                        } else {
+                            Button("Forgot your password?") { Task { await forgot() } }
+                                .disabled(!email.contains("@") || isSubmitting)
+                        }
                     }
                 }
 

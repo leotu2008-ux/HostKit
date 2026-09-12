@@ -28,7 +28,7 @@ export async function PATCH(request: Request) {
     data: normalizeProfile(parsed.data),
     select: {
       id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, company: true, xHandle: true, linkedinHandle: true, instagramHandle: true,
-      imageUrl: true, phone: true, phoneVerifiedAt: true, showOnGuestLists: true,
+      imageUrl: true, phone: true, phoneVerifiedAt: true, showOnGuestLists: true, emailVerifiedAt: true,
     },
   });
   return json({ user: serializeUser(updated) });

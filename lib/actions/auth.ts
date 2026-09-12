@@ -5,8 +5,11 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { headers } from "next/headers";
 import { safeNextPath } from "@/lib/listing";
 import { schoolDomainFor } from "@/lib/schools";
+import { sendVerificationQuietly, siteOrigin } from "@/lib/account";
+import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export type AuthFormState = { error?: string } | undefined;
 
@@ -30,13 +33,20 @@ export async function signUpAction(
   }
 
   const { name, email, password } = parsed.data;
+  const h = await headers();
+  try {
+    await assertRateLimit(`signup:ip:${clientIp(h)}`, ...LIMITS.signUp.perIp);
+  } catch (error) {
+    if (error instanceof RateLimitError) return { error: error.message };
+    throw error;
+  }
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
     return { error: "That email is already registered. Try signing in." };
   }
 
   // A .edu address makes this a student account; the domain picks the school.
-  await db.user.create({
+  const user = await db.user.create({
     data: {
       name,
       email,
@@ -44,6 +54,7 @@ export async function signUpAction(
       schoolDomain: schoolDomainFor(email),
     },
   });
+  await sendVerificationQuietly(user, siteOrigin(h));
 
   return attemptSignIn(email, password, formData);
 }
@@ -56,6 +67,14 @@ export async function signInAction(
   const password = String(formData.get("password") ?? "");
   if (!email || !password) {
     return { error: "Enter your email and password." };
+  }
+  const h = await headers();
+  try {
+    await assertRateLimit(`signin:ip:${clientIp(h)}`, ...LIMITS.signIn.perIp);
+    await assertRateLimit(`signin:email:${email}`, ...LIMITS.signIn.perEmail);
+  } catch (error) {
+    if (error instanceof RateLimitError) return { error: error.message };
+    throw error;
   }
   return attemptSignIn(email, password, formData);
 }

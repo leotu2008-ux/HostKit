@@ -43,7 +43,10 @@ Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 You can draft a night before you have an account. Publishing — listing it on
 Discover or sharing a live guest link — needs a sign-in. Sign up with any
-email and password; there's no email service, so no confirmation step.
+email and password. A confirmation link and password resets go out by email
+once Resend is configured (until then the links are logged, and returned to
+the client outside production) — see `docs/backend.md` for the whole backend
+map: data, images, accounts, and which keys turn on what.
 
 ### Scripts
 
@@ -325,8 +328,9 @@ This is a working demo, not a production service. Specifically:
   names, prices and ratings chosen to exercise the scoring logic. None are real
   businesses. Listing artwork is generated locally from the listing id rather
   than photographed.
-- **Nothing is sent.** HostKit drafts inquiry messages and per-guest RSVP links,
-  but you copy and send them yourself. There is no email integration.
+- **Inquiries aren't sent.** HostKit drafts inquiry messages and per-guest RSVP
+  links, but you copy and send those yourself. Account email (resets,
+  verification), blasts and club posts do go out once Resend is configured.
 - **No payments.** Ticket price is shown to guests; you collect it yourself.
   The planner budget *tracks* money (committed, paid, outstanding) rather
   than moving it.

@@ -31,6 +31,7 @@ export function serializeUser(user: {
   phone?: string | null;
   phoneVerifiedAt?: Date | null;
   showOnGuestLists?: boolean;
+  emailVerifiedAt?: Date | null;
 }) {
   return {
     id: user.id,
@@ -50,6 +51,7 @@ export function serializeUser(user: {
     phone: user.phone ?? null,
     phoneVerified: Boolean(user.phone && user.phoneVerifiedAt),
     showOnGuestLists: user.showOnGuestLists ?? true,
+    emailVerified: Boolean(user.emailVerifiedAt),
   };
 }
 

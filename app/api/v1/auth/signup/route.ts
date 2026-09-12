@@ -5,6 +5,8 @@ import { issueToken } from "@/lib/api/token";
 import { apiError, json, readJson } from "@/lib/api/http";
 import { serializeUser } from "@/lib/api/serialize";
 import { schoolDomainFor } from "@/lib/schools";
+import { sendVerificationQuietly, siteOrigin } from "@/lib/account";
+import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 // Same rules as the website's sign-up form (lib/actions/auth.ts).
 const schema = z.object({
@@ -21,6 +23,12 @@ export async function POST(request: Request) {
     return apiError(parsed.error.issues[0]?.message ?? "Check the details.", 400);
   }
   const { name, email, password } = parsed.data;
+  try {
+    await assertRateLimit(`signup:ip:${clientIp(request.headers)}`, ...LIMITS.signUp.perIp);
+  } catch (error) {
+    if (error instanceof RateLimitError) return apiError(error.message, 429);
+    throw error;
+  }
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
@@ -36,5 +44,6 @@ export async function POST(request: Request) {
     },
   });
 
+  await sendVerificationQuietly(user, siteOrigin(request.headers));
   return json({ token: issueToken(user.id), user: serializeUser(user) }, 201);
 }

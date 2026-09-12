@@ -1,0 +1,146 @@
+import { createHash, randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
+import { db } from "@/lib/db";
+import { isEmailConfigured, sendEmails } from "@/lib/email/resend";
+
+/**
+ * Account plumbing that goes through email: password resets and address
+ * verification. Both work with one-time links whose token is only ever
+ * stored hashed. Without Resend configured the link is logged and, outside
+ * production, handed back to the caller so the flow can be exercised.
+ */
+
+export class AccountError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+export const RESET_TTL_MS = 60 * 60_000;
+export const VERIFY_TTL_MS = 24 * 60 * 60_000;
+
+export function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function newToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+/** Where links point: the site the request came from. */
+export function siteOrigin(headers: Headers): string {
+  const proto = headers.get("x-forwarded-proto") ?? "https";
+  const host = headers.get("x-forwarded-host") ?? headers.get("host") ?? "localhost:3000";
+  return `${proto}://${host}`;
+}
+
+async function issue(userId: string, kind: "reset" | "verify", ttlMs: number): Promise<string> {
+  const token = newToken();
+  await db.$transaction([
+    // One live link per purpose; asking again invalidates the old one.
+    db.accountToken.deleteMany({ where: { userId, kind } }),
+    db.accountToken.create({
+      data: { userId, kind, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + ttlMs) },
+    }),
+  ]);
+  return token;
+}
+
+async function consume(token: string, kind: "reset" | "verify"): Promise<{ userId: string } | null> {
+  const row = await db.accountToken.findUnique({ where: { tokenHash: hashToken(token) } });
+  if (!row || row.kind !== kind || row.usedAt || row.expiresAt < new Date()) return null;
+  await db.accountToken.update({ where: { id: row.id }, data: { usedAt: new Date() } });
+  return { userId: row.userId };
+}
+
+async function deliver(to: string, subject: string, text: string, link: string): Promise<{ devLink?: string }> {
+  if (isEmailConfigured()) {
+    await sendEmails([{ to, subject, text }]);
+    return {};
+  }
+  console.log(`[account] no email configured — ${subject} for ${to}: ${link}`);
+  return process.env.NODE_ENV !== "production" ? { devLink: link } : {};
+}
+
+// ---------------------------------------------------------------------------
+// Password reset
+// ---------------------------------------------------------------------------
+
+/**
+ * Always answers the same way whether or not the address exists, so the
+ * form can't be used to check who has an account.
+ */
+export async function requestPasswordReset(rawEmail: string, origin: string): Promise<{ devLink?: string }> {
+  const email = rawEmail.trim().toLowerCase();
+  const user = await db.user.findUnique({ where: { email }, select: { id: true, name: true } });
+  if (!user) return {};
+  const token = await issue(user.id, "reset", RESET_TTL_MS);
+  const link = `${origin}/reset-password?token=${token}`;
+  return deliver(
+    email,
+    "Reset your HostKit password",
+    [
+      `Hi ${user.name.split(" ")[0]},`,
+      "",
+      "Someone asked to reset the password on this HostKit account. If that was you, open this link within the hour:",
+      link,
+      "",
+      "If it wasn't you, ignore this — your password hasn't changed.",
+    ].join("\n"),
+    link,
+  );
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  if (newPassword.length < 8) throw new AccountError("Use at least 8 characters.", 400);
+  const hit = await consume(token, "reset");
+  if (!hit) throw new AccountError("That reset link has expired or was already used. Ask for a new one.", 400);
+  await db.user.update({ where: { id: hit.userId }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } });
+}
+
+// ---------------------------------------------------------------------------
+// Email verification
+// ---------------------------------------------------------------------------
+
+/** Sends (or re-sends) the verification link. No-op once verified. */
+export async function sendVerification(
+  user: { id: string; email: string; name: string; emailVerifiedAt: Date | null },
+  origin: string,
+): Promise<{ devLink?: string; already?: true }> {
+  if (user.emailVerifiedAt) return { already: true };
+  const token = await issue(user.id, "verify", VERIFY_TTL_MS);
+  const link = `${origin}/verify-email?token=${token}`;
+  return deliver(
+    user.email,
+    "Confirm your email for HostKit",
+    [
+      `Hi ${user.name.split(" ")[0]},`,
+      "",
+      "Tap this link to confirm this is your address (it works for 24 hours):",
+      link,
+      "",
+      "Confirming keeps your account recoverable and, for students, backs up your school.",
+    ].join("\n"),
+    link,
+  );
+}
+
+/** Marks the address verified. Returns the user id, or null for a bad link. */
+export async function verifyEmail(token: string): Promise<string | null> {
+  const hit = await consume(token, "verify");
+  if (!hit) return null;
+  await db.user.update({ where: { id: hit.userId }, data: { emailVerifiedAt: new Date() } });
+  return hit.userId;
+}
+
+/** Best effort after sign-up: never fails the sign-up itself. */
+export async function sendVerificationQuietly(
+  user: { id: string; email: string; name: string; emailVerifiedAt: Date | null },
+  origin: string,
+): Promise<void> {
+  try {
+    await sendVerification(user, origin);
+  } catch (error) {
+    console.error("[account] verification email failed", error);
+  }
+}

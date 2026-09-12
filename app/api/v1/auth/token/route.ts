@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { issueToken } from "@/lib/api/token";
 import { apiError, json, readJson } from "@/lib/api/http";
 import { serializeUser } from "@/lib/api/serialize";
+import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -20,6 +21,14 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) {
     return apiError("Enter your email and password.", 400);
+  }
+
+  try {
+    await assertRateLimit(`signin:ip:${clientIp(request.headers)}`, ...LIMITS.signIn.perIp);
+    await assertRateLimit(`signin:email:${parsed.data.email}`, ...LIMITS.signIn.perEmail);
+  } catch (error) {
+    if (error instanceof RateLimitError) return apiError(error.message, 429);
+    throw error;
   }
 
   const user = await db.user.findUnique({

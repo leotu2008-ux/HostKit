@@ -3,6 +3,7 @@ import { removeAvatarAction, setAvatarAction } from "@/lib/actions/photos";
 import { Avatar } from "@/components/avatar";
 import { ImageUpload } from "@/components/image-upload";
 import { ProfileForm } from "@/components/profile-form";
+import { VerifyEmailBanner } from "@/components/account-forms";
 import { SocialLinks } from "@/components/social-links";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 
@@ -38,6 +39,7 @@ export default async function ProfilePage() {
             {user.bio ? (
               <p className="mt-4 text-[15px] text-ink-soft">{user.bio}</p>
             ) : null}
+            {!user.emailVerifiedAt ? <VerifyEmailBanner email={user.email} /> : null}
             <SocialLinks
               socials={{ x: user.xHandle, linkedin: user.linkedinHandle, instagram: user.instagramHandle }}
               className="mt-3"
