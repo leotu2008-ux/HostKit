@@ -140,6 +140,9 @@ html[data-splash="done"] .launch-splash {
 
 html[data-splash="pending"] {
   background: #000;
+  /* One clock for overlay + logo so they fade out together. */
+  --launch-splash-duration: 1s;
+  --launch-splash-ease: cubic-bezier(0.2, 0.85, 0.22, 1);
 }
 
 html[data-splash="pending"] body {
@@ -147,7 +150,8 @@ html[data-splash="pending"] body {
 }
 
 html[data-splash="pending"] .launch-splash {
-  animation: launch-splash-overlay 1.45s ease-out forwards;
+  animation: launch-splash-overlay var(--launch-splash-duration)
+    var(--launch-splash-ease) forwards;
 }
 
 .launch-splash-logo {
@@ -158,23 +162,25 @@ html[data-splash="pending"] .launch-splash {
 }
 
 html[data-splash="pending"] .launch-splash-logo {
-  animation: launch-splash-logo 1.25s cubic-bezier(0.2, 0.85, 0.22, 1) forwards;
+  animation: launch-splash-logo var(--launch-splash-duration)
+    var(--launch-splash-ease) forwards;
 }
 
+/* Pop 0–42%, short hold to 55%, then fade with the overlay to 100%. */
 @keyframes launch-splash-logo {
   0% {
     opacity: 0;
     transform: scale(0.6);
   }
-  26% {
+  28% {
     opacity: 1;
     transform: scale(1.05);
   }
-  40% {
+  42% {
     opacity: 1;
     transform: scale(1);
   }
-  68% {
+  55% {
     opacity: 1;
     transform: scale(1);
   }
@@ -186,7 +192,7 @@ html[data-splash="pending"] .launch-splash-logo {
 
 @keyframes launch-splash-overlay {
   0%,
-  72% {
+  55% {
     opacity: 1;
   }
   100% {
