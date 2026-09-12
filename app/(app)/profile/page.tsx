@@ -25,10 +25,11 @@ export default async function ProfilePage() {
               <div className="min-w-0">
                 <p className="truncate text-lg font-semibold text-ink">{user.name}</p>
                 <p className="truncate text-[15px] text-ink-soft">{user.email}</p>
-                {user.school ? (
+                {user.school || user.company ? (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <Badge tone="clay">{user.school.name}</Badge>
-                    {user.classYear ? <Badge>Class of {user.classYear}</Badge> : null}
+                    {user.school ? <Badge tone="clay">{user.school.name}</Badge> : null}
+                    {user.school && user.classYear ? <Badge>Class of {user.classYear}</Badge> : null}
+                    {user.company ? <Badge>{user.company}</Badge> : null}
                   </div>
                 ) : null}
               </div>
@@ -49,14 +50,15 @@ export default async function ProfilePage() {
             <h2 className="mb-4 font-display text-lg text-ink">Edit profile</h2>
             <ProfileForm
               name={user.name}
+              schoolDomain={user.schoolDomain}
               classYear={user.classYear}
+              company={user.company}
               bio={user.bio}
-              isStudent={Boolean(user.school)}
             />
             <p className="mt-3 text-[13px] text-ink-mute">
               {user.school
-                ? `Your school comes from your ${user.schoolDomain} email.`
-                : "Sign up with a school .edu email to see campus events first."}
+                ? `Your events are tagged ${user.school.short}, and Discover leads with what's on there.`
+                : "Pick your school to see your campus first — official events included."}
             </p>
           </Card>
         </>

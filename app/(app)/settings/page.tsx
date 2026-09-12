@@ -1,12 +1,9 @@
 import { signOutAction } from "@/lib/actions/auth";
-import { setGuestListVisibilityAction, setSchoolAction } from "@/lib/actions/profile";
+import { setGuestListVisibilityAction } from "@/lib/actions/profile";
 import { currentProfile } from "@/lib/session";
-import { SCHOOLS } from "@/lib/schools";
-import { SCHOOLS_WITH_FEEDS } from "@/lib/campus/sources";
 import { PhoneForm } from "@/components/phone-form";
-import { Button, Card, Select } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 export const metadata = { title: "Settings" };
 
@@ -19,35 +16,6 @@ export default async function SettingsPage() {
       <h1 className="font-display text-[30px] leading-tight text-ink md:text-[36px]">Settings</h1>
 
       <Card className="mt-6 p-5">
-        <h2 className="font-display text-lg text-ink">Your school</h2>
-        <p className="mt-1 mb-4 text-[15px] text-ink-soft">
-          Discover leads with your campus, your events are tagged with it, and the school’s official
-          calendar shows up under{" "}
-          <Link href="/campus" className="underline hover:text-ink">
-            Campus events
-          </Link>
-          .
-        </p>
-        <form action={setSchoolAction} className="flex flex-wrap items-center gap-3">
-          <Select name="schoolDomain" defaultValue={user.schoolDomain ?? ""} className="w-72">
-            <option value="">Not a student</option>
-            {SCHOOLS.map((s) => (
-              <option key={s.domain} value={s.domain}>
-                {s.name}
-                {SCHOOLS_WITH_FEEDS.has(s.domain) ? "" : " (no official feed yet)"}
-              </option>
-            ))}
-            {user.schoolDomain && !SCHOOLS.some((s) => s.domain === user.schoolDomain) ? (
-              <option value={user.schoolDomain}>{user.schoolDomain}</option>
-            ) : null}
-          </Select>
-          <Button type="submit" variant="secondary">
-            Save
-          </Button>
-        </form>
-      </Card>
-
-      <Card className="mt-4 p-5">
         <h2 className="font-display text-lg text-ink">Phone number</h2>
         <p className="mt-1 mb-4 text-[15px] text-ink-soft">
           Add your mobile so hosts can reach you about events you’re going to. Verified with a text.

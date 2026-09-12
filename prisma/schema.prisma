@@ -24,6 +24,8 @@ model User {
   schoolDomain String?
   classYear    Int?
   bio          String?
+  /// Where they work, for hosts who aren't students (or are, and work too).
+  company      String?
   /// Profile picture, stored by lib/images.ts (Vercel Blob, or /api/images/:id).
   imageUrl     String?
   /// E.164, set only once a code sent to it has been confirmed.

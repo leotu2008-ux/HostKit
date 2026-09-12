@@ -16,6 +16,8 @@ export async function updateProfileAction(
     name: formData.get("name"),
     classYear: formData.get("classYear") ?? "",
     bio: formData.get("bio") ?? "",
+    company: formData.get("company") ?? "",
+    schoolDomain: formData.get("schoolDomain") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the details." };
@@ -30,14 +32,5 @@ export async function setGuestListVisibilityAction(formData: FormData) {
   const user = await requireUser("/settings");
   const on = String(formData.get("showOnGuestLists") ?? "") === "on";
   await db.user.update({ where: { id: user.id }, data: { showOnGuestLists: on } });
-  refresh();
-}
-
-/** Settings → "Your school": a known school's domain, or "" for none. */
-export async function setSchoolAction(formData: FormData) {
-  const user = await requireUser("/settings");
-  const parsed = profileSchema.safeParse({ schoolDomain: formData.get("schoolDomain") ?? "" });
-  if (!parsed.success) return;
-  await db.user.update({ where: { id: user.id }, data: normalizeProfile(parsed.data) });
   refresh();
 }

@@ -20,11 +20,16 @@ struct AccountMenu: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(user.name).font(.inter(.title3, .semibold))
                                 Text(user.email).font(.inter(.subheadline)).foregroundStyle(.secondary)
-                                if let school = user.school {
+                                if user.school != nil || user.company != nil {
                                     HStack(spacing: 6) {
-                                        StatusPill(text: school.short, tint: .accentColor)
-                                        if let year = user.classYear {
-                                            StatusPill(text: "Class of \(year)")
+                                        if let school = user.school {
+                                            StatusPill(text: school.short, tint: .accentColor)
+                                            if let year = user.classYear {
+                                                StatusPill(text: "Class of \(year)")
+                                            }
+                                        }
+                                        if let company = user.company, !company.isEmpty {
+                                            StatusPill(text: company)
                                         }
                                     }
                                 }

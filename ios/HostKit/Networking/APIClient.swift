@@ -37,8 +37,10 @@ nonisolated struct APIClient: Sendable {
         return envelope.user
     }
 
-    func updateProfile(name: String, classYear: Int?, bio: String?) async throws -> HostUser {
-        let body = try Self.encode(ProfilePatch(name: name, classYear: classYear, bio: bio, showOnGuestLists: nil))
+    /// The whole editable profile. `schoolDomain` "" means not a student.
+    func updateProfile(name: String, classYear: Int?, bio: String?, company: String?, schoolDomain: String) async throws -> HostUser {
+        let body = try Self.encode(ProfilePatch(
+            name: name, classYear: classYear, bio: bio, company: company, schoolDomain: schoolDomain, showOnGuestLists: nil))
         let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
         return envelope.user
     }
@@ -372,10 +374,15 @@ nonisolated struct RegisterEnvelope: Decodable, Sendable {
 nonisolated struct PhoneBody: Encodable, Sendable { let phone: String }
 nonisolated struct CodeBody: Encodable, Sendable { let code: String }
 /// Keys that are nil are left out, so the server only touches what's sent.
+/// Only the keys sent are changed, so a name edit and a single toggle can
+/// share one request shape. With `name` set, the whole profile goes:
+/// class year, bio, company and school ("" = not a student).
 nonisolated struct ProfilePatch: Encodable, Sendable {
     let name: String?
     let classYear: Int?
     let bio: String?
+    var company: String? = nil
+    var schoolDomain: String? = nil
     let showOnGuestLists: Bool?
 
     func encode(to encoder: Encoder) throws {
@@ -383,9 +390,11 @@ nonisolated struct ProfilePatch: Encodable, Sendable {
         if let name { try c.encode(name, forKey: .name) }
         if name != nil { try c.encode(classYear, forKey: .classYear) }
         if name != nil { try c.encode(bio, forKey: .bio) }
+        if name != nil { try c.encode(company ?? "", forKey: .company) }
+        if let schoolDomain { try c.encode(schoolDomain, forKey: .schoolDomain) }
         if let showOnGuestLists { try c.encode(showOnGuestLists, forKey: .showOnGuestLists) }
     }
-    private enum Keys: String, CodingKey { case name, classYear, bio, showOnGuestLists }
+    private enum Keys: String, CodingKey { case name, classYear, bio, company, schoolDomain, showOnGuestLists }
 }
 nonisolated struct SchoolPatch: Encodable, Sendable { let schoolDomain: String }
 nonisolated struct SchoolsEnvelope: Decodable, Sendable { let schools: [SchoolOption] }
