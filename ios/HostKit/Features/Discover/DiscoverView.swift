@@ -98,22 +98,32 @@ struct DiscoverView: View {
 
     @ViewBuilder
     private func campusSection(_ school: School) -> some View {
+        let hasFeed = !feed.officialSources.isEmpty
         VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("At \(school.short)").font(.inter(.title3, .semibold))
-                Text("Nights hosted by \(school.name) students. Everyone’s welcome.")
-                    .font(.inter(.footnote))
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("At \(school.short)").font(.inter(.title3, .semibold))
+                    Text(hasFeed
+                        ? "Nights hosted by \(school.name) students, and the school’s official calendar."
+                        : "Nights hosted by \(school.name) students. Everyone’s welcome.")
+                        .font(.inter(.footnote))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                NavigationLink("See all") { CampusView() }
+                    .font(.inter(.subheadline, .medium))
             }
-            if feed.campus.isEmpty {
-                Text("Nothing at \(school.short) yet — host the first one. Your events are tagged with your school automatically.")
+            if feed.onCampus.isEmpty {
+                Text(hasFeed
+                    ? "The official calendar is syncing — pull to refresh in a moment, or host the first night yourself."
+                    : "Nothing at \(school.short) yet — host the first one. Your events are tagged with your school automatically.")
                     .font(.inter(.subheadline))
                     .foregroundStyle(.secondary)
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 14))
             } else {
-                ForEach(feed.campus) { event in
+                ForEach(feed.onCampus.prefix(6)) { event in
                     NavigationLink(value: event) {
                         EventRow(event: event)
                     }

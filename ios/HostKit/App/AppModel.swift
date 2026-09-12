@@ -119,6 +119,13 @@ final class AppModel {
         user = updated
     }
 
+    /// Settings → School. nil means "not a student".
+    func setSchool(_ domain: String?) async throws {
+        let updated = try await api.setSchool(domain)
+        Session.user = updated
+        user = updated
+    }
+
     func setAvatar(_ jpeg: Data) async throws {
         let updated = try await api.setAvatar(jpeg, contentType: PhotoJPEG.contentType)
         Session.user = updated

@@ -312,6 +312,50 @@ model Blast {
 }
 
 // ---------------------------------------------------------------------------
+// Official campus events, pulled from each school's public calendar
+// (lib/campus/sources.ts lists the feeds; lib/campus/sync.ts fills this).
+// ---------------------------------------------------------------------------
+
+/// One event from a school's official calendar. Separate from Event: nobody
+/// hosts it here, there's no guest list, and the page to open is the school's.
+model CampusEvent {
+  id           String   @id @default(cuid())
+  schoolDomain String
+  /// Which feed it came from, e.g. "mit.edu/calendar" (lib/campus/sources.ts).
+  sourceKey    String
+  /// The feed's own id for the event (or event instance), unique per source.
+  externalId   String
+  title        String
+  description  String?
+  /// Wall-clock start in the school's time zone, encoded as UTC — the same
+  /// convention as Event.date, so both apps format it the same way.
+  startsAt     DateTime
+  endsAt       DateTime?
+  allDay       Boolean  @default(false)
+  location     String?
+  /// The club or department putting it on, when the feed says.
+  host         String?
+  /// The event's page on the school's site.
+  url          String
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sourceKey, externalId])
+  @@index([schoolDomain, startsAt])
+}
+
+/// When each feed last ran, and how it went.
+model CampusSync {
+  sourceKey    String    @id
+  schoolDomain String
+  lastRunAt    DateTime?
+  lastOkAt     DateTime?
+  lastError    String?
+  eventCount   Int       @default(0)
+}
+
+// ---------------------------------------------------------------------------
 // Catalog. Seeded data — venue and vendor owners never log in or list anything.
 // Venues and vendors share one table because they share name, artwork, location,
 // price and tags; splitting them would duplicate the entire search stack.

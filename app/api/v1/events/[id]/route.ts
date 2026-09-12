@@ -5,6 +5,7 @@ import { registrationState } from "@/lib/registration";
 import { attendeesPreview } from "@/lib/attendees";
 import { apiError, apiUser, isClubMember, json } from "@/lib/api/http";
 import { eventInclude, serializeEvent } from "@/lib/api/serialize";
+import { campusEventById, isCampusId, serializeCampusEvent } from "@/lib/campus/feed";
 
 /** One night: anyone can read a live public or unlisted night; the owner, the
  *  admins of the club it's posted as, or the device that drafted it, can also
@@ -14,6 +15,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  // An official campus event: public, nothing to manage or register for.
+  if (isCampusId(id)) {
+    const row = await campusEventById(id);
+    return row ? json({ event: serializeCampusEvent(row) }) : apiError("Not found.", 404);
+  }
   const viewer = await apiUser(request);
 
   const event = await db.event.findUnique({

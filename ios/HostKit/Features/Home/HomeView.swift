@@ -48,8 +48,8 @@ struct HomeView: View {
 
                     quickActions
 
-                    if let school = feed.school, !feed.campus.isEmpty {
-                        preview(title: "At \(school.short)", events: Array(feed.campus.prefix(2)))
+                    if let school = feed.school, !feed.onCampus.isEmpty {
+                        preview(title: "At \(school.short)", events: Array(feed.onCampus.prefix(3)))
                     }
 
                     preview(

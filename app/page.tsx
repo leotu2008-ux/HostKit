@@ -8,6 +8,8 @@ import { CITY_COOKIE } from "@/lib/city-cookie";
 import { myUpcomingEvents } from "@/lib/mine";
 import { followingEvents } from "@/lib/clubs";
 import { upcomingOnly } from "@/lib/upcoming";
+import { campusEventsFor } from "@/lib/campus/feed";
+import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
 import { EventTile } from "@/components/event-tile";
@@ -46,7 +48,7 @@ export default async function HomePage() {
   const city = isCity(remembered) ? remembered : (user?.school?.city ?? null);
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [mine, nearby, campus, following] = await Promise.all([
+  const [mine, nearby, campus, following, official] = await Promise.all([
     user ? myUpcomingEvents(user.id, 12) : Promise.resolve([]),
     db.event.findMany({
       where: { ...live, ...(city ? { city } : {}), ...(user ? { ownerId: { not: user.id } } : {}) },
@@ -63,8 +65,10 @@ export default async function HomePage() {
         })
       : Promise.resolve([]),
     user ? followingEvents(user.id, 4) : Promise.resolve([]),
+    campusEventsFor(user?.schoolDomain, 4),
   ]);
   const school = user?.school ?? null;
+  const onCampus = mixCampus(campus, official, 4);
   const cityShort = city ? city.split(",")[0] : null;
 
   return (
@@ -187,21 +191,15 @@ export default async function HomePage() {
           </ul>
         </section>
 
-        {school && campus.length > 0 ? (
+        {school && onCampus.length > 0 ? (
           <section className="mt-10">
             <div className="mb-3 flex items-end justify-between">
               <h2 className="font-display text-xl text-ink">At {school.short}</h2>
-              <Link href="/discover" className="text-sm font-medium text-ink-soft hover:text-ink">
+              <Link href="/campus" className="text-sm font-medium text-ink-soft hover:text-ink">
                 See all →
               </Link>
             </div>
-            <ul className="grid gap-3 md:grid-cols-2">
-              {campus.map((event) => (
-                <li key={event.id}>
-                  <EventCard href={`/e/${event.id}`} event={toCard(event)} />
-                </li>
-              ))}
-            </ul>
+            <CampusMixList rows={onCampus} />
           </section>
         ) : null}
 

@@ -7,6 +7,9 @@ import { CITY_COOKIE } from "@/lib/city-cookie";
 import { groupByDay } from "@/lib/day-groups";
 import { upcomingOnly } from "@/lib/upcoming";
 import { suggestedClubs } from "@/lib/clubs";
+import { campusEventsFor } from "@/lib/campus/feed";
+import { sourcesFor } from "@/lib/campus/sources";
+import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
 import { ClubCard } from "@/components/club-card";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
@@ -37,7 +40,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
 
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [campus, nearby, clubs] = await Promise.all([
+  const [campus, nearby, clubs, official] = await Promise.all([
     user?.schoolDomain
       ? db.event.findMany({
           where: { ...live, schoolDomain: user.schoolDomain, ownerId: { not: user.id } },
@@ -57,11 +60,14 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
       include,
     }),
     suggestedClubs({ schoolDomain: user?.schoolDomain ?? null, city }, 8),
+    campusEventsFor(user?.schoolDomain, 12),
   ]);
 
   const days = groupByDay(nearby);
   const cityShort = city ? city.split(",")[0] : null;
   const school = user?.school ?? null;
+  const onCampus = mixCampus(campus, official, 8);
+  const feeds = sourcesFor(school?.domain);
 
   return (
     <main className="relative isolate flex-1">
@@ -106,24 +112,27 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
               <div>
                 <h2 className="font-display text-xl text-ink">At {school.short}</h2>
                 <p className="text-[13px] text-ink-mute">
-                  Nights hosted by {school.name} students. Everyone’s welcome.
+                  {feeds.length > 0
+                    ? `Nights hosted by ${school.name} students, and the school’s official calendar.`
+                    : `Nights hosted by ${school.name} students. Everyone’s welcome.`}
                 </p>
               </div>
+              <Link href="/campus" className="text-sm font-medium text-ink-soft hover:text-ink">
+                {feeds.length > 0 ? "All campus events →" : "Campus events →"}
+              </Link>
             </div>
-            {campus.length === 0 ? (
+            {onCampus.length === 0 ? (
               <EmptyState
                 title={`Nothing at ${school.short} yet`}
-                body="Host the first one — your events are tagged with your school automatically."
+                body={
+                  feeds.length > 0
+                    ? "The official calendar syncs in the background — or host the first night yourself."
+                    : "Host the first one — your events are tagged with your school automatically."
+                }
                 action={<ButtonLink href="/events/new">Create event</ButtonLink>}
               />
             ) : (
-              <ul className="grid gap-3 md:grid-cols-2">
-                {campus.map((event) => (
-                  <li key={event.id}>
-                    <EventCard href={`/e/${event.id}`} event={toCard(event)} />
-                  </li>
-                ))}
-              </ul>
+              <CampusMixList rows={onCampus} />
             )}
           </section>
         ) : null}

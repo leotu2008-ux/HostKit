@@ -100,6 +100,44 @@ geocoding service). Tagging only surfaces events — anyone nearby can register.
 Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
 `docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
 
+You can also **pick or change your school** in Settings (web and iOS), which
+matters because of the next part.
+
+### Official campus events
+
+Each school's public calendar is pulled into HostKit and shown next to
+student-hosted nights: under **At [School]** on Home and Discover, on
+`/campus` (the whole calendar by day, `?school=mit.edu` for another school),
+and in the app's Discover → See all. Official events open on the school's own
+page; nobody registers for them here.
+
+- `lib/campus/sources.ts` lists the feeds per school — the catalog covers
+  the Boston schools HostKit started with plus the U.S. News top 50, and
+  45 of them have a verified feed: Localist JSON (MIT, BC, Northeastern,
+  USC, UT Austin, Stanford, Yale, Cornell, WashU, UNC, UCSD, Purdue, UGA,
+  Rochester, Wake Forest, FSU), iCalendar from LiveWhale (NYU, UChicago,
+  Brown, Berkeley, Rice, Vanderbilt, CMU, Georgetown, UF, Texas A&M,
+  Minnesota), Trumba (Tufts, Harvard's Gazette, UW, UVA, Brandeis) and
+  home-grown calendars (BU, Duke, Notre Dame, Wisconsin), Bedework JSON
+  (Columbia), CampusGroups RSS (Babson's *Belong*), Princeton's RSS, and
+  plain HTML listings for schools with no feed (Babson's events page, Olin,
+  Wellesley, Dartmouth, Rutgers). No public feed was found for Caltech,
+  Johns Hopkins, Northwestern, Penn, Michigan, Emory, Georgia Tech, UC
+  Davis, UCI, UIUC, UCSB, Ohio State, Maryland, Lehigh or UCLA — they're in
+  the catalog and show student-hosted nights only. Add a feed by adding a
+  line.
+- `lib/campus/parsers/*` turn each format into one shape;
+  `lib/campus/sync.ts` stores it in `CampusEvent` (full replace per feed,
+  next 90 days, wall-clock times like every other event).
+- **When it runs:** `vercel.json` schedules `GET /api/cron/campus-sync`
+  daily (set `CRON_SECRET`; Vercel sends it as a bearer token), and any
+  student's feed older than six hours is refreshed in the background right
+  after their request. Locally, `curl "localhost:3000/api/cron/campus-sync?school=babson.edu"`
+  syncs one school on demand.
+- `GET /api/v1/campus` and `discover.official` serve them as regular events
+  with `official: { source, url, allDay, endsAt }` and ids prefixed
+  `campus_`, so the iOS app's existing rows and detail screen show them.
+
 ## Your account
 
 Both apps open on **Home**: the HostKit brand, **Your events** — what you
@@ -185,6 +223,7 @@ Optional services, both off by default (see `.env.example`):
 | `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob (Vercel → Storage → Blob). Without it photos are stored in Postgres |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes and SMS blasts. Without them the code is logged (and returned in development) and blasts are email-only |
 | `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APNS_ENV` | Push notifications to the iOS app (a .p8 key from developer.apple.com → Keys; `APNS_ENV` is `sandbox` or `production`). Needs a paid developer team; until then notifications stay in the Inbox and email |
+| `CRON_SECRET` | Protects `/api/cron/campus-sync`; Vercel sets it on the scheduled call. Without it the route only answers in development (the background refresh on stale feeds works regardless) |
 
 ## iOS app
 
@@ -200,7 +239,10 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `POST /api/v1/auth/signup` | Name + email + password → account and token, in one step |
 | `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
 | `GET /api/v1/me` | The token's user |
-| `GET /api/v1/discover?city=` | Upcoming public, published events; with a token also `mine` (hosting + going) and a student's `campus` |
+| `GET /api/v1/discover?city=` | Upcoming public, published events; with a token also `mine` (hosting + going) and a student's `campus` and `official` (the school's calendar) |
+| `GET /api/v1/campus?school=` | A school's official calendar, soonest first, with `sources` and `syncedAt` |
+| `GET /api/v1/schools` | The schools Settings can pick, and which have official feeds |
+| `GET /api/cron/campus-sync` | Runs the sync (`Authorization: Bearer $CRON_SECRET`; `?school=` for one) |
 | `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
 | `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
 | `POST /api/v1/events/:id/register` | Register the signed-in account → `{ state: going \| pending \| waitlisted }` (401 without a token) |

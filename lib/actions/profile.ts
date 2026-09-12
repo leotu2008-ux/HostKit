@@ -32,3 +32,12 @@ export async function setGuestListVisibilityAction(formData: FormData) {
   await db.user.update({ where: { id: user.id }, data: { showOnGuestLists: on } });
   refresh();
 }
+
+/** Settings → "Your school": a known school's domain, or "" for none. */
+export async function setSchoolAction(formData: FormData) {
+  const user = await requireUser("/settings");
+  const parsed = profileSchema.safeParse({ schoolDomain: formData.get("schoolDomain") ?? "" });
+  if (!parsed.success) return;
+  await db.user.update({ where: { id: user.id }, data: normalizeProfile(parsed.data) });
+  refresh();
+}
