@@ -23,6 +23,8 @@ struct RootView: View {
                 AccountMenu(inTab: true)
             }
         }
+        // Once per launch, over everything, like the website's splash.
+        .overlay { LaunchSplash() }
     }
 }
 
