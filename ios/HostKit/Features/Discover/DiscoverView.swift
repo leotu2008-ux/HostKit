@@ -11,11 +11,59 @@ struct DiscoverView: View {
     @State private var feed = DiscoverFeed(events: [])
     @State private var isLoading = true
     @State private var path: [HostEvent] = []
+    @State private var query = ""
+
+    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    @ViewBuilder
+    private var searchResults: some View {
+        let found = results
+        if found.isEmpty {
+            ContentUnavailableView.search(text: query)
+                .padding(.top, 40)
+        } else {
+            Text("\(found.count) \(found.count == 1 ? "event" : "events")")
+                .font(.inter(.subheadline))
+                .foregroundStyle(.secondary)
+            ForEach(DayGroup.group(found)) { group in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(group.label).font(.inter(.headline, .semibold))
+                        if let relative = group.relative {
+                            Text(relative).font(.inter(.subheadline)).foregroundStyle(.secondary)
+                        }
+                    }
+                    ForEach(group.events) { event in
+                        NavigationLink(value: event) { EventRow(event: event) }
+                            .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Search across everything Discover already has: the city feed, your
+    /// campus (students' nights and the official calendar) and clubs you follow.
+    private var results: [HostEvent] {
+        let term = query.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty else { return [] }
+        var seen = Set<String>()
+        return (feed.onCampus + feed.following + feed.events)
+            .filter { seen.insert($0.id).inserted }
+            .filter { event in
+                [event.title, event.hostLabel ?? "", event.address ?? "", event.description ?? ""]
+                    .contains { $0.localizedCaseInsensitiveContains(term) }
+            }
+            .sorted { ($0.startsAt ?? .distantFuture) < ($1.startsAt ?? .distantFuture) }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if isSearching {
+                        searchResults
+                    } else {
                     Text("Student socials, professional mixers, and nights just for fun. Register in a tap.")
                         .font(.inter(.subheadline))
                         .foregroundStyle(.secondary)
@@ -66,11 +114,14 @@ struct DiscoverView: View {
                             }
                         }
                     }
+                    } // not searching
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 24)
             }
             .background { BrandWash() }
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic),
+                        prompt: "Search events, hosts, places")
             .navigationTitle(feed.school.map { "At \($0.short)" } ?? "Discover")
             .navigationDestination(for: HostEvent.self) { event in
                 EventDetailView(event: event)
