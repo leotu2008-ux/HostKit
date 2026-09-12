@@ -44,10 +44,10 @@ struct EventDetailView: View {
                     } else if let host = event.hostName {
                         HStack(spacing: 8) {
                             HostAvatar(name: host, size: 24)
-                            Text("Hosted by \(host)").font(.inter(.subheadline))
+                            Text(event.isOfficial ? "By \(host)" : "Hosted by \(host)").font(.inter(.subheadline))
                         }
                     }
-                    if event.published {
+                    if event.published && !event.isOfficial {
                         GoingRow(attendees: event.attendees ?? [], total: event.going)
                             .padding(.top, 4)
                     }
@@ -67,10 +67,17 @@ struct EventDetailView: View {
                             detail: event.address == nil ? nil : event.city)
                     }
                     .buttonStyle(.plain)
-                    InfoRow(
-                        tile: { IconTile(systemName: "ticket") },
-                        title: event.ticketLabel,
-                        detail: "\(event.spotsLeft) of \(event.capacity) spots left")
+                    if let official = event.official {
+                        InfoRow(
+                            tile: { IconTile(systemName: "building.columns") },
+                            title: official.source,
+                            detail: "From the school’s official calendar")
+                    } else {
+                        InfoRow(
+                            tile: { IconTile(systemName: "ticket") },
+                            title: event.ticketLabel,
+                            detail: "\(event.spotsLeft) of \(event.capacity) spots left")
+                    }
                 }
 
                 if let description = event.description, !description.isEmpty {
@@ -90,7 +97,7 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: model.api.webURL(for: event)) {
+                ShareLink(item: event.official?.pageURL ?? model.api.webURL(for: event)) {
                     Label("Share", systemImage: "square.and.arrow.up")
                 }
             }
@@ -107,7 +114,26 @@ struct EventDetailView: View {
 
     @ViewBuilder
     private var registerBar: some View {
-        if event.published {
+        if let official = event.official {
+            // Official events are the school's: details and sign-up live on its site.
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Official event").font(.inter(.subheadline, .semibold))
+                    Text(official.source).font(.inter(.caption)).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                if let url = official.pageURL {
+                    Button("Open", systemImage: "arrow.up.right") { openURL(url) }
+                        .buttonStyle(.glassProminent)
+                        .controlSize(.large)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .glassEffect(.regular, in: .capsule)
+            .padding(.horizontal)
+            .padding(.bottom, 4)
+        } else if event.published {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("\(event.going) going").font(.inter(.subheadline, .semibold))

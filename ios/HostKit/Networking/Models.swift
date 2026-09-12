@@ -36,6 +36,11 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var attendees: [Attendee]?
     /// The club this was posted as, when it was.
     var club: EventClub?
+    /// Set on events from a school's official calendar (id starts with
+    /// `campus_`): nobody registers here — `url` is the page to open.
+    var official: OfficialInfo?
+
+    var isOfficial: Bool { official != nil }
 
     /// Who to show as the host: the club, else the person.
     var hostLabel: String? { club?.name ?? hostName }
@@ -51,7 +56,9 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var isRegistered: Bool { registrationState == .going }
 
     var endsAt: Date? {
-        startsAt.map { $0.addingTimeInterval(TimeInterval(durationHours * 3600)) }
+        if let official, official.allDay { return nil }
+        if let end = official?.endsAt { return end }
+        return startsAt.map { $0.addingTimeInterval(TimeInterval(durationHours * 3600)) }
     }
 
     var spotsLeft: Int { max(0, capacity - going) }
@@ -301,6 +308,43 @@ nonisolated struct School: Codable, Hashable, Sendable {
     let city: String?
 }
 
+/// A school the person can pick in Settings (`GET /api/v1/schools`).
+nonisolated struct SchoolOption: Codable, Hashable, Identifiable, Sendable {
+    let domain: String
+    let name: String
+    let short: String
+    let city: String?
+    /// True when HostKit syncs this school's official calendar.
+    let hasOfficialEvents: Bool
+    var id: String { domain }
+}
+
+/// Where an official campus event came from, and its real page.
+nonisolated struct OfficialInfo: Codable, Hashable, Sendable {
+    let source: String
+    let url: String
+    let allDay: Bool
+    let endsAt: Date?
+
+    var pageURL: URL? { URL(string: url) }
+}
+
+/// One feed behind a school's official events, for crediting it.
+nonisolated struct OfficialSource: Codable, Hashable, Identifiable, Sendable {
+    let key: String
+    let name: String
+    let url: String
+    var id: String { key }
+}
+
+/// `GET /api/v1/campus`: the school's whole official calendar, soonest first.
+nonisolated struct CampusFeed: Decodable, Sendable {
+    var school: School?
+    var events: [HostEvent] = []
+    var sources: [OfficialSource] = []
+    var syncedAt: Date?
+}
+
 nonisolated struct HostUser: Codable, Hashable, Sendable {
     let id: String
     var name: String
@@ -331,6 +375,14 @@ nonisolated struct DiscoverFeed: Decodable, Sendable {
     /// Clubs worth following at the viewer's school or in the city.
     var clubs: [Club] = []
     var school: School?
+    /// The school's own calendar (lib/campus on the server), soonest first.
+    var official: [HostEvent] = []
+    var officialSources: [OfficialSource] = []
+
+    /// "At [School]": student-hosted nights and official events together, by date.
+    var onCampus: [HostEvent] {
+        (campus + official).sorted { ($0.startsAt ?? .distantFuture) < ($1.startsAt ?? .distantFuture) }
+    }
 }
 
 // MARK: Manage — outreach, blasts

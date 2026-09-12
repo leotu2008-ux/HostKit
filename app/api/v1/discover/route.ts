@@ -1,5 +1,8 @@
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { isCity } from "@/lib/catalog";
+import { campusEventsFor, campusSourcesInfo, serializeCampusEvent } from "@/lib/campus/feed";
+import { refreshIfStale } from "@/lib/campus/sync";
 import { apiUser, json } from "@/lib/api/http";
 import { eventInclude, serializeClub, serializeEvent, serializeSchool } from "@/lib/api/serialize";
 import { clubViewer } from "@/lib/api/clubs";
@@ -14,8 +17,9 @@ const orderBy = [{ date: "asc" as const }, { createdAt: "desc" as const }];
 /**
  * Upcoming public nights, optionally for one city. A signed-in viewer also
  * gets `mine` (what they host or are going to), `following` (from clubs they
- * follow) and a student gets `campus`; `clubs` are the ones worth following
- * at their school or in the city.
+ * follow) and a student gets `campus` (nights hosted by students there) and
+ * `official` (the school's own calendar, see lib/campus); `clubs` are the
+ * ones worth following at their school or in the city.
  */
 export async function GET(request: Request) {
   const viewer = await apiUser(request);
@@ -23,7 +27,7 @@ export async function GET(request: Request) {
   const city = isCity(rawCity) ? rawCity : null;
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [events, campus, mine, following, clubs, rel] = await Promise.all([
+  const [events, campus, mine, following, clubs, rel, official, officialInfo] = await Promise.all([
     db.event.findMany({
       where: { ...live, ...(city ? { city } : {}) },
       orderBy,
@@ -42,7 +46,10 @@ export async function GET(request: Request) {
     viewer ? followingEvents(viewer.id, 12) : Promise.resolve([]),
     suggestedClubs({ schoolDomain: viewer?.schoolDomain ?? null, city }, 12),
     clubViewer(viewer?.id ?? null),
+    campusEventsFor(viewer?.schoolDomain, 12),
+    campusSourcesInfo(viewer?.schoolDomain),
   ]);
+  if (viewer?.schoolDomain) after(() => refreshIfStale(viewer.schoolDomain));
 
   const states = await registrationStates(
     [...events, ...campus, ...mine, ...following].map((e) => e.id),
@@ -62,5 +69,8 @@ export async function GET(request: Request) {
     following: following.map(out),
     clubs: clubs.map((c) => serializeClub(c, rel)),
     school: serializeSchool(viewer?.schoolDomain),
+    official: official.map(serializeCampusEvent),
+    officialSources: officialInfo.sources,
+    officialSyncedAt: officialInfo.syncedAt,
   });
 }

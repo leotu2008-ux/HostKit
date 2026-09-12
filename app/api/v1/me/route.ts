@@ -10,8 +10,8 @@ export async function GET(request: Request) {
   return json({ user: serializeUser(user) });
 }
 
-/** Edits name, class year and bio. School comes from the email and can't
- *  be changed here. */
+/** Edits name, class year, bio, the guest-list setting and the school
+ *  (`schoolDomain`: a known school, or "" for none). */
 export async function PATCH(request: Request) {
   const user = await apiUser(request);
   if (!user) return apiError("Sign in first.", 401);

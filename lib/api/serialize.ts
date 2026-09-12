@@ -166,6 +166,21 @@ export type ApiEvent = {
   /** A photo the host uploaded; null means draw the cover from the id. */
   coverUrl: string | null;
   webPath: string;
+  /**
+   * Set on events pulled from a school's official calendar (id starts with
+   * `campus_`): nobody registers here — `url` is the page to open.
+   */
+  official?: ApiOfficial | null;
+};
+
+export type ApiOfficial = {
+  /** The feed it came from: "MIT Events Calendar". */
+  source: string;
+  /** The event's page on the school's site. */
+  url: string;
+  allDay: boolean;
+  /** Wall-clock end, encoded like `startsAt`; null when the feed has none. */
+  endsAt: string | null;
 };
 
 export function serializeEvent(
@@ -207,6 +222,7 @@ export function serializeEvent(
       : null,
     coverUrl: event.coverUrl ?? null,
     webPath: `/e/${event.id}`,
+    official: null,
   };
 }
 

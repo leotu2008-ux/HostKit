@@ -28,7 +28,11 @@ struct EventRow: View {
                     if showsStatus {
                         StatusPill(text: event.statusLabel, tint: event.published ? .accentColor : .secondary)
                     }
-                    StatusPill(text: "\(event.going) going", tint: .green)
+                    if event.isOfficial {
+                        StatusPill(text: "Official", tint: .indigo)
+                    } else {
+                        StatusPill(text: "\(event.going) going", tint: .green)
+                    }
                 }
                 .padding(.top, 2)
             }

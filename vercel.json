@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/cron/campus-sync", "schedule": "0 10 * * *" }
+  ]
+}

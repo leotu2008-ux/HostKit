@@ -43,6 +43,26 @@ nonisolated struct APIClient: Sendable {
         return envelope.user
     }
 
+    /// The schools a person can pick, and which have official calendars.
+    func schools() async throws -> [SchoolOption] {
+        let envelope: SchoolsEnvelope = try await send("GET", "/api/v1/schools")
+        return envelope.schools
+    }
+
+    /// Change school (nil = not a student). Official events follow it.
+    func setSchool(_ domain: String?) async throws -> HostUser {
+        let body = try Self.encode(SchoolPatch(schoolDomain: domain ?? ""))
+        let envelope: UserEnvelope = try await send("PATCH", "/api/v1/me", body: body)
+        return envelope.user
+    }
+
+    /// A school's official calendar; the signed-in student's when `school` is nil.
+    func campus(school: String? = nil) async throws -> CampusFeed {
+        var path = "/api/v1/campus"
+        if let school { path += "?school=\(school)" }
+        return try await send("GET", path)
+    }
+
     /// Only this one setting; the server leaves everything else alone.
     func setShowOnGuestLists(_ on: Bool) async throws -> HostUser {
         let body = try Self.encode(ProfilePatch(name: nil, classYear: nil, bio: nil, showOnGuestLists: on))
@@ -367,6 +387,8 @@ nonisolated struct ProfilePatch: Encodable, Sendable {
     }
     private enum Keys: String, CodingKey { case name, classYear, bio, showOnGuestLists }
 }
+nonisolated struct SchoolPatch: Encodable, Sendable { let schoolDomain: String }
+nonisolated struct SchoolsEnvelope: Decodable, Sendable { let schools: [SchoolOption] }
 nonisolated struct GuestEnvelope: Decodable, Sendable { let guest: Guest }
 nonisolated struct GuestsEnvelope: Decodable, Sendable {
     let guests: [Guest]

@@ -46,6 +46,33 @@ export function toEventCard(event: {
   };
 }
 
+/** Shapes an official campus event (lib/campus) for the same card. */
+export function toCampusCard(row: {
+  id: string;
+  title: string;
+  startsAt: Date;
+  endsAt: Date | null;
+  location: string | null;
+  host: string | null;
+  imageUrl: string | null;
+  schoolDomain: string;
+  sourceName?: string | null;
+}): EventCardEvent & { href: string } {
+  const hours = row.endsAt ? Math.round((row.endsAt.getTime() - row.startsAt.getTime()) / 3_600_000) : 2;
+  return {
+    id: `campus_${row.id}`,
+    title: row.title,
+    city: row.location ?? (schoolFor(row.schoolDomain)?.city ?? ""),
+    date: row.startsAt,
+    durationHours: Math.min(24, Math.max(1, hours || 1)),
+    hostName: row.host ?? row.sourceName ?? undefined,
+    status: "Official",
+    schoolDomain: row.schoolDomain,
+    coverUrl: row.imageUrl,
+    href: `/campus/${row.id}`,
+  };
+}
+
 /**
  * One night in a list: when, the title, who and where, with the cover as a
  * thumbnail on the right. The same row works in Discover and in a host's
