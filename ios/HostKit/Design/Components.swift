@@ -119,13 +119,15 @@ struct HostAvatar: View {
 
     var body: some View {
         ZStack {
+            // Monochrome, like the accent: initials in the background colour
+            // on a soft ink gradient, in both appearances.
             Text(initials.isEmpty ? "?" : initials)
                 .font(.inter(size: size * 0.38, .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color(uiColor: .systemBackground))
                 .frame(width: size, height: size)
                 .background(
                     LinearGradient(
-                        colors: [.accentColor, Color(hex: "#986000")],
+                        colors: [Color.primary.opacity(0.62), Color.primary.opacity(0.9)],
                         startPoint: .topLeading, endPoint: .bottomTrailing),
                     in: .circle)
             if let imageURL {
@@ -172,11 +174,12 @@ struct AmbientBackground: View {
 struct BrandWash: View {
     var body: some View {
         ZStack {
+            // A quiet neutral glow now that the accent is monochrome.
             RadialGradient(
-                colors: [Color.accentColor.opacity(0.18), .clear],
+                colors: [Color.primary.opacity(0.10), .clear],
                 center: .init(x: 0.15, y: 0), startRadius: 0, endRadius: 320)
             RadialGradient(
-                colors: [Color(hex: "#986000").opacity(0.14), .clear],
+                colors: [Color.primary.opacity(0.05), .clear],
                 center: .init(x: 0.9, y: 0), startRadius: 0, endRadius: 280)
         }
         .frame(height: 360)

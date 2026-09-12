@@ -77,7 +77,7 @@ export default async function HomePage() {
       {!remembered ? <CityDetector /> : null}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-clay)_18%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-amber)_14%,transparent),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-clay)_9%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-clay)_5%,transparent),transparent)]"
       />
 
       <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-12 md:px-8 md:pt-14">
