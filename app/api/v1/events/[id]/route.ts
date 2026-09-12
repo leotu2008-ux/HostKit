@@ -3,12 +3,13 @@ import { isPublicPageVisible } from "@/lib/listing";
 import { requestOwnsDraft } from "@/lib/api/drafts";
 import { registrationState } from "@/lib/registration";
 import { attendeesPreview } from "@/lib/attendees";
-import { apiError, apiUser, json } from "@/lib/api/http";
+import { apiError, apiUser, isClubMember, json } from "@/lib/api/http";
 import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 import { campusEventById, isCampusId, serializeCampusEvent } from "@/lib/campus/feed";
 
-/** One night: anyone can read a live public or unlisted night; the owner, or
- *  the device that drafted it, can also read drafts and private nights. */
+/** One night: anyone can read a live public or unlisted night; the owner, the
+ *  admins of the club it's posted as, or the device that drafted it, can also
+ *  read drafts and private nights. */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -30,7 +31,8 @@ export async function GET(
   if (!event) return apiError("Not found.", 404);
   const canManage =
     (viewer !== null && event.ownerId === viewer.id) ||
-    requestOwnsDraft(request, event);
+    requestOwnsDraft(request, event) ||
+    (viewer !== null && event.clubId !== null && (await isClubMember(viewer.id, event.clubId)));
   if (!canManage && !isPublicPageVisible(event)) {
     return apiError("Not found.", 404);
   }

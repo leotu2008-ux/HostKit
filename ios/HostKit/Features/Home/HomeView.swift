@@ -11,6 +11,8 @@ struct HomeView: View {
     @State private var isSigningIn = false
     @State private var isInboxOpen = false
     @State private var path: [HostEvent] = []
+    @State private var schoolPromptDismissed = Session.schoolPromptDismissed
+    @State private var isEditingProfile = false
 
     private var city: String? { Session.city.flatMap { $0.isEmpty ? nil : $0 } }
 
@@ -38,6 +40,10 @@ struct HomeView: View {
 
                     if let notice = model.sampleNotice {
                         NoticeBanner(text: notice)
+                    }
+
+                    if model.isSignedIn, model.user?.school == nil, !schoolPromptDismissed {
+                        schoolPrompt
                     }
 
                     YourEventsSection(events: feed.mine, isLoading: isLoading) { isSigningIn = true }
@@ -71,21 +77,54 @@ struct HomeView: View {
                         Button("Inbox", systemImage: model.unreadCount > 0 ? "bell.badge" : "bell") { isInboxOpen = true }
                             .badge(model.unreadCount)
                     }
-                    Button("Create event", systemImage: "plus") { router.tab = .create }
+                    Button("Create event", systemImage: "plus") { router.startCreate() }
                 }
             }
             .sheet(isPresented: $isSigningIn) { SignInView() }
             .sheet(isPresented: $isInboxOpen) { InboxView() }
+            .sheet(isPresented: $isEditingProfile) {
+                if let user = model.user { EditProfileSheet(user: user) }
+            }
             .task(id: "\(city ?? "")|\(model.user?.id ?? "")") { await load() }
             .refreshable { await load() }
         }
+    }
+
+    /// One nudge for accounts with no school: the campus feed and the
+    /// official calendar only switch on once they pick one.
+    private var schoolPrompt: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Are you a student?").font(.inter(.headline, .semibold))
+            Text("Pick your school and Discover leads with your campus — official events included.")
+                .font(.inter(.footnote))
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Button("Pick my school") {
+                    dismissSchoolPrompt()
+                    isEditingProfile = true
+                }
+                .buttonStyle(.glassProminent)
+                Button("Not a student", action: dismissSchoolPrompt)
+                    .buttonStyle(.glass)
+            }
+            .padding(.top, 4)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.background, in: .rect(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.quaternary))
+    }
+
+    private func dismissSchoolPrompt() {
+        Session.schoolPromptDismissed = true
+        withAnimation { schoolPromptDismissed = true }
     }
 
     private var quickActions: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Where to next").font(.inter(.title3, .semibold))
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                action("Create an event", "plus.circle.fill", "Publish when ready") { router.tab = .create }
+                action("Create an event", "plus.circle.fill", "Publish when ready") { router.startCreate() }
                 action("Discover", "sparkles", "Near you and at school") { router.tab = .discover }
                 action("My events", "calendar", "Upcoming and past") { router.tab = .events }
                 action("Profile", "person.crop.circle", "Photo, phone, settings") { router.tab = .profile }

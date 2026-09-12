@@ -48,6 +48,12 @@ nonisolated enum Session {
         set { UserDefaults.standard.set(newValue, forKey: calendarKey) }
     }
 
+    /// Home's "Are you a student?" nudge, shown once to accounts with no school.
+    static var schoolPromptDismissed: Bool {
+        get { UserDefaults.standard.bool(forKey: "hostkit.schoolPromptDismissed") }
+        set { UserDefaults.standard.set(newValue, forKey: "hostkit.schoolPromptDismissed") }
+    }
+
     /// Event id → calendar entry identifier, so a night is only added once.
     static var calendarEntries: [String: String] {
         get { UserDefaults.standard.dictionary(forKey: calendarEntriesKey) as? [String: String] ?? [:] }

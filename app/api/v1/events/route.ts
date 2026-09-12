@@ -7,6 +7,7 @@ import { claimMatches, newClaimToken } from "@/lib/drafts";
 import { requestDrafts } from "@/lib/api/drafts";
 import { apiError, apiUser, json, readJson } from "@/lib/api/http";
 import { canManageClub, managedClubIds } from "@/lib/clubs";
+import { afterPublish } from "@/lib/publish";
 import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 
 /**
@@ -146,6 +147,9 @@ export async function POST(request: Request) {
     published: user ? (input.publish ?? false) : false,
     schoolDomain: user?.schoolDomain ?? null,
   });
+  // Created live in one step ("Publish now") is still a first publish: the
+  // club's followers hear about it just as they would via /publish.
+  if (user && input.publish) await afterPublish(created.id);
 
   const full = await db.event.findUniqueOrThrow({ where: { id: created.id }, include: eventInclude });
   return json(

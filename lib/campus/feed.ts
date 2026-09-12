@@ -35,13 +35,26 @@ export type CampusEventRow = {
   imageUrl: string | null;
 };
 
-/** Upcoming official events for a school, soonest first. */
-export async function campusEventsFor(schoolDomain: string | null | undefined, take = 200): Promise<CampusEventRow[]> {
+/** Upcoming official events for a school, soonest first; `q` matches the title, host or place. */
+export async function campusEventsFor(
+  schoolDomain: string | null | undefined,
+  take = 200,
+  q: string | null = null,
+): Promise<CampusEventRow[]> {
   if (!schoolDomain) return [];
   const now = new Date();
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const search = q?.trim()
+    ? {
+        OR: [
+          { title: { contains: q.trim(), mode: "insensitive" as const } },
+          { host: { contains: q.trim(), mode: "insensitive" as const } },
+          { location: { contains: q.trim(), mode: "insensitive" as const } },
+        ],
+      }
+    : {};
   return db.campusEvent.findMany({
-    where: { schoolDomain, startsAt: { gte: today } },
+    where: { schoolDomain, startsAt: { gte: today }, ...search },
     orderBy: [{ startsAt: "asc" }, { title: "asc" }],
     take,
   });

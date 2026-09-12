@@ -152,7 +152,7 @@ struct ClubView: View {
                     .disabled(isBusy)
                 }
                 if club.canManage {
-                    Button("Post an event", systemImage: "plus.circle") { router.tab = .create }
+                    Button("Post an event", systemImage: "plus.circle") { router.startCreate() }
                         .buttonStyle(.glass)
                         .controlSize(.large)
                 }

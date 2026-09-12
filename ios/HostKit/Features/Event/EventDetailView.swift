@@ -6,9 +6,17 @@ struct EventDetailView: View {
     @Environment(\.openURL) private var openURL
     @State private var event: HostEvent
     @State private var isRegistering = false
+    @State private var calendarAdded: Bool
 
     init(event: HostEvent) {
         _event = State(initialValue: event)
+        _calendarAdded = State(initialValue: Session.calendarEntries[event.id] != nil)
+    }
+
+    /// Official events have no registration, so the calendar is a button.
+    private func addToCalendar() async {
+        let link = event.official?.pageURL ?? model.api.webURL(for: event)
+        calendarAdded = await CalendarSync.add(event, link: link)
     }
 
     var body: some View {
@@ -78,6 +86,18 @@ struct EventDetailView: View {
                             title: event.ticketLabel,
                             detail: "\(event.spotsLeft) of \(event.capacity) spots left")
                     }
+                }
+
+                if event.isOfficial, event.startsAt != nil {
+                    Button {
+                        Task { await addToCalendar() }
+                    } label: {
+                        Label(calendarAdded ? "In your calendar" : "Add to calendar",
+                              systemImage: calendarAdded ? "checkmark.circle.fill" : "calendar.badge.plus")
+                            .font(.inter(.subheadline, .semibold))
+                    }
+                    .buttonStyle(.glass)
+                    .disabled(calendarAdded)
                 }
 
                 if let description = event.description, !description.isEmpty {
