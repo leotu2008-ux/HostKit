@@ -99,8 +99,12 @@ export async function registerGuest(input: {
   });
   if (!event) return NOT_LISTED;
 
-  const isOwner = viewer.id === event.ownerId;
-  if (!isPublicPageVisible(event) && !isOwner) return NOT_LISTED;
+  // The owner and the admins of the club it's posted as run the night: they
+  // see it while private and never queue behind approval or the waitlist.
+  const isHost =
+    viewer.id === event.ownerId ||
+    (event.club?.members.some((m) => m.userId === viewer.id) ?? false);
+  if (!isPublicPageVisible(event) && !isHost) return NOT_LISTED;
 
   const email = viewer.email.trim().toLowerCase();
 
@@ -118,7 +122,7 @@ export async function registerGuest(input: {
     });
     const decision = decideRegistration({
       existing: existing?.rsvpStatus ?? null,
-      isHost: isOwner,
+      isHost,
       requiresApproval: event.requiresApproval,
       attending,
       capacity: event.guestCount,

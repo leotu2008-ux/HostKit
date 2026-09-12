@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { EventCover } from "@/components/event-cover";
 import { formatEventWhen } from "@/lib/when";
-import type { MineRole } from "@/lib/mine";
+import { mineRoleLabel, type MineRole } from "@/lib/mine-format";
 
 /** A compact card for the "Your events" strip: cover on top, title, when, your role. */
 export function EventTile({
@@ -40,7 +40,7 @@ export function EventTile({
               : "mt-2 inline-block rounded-full bg-forest-wash px-2 py-0.5 text-[11px] font-medium text-forest"
           }
         >
-          {hosting ? (event.published ? "Hosting" : "Draft") : "Going"}
+          {mineRoleLabel(event.role, event.published)}
         </span>
       </div>
     </Link>
