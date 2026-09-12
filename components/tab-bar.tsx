@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
 
+/** Creating an event lives behind the "Create event" buttons on Home and
+ *  My events (and /events/new), not on the bar. */
 const TABS = [
   { href: "/", label: "Home", icon: HomeIcon, match: "home" },
   { href: "/discover", label: "Discover", icon: DiscoverIcon, match: "discover" },
-  { href: "/events/new", label: "Create", icon: CreateIcon, match: "create" },
   { href: "/events", label: "Events", icon: NightsIcon, match: "nights" },
   { href: "/profile", label: "Profile", icon: YouIcon, match: "you" },
 ] as const;
@@ -15,12 +16,8 @@ const TABS = [
 function tabActive(pathname: string, match: (typeof TABS)[number]["match"]) {
   if (match === "home") return pathname === "/";
   if (match === "discover") return pathname.startsWith("/discover");
-  if (match === "create") return pathname === "/events/new";
   if (match === "nights") {
-    return (
-      pathname === "/events" ||
-      (pathname.startsWith("/events/") && pathname !== "/events/new")
-    );
+    return pathname === "/events" || pathname.startsWith("/events/");
   }
   if (match === "you") {
     return (
@@ -79,7 +76,7 @@ export function TabBar() {
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-paper/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-4">
         {TABS.map((tab) => {
           const active = tabActive(pathname, tab.match);
           const Icon = tab.icon;
@@ -134,26 +131,6 @@ function DiscoverIcon({ active }: { active: boolean }) {
         strokeLinecap="round"
       />
     </svg>
-  );
-}
-
-function CreateIcon({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cx(
-        "flex h-8 w-8 items-center justify-center rounded-full",
-        active ? "bg-clay text-white" : "bg-sunk text-ink-soft",
-      )}
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path
-          d="M12 5v14M5 12h14"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
-      </svg>
-    </span>
   );
 }
 

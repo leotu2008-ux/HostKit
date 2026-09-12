@@ -146,7 +146,8 @@ host and what you've registered for, soonest first (`lib/mine.ts`) — quick
 actions, and a taste of what's on nearby. **Discover** (`/discover`) is the
 full feed with the city picker. The logo (and your avatar) opens the account
 menu: profile, your events, past events, settings, sign out; on phones the
-tab bar is Home · Discover · Create · Events · Profile.
+tab bar is Home · Discover · Events · Profile (creating an event is behind
+the "Create event" buttons, not a tab).
 
 - **Profile picture** and **event covers** are uploads (`lib/images.ts`):
   JPEG/PNG/WebP up to 5 MB, downscaled in the client first. They go to

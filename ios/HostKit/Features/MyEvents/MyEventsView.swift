@@ -34,7 +34,7 @@ struct MyEventsView: View {
                     } description: {
                         Text("Create an event right here — no account needed until you publish it.")
                     } actions: {
-                        Button("Create event") { router.tab = .create }
+                        Button("Create event") { router.startCreate() }
                             .buttonStyle(.glassProminent)
                         Button("Sign in") { isSigningIn = true }
                     }
@@ -52,7 +52,7 @@ struct MyEventsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Create event", systemImage: "plus") { router.tab = .create }
+                    Button("Create event", systemImage: "plus") { router.startCreate() }
                 }
             }
             .sheet(isPresented: $isSigningIn) {

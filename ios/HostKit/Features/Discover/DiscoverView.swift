@@ -81,7 +81,7 @@ struct DiscoverView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Create event", systemImage: "plus") { router.tab = .create }
+                    Button("Create event", systemImage: "plus") { router.startCreate() }
                 }
             }
             .task(id: "\(city ?? "")|\(model.user?.id ?? "")") { await load() }
