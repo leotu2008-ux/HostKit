@@ -5,6 +5,7 @@ import { parseBedework } from "@/lib/campus/parsers/bedework";
 import { parseCards } from "@/lib/campus/parsers/cards";
 import { parseBabson } from "@/lib/campus/parsers/babson";
 import { parseCampusGroups } from "@/lib/campus/parsers/campusgroups";
+import { parseRss } from "@/lib/campus/parsers/rss";
 import { parseClock, parseIcsDate, parseOffsetIso, wallClock } from "@/lib/campus/time";
 import { decodeEntities, htmlToText } from "@/lib/campus/text";
 import { selectUpcoming } from "@/lib/campus/sync";
@@ -268,6 +269,57 @@ describe("campusgroups parser", () => {
   });
 });
 
+describe("rss parser", () => {
+  it("takes pubDate as the event start", () => {
+    const xml = `<rss><channel><item><title>Open Studio &amp; Tea</title><link>https://www.princeton.edu/events/2026/open-studio</link>
+      <description>Drop in.</description><pubDate>Fri, 11 Sep 2026 16:30:00 -0400</pubDate><dc:creator>Princeton University</dc:creator><guid>g1</guid></item>
+      <item><title>No date</title><link>https://x</link></item></channel></rss>`;
+    const events = parseRss(xml, { timeZone: NY, pageUrl: "https://www.princeton.edu/events" });
+    expect(events).toHaveLength(1);
+    expect(events[0].title).toBe("Open Studio & Tea");
+    expect(events[0].startsAt.toISOString()).toBe("2026-09-11T16:30:00.000Z");
+    expect(events[0].externalId).toBe("g1");
+    expect(events[0].host).toBe("Princeton University");
+  });
+});
+
+describe("cards parser with a date box", () => {
+  const html = `<div class="event-teaser"><div class="event-teaser__date"><div class="event-teaser__date-day"> 12</div><div class="event-teaser__date-month"> Sep</div></div>
+    <h2 class="event-teaser__title"><a class="event-teaser__title-link" href="/events/event?event=81792"> Toni Dove: Sunjammer </a></h2>
+    <div class="event-teaser__time"> 7:30 pm - 8:30 pm</div><div class="event-teaser__summary"> A cosmic experience.</div></div>
+    <div class="event-teaser"><div class="event-teaser__date-day">3</div><div class="event-teaser__date-month">Jan</div>
+    <h2><a href="/events/event?event=1">Winter thing</a></h2></div>`;
+  it("reads month/day boxes and clock text, inferring the year", () => {
+    const events = parseCards(html, {
+      timeZone: NY, pageUrl: "https://home.dartmouth.edu/events", itemClass: "event-teaser",
+      dateBox: { month: "event-teaser__date-month", day: "event-teaser__date-day", time: "event-teaser__time" },
+    });
+    expect(events).toHaveLength(2);
+    expect(events[0].title).toBe("Toni Dove: Sunjammer");
+    expect(events[0].startsAt.getUTCMonth()).toBe(8);
+    expect(events[0].startsAt.getUTCDate()).toBe(12);
+    expect(events[0].startsAt.getUTCHours()).toBe(19);
+    expect(events[0].endsAt?.getUTCHours()).toBe(20);
+    expect(events[0].allDay).toBe(false);
+    expect(events[0].url).toBe("https://home.dartmouth.edu/events/event?event=81792");
+    expect(events[1].allDay).toBe(true);
+    expect(events[1].startsAt.getUTCFullYear()).toBeGreaterThanOrEqual(new Date().getUTCFullYear());
+  });
+});
+
+describe("cards parser with dates in text", () => {
+  it("reads 'Month D, YYYY, h:mm p.m.' when there's no <time datetime>", () => {
+    const html = `<article class="c--event-card"><time> Sep<span>11</span> </time>
+      <h3><a href="/event/open-viewing">Open Viewing Nights</a></h3>
+      <p>Thursday, September 11, 2026, 8:30 p.m.-Thursday, September 24, 2026, 10:30 p.m.</p></article>`;
+    const [e] = parseCards(html, { timeZone: NY, pageUrl: "https://www.rutgers.edu/events", itemClass: "c--event-card" });
+    expect(e.title).toBe("Open Viewing Nights");
+    expect(e.startsAt.toISOString()).toBe("2026-09-11T20:30:00.000Z");
+    expect(e.allDay).toBe(false);
+    expect(e.url).toBe("https://www.rutgers.edu/event/open-viewing");
+  });
+});
+
 describe("sources", () => {
   it("only names known schools, with unique keys", () => {
     const domains = new Set(SCHOOLS.map((s) => s.domain));
@@ -275,5 +327,10 @@ describe("sources", () => {
     expect(new Set(CAMPUS_SOURCES.map((s) => s.key)).size).toBe(CAMPUS_SOURCES.length);
     expect(sourcesFor("babson.edu")).toHaveLength(2);
     expect(sourcesFor(null)).toEqual([]);
+    // Every top-50 school is in the catalog, feed or not.
+    for (const d of ["princeton.edu", "stanford.edu", "caltech.edu", "umich.edu", "purdue.edu", "rochester.edu"]) {
+      expect(SCHOOLS.some((s) => s.domain === d)).toBe(true);
+    }
+    expect(SCHOOLS.length).toBeGreaterThanOrEqual(50);
   });
 });

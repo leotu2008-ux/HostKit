@@ -7,7 +7,7 @@ import { sourcesFor, SCHOOLS_WITH_FEEDS } from "@/lib/campus/sources";
 import { lastSyncedAt, refreshIfStale } from "@/lib/campus/sync";
 import { groupByDay } from "@/lib/day-groups";
 import { EventCard, toCampusCard } from "@/components/event-card";
-import { ButtonLink, EmptyState } from "@/components/ui";
+import { Button, ButtonLink, EmptyState, Select } from "@/components/ui";
 
 export const metadata = { title: "Campus events" };
 
@@ -56,24 +56,27 @@ export default async function CampusPage({
         </p>
       ) : null}
 
-      <nav className="mt-6 flex flex-wrap gap-1.5" aria-label="School">
-        {SCHOOLS.filter((s) => SCHOOLS_WITH_FEEDS.has(s.domain)).map((s) => {
-          const active = s.domain === school?.domain;
-          return (
-            <Link
-              key={s.domain}
-              href={`/campus?school=${s.domain}`}
-              className={
-                active
-                  ? "rounded-full bg-ink px-3 py-1 text-[13px] font-medium text-surface"
-                  : "rounded-full border border-line px-3 py-1 text-[13px] font-medium text-ink-soft hover:border-line-strong hover:text-ink"
-              }
-            >
-              {s.short}
-            </Link>
-          );
-        })}
-      </nav>
+      <form method="get" className="mt-6 flex flex-wrap items-center gap-2" aria-label="School">
+        <label htmlFor="campus-school" className="text-[13px] font-medium text-ink-soft">
+          Show
+        </label>
+        <Select id="campus-school" name="school" defaultValue={school?.domain ?? ""} className="w-72">
+          <option value="">{user?.schoolDomain ? "My school" : "Pick a school"}</option>
+          {SCHOOLS.filter((s) => SCHOOLS_WITH_FEEDS.has(s.domain)).map((s) => (
+            <option key={s.domain} value={s.domain}>
+              {s.name}
+            </option>
+          ))}
+        </Select>
+        <Button type="submit" variant="secondary" size="sm">
+          Go
+        </Button>
+        {school && school.domain !== user?.schoolDomain && user ? (
+          <Link href="/campus" className="text-[13px] text-ink-mute underline hover:text-ink">
+            Back to mine
+          </Link>
+        ) : null}
+      </form>
 
       {!school ? (
         <div className="mt-8">

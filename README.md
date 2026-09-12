@@ -111,11 +111,21 @@ student-hosted nights: under **At [School]** on Home and Discover, on
 and in the app's Discover → See all. Official events open on the school's own
 page; nobody registers for them here.
 
-- `lib/campus/sources.ts` lists the feeds per school — Localist JSON (MIT,
-  BC, Northeastern, USC, UT Austin), iCalendar (BU, Tufts, NYU, Harvard's
-  Gazette), Bedework JSON (Columbia), CampusGroups RSS (Babson's *Belong*),
-  and plain HTML listings for schools with no feed (Babson's events page,
-  Olin, Wellesley). UCLA has none yet. Add a school by adding a line.
+- `lib/campus/sources.ts` lists the feeds per school — the catalog covers
+  the Boston schools HostKit started with plus the U.S. News top 50, and
+  45 of them have a verified feed: Localist JSON (MIT, BC, Northeastern,
+  USC, UT Austin, Stanford, Yale, Cornell, WashU, UNC, UCSD, Purdue, UGA,
+  Rochester, Wake Forest, FSU), iCalendar from LiveWhale (NYU, UChicago,
+  Brown, Berkeley, Rice, Vanderbilt, CMU, Georgetown, UF, Texas A&M,
+  Minnesota), Trumba (Tufts, Harvard's Gazette, UW, UVA, Brandeis) and
+  home-grown calendars (BU, Duke, Notre Dame, Wisconsin), Bedework JSON
+  (Columbia), CampusGroups RSS (Babson's *Belong*), Princeton's RSS, and
+  plain HTML listings for schools with no feed (Babson's events page, Olin,
+  Wellesley, Dartmouth, Rutgers). No public feed was found for Caltech,
+  Johns Hopkins, Northwestern, Penn, Michigan, Emory, Georgia Tech, UC
+  Davis, UCI, UIUC, UCSB, Ohio State, Maryland, Lehigh or UCLA — they're in
+  the catalog and show student-hosted nights only. Add a feed by adding a
+  line.
 - `lib/campus/parsers/*` turn each format into one shape;
   `lib/campus/sync.ts` stores it in `CampusEvent` (full replace per feed,
   next 90 days, wall-clock times like every other event).

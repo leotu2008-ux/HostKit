@@ -4,6 +4,7 @@ import { parseIcs } from "@/lib/campus/parsers/ics";
 import { parseLocalist, type LocalistPage } from "@/lib/campus/parsers/localist";
 import { parseBedework, type BedeworkFeed } from "@/lib/campus/parsers/bedework";
 import { parseCampusGroups } from "@/lib/campus/parsers/campusgroups";
+import { parseRss } from "@/lib/campus/parsers/rss";
 import { parseCards } from "@/lib/campus/parsers/cards";
 import { parseBabson } from "@/lib/campus/parsers/babson";
 import type { ParsedEvent } from "@/lib/campus/parsers/types";
@@ -63,13 +64,19 @@ export async function fetchSource(source: CampusSource): Promise<ParsedEvent[]> 
     }
     case "campusgroups":
       return parseCampusGroups(await fetchText(source.url), opts);
+    case "rss":
+      return parseRss(await fetchText(source.url), opts);
     case "cards": {
       const out: ParsedEvent[] = [];
       const pages = source.pages ?? 1;
       for (let page = 1; page <= pages; page++) {
         const sep = source.url.includes("?") ? "&" : "?";
         const url = page === 1 ? source.url : `${source.url}${sep}page=${page}`;
-        const found = parseCards(await fetchText(url), { ...opts, itemClass: source.itemClass ?? "event" });
+        const found = parseCards(await fetchText(url), {
+          ...opts,
+          itemClass: source.itemClass ?? "event",
+          dateBox: source.dateBox,
+        });
         if (found.length === 0) break;
         out.push(...found);
       }
