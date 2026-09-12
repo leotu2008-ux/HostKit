@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, managedClubIds } from "@/lib/session";
 import { readDraftClaims } from "@/lib/drafts";
 import { EventCard } from "@/components/event-card";
 import { ButtonLink, EmptyState } from "@/components/ui";
@@ -10,9 +10,14 @@ export default async function EventsPage() {
   const user = await getCurrentUser();
   const claims = await readDraftClaims();
 
+  // Nights you created, plus nights posted as a club you help run.
+  const managed = user ? await managedClubIds(user.id) : [];
+
   const events = user
     ? await db.event.findMany({
-        where: { ownerId: user.id },
+        where: {
+          OR: [{ ownerId: user.id }, { clubId: { in: managed } }],
+        },
         orderBy: [{ date: "asc" }, { createdAt: "desc" }],
         include: {
           _count: {

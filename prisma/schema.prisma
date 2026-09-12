@@ -21,7 +21,8 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
-  events Event[]
+  events      Event[]
+  memberships ClubMember[]
 }
 
 /// Who can see a live night. Drafts are unpublished regardless of this.
@@ -74,6 +75,9 @@ model Event {
   id               String      @id @default(cuid())
   /// Null until the host signs in. Drafts are claimed via `claimToken`.
   ownerId          String?
+  /// Set when the night is posted as a club rather than a person. Optional on
+  /// purpose: personal nights and signed-out drafts never need one.
+  clubId           String?
   title            String
   type             EventType
   status           EventStatus @default(PLANNING)
@@ -105,6 +109,7 @@ model Event {
   updatedAt        DateTime        @updatedAt
 
   owner            User?                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  club             Club?                @relation(fields: [clubId], references: [id], onDelete: SetNull)
   savedListings    SavedListing[]
   inquiries        Inquiry[]
   budgetCategories BudgetCategory[]
@@ -115,6 +120,7 @@ model Event {
   collaborators    EventCollaborator[]
 
   @@index([ownerId])
+  @@index([clubId])
   @@index([published, visibility, date])
 }
 
@@ -132,6 +138,45 @@ model EventCollaborator {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId, kind])
+}
+
+// ---------------------------------------------------------------------------
+// Clubs. A community that hosts nights and that people join. Membership is one
+// table with a role rather than separate "follow" and "member" concepts: a run
+// club's followers and its organisers are the same row with MEMBER vs ADMIN.
+// ---------------------------------------------------------------------------
+
+enum ClubRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Club {
+  id          String   @id @default(cuid())
+  /// Public URL: /c/[slug]. Generated from the name; see lib/clubs.ts.
+  slug        String   @unique
+  name        String
+  description String?
+  city        String?
+  createdAt   DateTime @default(now())
+
+  members ClubMember[]
+  events  Event[]
+}
+
+model ClubMember {
+  id        String   @id @default(cuid())
+  clubId    String
+  userId    String
+  role      ClubRole @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([userId])
 }
 
 // ---------------------------------------------------------------------------

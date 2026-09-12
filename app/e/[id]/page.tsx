@@ -38,6 +38,7 @@ export default async function PublicEventPage({
     where: { id },
     include: {
       owner: { select: { id: true, name: true } },
+      club: { select: { name: true, slug: true } },
       _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" } } } },
     },
   });
@@ -83,7 +84,17 @@ export default async function PublicEventPage({
           {event.title}
         </h1>
         <p className="mt-2 text-[15px] text-ink-soft">
-          Hosted by {event.owner?.name ?? "a host still signing in"}
+          Hosted by{" "}
+          {event.club ? (
+            <Link
+              href={`/c/${event.club.slug}`}
+              className="font-medium text-clay hover:underline"
+            >
+              {event.club.name}
+            </Link>
+          ) : (
+            (event.owner?.name ?? "a host still signing in")
+          )}
         </p>
 
         <dl className="mt-5 space-y-3 text-[15px]">

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { claimMatches, readDraftClaims } from "@/lib/drafts";
+import { canManageClub, hasRole } from "@/lib/clubs";
+import type { ClubRole } from "@/generated/prisma/enums";
 
 /** The signed-in user, or null. */
 export async function getCurrentUser() {
@@ -22,11 +24,34 @@ export async function requireUser(next?: string) {
   return user;
 }
 
+/** The caller's role in a club, or null when signed out or not a member. */
+export async function clubRoleFor(
+  clubId: string,
+  userId: string | null,
+): Promise<ClubRole | null> {
+  if (!userId) return null;
+  const member = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId, userId } },
+    select: { role: true },
+  });
+  return member?.role ?? null;
+}
+
 export async function canAccessEvent(
-  event: { id: string; ownerId: string | null; claimToken: string | null },
+  event: {
+    id: string;
+    ownerId: string | null;
+    claimToken: string | null;
+    clubId?: string | null;
+  },
   userId: string | null,
 ) {
   if (userId && event.ownerId === userId) return true;
+  // A night posted as a club is run by everyone who runs the club, not just
+  // whoever happened to click "create".
+  if (userId && event.clubId) {
+    if (canManageClub(await clubRoleFor(event.clubId, userId))) return true;
+  }
   const claims = await readDraftClaims();
   if (claimMatches(claims, event.id, event.claimToken)) return true;
   return false;
@@ -49,4 +74,31 @@ export async function requireEvent(eventId: string) {
     redirect("/events");
   }
   return { user, event };
+}
+
+/** Ids of every club the user can post nights as (owner or admin). */
+export async function managedClubIds(userId: string): Promise<string[]> {
+  const rows = await db.clubMember.findMany({
+    where: { userId, role: { in: ["OWNER", "ADMIN"] } },
+    select: { clubId: true },
+  });
+  return rows.map((r) => r.clubId);
+}
+
+/**
+ * Loads a club the current user holds at least `min` role in, or redirects.
+ *
+ * Management pages use this with "ADMIN". Like requireEvent it redirects
+ * rather than 404s — to the public club page for members without the role,
+ * and home for a slug that doesn't exist, so it never confirms one does.
+ */
+export async function requireClub(slug: string, min: ClubRole = "MEMBER") {
+  const user = await requireUser(`/c/${slug}`);
+  const club = await db.club.findUnique({ where: { slug } });
+  if (!club) redirect("/");
+
+  const role = await clubRoleFor(club.id, user.id);
+  if (!hasRole(role, min)) redirect(`/c/${slug}`);
+
+  return { user, club, role: role as ClubRole };
 }

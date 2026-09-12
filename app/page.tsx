@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, managedClubIds } from "@/lib/session";
 import { EventCard } from "@/components/event-card";
 import { ButtonLink, EmptyState } from "@/components/ui";
 
@@ -7,11 +7,14 @@ export const metadata = { title: "Discover" };
 
 export default async function DiscoverPage() {
   const user = await getCurrentUser();
+  const managed = user ? await managedClubIds(user.id) : [];
 
   const [mine, nearby] = await Promise.all([
     user
       ? db.event.findMany({
-          where: { ownerId: user.id },
+          where: {
+            OR: [{ ownerId: user.id }, { clubId: { in: managed } }],
+          },
           orderBy: [{ date: "asc" }, { createdAt: "desc" }],
           take: 8,
           include: {
@@ -25,12 +28,16 @@ export default async function DiscoverPage() {
       where: {
         published: true,
         visibility: "PUBLIC",
-        ...(user ? { ownerId: { not: user.id } } : {}),
+        // Not yours, and not your club's — those are in the list above.
+        ...(user
+          ? { ownerId: { not: user.id }, NOT: { clubId: { in: managed } } }
+          : {}),
       },
       orderBy: [{ date: "asc" }, { createdAt: "desc" }],
       take: 24,
       include: {
         owner: { select: { name: true } },
+        club: { select: { name: true } },
         _count: {
           select: { guests: { where: { rsvpStatus: "ATTENDING" } } },
         },
@@ -127,7 +134,7 @@ export default async function DiscoverPage() {
                     date: event.date,
                     durationHours: event.durationHours,
                     going: event._count.guests,
-                    hostName: event.owner?.name,
+                    hostName: event.club?.name ?? event.owner?.name,
                   }}
                 />
               </li>

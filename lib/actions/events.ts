@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { canManageClub } from "@/lib/clubs";
 import { getCurrentUser, requireEvent, requireUser } from "@/lib/session";
 import { generatePlan } from "@/lib/plan";
 import { parseCents } from "@/lib/money";
@@ -31,6 +32,7 @@ const schema = z.object({
   ticketType: z.enum(TICKETS),
   ticketPrice: z.string().trim().optional(),
   visibility: z.enum(VISIBILITY),
+  clubId: z.string().trim().optional(),
 });
 
 function parseCoord(raw: string | undefined): number | null {
@@ -86,12 +88,28 @@ export async function createEventAction(
   const address = input.address || null;
   const claimToken = user ? null : newClaimToken();
 
+  // "Post as" a club. Checked against the caller's own memberships here —
+  // the club id in the form is a preference, not a permission.
+  let clubId: string | null = null;
+  if (input.clubId) {
+    if (!user) return { error: "Sign in to post as a club." };
+    const membership = await db.clubMember.findUnique({
+      where: { clubId_userId: { clubId: input.clubId, userId: user.id } },
+      select: { role: true },
+    });
+    if (!canManageClub(membership?.role)) {
+      return { error: "You can only post as a club you help run." };
+    }
+    clubId = input.clubId;
+  }
+
   const plan = generatePlan({ type, date, budgetTotalCents });
 
   const event = await db.$transaction(async (tx) => {
     const created = await tx.event.create({
       data: {
         ownerId: user?.id ?? null,
+        clubId,
         claimToken,
         title: input.title,
         type,

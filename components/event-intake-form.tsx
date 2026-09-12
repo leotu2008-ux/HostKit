@@ -9,12 +9,12 @@ import { EVENT_TEMPLATES } from "@/lib/templates";
 import { LocationField } from "@/components/location-field";
 import {
   Button,
+  cx,
   Field,
   FormError,
   Input,
   Select,
   Textarea,
-  cx,
 } from "@/components/ui";
 
 function Submit({ signedIn }: { signedIn: boolean }) {
@@ -26,7 +26,16 @@ function Submit({ signedIn }: { signedIn: boolean }) {
   );
 }
 
-export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
+export function EventIntakeForm({
+  signedIn,
+  clubs = [],
+  defaultClubId,
+}: {
+  signedIn: boolean;
+  /** Clubs the signed-in user can post as. Empty for everyone else. */
+  clubs?: Array<{ id: string; name: string }>;
+  defaultClubId?: string;
+}) {
   const [state, formAction] = useActionState(createEventAction, undefined);
   const [type, setType] = useState<EventType>("DINNER_PARTY");
   const [ticketType, setTicketType] = useState<"FREE" | "PAID">("FREE");
@@ -36,6 +45,22 @@ export function EventIntakeForm({ signedIn }: { signedIn: boolean }) {
     <form action={formAction} className="space-y-8">
       <FormError>{state?.error}</FormError>
       <input type="hidden" name="type" value={type} />
+
+      {signedIn && clubs.length > 0 ? (
+        <Field
+          label="Post as"
+          hint="A night posted as a club shows the club as its host, and the club's admins can run it too."
+        >
+          <Select name="clubId" defaultValue={defaultClubId ?? ""}>
+            <option value="">Just me</option>
+            {clubs.map((club) => (
+              <option key={club.id} value={club.id}>
+                {club.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
 
       <Field label="Name" hint="What guests will see.">
         <Input name="title" required maxLength={120} placeholder="Rooftop Jazz Night" />
