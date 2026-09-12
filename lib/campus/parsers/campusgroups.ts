@@ -42,6 +42,8 @@ export function parseCampusGroups(xml: string, opts: { timeZone: string; pageUrl
 
     const location = oneLine(tag(item, "eventLocation"));
     const group = oneLine(tag(item, "group"), 120);
+    const groupId = tag(item, "groupId");
+    const groupType = oneLine(tag(item, "groupType"), 60);
     const photo = tag(item, "eventPhotoFullUrl") ?? tag(item, "eventOriginalPhotoFullUrl");
     out.push({
       externalId: id,
@@ -54,6 +56,8 @@ export function parseCampusGroups(xml: string, opts: { timeZone: string; pageUrl
       url: tag(item, "eventLink") ?? tag(item, "link") ?? opts.pageUrl,
       imageUrl: photo && /^https?:\/\//.test(photo) ? photo : null,
       host: group,
+      hostId: group && groupId ? groupId : null,
+      hostKind: groupType,
       restricted,
     });
   }

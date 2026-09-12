@@ -36,7 +36,9 @@ struct ClubView: View {
                         if page.events.isEmpty {
                             Text(page.club.canManage
                                 ? "Post an event as the club and it lands here for followers."
-                                : "Follow to hear the moment they post one.")
+                                : page.club.official
+                                    ? "Follow to hear when \(page.club.name) puts something on the school calendar."
+                                    : "Follow to hear the moment they post one.")
                                 .font(.inter(.subheadline))
                                 .foregroundStyle(.secondary)
                                 .padding(14)
@@ -61,15 +63,24 @@ struct ClubView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Run by").font(.inter(.title3, .semibold))
-                        ForEach(page.members) { member in
-                            HStack(spacing: 12) {
-                                HostAvatar(name: member.name, imageURL: member.imageURL, size: 34)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(member.name).font(.inter(.body, .medium))
-                                    Text(member.role == "OWNER" ? "Owner" : "Admin")
-                                        .font(.inter(.caption)).foregroundStyle(.secondary)
+                    if page.club.official && page.members.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("About this page").font(.inter(.title3, .semibold))
+                            Text("A real \(page.club.school?.short ?? "campus") organisation, listed from \(page.club.source ?? "the school’s calendar"). Its events sync from there — follow it to see them on Home.")
+                                .font(.inter(.subheadline))
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Run by").font(.inter(.title3, .semibold))
+                            ForEach(page.members) { member in
+                                HStack(spacing: 12) {
+                                    HostAvatar(name: member.name, imageURL: member.imageURL, size: 34)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(member.name).font(.inter(.body, .medium))
+                                        Text(member.role == "OWNER" ? "Owner" : "Admin")
+                                            .font(.inter(.caption)).foregroundStyle(.secondary)
+                                    }
                                 }
                             }
                         }
@@ -145,6 +156,9 @@ struct ClubView: View {
                         }
                         if let label = club.categoryLabel {
                             StatusPill(text: label)
+                        }
+                        if club.official {
+                            StatusPill(text: "Official")
                         }
                         StatusPill(text: "\(club.followers) \(club.followers == 1 ? "follower" : "followers")")
                         if let hosted = page?.stats?.eventsHosted, hosted > 0 {

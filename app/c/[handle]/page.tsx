@@ -3,12 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { canManageClub, clubByHandle, clubPastEvents, clubUpdates, followedClubIds } from "@/lib/clubs";
+import { canManageClub, clubByHandle, clubPastEvents, clubUpdates, followedClubIds, officialClubEvents, officialSourceKey } from "@/lib/clubs";
 import { clubCategoryLabel } from "@/lib/club-format";
+import { sourceByKey } from "@/lib/campus/sources";
 import { schoolFor } from "@/lib/schools";
 import { upcomingOnly } from "@/lib/upcoming";
 import { eventInclude } from "@/lib/api/serialize";
 import { Avatar } from "@/components/avatar";
+import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { ClubUpdateForm } from "@/components/club-update-form";
 import { ClubUpdates } from "@/components/club-updates";
 import { EventCard, toEventCard } from "@/components/event-card";
@@ -26,7 +28,7 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
   const [user, club] = await Promise.all([getCurrentUser(), clubByHandle(handle)]);
   if (!club) notFound();
 
-  const [following, canManage, events, members, past, updates] = await Promise.all([
+  const [following, canManage, events, members, past, updates, official] = await Promise.all([
     followedClubIds(user?.id ?? null),
     canManageClub(user?.id ?? null, club.id),
     db.event.findMany({
@@ -42,9 +44,12 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
     }),
     clubPastEvents(club.id, 6),
     clubUpdates(club.id, 10),
+    officialClubEvents(club, 20),
   ]);
   const school = schoolFor(club.schoolDomain);
   const category = clubCategoryLabel(club.category);
+  const source = sourceByKey(officialSourceKey(club) ?? "");
+  const upcoming = mixCampus(events, official, 40);
 
   return (
     <main className="relative isolate flex-1">
@@ -68,6 +73,7 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
               <span className="font-mono text-ink-mute">/c/{club.handle}</span>
               {school ? <Badge tone="clay">{school.name}</Badge> : null}
               {category ? <Badge>{category}</Badge> : null}
+              {club.isOfficial ? <Badge>Official</Badge> : null}
               {club.city ? <span>{club.city.split(",")[0]}</span> : null}
               <span>
                 <span className="tabular font-medium text-ink">{club._count.followers}</span>{" "}
@@ -114,20 +120,20 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
         <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
           <section>
             <h2 className="font-display mb-3 text-xl text-ink">Coming up</h2>
-            {events.length === 0 ? (
+            {upcoming.length === 0 ? (
               <EmptyState
                 title="Nothing scheduled yet"
-                body={canManage ? "Post an event as the club and it lands here for followers." : "Follow to hear the moment they post one."}
+                body={
+                  canManage
+                    ? "Post an event as the club and it lands here for followers."
+                    : club.isOfficial
+                      ? `Follow to hear when ${club.name} puts something on the school calendar.`
+                      : "Follow to hear the moment they post one."
+                }
                 action={canManage ? <ButtonLink href="/events/new">Create an event</ButtonLink> : undefined}
               />
             ) : (
-              <ul className="grid gap-3 md:grid-cols-2">
-                {events.map((event) => (
-                  <li key={event.id}>
-                    <EventCard href={`/e/${event.id}`} event={toEventCard(event)} />
-                  </li>
-                ))}
-              </ul>
+              <CampusMixList rows={upcoming} />
             )}
 
             {past.rows.length > 0 ? (
@@ -145,18 +151,37 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
           </section>
 
           <aside>
-            <h2 className="font-display mb-3 text-xl text-ink">Run by</h2>
-            <ul className="space-y-3">
-              {members.map((m) => (
-                <li key={m.user.id} className="flex items-center gap-3">
-                  <Avatar name={m.user.name} imageUrl={m.user.imageUrl} size={36} />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-ink">{m.user.name}</span>
-                    <span className="block text-[12px] text-ink-mute">{m.role === "OWNER" ? "Owner" : "Admin"}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {club.isOfficial && members.length === 0 ? (
+              <>
+                <h2 className="font-display mb-3 text-xl text-ink">About this page</h2>
+                <p className="text-[14px] leading-relaxed text-ink-soft">
+                  A real {school ? school.short : "campus"} organisation, listed from{" "}
+                  {source ? (
+                    <a href={source.homepage} target="_blank" rel="noreferrer" className="underline hover:text-ink">
+                      {source.name}
+                    </a>
+                  ) : (
+                    "the school's calendar"
+                  )}
+                  . Its events sync from there; follow it to see them on Home.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="font-display mb-3 text-xl text-ink">Run by</h2>
+                <ul className="space-y-3">
+                  {members.map((m) => (
+                    <li key={m.user.id} className="flex items-center gap-3">
+                      <Avatar name={m.user.name} imageUrl={m.user.imageUrl} size={36} />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-ink">{m.user.name}</span>
+                        <span className="block text-[12px] text-ink-mute">{m.role === "OWNER" ? "Owner" : "Admin"}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             <p className="mt-6 text-[13px] text-ink-mute">
               Run a club too? <Link href="/clubs/new" className="text-clay">Start a page</Link>.
             </p>

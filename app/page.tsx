@@ -6,7 +6,7 @@ import { currentProfile } from "@/lib/session";
 import { isCity } from "@/lib/catalog";
 import { CITY_COOKIE } from "@/lib/city-cookie";
 import { myUpcomingEvents } from "@/lib/mine";
-import { followingEvents } from "@/lib/clubs";
+import { followingEvents, followingOfficialEvents } from "@/lib/clubs";
 import { upcomingOnly } from "@/lib/upcoming";
 import { campusPreviewFor } from "@/lib/campus/feed";
 import { CampusMixList, mixCampus } from "@/components/campus-mix";
@@ -49,7 +49,7 @@ export default async function HomePage() {
   const city = isCity(remembered) ? remembered : (user?.school?.city ?? null);
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [mine, nearby, campus, following, official] = await Promise.all([
+  const [mine, nearby, campus, following, official, followingOfficial] = await Promise.all([
     user ? myUpcomingEvents(user.id, 12) : Promise.resolve([]),
     db.event.findMany({
       where: { ...live, ...(city ? { city } : {}), ...(user ? { ownerId: { not: user.id } } : {}) },
@@ -67,7 +67,9 @@ export default async function HomePage() {
       : Promise.resolve([]),
     user ? followingEvents(user.id, 4) : Promise.resolve([]),
     campusPreviewFor(user?.schoolDomain, 4),
+    user ? followingOfficialEvents(user.id, 4) : Promise.resolve([]),
   ]);
+  const fromClubs = mixCampus(following, followingOfficial, 4);
   const school = user?.school ?? null;
   const onCampus = mixCampus(campus, official, 4);
   const cityShort = city ? city.split(",")[0] : null;
@@ -154,7 +156,7 @@ export default async function HomePage() {
           )}
         </section>
 
-        {following.length > 0 ? (
+        {fromClubs.length > 0 ? (
           <section className="mt-10">
             <div className="mb-3 flex items-end justify-between">
               <h2 className="font-display text-xl text-ink">From clubs you follow</h2>
@@ -162,13 +164,7 @@ export default async function HomePage() {
                 Your clubs →
               </Link>
             </div>
-            <ul className="grid gap-3 md:grid-cols-2">
-              {following.map((event) => (
-                <li key={event.id}>
-                  <EventCard href={`/e/${event.id}`} event={toCard(event)} />
-                </li>
-              ))}
-            </ul>
+            <CampusMixList rows={fromClubs} />
           </section>
         ) : null}
 

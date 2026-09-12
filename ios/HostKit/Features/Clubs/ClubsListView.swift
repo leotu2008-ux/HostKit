@@ -10,7 +10,7 @@ struct ClubCard: View {
             HostAvatar(name: club.name, imageURL: club.imageURL, size: compact ? 40 : 48)
             VStack(alignment: .leading, spacing: 2) {
                 Text(club.name).font(.inter(.body, .medium)).lineLimit(1)
-                Text([club.school?.short, compact ? nil : club.categoryLabel,
+                Text([club.school?.short, compact ? nil : club.categoryLabel, club.official ? "Official" : nil,
                       "\(club.followers) \(club.followers == 1 ? "follower" : "followers")"]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(.inter(.caption)).foregroundStyle(.secondary).lineLimit(1)

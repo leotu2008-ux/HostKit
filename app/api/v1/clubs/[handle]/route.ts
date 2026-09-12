@@ -2,16 +2,18 @@ import { db } from "@/lib/db";
 import { apiError, apiUser, json, readJson } from "@/lib/api/http";
 import { clubViewer } from "@/lib/api/clubs";
 import { eventInclude, serializeClub, serializeClubUpdate, serializeEvent } from "@/lib/api/serialize";
-import { canManageClub, clubByHandle, clubPastEvents, clubSchema, clubSelect, clubUpdates } from "@/lib/clubs";
+import { canManageClub, clubByHandle, clubPastEvents, clubSchema, clubSelect, clubUpdates, officialClubEvents } from "@/lib/clubs";
+import { serializeCampusEvent } from "@/lib/campus/feed";
 import { upcomingOnly } from "@/lib/upcoming";
 
-/** A club page: the club, its upcoming and past events, updates, and who runs it. */
+/** A club page: the club, its upcoming and past events (from the school's
+ *  calendar too, for a synced club), updates, and who runs it. */
 export async function GET(request: Request, { params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params;
   const viewer = await apiUser(request);
   const club = await clubByHandle(handle);
   if (!club) return apiError("Not found.", 404);
-  const [rel, events, members, past, updates] = await Promise.all([
+  const [rel, events, members, past, updates, official] = await Promise.all([
     clubViewer(viewer?.id ?? null),
     db.event.findMany({
       where: { clubId: club.id, published: true, visibility: { not: "PRIVATE" }, ...upcomingOnly() },
@@ -26,11 +28,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ hand
     }),
     clubPastEvents(club.id, 6),
     clubUpdates(club.id, 10),
+    officialClubEvents(club, 20),
   ]);
   const manages = rel.managed.has(club.id);
+  const merged = [
+    ...events.map((e) => serializeEvent(e, e._count.guests, manages)),
+    ...official.map(serializeCampusEvent),
+  ].sort((a, b) => (a.startsAt ?? "9").localeCompare(b.startsAt ?? "9"));
   return json({
     club: serializeClub(club, rel),
-    events: events.map((e) => serializeEvent(e, e._count.guests, manages)),
+    events: merged,
     past: past.rows.map((e) => serializeEvent(e, e._count.guests, manages)),
     members: members.map((m) => ({ id: m.user.id, name: m.user.name, imageUrl: m.user.imageUrl, role: m.role })),
     updates: updates.map(serializeClubUpdate),
@@ -60,4 +67,3 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ha
   });
   return json({ club: serializeClub(updated, await clubViewer(viewer!.id)) });
 }
-

@@ -40,8 +40,46 @@ export const clubSelect = {
   schoolDomain: true,
   city: true,
   category: true,
+  sourceRef: true,
+  isOfficial: true,
   _count: { select: { followers: true } },
 } as const;
+
+/** Where a synced club's events come from, for crediting it on the page. */
+export function officialSourceKey(club: { sourceRef: string | null }): string | null {
+  if (!club.sourceRef) return null;
+  const i = club.sourceRef.lastIndexOf(":");
+  return i > 0 ? club.sourceRef.slice(0, i) : null;
+}
+
+/** Upcoming official calendar events put on by a synced club. */
+export async function officialClubEvents(club: { sourceRef: string | null }, take = 20) {
+  if (!club.sourceRef) return [];
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  return db.campusEvent.findMany({
+    where: { hostRef: club.sourceRef, startsAt: { gte: today } },
+    orderBy: [{ startsAt: "asc" }],
+    take,
+  });
+}
+
+/** Official calendar events from synced clubs the user follows. */
+export async function followingOfficialEvents(userId: string, take = 12) {
+  const refs = await db.follow.findMany({
+    where: { userId, club: { sourceRef: { not: null } } },
+    select: { club: { select: { sourceRef: true } } },
+  });
+  const hostRefs = refs.map((r) => r.club.sourceRef).filter((r): r is string => Boolean(r));
+  if (hostRefs.length === 0) return [];
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  return db.campusEvent.findMany({
+    where: { hostRef: { in: hostRefs }, startsAt: { gte: today } },
+    orderBy: [{ startsAt: "asc" }],
+    take,
+  });
+}
 
 export async function createClub(
   user: { id: string; schoolDomain: string | null },

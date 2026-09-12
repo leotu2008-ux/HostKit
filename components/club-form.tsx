@@ -48,7 +48,7 @@ export function ClubForm({
             setName(e.target.value);
             if (!handleTouched) setHandle(suggestHandle(e.target.value));
           }}
-          placeholder="Babson Entrepreneurship Club"
+          placeholder="Chess Club"
         />
       </Field>
 
