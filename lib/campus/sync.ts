@@ -4,6 +4,7 @@ import { parseIcs } from "@/lib/campus/parsers/ics";
 import { parseLocalist, type LocalistPage } from "@/lib/campus/parsers/localist";
 import { parseBedework, type BedeworkFeed } from "@/lib/campus/parsers/bedework";
 import { parseCampusGroups } from "@/lib/campus/parsers/campusgroups";
+import { parseEngage, type EngagePage } from "@/lib/campus/parsers/engage";
 import { parseRss } from "@/lib/campus/parsers/rss";
 import { parseCards } from "@/lib/campus/parsers/cards";
 import { parseBabson } from "@/lib/campus/parsers/babson";
@@ -88,6 +89,26 @@ async function fetchRaw(source: CampusSource): Promise<ParsedEvent[]> {
     }
     case "campusgroups":
       return parseCampusGroups(await fetchText(source.url), opts);
+    case "engage": {
+      // Upcoming only, soonest first, 100 a page; three pages is plenty.
+      const out: ParsedEvent[] = [];
+      const since = new Date().toISOString();
+      for (let page = 0; page < 3; page++) {
+        const params = new URLSearchParams({
+          endsAfter: since,
+          orderByField: "endsOn",
+          orderByDirection: "ascending",
+          status: "Approved",
+          take: "100",
+          skip: String(page * 100),
+        });
+        const data = JSON.parse(await fetchText(`${source.url}?${params}`)) as EngagePage;
+        const found = parseEngage(data, opts);
+        out.push(...found);
+        if ((data.value?.length ?? 0) < 100) break;
+      }
+      return out;
+    }
     case "rss":
       return parseRss(await fetchText(source.url), opts);
     case "cards": {

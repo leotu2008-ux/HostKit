@@ -22,6 +22,9 @@ type LocalistEvent = {
     description?: string | null;
     event_instances?: LocalistInstance[];
     experience?: string | null;
+    /** The student group, or the department, putting it on. */
+    groups?: { id: number; name: string }[] | null;
+    departments?: { id: number; name: string }[] | null;
   };
 };
 export type LocalistPage = { events?: LocalistEvent[]; page?: { current: number; next_page: number | null } };
@@ -36,6 +39,11 @@ export function parseLocalist(page: LocalistPage, opts: { timeZone: string }): P
     const description = event.description_text
       ? oneLine(event.description_text, 2000)
       : htmlToText(event.description);
+    // A student group first, else the department: both are real organisations.
+    const group = event.groups?.[0];
+    const dept = event.departments?.[0];
+    const org = group ? { id: `g${group.id}`, name: group.name, kind: "Student Organization" }
+      : dept ? { id: `d${dept.id}`, name: dept.name, kind: "Department" } : null;
     for (const { event_instance: inst } of event.event_instances ?? []) {
       const start = parseOffsetIso(inst.start, opts.timeZone);
       if (!start) continue;
@@ -49,6 +57,9 @@ export function parseLocalist(page: LocalistPage, opts: { timeZone: string }): P
         location: oneLine(place) ?? (event.experience === "virtual" ? "Online" : null),
         url,
         imageUrl: event.photo_url || null,
+        host: org ? oneLine(org.name, 120) : null,
+        hostId: org?.id ?? null,
+        hostKind: org?.kind ?? null,
       });
     }
   }

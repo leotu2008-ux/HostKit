@@ -8,6 +8,7 @@
  * - `ics`       — any iCalendar feed (Trumba, LiveWhale, home-grown)
  * - `bedework`  — Bedework's JSON "feeder" (Columbia)
  * - `campusgroups` — CampusGroups' `rss_events` (student orgs; Babson's "Belong")
+ * - `engage`    — Anthology Engage's discovery API (student orgs; BU, NYU, Purdue…)
  * - `rss`       — RSS where each item's pubDate is the event start (Princeton)
  * - `cards`     — a plain HTML listing: each item's `<time datetime>`, or a
  *                 month/day date box, or a "September 11, 2026, 8:30 p.m."
@@ -18,7 +19,7 @@
  * fetches these on a schedule and whenever a student's feed looks stale.
  */
 
-export type CampusSourceKind = "localist" | "ics" | "bedework" | "campusgroups" | "rss" | "cards" | "babson";
+export type CampusSourceKind = "localist" | "ics" | "bedework" | "campusgroups" | "engage" | "rss" | "cards" | "babson";
 
 export type CampusSource = {
   /** Stable id, stored on every event it produces: "<domain>/<slug>". */
@@ -64,6 +65,36 @@ function livewhale(domain: string, name: string, base: string, timeZone: string)
 /** A Trumba-published calendar by its web name. */
 function trumba(domain: string, name: string, homepage: string, webName: string, timeZone: string): CampusSource {
   return { key: `${domain}/trumba`, schoolDomain: domain, name, homepage, url: `https://www.trumba.com/calendars/${webName}.ics`, kind: "ics", timeZone };
+}
+
+/**
+ * A school's CampusGroups site (`<stem>.campusgroups.com`): the student
+ * orgs' own calendar, and the feed names the org behind every event — so
+ * these are where real clubs come from (lib/campus/sync.ts).
+ */
+function campusgroups(domain: string, short: string, stem: string, timeZone: string): CampusSource {
+  return {
+    key: `${domain}/campusgroups`,
+    schoolDomain: domain,
+    name: `${short} student orgs`,
+    homepage: `https://${stem}.campusgroups.com/events`,
+    url: `https://${stem}.campusgroups.com/rss_events`,
+    kind: "campusgroups",
+    timeZone,
+  };
+}
+
+/** A school's Anthology Engage site (`<stem>.campuslabs.com/engage`): same idea, other vendor. */
+function engage(domain: string, short: string, stem: string, timeZone: string): CampusSource {
+  return {
+    key: `${domain}/engage`,
+    schoolDomain: domain,
+    name: `${short} student orgs`,
+    homepage: `https://${stem}.campuslabs.com/engage/events`,
+    url: `https://${stem}.campuslabs.com/engage/api/discovery/event/search`,
+    kind: "engage",
+    timeZone,
+  };
 }
 
 export const CAMPUS_SOURCES: CampusSource[] = [
@@ -293,11 +324,50 @@ export const CAMPUS_SOURCES: CampusSource[] = [
   livewhale("umn.edu", "UMN Events", "https://events.tc.umn.edu", CHI),
   localist("fsu.edu", "FSU Calendar", "https://calendar.fsu.edu", NY),
   trumba("brandeis.edu", "Brandeis Events", "https://www.brandeis.edu/events/", "brandeis-university", NY),
-  // No public campus-wide feed found (2026-09-12): caltech.edu, jhu.edu,
-  // northwestern.edu (PlanIt Purple exports need a login), upenn.edu and
-  // umich.edu (bot-walled), emory.edu, gatech.edu (per-category RSS only),
-  // ucdavis.edu, uci.edu, illinois.edu, ucsb.edu, osu.edu, umd.edu,
-  // lehigh.edu, ucla.edu. Add a line here when one turns up.
+  // ---- Student-org platforms: where real clubs come from. Probed 2026-09-12. ----
+  campusgroups("northeastern.edu", "Northeastern", "northeastern", NY),
+  campusgroups("harvard.edu", "Harvard", "harvard", NY),
+  campusgroups("mit.edu", "MIT", "mit", NY),
+  campusgroups("tufts.edu", "Tufts", "tufts", NY),
+  campusgroups("princeton.edu", "Princeton", "princeton", NY),
+  campusgroups("northwestern.edu", "Northwestern", "northwestern", CHI),
+  campusgroups("columbia.edu", "Columbia", "columbia", NY),
+  campusgroups("dartmouth.edu", "Dartmouth", "dartmouth", NY),
+  campusgroups("cmu.edu", "CMU", "cmu", NY),
+  campusgroups("georgetown.edu", "Georgetown", "georgetown", NY),
+  campusgroups("usc.edu", "USC", "usc", LA),
+  campusgroups("ucdavis.edu", "UC Davis", "ucdavis", LA),
+  campusgroups("uci.edu", "UCI", "uci", LA),
+  campusgroups("ucsb.edu", "UCSB", "ucsb", LA),
+  campusgroups("wisc.edu", "Wisconsin", "wisc", CHI),
+  campusgroups("rutgers.edu", "Rutgers", "rutgers", NY),
+  campusgroups("washington.edu", "UW", "washington", LA),
+  campusgroups("lehigh.edu", "Lehigh", "lehigh", NY),
+  campusgroups("rochester.edu", "Rochester", "rochester", NY),
+  campusgroups("fsu.edu", "FSU", "fsu", NY),
+  engage("bc.edu", "BC", "bc", NY),
+  engage("uchicago.edu", "UChicago", "uchicago", CHI),
+  engage("berkeley.edu", "Berkeley", "berkeley", LA),
+  engage("rice.edu", "Rice", "rice", CHI),
+  engage("nd.edu", "Notre Dame", "nd", NY),
+  engage("vanderbilt.edu", "Vanderbilt", "vanderbilt", CHI),
+  engage("umich.edu", "Michigan", "umich", NY),
+  engage("virginia.edu", "UVA", "virginia", NY),
+  engage("unc.edu", "UNC", "unc", NY),
+  engage("nyu.edu", "NYU", "nyu", NY),
+  engage("ufl.edu", "UF", "ufl", NY),
+  engage("utexas.edu", "UT Austin", "utexas", CHI),
+  engage("gatech.edu", "Georgia Tech", "gatech", NY),
+  engage("purdue.edu", "Purdue", "purdue", NY),
+  engage("umd.edu", "Maryland", "umd", NY),
+  engage("uga.edu", "UGA", "uga", NY),
+  engage("wfu.edu", "Wake Forest", "wfu", NY),
+  // bu.edu and columbia.edu also have Engage sites, but nothing upcoming on
+  // them any more (they moved platforms); dropped so we don't credit an empty feed.
+  // Still no public feed of any kind (2026-09-12): caltech.edu, jhu.edu,
+  // upenn.edu, emory.edu, illinois.edu, osu.edu, ucla.edu, olin.edu's and
+  // wellesley.edu's orgs, brandeis.edu's orgs (campusgroups.brandeis.edu
+  // needs a login). Add a line here when one turns up.
 ];
 
 export function sourcesFor(schoolDomain: string | null | undefined): CampusSource[] {
