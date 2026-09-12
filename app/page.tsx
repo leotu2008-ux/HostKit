@@ -11,6 +11,7 @@ import { upcomingOnly } from "@/lib/upcoming";
 import { campusEventsFor } from "@/lib/campus/feed";
 import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
+import { SchoolPrompt } from "@/components/school-prompt";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
 import { EventTile } from "@/components/event-tile";
 import { ButtonLink, EmptyState } from "@/components/ui";
@@ -105,6 +106,8 @@ export default async function HomePage() {
             </ButtonLink>
           </div>
         ) : null}
+
+        {user && !user.schoolDomain ? <SchoolPrompt /> : null}
 
         <section className="mt-10" aria-labelledby="your-events">
           <div className="mb-3 flex items-end justify-between">

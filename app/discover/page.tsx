@@ -11,6 +11,8 @@ import { campusEventsFor } from "@/lib/campus/feed";
 import { sourcesFor } from "@/lib/campus/sources";
 import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
+import { SearchBox } from "@/components/search-box";
+import { eventSearch, searchTerm } from "@/lib/search";
 import { ClubCard } from "@/components/club-card";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
 import { ButtonLink, EmptyState, cx } from "@/components/ui";
@@ -37,15 +39,17 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
   else if (isCity(remembered)) city = remembered;
   else city = user?.school?.city ?? null;
   const explicit = rawCity === "all" || isCity(rawCity);
+  const q = searchTerm(query.q);
+  const searching = q.length > 0;
 
-  const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
+  const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly(), ...eventSearch(q) };
 
   const [campus, nearby, clubs, official] = await Promise.all([
     user?.schoolDomain
       ? db.event.findMany({
           where: { ...live, schoolDomain: user.schoolDomain, ownerId: { not: user.id } },
           orderBy,
-          take: 12,
+          take: searching ? 30 : 12,
           include,
         })
       : Promise.resolve([]),
@@ -56,18 +60,19 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
         ...(user ? { ownerId: { not: user.id } } : {}),
       },
       orderBy,
-      take: 30,
+      take: searching ? 60 : 30,
       include,
     }),
-    suggestedClubs({ schoolDomain: user?.schoolDomain ?? null, city }, 8),
-    campusEventsFor(user?.schoolDomain, 12),
+    searching ? Promise.resolve([]) : suggestedClubs({ schoolDomain: user?.schoolDomain ?? null, city }, 8),
+    campusEventsFor(user?.schoolDomain, searching ? 60 : 12, q),
   ]);
 
   const days = groupByDay(nearby);
   const cityShort = city ? city.split(",")[0] : null;
   const school = user?.school ?? null;
-  const onCampus = mixCampus(campus, official, 8);
+  const onCampus = mixCampus(campus, official, searching ? 60 : 8);
   const feeds = sourcesFor(school?.domain);
+  const nothingFound = searching && onCampus.length === 0 && nearby.length === 0;
 
   return (
     <main className="relative isolate flex-1">
@@ -85,6 +90,18 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
           Student socials, professional mixers, and nights just for fun —
           register in a tap.
         </p>
+
+        <SearchBox q={q} city={rawCity} className="mt-6" />
+
+        {nothingFound ? (
+          <div className="mt-8">
+            <EmptyState
+              title={`Nothing for “${q}”`}
+              body="Try another word — a host, a club, a place — or clear the search."
+              action={<ButtonLink href={city ? `/discover?city=${encodeURIComponent(city)}` : "/discover"} variant="secondary">Clear search</ButtonLink>}
+            />
+          </div>
+        ) : null}
 
         {clubs.length > 0 ? (
           <section className="mt-10">
@@ -106,7 +123,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
           </section>
         ) : null}
 
-        {school ? (
+        {school && !(searching && onCampus.length === 0) ? (
           <section className="mt-10">
             <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
               <div>
@@ -140,7 +157,9 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
         <section className="mt-10">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-display text-xl text-ink">
-              {cityShort ? `Around ${cityShort}` : "Upcoming everywhere"}
+              {searching
+                ? `“${q}” ${cityShort ? `around ${cityShort}` : "everywhere"}`
+                : cityShort ? `Around ${cityShort}` : "Upcoming everywhere"}
             </h2>
             <nav className="flex flex-wrap gap-1.5" aria-label="City">
               {[null, ...CITIES].map((option) => {
@@ -148,7 +167,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
                 return (
                   <Link
                     key={option ?? "all"}
-                    href={option ? `/discover?city=${encodeURIComponent(option)}` : "/discover?city=all"}
+                    href={`/discover?city=${option ? encodeURIComponent(option) : "all"}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                     aria-current={active ? "page" : undefined}
                     className={cx(
                       "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
@@ -167,11 +186,13 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
           {days.length === 0 ? (
             <div className="mt-5">
               <EmptyState
-                title={user ? "No other events yet" : "Nothing listed yet"}
+                title={searching ? `Nothing for “${q}” ${cityShort ? `around ${cityShort}` : "here"}` : user ? "No other events yet" : "Nothing listed yet"}
                 body={
-                  user
-                    ? "Your own public events are on Home. Other hosts’ will show up here."
-                    : "Be the first: create an event, make it public, and publish it."
+                  searching
+                    ? "Try another city chip, or a different word."
+                    : user
+                      ? "Your own public events are on Home. Other hosts’ will show up here."
+                      : "Be the first: create an event, make it public, and publish it."
                 }
                 action={<ButtonLink href="/events/new">Create an event</ButtonLink>}
               />

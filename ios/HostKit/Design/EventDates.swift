@@ -53,15 +53,21 @@ nonisolated enum EventDates {
 
     /// "7:30 PM – 11:30 PM"
     static func range(for event: HostEvent) -> String {
-        guard let start = event.startsAt, let end = event.endsAt else {
-            return "\(event.durationHours) hours"
+        guard let start = event.startsAt else { return "\(event.durationHours) hours" }
+        if let official = event.official {
+            // The school's calendar: an end only when the feed gave one.
+            if official.allDay { return "All day" }
+            if let end = official.endsAt { return "\(time(start)) – \(time(end))" }
+            return time(start)
         }
+        guard let end = event.endsAt else { return "\(event.durationHours) hours" }
         return "\(time(start)) – \(time(end))"
     }
 
-    /// "Fri, Sep 18 · 7:30 PM", or "Date to be announced".
+    /// "Fri, Sep 18 · 7:30 PM", "Fri, Sep 18 · All day", or "Date to be announced".
     static func summary(for event: HostEvent) -> String {
         guard let start = event.startsAt else { return "Date to be announced" }
+        if event.official?.allDay == true { return "\(shortDay(start)) · All day" }
         return "\(shortDay(start)) · \(time(start))"
     }
 

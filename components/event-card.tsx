@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EventCover } from "@/components/event-cover";
-import { formatEventWhen } from "@/lib/when";
+import { formatEventDate, formatEventTime, formatEventWhen } from "@/lib/when";
 import { schoolFor } from "@/lib/schools";
 import { cx } from "@/components/ui";
 
@@ -18,7 +18,26 @@ export type EventCardEvent = {
   schoolDomain?: string | null;
   /** An uploaded cover photo; otherwise the cover is drawn from the id. */
   coverUrl?: string | null;
+  /** Official calendar events: all-day, and the end is only known when the feed said. */
+  allDay?: boolean;
+  /** When known; official events without one show no duration at all. */
+  endsAt?: Date | null;
+  official?: boolean;
 };
+
+/** "Fri, Sep 18 · 7:30 PM · 4h", "Fri, Sep 18 · All day", or — for an
+ *  official event with no end — just the start. */
+export function whenLabel(event: EventCardEvent): string {
+  if (event.official) {
+    const day = formatEventDate(event.date);
+    if (!day) return "Date to be announced";
+    if (event.allDay) return `${day} · All day`;
+    const time = formatEventTime(event.date);
+    if (!event.endsAt) return `${day} · ${time}`;
+    return `${day} · ${time} – ${formatEventTime(event.endsAt)}`;
+  }
+  return formatEventWhen(event.date, event.durationHours);
+}
 
 /** Shapes an event row (with owner and attending count) for the card. */
 export function toEventCard(event: {
@@ -52,6 +71,7 @@ export function toCampusCard(row: {
   title: string;
   startsAt: Date;
   endsAt: Date | null;
+  allDay?: boolean;
   location: string | null;
   host: string | null;
   imageUrl: string | null;
@@ -69,6 +89,9 @@ export function toCampusCard(row: {
     status: "Official",
     schoolDomain: row.schoolDomain,
     coverUrl: row.imageUrl,
+    allDay: row.allDay ?? false,
+    endsAt: row.endsAt,
+    official: true,
     href: `/campus/${row.id}`,
   };
 }
@@ -98,7 +121,7 @@ export function EventCard({
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] text-ink-mute">
-          {formatEventWhen(event.date, event.durationHours)}
+          {whenLabel(event)}
         </p>
         <p className="font-event mt-0.5 truncate text-[19px] leading-snug text-ink">
           {event.title}
