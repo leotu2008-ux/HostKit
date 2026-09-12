@@ -179,12 +179,52 @@ nonisolated struct Club: Codable, Identifiable, Hashable, Sendable {
     var coverUrl: String?
     var school: School?
     var city: String?
+    /// lib/club-format.ts key ("social"…) and its label; older servers send neither.
+    var category: String?
+    var categoryLabel: String?
     var followers: Int
     var isFollowing: Bool
     var canManage: Bool
     let webPath: String
     var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
     var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+}
+
+/// What kind of club, for browsing. Mirrors CLUB_CATEGORIES in lib/club-format.ts.
+nonisolated enum ClubCategory: String, CaseIterable, Identifiable, Sendable {
+    case social, professional, sports, arts, cultural, service, academic
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .social: "Social"
+        case .professional: "Professional"
+        case .sports: "Sports & fitness"
+        case .arts: "Arts & music"
+        case .cultural: "Cultural"
+        case .service: "Service"
+        case .academic: "Academic"
+        }
+    }
+}
+
+/// A note from a club's admins to its followers.
+nonisolated struct ClubUpdate: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let body: String
+    let createdAt: Date
+    let author: ClubUpdateAuthor?
+}
+
+nonisolated struct ClubUpdateAuthor: Codable, Hashable, Sendable {
+    let id: String
+    let name: String
+    let imageUrl: String?
+    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+}
+
+nonisolated struct ClubStats: Codable, Hashable, Sendable {
+    let eventsHosted: Int
+    let followers: Int
 }
 
 nonisolated struct ClubMemberRow: Codable, Identifiable, Hashable, Sendable {
@@ -199,11 +239,17 @@ nonisolated struct ClubPage: Decodable, Sendable {
     var club: Club
     var events: [HostEvent]
     var members: [ClubMemberRow]
+    /// Events the club already ran, newest first (older servers send none).
+    var past: [HostEvent] = []
+    var updates: [ClubUpdate] = []
+    var stats: ClubStats?
 }
 
 nonisolated struct ClubsFeed: Decodable, Sendable {
     var mine: [Club]
     var suggested: [Club]
+    /// Every club matching `?q=` / `?category=`; empty without either.
+    var results: [Club] = []
 }
 
 nonisolated struct NewClubRequest: Encodable, Sendable {
@@ -211,6 +257,11 @@ nonisolated struct NewClubRequest: Encodable, Sendable {
     let handle: String
     let blurb: String?
     let city: String?
+    var category: String? = nil
+}
+
+nonisolated struct ClubUpdateRequest: Encodable, Sendable {
+    let body: String
 }
 
 /// Something that happened to you. Mirrors `/api/v1/me/notifications`.
@@ -228,6 +279,7 @@ nonisolated struct Notice: Codable, Identifiable, Hashable, Sendable {
     var symbol: String {
         switch kind {
         case "club_published": "megaphone"
+        case "club_update": "bubble.left"
         case "registration_request": "hand.raised"
         case "registration_approved": "checkmark.seal"
         case "waitlist_promoted": "ticket"

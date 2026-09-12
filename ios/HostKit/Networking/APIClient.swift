@@ -212,12 +212,27 @@ nonisolated struct APIClient: Sendable {
 
     // MARK: Clubs
 
-    func clubs(city: String? = nil) async throws -> ClubsFeed {
-        var path = "/api/v1/clubs"
-        if let city, let encoded = city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-            path += "?city=\(encoded)"
-        }
-        return try await send("GET", path)
+    /// Yours, suggested, and — with a term or category — `results` over every club.
+    func clubs(city: String? = nil, q: String? = nil, category: String? = nil) async throws -> ClubsFeed {
+        var items: [URLQueryItem] = []
+        if let city, !city.isEmpty { items.append(URLQueryItem(name: "city", value: city)) }
+        if let q, !q.isEmpty { items.append(URLQueryItem(name: "q", value: q)) }
+        if let category, !category.isEmpty { items.append(URLQueryItem(name: "category", value: category)) }
+        var components = URLComponents()
+        components.path = "/api/v1/clubs"
+        components.queryItems = items.isEmpty ? nil : items
+        return try await send("GET", components.string ?? "/api/v1/clubs")
+    }
+
+    /// An admin posts an update; every follower hears.
+    func postClubUpdate(handle: String, body: String) async throws -> ClubUpdate {
+        let envelope: ClubUpdateEnvelope = try await send(
+            "POST", "/api/v1/clubs/\(handle)/updates", body: try Self.encode(ClubUpdateRequest(body: body)))
+        return envelope.update
+    }
+
+    func deleteClubUpdate(handle: String, id: String) async throws {
+        let _: OKEnvelope = try await send("DELETE", "/api/v1/clubs/\(handle)/updates/\(id)")
     }
 
     func club(handle: String) async throws -> ClubPage {
@@ -360,6 +375,7 @@ nonisolated struct PublishBody: Encodable, Sendable {
     let requiresApproval: Bool?
 }
 nonisolated struct ClubEnvelope: Decodable, Sendable { let club: Club }
+nonisolated struct ClubUpdateEnvelope: Decodable, Sendable { let update: ClubUpdate }
 nonisolated struct BlastBody: Encodable, Sendable {
     let segment: String
     let subject: String

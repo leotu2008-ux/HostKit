@@ -44,6 +44,7 @@ model User {
   phoneVerifications PhoneVerification[]
   clubMemberships    ClubMember[]
   follows            Follow[]
+  clubPosts          ClubPost[]
   notifications      Notification[]
   pushTokens         PushToken[]
 }
@@ -61,11 +62,14 @@ model Club {
   /// its events to that campus first.
   schoolDomain String?
   city         String?
+  /// One of lib/club-format.ts CLUB_CATEGORIES ("social", "professional"…), for browsing.
+  category     String?
   createdAt    DateTime @default(now())
 
   members   ClubMember[]
   followers Follow[]
   events    Event[]
+  posts     ClubPost[]
 
   @@index([schoolDomain])
 }
@@ -86,6 +90,21 @@ model ClubMember {
 
   @@id([clubId, userId])
   @@index([userId])
+}
+
+/// An update a club's admins post to followers: a short note that lands in
+/// their Inbox (and email) and stays on the club page.
+model ClubPost {
+  id        String   @id @default(cuid())
+  clubId    String
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+
+  club   Club  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([clubId, createdAt])
 }
 
 model Follow {

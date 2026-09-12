@@ -1,22 +1,30 @@
 import { apiError, apiUser, json, readJson } from "@/lib/api/http";
 import { clubViewer } from "@/lib/api/clubs";
 import { serializeClub } from "@/lib/api/serialize";
-import { ClubError, clubSchema, clubsFor, createClub, suggestedClubs } from "@/lib/clubs";
+import { ClubError, clubSchema, clubsFor, createClub, searchClubs, suggestedClubs } from "@/lib/clubs";
 import { isCity } from "@/lib/catalog";
 
-/** `mine` = clubs you manage; `suggested` = your school's (or city's). */
+/**
+ * `mine` = clubs you manage; `suggested` = your school's (or city's).
+ * With `?q=` and/or `?category=`, `results` is every matching club.
+ */
 export async function GET(request: Request) {
   const viewer = await apiUser(request);
-  const rawCity = new URL(request.url).searchParams.get("city");
+  const url = new URL(request.url);
+  const rawCity = url.searchParams.get("city");
   const city = isCity(rawCity) ? rawCity : null;
-  const [mine, suggested, rel] = await Promise.all([
+  const q = (url.searchParams.get("q") ?? "").trim().slice(0, 80);
+  const category = url.searchParams.get("category");
+  const [mine, suggested, rel, results] = await Promise.all([
     viewer ? clubsFor(viewer.id) : Promise.resolve([]),
     suggestedClubs({ schoolDomain: viewer?.schoolDomain ?? null, city }),
     clubViewer(viewer?.id ?? null),
+    searchClubs({ q, category, schoolDomain: viewer?.schoolDomain ?? null }),
   ]);
   return json({
     mine: mine.map((c) => serializeClub(c, rel)),
     suggested: suggested.map((c) => serializeClub(c, rel)),
+    results: results.map((c) => serializeClub(c, rel)),
   });
 }
 

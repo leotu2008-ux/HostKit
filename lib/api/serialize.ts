@@ -6,6 +6,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
+import { clubCategoryLabel } from "@/lib/club-format";
 
 export type ApiSchool = { domain: string; name: string; short: string; city: string | null };
 
@@ -95,11 +96,31 @@ export type ApiClub = {
   coverUrl: string | null;
   school: ApiSchool | null;
   city: string | null;
+  /** lib/club-format.ts key ("social"…) and its label, or null. */
+  category: string | null;
+  categoryLabel: string | null;
   followers: number;
   isFollowing: boolean;
   canManage: boolean;
   webPath: string;
 };
+
+/** A note from the admins to followers. */
+export type ApiClubUpdate = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { id: string; name: string; imageUrl: string | null } | null;
+};
+
+export function serializeClubUpdate(post: {
+  id: string;
+  body: string;
+  createdAt: Date;
+  author: { id: string; name: string; imageUrl: string | null } | null;
+}): ApiClubUpdate {
+  return { id: post.id, body: post.body, createdAt: post.createdAt.toISOString(), author: post.author };
+}
 
 export function serializeClub(
   club: {
@@ -111,6 +132,7 @@ export function serializeClub(
     coverUrl: string | null;
     schoolDomain: string | null;
     city: string | null;
+    category?: string | null;
     _count: { followers: number };
   },
   viewer: { following: Set<string>; managed: Set<string> },
@@ -124,6 +146,8 @@ export function serializeClub(
     coverUrl: club.coverUrl,
     school: serializeSchool(club.schoolDomain),
     city: club.city,
+    category: club.category ?? null,
+    categoryLabel: clubCategoryLabel(club.category),
     followers: club._count.followers,
     isFollowing: viewer.following.has(club.id),
     canManage: viewer.managed.has(club.id),

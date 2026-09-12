@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { schoolFor } from "@/lib/schools";
+import { clubCategoryLabel } from "@/lib/club-format";
 
 /** A club in a list or strip: picture, name, school, followers. */
 export function ClubCard({
@@ -13,6 +14,7 @@ export function ClubCard({
     blurb?: string | null;
     imageUrl: string | null;
     schoolDomain: string | null;
+    category?: string | null;
     _count?: { followers: number };
     followers?: number;
   };
@@ -20,6 +22,7 @@ export function ClubCard({
 }) {
   const school = schoolFor(club.schoolDomain);
   const followers = club.followers ?? club._count?.followers ?? 0;
+  const category = compact ? null : clubCategoryLabel(club.category);
   return (
     <Link
       href={`/c/${club.handle}`}
@@ -33,7 +36,7 @@ export function ClubCard({
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium text-ink">{club.name}</span>
         <span className="block truncate text-[12px] text-ink-mute">
-          {[school?.short, `${followers} ${followers === 1 ? "follower" : "followers"}`].filter(Boolean).join(" · ")}
+          {[school?.short, category, `${followers} ${followers === 1 ? "follower" : "followers"}`].filter(Boolean).join(" · ")}
         </span>
         {!compact && club.blurb ? (
           <span className="mt-1 line-clamp-2 block text-[13px] text-ink-soft">{club.blurb}</span>

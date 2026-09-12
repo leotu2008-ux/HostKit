@@ -9,9 +9,12 @@ import {
   addMember,
   canManageClub,
   clubByHandle,
+  clubPostSchema,
   clubSchema,
   createClub,
+  deleteClubUpdate,
   follow,
+  postClubUpdate,
   removeMember,
   unfollow,
 } from "@/lib/clubs";
@@ -27,6 +30,7 @@ export async function createClubAction(_prev: ClubFormState, formData: FormData)
     handle: formData.get("handle"),
     blurb: formData.get("blurb") ?? "",
     city: formData.get("city") ?? "",
+    category: formData.get("category") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the details." };
   let handle: string;
@@ -53,11 +57,17 @@ export async function updateClubAction(_prev: ClubFormState, formData: FormData)
     name: formData.get("name"),
     blurb: formData.get("blurb") ?? "",
     city: formData.get("city") ?? "",
+    category: formData.get("category") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the details." };
   await db.club.update({
     where: { id: club.id },
-    data: { name: parsed.data.name, blurb: parsed.data.blurb || null, city: parsed.data.city || null },
+    data: {
+      name: parsed.data.name,
+      blurb: parsed.data.blurb || null,
+      city: parsed.data.city || null,
+      category: parsed.data.category || null,
+    },
   });
   refresh();
   return { saved: true };
@@ -125,4 +135,20 @@ export async function removeClubPhotoAction(formData: FormData): Promise<PhotoSt
   await deleteImage(club[field]);
   refresh();
   return undefined;
+}
+
+/** Club page → an admin posts an update to followers. */
+export async function postClubUpdateAction(_prev: ClubFormState, formData: FormData): Promise<ClubFormState> {
+  const { user, club } = await managedClub(String(formData.get("handle") ?? ""));
+  const parsed = clubPostSchema.safeParse({ body: formData.get("body") ?? "" });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Write something first." };
+  await postClubUpdate(club, user.id, parsed.data.body);
+  refresh();
+  return { saved: true };
+}
+
+export async function deleteClubUpdateAction(formData: FormData) {
+  const { club } = await managedClub(String(formData.get("handle") ?? ""));
+  await deleteClubUpdate(club.id, String(formData.get("postId") ?? ""));
+  refresh();
 }
