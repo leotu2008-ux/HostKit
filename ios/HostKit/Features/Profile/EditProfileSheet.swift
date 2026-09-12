@@ -10,6 +10,9 @@ struct EditProfileSheet: View {
     @State private var classYear: String
     @State private var company: String
     @State private var bio: String
+    @State private var x: String
+    @State private var linkedin: String
+    @State private var instagram: String
     @State private var schools: [SchoolOption] = []
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -23,6 +26,9 @@ struct EditProfileSheet: View {
         _classYear = State(initialValue: user.classYear.map(String.init) ?? "")
         _company = State(initialValue: user.company ?? "")
         _bio = State(initialValue: user.bio ?? "")
+        _x = State(initialValue: user.socials?.x ?? "")
+        _linkedin = State(initialValue: user.socials?.linkedin ?? "")
+        _instagram = State(initialValue: user.socials?.instagram ?? "")
     }
 
     var body: some View {
@@ -82,6 +88,24 @@ struct EditProfileSheet: View {
                 } footer: {
                     Text("Your school puts your campus first on Discover, official events included. Company is for where you work — optional either way.")
                 }
+
+                Section {
+                    LabeledContent("X") {
+                        TextField("@handle", text: $x).multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("LinkedIn") {
+                        TextField("linkedin.com/in/…", text: $linkedin).multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("Instagram") {
+                        TextField("@handle", text: $instagram).multilineTextAlignment(.trailing)
+                    }
+                } header: {
+                    Text("Connect")
+                } footer: {
+                    Text("Paste a handle or a profile link. They show on your profile as links.")
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
 
                 if let errorMessage {
                     Section { Text(errorMessage).foregroundStyle(.red) }
@@ -148,7 +172,11 @@ struct EditProfileSheet: View {
                 classYear: schoolDomain.isEmpty ? nil : Int(classYear.trimmingCharacters(in: .whitespaces)),
                 bio: bio.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : bio,
                 company: trimmedCompany.isEmpty ? nil : trimmedCompany,
-                schoolDomain: schoolDomain)
+                schoolDomain: schoolDomain,
+                socials: Socials(
+                    x: x.trimmingCharacters(in: .whitespaces),
+                    linkedin: linkedin.trimmingCharacters(in: .whitespaces),
+                    instagram: instagram.trimmingCharacters(in: .whitespaces)))
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

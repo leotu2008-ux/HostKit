@@ -32,7 +32,7 @@ export async function apiUser(request: Request) {
   if (!payload) return null;
   return db.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, company: true, imageUrl: true, phone: true, phoneVerifiedAt: true },
+    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, company: true, xHandle: true, linkedinHandle: true, instagramHandle: true, imageUrl: true, phone: true, phoneVerifiedAt: true },
   });
 }
 

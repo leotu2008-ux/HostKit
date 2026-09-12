@@ -3,6 +3,7 @@ import { removeAvatarAction, setAvatarAction } from "@/lib/actions/photos";
 import { Avatar } from "@/components/avatar";
 import { ImageUpload } from "@/components/image-upload";
 import { ProfileForm } from "@/components/profile-form";
+import { SocialLinks } from "@/components/social-links";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 
 export const metadata = { title: "Profile" };
@@ -37,6 +38,10 @@ export default async function ProfilePage() {
             {user.bio ? (
               <p className="mt-4 text-[15px] text-ink-soft">{user.bio}</p>
             ) : null}
+            <SocialLinks
+              socials={{ x: user.xHandle, linkedin: user.linkedinHandle, instagram: user.instagramHandle }}
+              className="mt-3"
+            />
             <ImageUpload
               upload={setAvatarAction}
               remove={removeAvatarAction}
@@ -54,6 +59,7 @@ export default async function ProfilePage() {
               classYear={user.classYear}
               company={user.company}
               bio={user.bio}
+              socials={{ x: user.xHandle, linkedin: user.linkedinHandle, instagram: user.instagramHandle }}
             />
             <p className="mt-3 text-[13px] text-ink-mute">
               {user.school

@@ -18,6 +18,9 @@ export async function updateProfileAction(
     bio: formData.get("bio") ?? "",
     company: formData.get("company") ?? "",
     schoolDomain: formData.get("schoolDomain") ?? "",
+    x: formData.get("x") ?? "",
+    linkedin: formData.get("linkedin") ?? "",
+    instagram: formData.get("instagram") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the details." };

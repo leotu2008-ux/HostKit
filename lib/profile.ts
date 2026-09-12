@@ -1,5 +1,24 @@
 import { z } from "zod";
 import { SCHOOLS } from "@/lib/schools";
+import { normalizeHandle, type SocialKind } from "@/lib/socials";
+
+/** A social handle field: anything a person pastes, boiled down to the handle. */
+function handleField(kind: SocialKind) {
+  return z
+    .string()
+    .max(200)
+    .nullable()
+    .optional()
+    .transform((raw, ctx) => {
+      if (raw === undefined) return undefined;
+      try {
+        return normalizeHandle(kind, raw);
+      } catch (error) {
+        ctx.addIssue({ code: "custom", message: (error as Error).message });
+        return z.NEVER;
+      }
+    });
+}
 
 const thisYear = new Date().getFullYear();
 
@@ -17,6 +36,10 @@ export const profileSchema = z.object({
   bio: z.string().trim().max(200).nullable().optional(),
   /** Where they work; "" or null clears it. */
   company: z.string().trim().max(80).nullable().optional(),
+  /** Handles or profile links; "" clears one. */
+  x: handleField("x"),
+  linkedin: handleField("linkedin"),
+  instagram: handleField("instagram"),
   showOnGuestLists: z
     .union([z.boolean(), z.literal("on"), z.literal("off"), z.literal("")])
     .optional(),
@@ -38,6 +61,9 @@ export type ProfileInput = {
   classYear?: number | null;
   bio?: string | null;
   company?: string | null;
+  xHandle?: string | null;
+  linkedinHandle?: string | null;
+  instagramHandle?: string | null;
   showOnGuestLists?: boolean;
   schoolDomain?: string | null;
 };
@@ -51,6 +77,9 @@ export function normalizeProfile(parsed: z.infer<typeof profileSchema>): Profile
   }
   if (parsed.bio !== undefined) out.bio = parsed.bio || null;
   if (parsed.company !== undefined) out.company = parsed.company || null;
+  if (parsed.x !== undefined) out.xHandle = parsed.x;
+  if (parsed.linkedin !== undefined) out.linkedinHandle = parsed.linkedin;
+  if (parsed.instagram !== undefined) out.instagramHandle = parsed.instagram;
   if (parsed.showOnGuestLists !== undefined) {
     out.showOnGuestLists =
       parsed.showOnGuestLists === true || parsed.showOnGuestLists === "on";
