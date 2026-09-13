@@ -1,14 +1,11 @@
 "use server";
 
 import { AuthError, CredentialsSignin } from "next-auth";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { headers } from "next/headers";
 import { safeNextPath } from "@/lib/listing";
-import { schoolDomainFor } from "@/lib/schools";
-import { AccountError, NOT_DELIVERABLE_MESSAGE, sendVerification, siteOrigin, unverifiedMessage, verificationDeliverable } from "@/lib/account";
+import { AccountError, createAccountPendingVerification, siteOrigin, unverifiedMessage } from "@/lib/account";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export type AuthFormState =
@@ -40,35 +37,19 @@ export async function signUpAction(
     return { error: parsed.error.issues[0].message };
   }
 
-  const { name, email, password } = parsed.data;
   const h = await headers();
+  // The account exists but can’t sign in until the link in the email is
+  // opened. The form shows "check your inbox" with a resend. If that email
+  // can’t be sent, nothing is kept — see createAccountPendingVerification.
   try {
     await assertRateLimit(`signup:ip:${clientIp(h)}`, ...LIMITS.signUp.perIp);
-  } catch (error) {
-    if (error instanceof RateLimitError) return { error: error.message };
-    throw error;
-  }
-  const existing = await db.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "That email is already registered. Try signing in." };
-  }
-  if (!verificationDeliverable()) return { error: NOT_DELIVERABLE_MESSAGE };
-
-  // A .edu address makes this a student account; the domain picks the school.
-  const user = await db.user.create({
-    data: {
-      name,
-      email,
-      passwordHash: await bcrypt.hash(password, 10),
-      schoolDomain: schoolDomainFor(email),
-    },
-  });
-  // The account exists but can’t sign in until the link in the email is
-  // opened. The form shows "check your inbox" with a resend.
-  try {
-    const { devLink } = await sendVerification(user, siteOrigin(h));
+    const { email, devLink } = await createAccountPendingVerification({
+      ...parsed.data,
+      origin: siteOrigin(h),
+    });
     return { pending: { email, devLink } };
   } catch (error) {
+    if (error instanceof RateLimitError) return { error: error.message };
     if (error instanceof AccountError) return { error: error.message };
     throw error;
   }

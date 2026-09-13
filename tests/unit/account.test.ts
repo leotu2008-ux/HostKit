@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hashToken, siteOrigin, RESET_TTL_MS, VERIFY_TTL_MS } from "@/lib/account";
+import { hashToken, sendFailedMessage, siteOrigin, unverifiedMessage, RESET_TTL_MS, VERIFY_TTL_MS } from "@/lib/account";
 import { LIMITS, clientIp } from "@/lib/rate-limit";
 
 describe("account tokens", () => {
@@ -42,5 +42,18 @@ describe("rate limits", () => {
   it("caps password guessing harder per address than per email", () => {
     expect(LIMITS.signIn.perEmail[0]).toBeLessThan(LIMITS.signIn.perIp[0]);
     expect(LIMITS.forgot.perEmail[0]).toBe(3);
+  });
+});
+
+describe("sign-up messages", () => {
+  it("says which address failed and that nothing was kept", () => {
+    const message = sendFailedMessage("ada@example.edu");
+    expect(message).toContain("ada@example.edu");
+    // A person retyping a typo needs to know the address is free again.
+    expect(message).toMatch(/wasn.t created/);
+  });
+
+  it("tells an unconfirmed account where its link went", () => {
+    expect(unverifiedMessage("ada@example.edu")).toContain("ada@example.edu");
   });
 });

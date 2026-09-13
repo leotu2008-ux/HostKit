@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { isEmailConfigured, sendEmails } from "@/lib/email/resend";
+import { schoolDomainFor } from "@/lib/schools";
 
 /**
  * Account plumbing that goes through email: password resets and address
@@ -67,6 +68,16 @@ export function unverifiedMessage(email: string): string {
   return `Confirm your email first — we sent a link to ${email}. Open it, then sign in.`;
 }
 
+/**
+ * What sign-up says when the provider accepted the request but refused this
+ * recipient — an address it won't deliver to, a sending domain that isn't
+ * verified yet. Names the address, because a typo is the common cause, and
+ * says the account wasn't kept, because it wasn't.
+ */
+export function sendFailedMessage(email: string): string {
+  return `We couldn’t send the confirmation email to ${email}, so the account wasn’t created. Check the address and try again.`;
+}
+
 async function deliver(
   to: string,
   subject: string,
@@ -83,6 +94,26 @@ async function deliver(
   return process.env.NODE_ENV !== "production" ? { devLink: link } : {};
 }
 
+/**
+ * Runs a send whose caller must answer the same way regardless — the
+ * password-reset and resend-confirmation forms, which never say whether an
+ * address has an account. A provider failure is the operator's problem, not
+ * a signal to hand back, so it is logged and swallowed. Sign-up is the
+ * exception: it needs the throw, to undo the account it just wrote.
+ */
+async function blindly(
+  what: string,
+  to: string,
+  send: () => Promise<{ devLink?: string }>,
+): Promise<{ devLink?: string }> {
+  try {
+    return await send();
+  } catch (error) {
+    console.error(`[account] ${what} email to ${to} failed`, error);
+    return {};
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Password reset
 // ---------------------------------------------------------------------------
@@ -97,18 +128,23 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
   if (!user) return {};
   const token = await issue(user.id, "reset", RESET_TTL_MS);
   const link = `${origin}/reset-password?token=${token}`;
-  return deliver(
-    email,
-    "Reset your HostKit password",
-    [
-      `Hi ${user.name.split(" ")[0]},`,
-      "",
-      "Someone asked to reset the password on this HostKit account. If that was you, open this link within the hour:",
+  // Blind on the way out too: a send that fails only for addresses we hold
+  // would answer differently from one for an address we don't, which is the
+  // enumeration this function exists to avoid. The operator gets the log.
+  return blindly("password reset", email, () =>
+    deliver(
+      email,
+      "Reset your HostKit password",
+      [
+        `Hi ${user.name.split(" ")[0]},`,
+        "",
+        "Someone asked to reset the password on this HostKit account. If that was you, open this link within the hour:",
+        link,
+        "",
+        "If it wasn't you, ignore this — your password hasn't changed.",
+      ].join("\n"),
       link,
-      "",
-      "If it wasn't you, ignore this — your password hasn't changed.",
-    ].join("\n"),
-    link,
+    ),
   );
 }
 
@@ -167,8 +203,9 @@ export async function resendVerificationTo(rawEmail: string, origin: string): Pr
     select: { id: true, email: true, name: true, emailVerifiedAt: true },
   });
   if (!user || user.emailVerifiedAt) return {};
-  const result = await sendVerification(user, origin);
-  return { devLink: result.devLink };
+  return blindly("confirmation", email, async () => ({
+    devLink: (await sendVerification(user, origin)).devLink,
+  }));
 }
 
 /** Marks the address verified. Returns the account, or null for a bad link. */
@@ -181,6 +218,54 @@ export async function verifyEmail(token: string): Promise<{ id: string; email: s
     select: { id: true, email: true },
   });
   return user;
+}
+
+/**
+ * Sign-up, for both the website form and the API: create the account, then
+ * send the link that lets it sign in.
+ *
+ * The two steps are one unit on purpose. An account whose confirmation
+ * email never went out can't sign in and can't be created again — the
+ * address is taken — so if the send fails the row is removed and the caller
+ * gets a message it can show. Only the provider refusing this recipient
+ * reaches that path; anything already validated (a duplicate address, an
+ * unconfigured server) is rejected before the row is written.
+ */
+export async function createAccountPendingVerification(input: {
+  name: string;
+  email: string;
+  password: string;
+  origin: string;
+}): Promise<{ email: string; devLink?: string }> {
+  const email = input.email.trim().toLowerCase();
+
+  if (await db.user.findUnique({ where: { email }, select: { id: true } })) {
+    throw new AccountError("That email is already registered. Try signing in.", 409);
+  }
+  if (!verificationDeliverable()) throw new AccountError(NOT_DELIVERABLE_MESSAGE, 503);
+
+  const user = await db.user.create({
+    data: {
+      name: input.name,
+      email,
+      passwordHash: await bcrypt.hash(input.password, 10),
+      // A .edu address makes this a student account; the domain picks the school.
+      schoolDomain: schoolDomainFor(email),
+    },
+  });
+
+  try {
+    const { devLink } = await sendVerification(user, input.origin);
+    return { email: user.email, devLink };
+  } catch (error) {
+    // Leave nothing behind that the person can neither use nor re-register.
+    await db.user.delete({ where: { id: user.id } }).catch((cleanup: unknown) => {
+      console.error("[account] could not roll back a half-made account", cleanup);
+    });
+    if (error instanceof AccountError) throw error;
+    console.error("[account] confirmation email failed", error);
+    throw new AccountError(sendFailedMessage(email), 502);
+  }
 }
 
 /** Best effort after sign-up: never fails the sign-up itself. */
