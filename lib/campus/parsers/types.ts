@@ -12,4 +12,6 @@ export type ParsedEvent = {
   imageUrl: string | null;
   /** Who's putting it on, when the feed says (a club, a department). */
   host?: string | null;
+  /** Listed for the school community only; the place needs a school sign-in. */
+  restricted?: boolean;
 };

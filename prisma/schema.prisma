@@ -339,6 +339,9 @@ model CampusEvent {
   endsAt       DateTime?
   allDay       Boolean  @default(false)
   location     String?
+  /// Listed for the school's own community: the feed shows the title and
+  /// time to everyone but keeps the place behind a school sign-in.
+  restricted   Boolean  @default(false)
   /// The club or department putting it on, when the feed says.
   host         String?
   /// The event's page on the school's site.

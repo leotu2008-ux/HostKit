@@ -22,8 +22,11 @@ export function parseCampusGroups(xml: string, opts: { timeZone: string; pageUrl
     const id = tag(item, "eventId");
     const title = oneLine(tag(item, "title"), 160);
     if (!id || !title) continue;
-    if ((tag(item, "privacyLevel") ?? "0") !== "0") continue;
     if ((tag(item, "approvalStatus") ?? "1") !== "1") continue;
+    // Non-zero privacy is "the school community": the feed still gives the
+    // title and time, and hides the place until you sign in there. A student
+    // knows these nights, so they're listed with that note — not dropped.
+    const restricted = (tag(item, "privacyLevel") ?? "0") !== "0";
 
     const allDay = tag(item, "allDayEvent") === "1";
     const startIso = tag(item, "eventStartDateTime");
@@ -51,6 +54,7 @@ export function parseCampusGroups(xml: string, opts: { timeZone: string; pageUrl
       url: tag(item, "eventLink") ?? tag(item, "link") ?? opts.pageUrl,
       imageUrl: photo && /^https?:\/\//.test(photo) ? photo : null,
       host: group,
+      restricted,
     });
   }
   return out;

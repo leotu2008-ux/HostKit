@@ -66,15 +66,30 @@ struct EventDetailView: View {
                         tile: { DateTile(date: event.startsAt) },
                         title: event.startsAt.map(EventDates.longDay) ?? "Date to be announced",
                         detail: EventDates.range(for: event))
-                    Button {
-                        openInMaps()
-                    } label: {
+                    if let official = event.official, official.isRestricted, event.address == nil {
+                        // The school lists it for its own community: the
+                        // place is on its site, behind a sign-in.
                         InfoRow(
-                            tile: { IconTile(systemName: "mappin.and.ellipse") },
-                            title: event.place,
-                            detail: event.address == nil ? nil : event.city)
+                            tile: { IconTile(systemName: "lock") },
+                            title: "Place on \(official.source)",
+                            detail: "Sign in there to see it — listed for \(event.school?.short ?? "school") students")
+                    } else {
+                        Button {
+                            openInMaps()
+                        } label: {
+                            InfoRow(
+                                tile: { IconTile(systemName: "mappin.and.ellipse") },
+                                title: event.place,
+                                detail: event.address == nil ? nil : event.city)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    if let official = event.official, let repeats = official.repeats {
+                        InfoRow(
+                            tile: { IconTile(systemName: "repeat") },
+                            title: "Repeats",
+                            detail: repeats.label)
+                    }
                     if let official = event.official {
                         InfoRow(
                             tile: { IconTile(systemName: "building.columns") },

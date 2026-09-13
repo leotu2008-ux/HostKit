@@ -192,6 +192,10 @@ export type ApiOfficial = {
   allDay: boolean;
   /** Wall-clock end, encoded like `startsAt`; null when the feed has none. */
   endsAt: string | null;
+  /** Listed for the school community: the place needs a sign-in on the school's site. */
+  restricted: boolean;
+  /** In previews, a recurring listing folded to one row: how the rest fall. */
+  repeats: { count: number; label: string } | null;
 };
 
 export function serializeEvent(

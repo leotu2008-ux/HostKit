@@ -348,8 +348,20 @@ nonisolated struct OfficialInfo: Codable, Hashable, Sendable {
     let url: String
     let allDay: Bool
     let endsAt: Date?
+    /// Listed for the school community: the place is behind a sign-in on
+    /// the school's site. Optional so older servers still decode.
+    var restricted: Bool?
+    /// In previews, a recurring listing folded to one row: how the rest fall.
+    var repeats: RepeatInfo?
 
     var pageURL: URL? { URL(string: url) }
+    var isRestricted: Bool { restricted ?? false }
+}
+
+nonisolated struct RepeatInfo: Codable, Hashable, Sendable {
+    let count: Int
+    /// "Mon & Wed · 5:00 PM · 12 dates"
+    let label: String
 }
 
 /// One feed behind a school's official events, for crediting it.

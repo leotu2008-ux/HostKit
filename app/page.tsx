@@ -8,7 +8,7 @@ import { CITY_COOKIE } from "@/lib/city-cookie";
 import { myUpcomingEvents } from "@/lib/mine";
 import { followingEvents } from "@/lib/clubs";
 import { upcomingOnly } from "@/lib/upcoming";
-import { campusEventsFor } from "@/lib/campus/feed";
+import { campusPreviewFor } from "@/lib/campus/feed";
 import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
 import { SchoolPrompt } from "@/components/school-prompt";
@@ -66,7 +66,7 @@ export default async function HomePage() {
         })
       : Promise.resolve([]),
     user ? followingEvents(user.id, 4) : Promise.resolve([]),
-    campusEventsFor(user?.schoolDomain, 4),
+    campusPreviewFor(user?.schoolDomain, 4),
   ]);
   const school = user?.school ?? null;
   const onCampus = mixCampus(campus, official, 4);

@@ -21,6 +21,12 @@ struct EventRow: View {
                     .font(.inter(.footnote))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                if let repeats = event.official?.repeats {
+                    Label(repeats.label, systemImage: "repeat")
+                        .font(.inter(.caption))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
                 HStack(spacing: 6) {
                     if let school = event.school {
                         StatusPill(text: school.short, tint: .accentColor)
