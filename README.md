@@ -64,7 +64,7 @@ map: data, images, accounts, and which keys turn on what.
 | `npm run test:e2e` | End-to-end spine test (Playwright) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm run db:migrate` / `db:seed` / `db:reset` | Database. Seed is a no-op if the catalog already has rows. |
+| `npm run db:migrate` / `db:seed` / `db:reset` | Database. Seed is a no-op if the catalog already has rows. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL`. |
 | `npm run db:studio` | Prisma Studio |
 | `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
 
