@@ -11,6 +11,7 @@ import { parseClock, parseIcsDate, parseOffsetIso, wallClock } from "@/lib/campu
 import { decodeEntities, htmlToText } from "@/lib/campus/text";
 import { applySourceRules, selectUpcoming } from "@/lib/campus/sync";
 import { collapseSeries, seriesLabel } from "@/lib/campus/series";
+import { dedupeAcrossSources } from "@/lib/campus/feed";
 import { CAMPUS_SOURCES, sourcesFor } from "@/lib/campus/sources";
 import { SCHOOLS } from "@/lib/schools";
 
@@ -374,8 +375,12 @@ describe("sources", () => {
     for (const s of CAMPUS_SOURCES) expect(domains.has(s.schoolDomain)).toBe(true);
     expect(new Set(CAMPUS_SOURCES.map((s) => s.key)).size).toBe(CAMPUS_SOURCES.length);
     expect(sourcesFor("babson.edu")).toHaveLength(3);
-    expect(sourcesFor("mit.edu").map((s) => s.kind).sort()).toEqual(["campusgroups", "localist"]);
-    expect(sourcesFor("nyu.edu").map((s) => s.kind).sort()).toEqual(["engage", "ics"]);
+    expect(sourcesFor("mit.edu").map((s) => s.kind).sort()).toEqual(["campusgroups", "ics", "localist"]);
+    expect(sourcesFor("nyu.edu").map((s) => s.kind).sort()).toEqual(["engage", "ics", "ics"]);
+    // Athletics reaches schools whose own calendar we never found a feed for.
+    for (const d of ["caltech.edu", "jhu.edu", "upenn.edu"]) {
+      expect(sourcesFor(d).map((s) => s.key)).toContain(`${d}/athletics`);
+    }
     expect(sourcesFor(null)).toEqual([]);
     // Every top-50 school is in the catalog, feed or not.
     for (const d of ["princeton.edu", "stanford.edu", "caltech.edu", "umich.edu", "purdue.edu", "rochester.edu"]) {
@@ -390,15 +395,29 @@ describe("source rules", () => {
     externalId: title, title, description: null, startsAt: new Date("2026-09-20T18:00:00Z"), endsAt: null,
     allDay: false, location, url: "u", imageUrl: null,
   });
-  it("keeps only matching places and drops a title prefix", () => {
+  it("keeps home games, drops away ones, and trims the school off the title", () => {
     const source = sourcesFor("babson.edu").find((s) => s.key === "babson.edu/athletics")!;
     const out = applySourceRules(source, [
       ev("Babson College Women's Soccer vs NYU", "Babson Park, Mass., Hartwell-Rogers Field"),
+      // "at" is an away game — a night three states away is not on campus.
       ev("Babson College Field Hockey at Middlebury", "Middlebury, Vt. / Peter Kohn Field"),
+      // A played game carries its result in front.
       ev("[L] Babson College Women's Soccer vs #2 Emory", "Babson Park, Mass., Hartwell-Rogers Field"),
       ev("Babson College ", "Babson Park"),
     ]);
-    expect(out.map((e) => e.title)).toEqual(["Women's Soccer vs NYU", "Women's Soccer vs #2 Emory", "Babson College "]);
+    expect(out.map((e) => e.title)).toEqual(["Women's Soccer vs NYU", "Women's Soccer vs #2 Emory"]);
+  });
+
+  it("reads home and away the same way at every school", () => {
+    for (const domain of ["mit.edu", "harvard.edu", "caltech.edu"]) {
+      const source = sourcesFor(domain).find((s) => s.key === `${domain}/athletics`)!;
+      const kept = applySourceRules(source, [
+        ev("Harvard University Women's Soccer vs Yale", "Cambridge, Mass."),
+        ev("Harvard University Women's Soccer at Yale", "New Haven, Conn."),
+      ]);
+      expect(kept).toHaveLength(1);
+      expect(kept[0].title).toContain("vs Yale");
+    }
   });
   it("is a no-op for sources without rules", () => {
     const source = sourcesFor("babson.edu").find((s) => s.key === "babson.edu/belong")!;
@@ -427,5 +446,39 @@ describe("series", () => {
     expect(seriesLabel(["2026-09-14T17:00:00Z", "2026-09-15T17:00:00Z", "2026-09-16T17:00:00Z", "2026-09-17T17:00:00Z"].map((s) => new Date(s))))
       .toBe("Most days · 5:00 PM · 4 dates");
     expect(seriesLabel(["2026-09-14T17:00:00Z", "2026-09-21T19:00:00Z"].map((s) => new Date(s)))).toBe("Mon · 2 dates");
+  });
+});
+
+describe("cross-source duplicates", () => {
+  const row = (title: string, day: string, over: Record<string, unknown> = {}) => ({
+    id: `${title}${day}`, schoolDomain: "babson.edu", sourceKey: "a", title,
+    description: null, startsAt: new Date(`${day}T17:00:00Z`), endsAt: null, allDay: false,
+    location: null, restricted: false, host: null, url: "u", imageUrl: null, ...over,
+  });
+
+  it("keeps one row per title and day, preferring the one that says more", () => {
+    const out = dedupeAcrossSources([
+      row("Pickleball Open Play", "2026-09-14"),
+      row("Pickleball Open Play", "2026-09-14", { sourceKey: "b", location: "Webster", imageUrl: "x.jpg" }),
+      row("Pickleball Open Play", "2026-09-16"),
+      row("eTower Speaker Series", "2026-09-14"),
+    ]);
+    expect(out).toHaveLength(3);
+    // The fuller row wins, and keeps the first row's place in the order.
+    expect(out[0].location).toBe("Webster");
+    // First-seen order is kept; real callers hand rows over sorted by date.
+    expect(out.map((e) => `${e.title} ${e.startsAt.toISOString().slice(0, 10)}`)).toEqual([
+      "Pickleball Open Play 2026-09-14",
+      "Pickleball Open Play 2026-09-16",
+      "eTower Speaker Series 2026-09-14",
+    ]);
+  });
+
+  it("treats spacing and case as the same title", () => {
+    const out = dedupeAcrossSources([
+      row("Welcome  BBQ", "2026-09-14"),
+      row("welcome bbq", "2026-09-14"),
+    ]);
+    expect(out).toHaveLength(1);
   });
 });

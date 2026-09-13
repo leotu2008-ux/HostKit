@@ -4,7 +4,7 @@ import { currentProfile } from "@/lib/session";
 import { SCHOOLS, schoolFor } from "@/lib/schools";
 import { campusEventsFor } from "@/lib/campus/feed";
 import { sourcesFor, SCHOOLS_WITH_FEEDS } from "@/lib/campus/sources";
-import { lastSyncedAt, refreshIfStale } from "@/lib/campus/sync";
+import { fillIfEmpty, lastSyncedAt, refreshIfStale } from "@/lib/campus/sync";
 import { groupByDay } from "@/lib/day-groups";
 import { EventCard, toCampusCard } from "@/components/event-card";
 import { Button, ButtonLink, EmptyState, Select } from "@/components/ui";
@@ -25,6 +25,9 @@ export default async function CampusPage({
   const school = schoolFor(requested || user?.schoolDomain);
 
   const sources = sourcesFor(school?.domain);
+  // Nobody has opened this campus before: fill it now rather than show an
+  // empty page and ask them to come back.
+  if (school) await fillIfEmpty(school.domain);
   const [events, syncedAt] = school
     ? await Promise.all([campusEventsFor(school.domain, 300), lastSyncedAt(school.domain)])
     : [[], null];

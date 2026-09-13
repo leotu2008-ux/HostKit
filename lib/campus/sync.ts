@@ -55,10 +55,12 @@ export async function fetchSource(source: CampusSource): Promise<ParsedEvent[]> 
 
 /** The trims a source asks for that no parser knows: keep some places, drop a title prefix. */
 export function applySourceRules(source: CampusSource, events: ParsedEvent[]): ParsedEvent[] {
-  const only = source.only ? new RegExp(source.only.location, "i") : null;
+  const place = source.only?.location ? new RegExp(source.only.location, "i") : null;
+  const title = source.only?.title ? new RegExp(source.only.title, "i") : null;
   const strip = source.titleStrip ? new RegExp(source.titleStrip) : null;
   return events
-    .filter((e) => !only || (e.location !== null && only.test(e.location)))
+    .filter((e) => !place || (e.location !== null && place.test(e.location)))
+    .filter((e) => !title || title.test(e.title))
     .map((e) => {
       if (!strip) return e;
       const trimmed = e.title.replace(strip, "").trim();
@@ -210,6 +212,25 @@ export async function syncSource(source: CampusSource): Promise<SyncResult> {
   const now = new Date();
   try {
     const events = selectUpcoming(await fetchSource(source), now);
+
+    // Every run is a full replace, so a feed that answers with nothing would
+    // wipe the school. That happens — a calendar blocks the datacentre, or
+    // breaks for an afternoon — and an empty campus page is worse than a
+    // stale one. Keep what we have and record why.
+    if (events.length === 0) {
+      const kept = await db.campusEvent.count({ where: { sourceKey: source.key } });
+      if (kept > 0) {
+        const message = `feed returned no events; kept the ${kept} already stored`;
+        await db.campusSync.upsert({
+          where: { sourceKey: source.key },
+          create: { sourceKey: source.key, schoolDomain: source.schoolDomain, lastRunAt: now, lastError: message },
+          update: { lastRunAt: now, lastError: message },
+        });
+        console.error(`[campus] ${source.key}: ${message}`);
+        return { sourceKey: source.key, ok: false, count: kept, error: message };
+      }
+    }
+
     await syncOfficialClubs(source, events);
     await db.$transaction(async (tx) => {
       await tx.campusEvent.deleteMany({
@@ -255,27 +276,48 @@ export async function syncSource(source: CampusSource): Promise<SyncResult> {
   }
 }
 
-export async function syncSchool(schoolDomain: string): Promise<SyncResult[]> {
-  const results: SyncResult[] = [];
-  for (const source of sourcesFor(schoolDomain)) results.push(await syncSource(source));
+/**
+ * How many feeds to work on at once. Sources are independent, and most of
+ * each one's time is spent waiting on someone else's server, so running them
+ * one after another spent the whole budget on a handful of schools — every
+ * other campus stayed empty until a student happened to open it.
+ */
+const CONCURRENCY = 5;
+
+/** Runs `work` over `items`, `limit` at a time, stopping when the budget is spent. */
+export async function inPool<T, R>(
+  items: T[],
+  limit: number,
+  expired: () => boolean,
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let next = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length && !expired()) {
+      results.push(await work(items[next++]));
+    }
+  });
+  await Promise.all(runners);
   return results;
 }
 
+export async function syncSchool(schoolDomain: string): Promise<SyncResult[]> {
+  return inPool(sourcesFor(schoolDomain), CONCURRENCY, () => false, syncSource);
+}
+
 /**
- * The daily sweep: stalest sources first, until the time budget is spent so
- * a slow feed can't push the run past the function's limit.
+ * The daily sweep: stalest sources first, several at a time, until the time
+ * budget is spent so a slow feed can't push the run past the function's
+ * limit. Vercel's Hobby plan allows one cron run a day, so this run is the
+ * only chance most sources get.
  */
 export async function syncAll(budgetMs = 50_000): Promise<SyncResult[]> {
   const started = Date.now();
   const runs = await db.campusSync.findMany({ select: { sourceKey: true, lastOkAt: true } });
   const lastOk = new Map(runs.map((r) => [r.sourceKey, r.lastOkAt?.getTime() ?? 0]));
   const order = [...CAMPUS_SOURCES].sort((a, b) => (lastOk.get(a.key) ?? 0) - (lastOk.get(b.key) ?? 0));
-  const results: SyncResult[] = [];
-  for (const source of order) {
-    if (Date.now() - started > budgetMs) break;
-    results.push(await syncSource(source));
-  }
-  return results;
+  return inPool(order, CONCURRENCY, () => Date.now() - started > budgetMs, syncSource);
 }
 
 /** When the school's feeds last succeeded (the oldest of them), or null. */
@@ -311,6 +353,31 @@ export async function refreshIfStale(schoolDomain: string | null | undefined): P
   inFlight.add(schoolDomain);
   try {
     await syncSchool(schoolDomain);
+  } finally {
+    inFlight.delete(schoolDomain);
+  }
+}
+
+/**
+ * Fills a school in before its page renders, but only when there is nothing
+ * to render — the first person ever to open that campus.
+ *
+ * Every other refresh happens after the response, which is right: a stale
+ * list still beats a slow page. An empty list doesn't. Before this, the
+ * first student at a school saw "nothing on" and had to come back once the
+ * background sync had finished, which read as a broken app. Bounded, so a
+ * campus whose calendar is down costs a wait and not the page.
+ */
+export async function fillIfEmpty(schoolDomain: string | null | undefined, budgetMs = 7_000): Promise<void> {
+  if (!schoolDomain || sourcesFor(schoolDomain).length === 0) return;
+  if (inFlight.has(schoolDomain)) return;
+  if ((await db.campusEvent.count({ where: { schoolDomain } })) > 0) return;
+  inFlight.add(schoolDomain);
+  try {
+    const started = Date.now();
+    await inPool(sourcesFor(schoolDomain), CONCURRENCY, () => Date.now() - started > budgetMs, syncSource);
+  } catch (error) {
+    console.error(`[campus] first fill for ${schoolDomain} failed`, error);
   } finally {
     inFlight.delete(schoolDomain);
   }
