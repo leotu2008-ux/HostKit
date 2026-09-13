@@ -6,6 +6,7 @@ import { parseCards } from "@/lib/campus/parsers/cards";
 import { parseBabson } from "@/lib/campus/parsers/babson";
 import { parseCampusGroups } from "@/lib/campus/parsers/campusgroups";
 import { parseRss } from "@/lib/campus/parsers/rss";
+import { parseEngage } from "@/lib/campus/parsers/engage";
 import { parseClock, parseIcsDate, parseOffsetIso, wallClock } from "@/lib/campus/time";
 import { decodeEntities, htmlToText } from "@/lib/campus/text";
 import { applySourceRules, selectUpcoming } from "@/lib/campus/sync";
@@ -324,12 +325,57 @@ describe("cards parser with dates in text", () => {
   });
 });
 
+describe("engage parser", () => {
+  it("reads approved public events with their organisation", () => {
+    const events = parseEngage(
+      {
+        value: [
+          { id: 12434441, name: "Brigade Info Night", description: "<p>Come &amp; learn.</p>", startsOn: "2026-09-20T22:00:00+00:00", endsOn: "2026-09-20T23:30:00+00:00", location: "CAS 211", organizationName: "Global Medical Brigades", organizationId: 266686, imagePath: "abc.png", status: "Approved", visibility: "Public" },
+          { id: 2, name: "Private thing", startsOn: "2026-09-21T22:00:00+00:00", status: "Approved", visibility: "Private" },
+          { id: 3, name: "Pending thing", startsOn: "2026-09-21T22:00:00+00:00", status: "Pending", visibility: "Public" },
+        ],
+      },
+      { timeZone: NY, pageUrl: "https://bu.campuslabs.com/engage/events" },
+    );
+    expect(events).toHaveLength(1);
+    const [e] = events;
+    expect(e.title).toBe("Brigade Info Night");
+    expect(e.startsAt.toISOString()).toBe("2026-09-20T18:00:00.000Z");
+    expect(e.endsAt?.toISOString()).toBe("2026-09-20T19:30:00.000Z");
+    expect(e.description).toBe("Come & learn.");
+    expect(e.url).toBe("https://bu.campuslabs.com/engage/event/12434441");
+    expect(e.imageUrl).toBe("https://se-images.campuslabs.com/clink/images/abc.png?preset=med-w");
+    expect(e.host).toBe("Global Medical Brigades");
+    expect(e.hostId).toBe("266686");
+  });
+});
+
+describe("localist organisations", () => {
+  it("prefers the student group, then the department, as the host", () => {
+    const page = {
+      events: [
+        { event: { id: 1, title: "Golf", localist_url: "https://x/e1", groups: [{ id: 8214, name: "BC Athletics" }], departments: [{ id: 9, name: "Athletics Dept" }], event_instances: [{ event_instance: { id: 11, start: "2026-09-12T09:00:00-04:00", end: null, all_day: false } }] } },
+        { event: { id: 2, title: "Talk", localist_url: "https://x/e2", departments: [{ id: 9, name: "Athletics Dept" }], event_instances: [{ event_instance: { id: 21, start: "2026-09-12T09:00:00-04:00", end: null, all_day: false } }] } },
+        { event: { id: 3, title: "Loose", localist_url: "https://x/e3", event_instances: [{ event_instance: { id: 31, start: "2026-09-12T09:00:00-04:00", end: null, all_day: false } }] } },
+      ],
+    };
+    const events = parseLocalist(page, { timeZone: NY });
+    expect(events.map((e) => [e.host, e.hostId, e.hostKind])).toEqual([
+      ["BC Athletics", "g8214", "Student Organization"],
+      ["Athletics Dept", "d9", "Department"],
+      [null, null, null],
+    ]);
+  });
+});
+
 describe("sources", () => {
   it("only names known schools, with unique keys", () => {
     const domains = new Set(SCHOOLS.map((s) => s.domain));
     for (const s of CAMPUS_SOURCES) expect(domains.has(s.schoolDomain)).toBe(true);
     expect(new Set(CAMPUS_SOURCES.map((s) => s.key)).size).toBe(CAMPUS_SOURCES.length);
     expect(sourcesFor("babson.edu")).toHaveLength(3);
+    expect(sourcesFor("mit.edu").map((s) => s.kind).sort()).toEqual(["campusgroups", "localist"]);
+    expect(sourcesFor("nyu.edu").map((s) => s.kind).sort()).toEqual(["engage", "ics"]);
     expect(sourcesFor(null)).toEqual([]);
     // Every top-50 school is in the catalog, feed or not.
     for (const d of ["princeton.edu", "stanford.edu", "caltech.edu", "umich.edu", "purdue.edu", "rochester.edu"]) {

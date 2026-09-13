@@ -119,19 +119,19 @@ page; nobody registers for them here.
 
 - `lib/campus/sources.ts` lists the feeds per school — the catalog covers
   the Boston schools HostKit started with plus the U.S. News top 50, and
-  45 of them have a verified feed: Localist JSON (MIT, BC, Northeastern,
+  53 of them have a verified feed: Localist JSON (MIT, BC, Northeastern,
   USC, UT Austin, Stanford, Yale, Cornell, WashU, UNC, UCSD, Purdue, UGA,
   Rochester, Wake Forest, FSU), iCalendar from LiveWhale (NYU, UChicago,
   Brown, Berkeley, Rice, Vanderbilt, CMU, Georgetown, UF, Texas A&M,
   Minnesota), Trumba (Tufts, Harvard's Gazette, UW, UVA, Brandeis) and
   home-grown calendars (BU, Duke, Notre Dame, Wisconsin), Bedework JSON
-  (Columbia), CampusGroups RSS (Babson's *Belong*), Princeton's RSS, and
-  plain HTML listings for schools with no feed (Babson's events page, Olin,
-  Wellesley, Dartmouth, Rutgers). No public feed was found for Caltech,
-  Johns Hopkins, Northwestern, Penn, Michigan, Emory, Georgia Tech, UC
-  Davis, UCI, UIUC, UCSB, Ohio State, Maryland, Lehigh or UCLA — they're in
-  the catalog and show student-hosted nights only. Add a feed by adding a
-  line.
+  (Columbia), CampusGroups RSS (Babson's *Belong* plus 20 other schools'
+  student-org calendars), Anthology Engage (17 schools), Princeton's RSS,
+  and plain HTML listings for schools with no feed (Babson's events page,
+  Olin, Wellesley, Dartmouth, Rutgers). No public feed was found for
+  Caltech, Johns Hopkins, Penn, Emory, UIUC, Ohio State or UCLA — they're
+  in the catalog and show student-hosted nights only. Add a feed by adding
+  a line.
 - `lib/campus/parsers/*` turn each format into one shape;
   `lib/campus/sync.ts` stores it in `CampusEvent` (full replace per feed,
   next 90 days, wall-clock times like every other event).
@@ -192,11 +192,17 @@ the "Create event" buttons, not a tab).
     `DELETE …/updates/:id`).
   - The event page's **Hosted by** row has a Follow button, and a club page
     shows past events and how many it has run.
-  - **Official clubs are real.** When a school's calendar names the
-    organisation behind each event (Babson's *Belong* does: Sigma Kappa,
-    eTower, Babson Club Pickleball, the Blank Center…), the campus sync keeps
-    a Club for it (`Club.sourceRef`, `isOfficial`; `lib/campus/sync.ts`
-    `syncOfficialClubs`). They carry an **Official** badge, nobody here runs
+  - **Official clubs are real.** When a feed names the organisation behind
+    each event, the campus sync keeps a Club for it (`Club.sourceRef`,
+    `isOfficial`; `lib/campus/sync.ts` `syncOfficialClubs`). Three kinds of
+    feed do: **CampusGroups** sites (`<school>.campusgroups.com/rss_events`
+    — Babson's *Belong*, plus Northeastern, Harvard, MIT, Tufts, Princeton,
+    Northwestern, Columbia, Dartmouth, CMU, Georgetown, USC, UC Davis, UCI,
+    UCSB, Wisconsin, Rutgers, UW, Lehigh, Rochester, FSU), **Anthology
+    Engage** sites (`<school>.campuslabs.com/engage` — BC, UChicago, Berkeley, Rice, Notre Dame, Vanderbilt, Michigan, UVA, UNC,
+    NYU, UF, UT Austin, Georgia Tech, Purdue, Maryland, UGA, Wake Forest),
+    and **Localist** calendars, whose events carry a student group or a
+    department. Official clubs carry an **Official** badge, nobody here runs
     them, their events come from the feed (`CampusEvent.hostRef`), and
     following one puts those events under From clubs you follow. HostKit
     never invents a club: seeds create none, and the only other way a club
