@@ -19,6 +19,9 @@ model User {
   email        String   @unique
   name         String
   passwordHash String
+  /// Bumped by a password reset. Tokens and sessions carry the version
+  /// they were issued at; older ones stop working (lib/api/token.ts).
+  sessionVersion Int   @default(0)
   /// The `.edu` domain the account signed up with, e.g. "babson.edu". Set
   /// means "student"; lib/schools.ts turns it into a school and a home city.
   schoolDomain String?
@@ -612,6 +615,8 @@ model Guest {
   plusOnes   Int        @default(0)
   dietary    String?
   note       String?
+  /// The invitation link's secret. Code sets it from random bytes
+  /// (lib/tokens.ts); the cuid default is only a safety net.
   rsvpToken  String     @unique @default(cuid())
   respondedAt DateTime?
   /// Set when door staff tap Check in. Null means not yet through the door.

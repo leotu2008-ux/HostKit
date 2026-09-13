@@ -16,7 +16,7 @@ export type AuthFormState = { error?: string } | undefined;
 const signUpSchema = z.object({
   name: z.string().trim().min(1, "Tell us your name."),
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
-  password: z.string().min(8, "Use at least 8 characters."),
+  password: z.string().min(8, "Use at least 8 characters.").max(128, "Use at most 128 characters."),
 });
 
 export async function signUpAction(

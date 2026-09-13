@@ -1,5 +1,6 @@
 import { del, put } from "@vercel/blob";
 import { db } from "@/lib/db";
+import { LIMITS, assertRateLimit } from "@/lib/rate-limit";
 
 /** Photos people upload: profile pictures and event covers. */
 export const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -9,6 +10,12 @@ const FALLBACK_PREFIX = "/api/images/";
 
 export function isBlobConfigured() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
+/** Counts one upload against `who` (an account id, or an address for a
+ *  signed-out draft); throws RateLimitError past the hourly quota. */
+export async function assertUploadQuota(who: string): Promise<void> {
+  await assertRateLimit(`upload:${who}`, ...LIMITS.upload.perActor);
 }
 
 /** Why an upload can't be accepted, or null when it's fine. Both apps

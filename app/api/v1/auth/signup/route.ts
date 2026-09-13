@@ -12,7 +12,7 @@ import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-li
 const schema = z.object({
   name: z.string().trim().min(1, "Tell us your name.").max(80),
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
-  password: z.string().min(8, "Use at least 8 characters."),
+  password: z.string().min(8, "Use at least 8 characters.").max(128, "Use at most 128 characters."),
 });
 
 /** Creates an account and signs it in, in one step. A .edu address makes it
@@ -45,5 +45,5 @@ export async function POST(request: Request) {
   });
 
   await sendVerificationQuietly(user, siteOrigin(request.headers));
-  return json({ token: issueToken(user.id), user: serializeUser(user) }, 201);
+  return json({ token: issueToken(user.id, user.sessionVersion), user: serializeUser(user) }, 201);
 }

@@ -15,7 +15,8 @@ import {
   removeMember,
   unfollow,
 } from "@/lib/clubs";
-import { deleteImage, storeImage, validateImage } from "@/lib/images";
+import { deleteImage, storeImage, validateImage, assertUploadQuota } from "@/lib/images";
+import { RateLimitError } from "@/lib/rate-limit";
 
 export type ClubFormState = { error?: string; saved?: boolean } | undefined;
 
@@ -98,18 +99,24 @@ export async function removeAdminAction(formData: FormData) {
 
 type PhotoState = { error?: string } | undefined;
 
-async function readFile(formData: FormData) {
+async function readFile(formData: FormData, who: string) {
   const file = formData.get("file");
   if (!(file instanceof File)) return { error: "Choose an image first." } as const;
   const problem = validateImage(file.type, file.size);
   if (problem) return { error: problem } as const;
+  try {
+    await assertUploadQuota(who);
+  } catch (error) {
+    if (error instanceof RateLimitError) return { error: error.message } as const;
+    throw error;
+  }
   return { file, bytes: Buffer.from(await file.arrayBuffer()) } as const;
 }
 
 export async function setClubPhotoAction(formData: FormData): Promise<PhotoState> {
-  const { club } = await managedClub(String(formData.get("handle") ?? ""));
+  const { club, user } = await managedClub(String(formData.get("handle") ?? ""));
   const field = String(formData.get("field") ?? "imageUrl") === "coverUrl" ? "coverUrl" : "imageUrl";
-  const read = await readFile(formData);
+  const read = await readFile(formData, user.id);
   if ("error" in read) return { error: read.error };
   const url = await storeImage({ bytes: read.bytes, contentType: read.file.type, key: `clubs/${club.id}-${field}` });
   await db.club.update({ where: { id: club.id }, data: { [field]: url } });

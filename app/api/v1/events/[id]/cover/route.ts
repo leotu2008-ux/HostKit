@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent } from "@/lib/api/http";
 import { eventInclude, serializeEvent } from "@/lib/api/serialize";
-import { deleteImage, storeImage, validateImage } from "@/lib/images";
+import { assertUploadQuota, deleteImage, storeImage, validateImage } from "@/lib/images";
+import { RateLimitError, clientIp } from "@/lib/rate-limit";
 
 const include = eventInclude;
 
@@ -17,6 +18,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const bytes = Buffer.from(await request.arrayBuffer());
   const problem = validateImage(contentType, bytes.byteLength);
   if (problem) return apiError(problem, 400);
+  try {
+    await assertUploadQuota(viewer?.id ?? `ip:${clientIp(request.headers)}`);
+  } catch (error) {
+    if (error instanceof RateLimitError) return apiError(error.message, 429);
+    throw error;
+  }
 
   const url = await storeImage({ bytes, contentType: contentType!, key: `covers/${event.id}` });
   const updated = await db.event.update({ where: { id: event.id }, data: { coverUrl: url }, include });

@@ -27,12 +27,8 @@ function newToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-/** Where links point: the site the request came from. */
-export function siteOrigin(headers: Headers): string {
-  const proto = headers.get("x-forwarded-proto") ?? "https";
-  const host = headers.get("x-forwarded-host") ?? headers.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
-}
+// Links point at SITE_URL when set, else the request's own origin.
+export { siteOrigin } from "@/lib/site";
 
 async function issue(userId: string, kind: "reset" | "verify", ttlMs: number): Promise<string> {
   const token = newToken();
@@ -93,9 +89,14 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
   if (newPassword.length < 8) throw new AccountError("Use at least 8 characters.", 400);
+  if (newPassword.length > 128) throw new AccountError("Use at most 128 characters.", 400);
   const hit = await consume(token, "reset");
   if (!hit) throw new AccountError("That reset link has expired or was already used. Ask for a new one.", 400);
-  await db.user.update({ where: { id: hit.userId }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } });
+  // Every existing session and API token dies with the old password.
+  await db.user.update({
+    where: { id: hit.userId },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10), sessionVersion: { increment: 1 } },
+  });
 }
 
 // ---------------------------------------------------------------------------

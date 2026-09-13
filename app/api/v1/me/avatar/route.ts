@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { apiError, apiUser, json } from "@/lib/api/http";
 import { serializeUser } from "@/lib/api/serialize";
-import { deleteImage, storeImage, validateImage } from "@/lib/images";
+import { assertUploadQuota, deleteImage, storeImage, validateImage } from "@/lib/images";
+import { RateLimitError } from "@/lib/rate-limit";
 
 const select = {
   id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true,
@@ -17,6 +18,12 @@ export async function PUT(request: Request) {
   const bytes = Buffer.from(await request.arrayBuffer());
   const problem = validateImage(contentType, bytes.byteLength);
   if (problem) return apiError(problem, 400);
+  try {
+    await assertUploadQuota(user.id);
+  } catch (error) {
+    if (error instanceof RateLimitError) return apiError(error.message, 429);
+    throw error;
+  }
 
   const url = await storeImage({ bytes, contentType: contentType!, key: `avatars/${user.id}` });
   const updated = await db.user.update({ where: { id: user.id }, data: { imageUrl: url }, select });

@@ -25,6 +25,8 @@ const WINDOW_DAYS = 90;
 /** Most events kept per source; the soonest win. */
 const MAX_PER_SOURCE = 400;
 const FETCH_TIMEOUT_MS = 20_000;
+/** A feed bigger than this is a broken feed, not a calendar. */
+const MAX_FEED_BYTES = 8 * 1024 * 1024;
 const USER_AGENT = "Mozilla/5.0 (compatible; HostKit/1.0; +https://host-kit-one.vercel.app)";
 
 export type SyncResult = { sourceKey: string; ok: boolean; count: number; error?: string };
@@ -37,7 +39,11 @@ async function fetchText(url: string): Promise<string> {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  return res.text();
+  const declared = Number(res.headers.get("content-length") ?? 0);
+  if (declared > MAX_FEED_BYTES) throw new Error(`${url} → ${declared} bytes, over the limit`);
+  const text = await res.text();
+  if (text.length > MAX_FEED_BYTES) throw new Error(`${url} → over the size limit`);
+  return text;
 }
 
 /** Fetches and parses one source, without touching the database. */

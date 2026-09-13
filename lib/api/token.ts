@@ -12,7 +12,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
 
-export type TokenPayload = { sub: string; exp: number };
+export type TokenPayload = {
+  sub: string;
+  exp: number;
+  /** The account's session version when issued; a reset bumps it. */
+  v: number;
+};
 
 function apiKey(): string {
   const secret = process.env.AUTH_SECRET;
@@ -26,12 +31,14 @@ function signature(body: string, key: string): string {
 
 export function issueToken(
   userId: string,
+  version = 0,
   now = Date.now(),
   key = apiKey(),
 ): string {
   const payload: TokenPayload = {
     sub: userId,
     exp: Math.floor(now / 1000) + TOKEN_TTL_SECONDS,
+    v: version,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${body}.${signature(body, key)}`;
@@ -61,7 +68,9 @@ export function verifyToken(
       return null;
     }
     if (payload.exp * 1000 <= now) return null;
-    return { sub: payload.sub, exp: payload.exp };
+    // Tokens from before versions existed count as version 0.
+    const v = typeof payload.v === "number" ? payload.v : 0;
+    return { sub: payload.sub, exp: payload.exp, v };
   } catch {
     return null;
   }

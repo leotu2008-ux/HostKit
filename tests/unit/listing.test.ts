@@ -46,6 +46,8 @@ describe("listing visibility", () => {
   it("rejects open-redirect next paths", () => {
     expect(safeNextPath("//evil.test")).toBe("/events");
     expect(safeNextPath("https://evil.test")).toBe("/events");
+    expect(safeNextPath("/\\evil.test")).toBe("/events");
+    expect(safeNextPath("/events\r\nSet-Cookie: x")).toBe("/events");
     expect(safeNextPath("/events/abc")).toBe("/events/abc");
   });
 });

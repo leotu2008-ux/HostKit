@@ -9,6 +9,7 @@ import { apiError, apiUser, json, readJson } from "@/lib/api/http";
 import { canManageClub, managedClubIds } from "@/lib/clubs";
 import { afterPublish } from "@/lib/publish";
 import { eventInclude, serializeEvent } from "@/lib/api/serialize";
+import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 /**
  * The nights this request can manage, soonest first: everything the
@@ -108,6 +109,15 @@ export async function POST(request: Request) {
   }
 
   const claimToken = user ? null : newClaimToken();
+  if (!user) {
+    // Drafts without an account are cheap to make: a few an hour per address.
+    try {
+      await assertRateLimit(`draft:ip:${clientIp(request.headers)}`, ...LIMITS.draft.perIp);
+    } catch (error) {
+      if (error instanceof RateLimitError) return apiError(error.message, 429);
+      throw error;
+    }
+  }
 
   if (input.clubId && !(user && (await canManageClub(user.id, input.clubId)))) {
     return apiError("You don't run that club.", 403);

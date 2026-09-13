@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { siteOrigin } from "@/lib/site";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { canAccessEvent, getCurrentUser } from "@/lib/session";
@@ -126,7 +127,7 @@ export default async function PublicEventPage({
     event.ticketType === "PAID" ? formatCents(event.ticketPriceCents) : "Free";
   // Calendar links only make sense once the night has a date.
   const h = await headers();
-  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"}`;
+  const origin = siteOrigin(h);
   const calendar = event.date
     ? {
         ics: `/e/${event.id}/calendar.ics`,
