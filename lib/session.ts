@@ -8,6 +8,9 @@ import { schoolFor } from "@/lib/schools";
 export async function getCurrentUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
+  // A password reset bumps the account's version; cookies from before it are out.
+  const row = await db.user.findUnique({ where: { id: session.user.id }, select: { sessionVersion: true } });
+  if (!row || row.sessionVersion !== (session.user.sessionVersion ?? 0)) return null;
   return { id: session.user.id, email: session.user.email ?? "", name: session.user.name ?? "" };
 }
 

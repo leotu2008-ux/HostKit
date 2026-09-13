@@ -8,7 +8,7 @@ import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-li
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(1),
+  password: z.string().min(1).max(128),
 });
 
 // Same trick as lib/auth.ts: compare against a real hash even when the email
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   return json({
-    token: issueToken(user.id),
+    token: issueToken(user.id, user.sessionVersion),
     user: serializeUser(user),
   });
 }

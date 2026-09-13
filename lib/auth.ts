@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 
 export const credentialsSchema = z.object({
   email: z.string().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: z.string().min(8, "Password must be at least 8 characters.").max(128, "Use at most 128 characters."),
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -37,17 +37,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const ok = await bcrypt.compare(parsed.data.password, hash);
         if (!ok || !user) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        return { id: user.id, email: user.email, name: user.name, sessionVersion: user.sessionVersion };
       },
     }),
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.sv = user.sessionVersion ?? 0;
+      }
       return token;
     },
     session({ session, token }) {
-      if (token.id) session.user.id = token.id as string;
+      if (typeof token.id === "string") session.user.id = token.id;
+      session.user.sessionVersion = typeof token.sv === "number" ? token.sv : 0;
       return session;
     },
   },

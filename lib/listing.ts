@@ -27,7 +27,14 @@ export function isPublicPageVisible(event: {
 
 export function safeNextPath(raw: unknown, fallback = "/events"): string {
   const value = typeof raw === "string" ? raw.trim() : "";
-  if (!value.startsWith("/") || value.startsWith("//") || value.includes("://")) {
+  // "/\\evil.test" is "//evil.test" to a browser; control characters can
+  // split a header. Only a plain same-site path passes.
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("://") ||
+    /[\\\u0000-\u001f\u007f]/.test(value)
+  ) {
     return fallback;
   }
   return value;

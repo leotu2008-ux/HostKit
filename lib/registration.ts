@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { isPublicPageVisible } from "@/lib/listing";
 import { notify } from "@/lib/notify";
+import { newRsvpToken } from "@/lib/tokens";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 /** Where an account stands with an event. Mirrors `RegistrationState` on iOS. */
@@ -155,6 +156,7 @@ export async function registerGuest(input: {
         data: {
           eventId: event.id,
           userId: viewer.id,
+          rsvpToken: newRsvpToken(),
           name: viewer.name.trim() || email,
           email,
           rsvpStatus,

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseGuestList } from "@/lib/guests";
 import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
+import { newRsvpToken } from "@/lib/tokens";
 
 export type GuestFormState = { error?: string; added?: number } | undefined;
 
@@ -41,6 +42,7 @@ export async function addGuestsAction(
   await db.guest.createMany({
     data: fresh.map((guest) => ({
       eventId,
+      rsvpToken: newRsvpToken(),
       name: guest.name,
       email: guest.email,
     })),

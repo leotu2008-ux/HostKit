@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { siteOrigin } from "@/lib/site";
 import { requireEvent } from "@/lib/session";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { schoolFor } from "@/lib/schools";
@@ -24,7 +25,7 @@ export default async function PromotePage({ params }: PageProps<"/events/[id]/pr
   const { id } = await params;
   const { event, user } = await requireEvent(id);
   const h = await headers();
-  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"}`;
+  const origin = siteOrigin(h);
   const link = eventUrl(origin, event.id);
   const [qr, school] = [await qrSvg(link), schoolFor(event.schoolDomain)];
   const blurb = promoBlurb(

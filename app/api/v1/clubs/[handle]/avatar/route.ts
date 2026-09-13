@@ -3,7 +3,8 @@ import { apiError, apiUser, json } from "@/lib/api/http";
 import { clubViewer } from "@/lib/api/clubs";
 import { serializeClub } from "@/lib/api/serialize";
 import { canManageClub, clubByHandle, clubSelect } from "@/lib/clubs";
-import { deleteImage, storeImage, validateImage } from "@/lib/images";
+import { assertUploadQuota, deleteImage, storeImage, validateImage } from "@/lib/images";
+import { RateLimitError } from "@/lib/rate-limit";
 
 /** The club's picture — the image is the request body, like /me/avatar. */
 export async function PUT(request: Request, { params }: { params: Promise<{ handle: string }> }) {
@@ -15,6 +16,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ hand
   const bytes = Buffer.from(await request.arrayBuffer());
   const problem = validateImage(contentType, bytes.byteLength);
   if (problem) return apiError(problem, 400);
+  try {
+    await assertUploadQuota(viewer!.id);
+  } catch (error) {
+    if (error instanceof RateLimitError) return apiError(error.message, 429);
+    throw error;
+  }
   const url = await storeImage({ bytes, contentType: contentType!, key: `clubs/${club.id}` });
   const updated = await db.club.update({ where: { id: club.id }, data: { imageUrl: url }, select: clubSelect });
   await deleteImage(club.imageUrl);

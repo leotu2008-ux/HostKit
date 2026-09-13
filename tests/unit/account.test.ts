@@ -16,6 +16,15 @@ describe("account tokens", () => {
     expect(VERIFY_TTL_MS).toBe(24 * 60 * 60_000);
   });
 
+  it("prefers SITE_URL for links when it is set", () => {
+    process.env.SITE_URL = "https://hostkit.example/";
+    try {
+      expect(siteOrigin(new Headers({ host: "evil.test" }))).toBe("https://hostkit.example");
+    } finally {
+      delete process.env.SITE_URL;
+    }
+  });
+
   it("builds links from the request's own origin", () => {
     expect(siteOrigin(new Headers({ host: "localhost:3000", "x-forwarded-proto": "http" }))).toBe("http://localhost:3000");
     expect(siteOrigin(new Headers({ "x-forwarded-host": "host-kit-one.vercel.app", host: "internal" }))).toBe(

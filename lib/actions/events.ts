@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -11,6 +12,7 @@ import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
 import { publishEvent } from "@/lib/publish";
 import { canManageClub } from "@/lib/clubs";
+import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export type EventFormState = { error?: string } | undefined;
 
@@ -94,6 +96,15 @@ export async function createEventAction(
   const lng = parseCoord(input.lng);
   const address = input.address || null;
   const claimToken = user ? null : newClaimToken();
+  if (!user) {
+    // Drafts without an account are cheap to make: a few an hour per address.
+    try {
+      await assertRateLimit(`draft:ip:${clientIp(await headers())}`, ...LIMITS.draft.perIp);
+    } catch (error) {
+      if (error instanceof RateLimitError) return { error: error.message };
+      throw error;
+    }
+  }
   const clubId = input.clubId || null;
   if (clubId && !(user && (await canManageClub(user.id, clubId)))) {
     return { error: "You don't run that club." };
