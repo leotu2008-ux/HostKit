@@ -437,6 +437,8 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     var phoneVerified: Bool?
     /// Whether their first name and photo may appear in "who's going".
     var showOnGuestLists: Bool?
+    /// The address was confirmed by opening the link we sent; older servers don't say.
+    var emailVerified: Bool?
 
     var isStudent: Bool { school != nil }
     var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }

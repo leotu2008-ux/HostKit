@@ -37,9 +37,12 @@ model User {
   phoneVerifiedAt DateTime?
   /// Whether their name and photo may appear in "who's going" on event pages.
   showOnGuestLists Boolean @default(true)
+  /// Set once a link sent to the address was opened (lib/account.ts).
+  emailVerifiedAt DateTime?
   createdAt    DateTime @default(now())
 
   events             Event[]
+  accountTokens      AccountToken[]
   registrations      Guest[]
   phoneVerifications PhoneVerification[]
   clubMemberships    ClubMember[]
@@ -151,6 +154,32 @@ model PushToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// A one-time link on its way to an email address: a password reset or an
+/// email verification. Only the hash is stored; used and expired rows are
+/// swept by lib/account.ts.
+model AccountToken {
+  id        String    @id @default(cuid())
+  userId    String
+  /// "reset" | "verify"
+  kind      String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+}
+
+/// Sliding-window counters for the auth endpoints (lib/rate-limit.ts).
+/// Kept in Postgres because serverless instances share no memory.
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
 }
 
 /// A one-time code on its way to a phone number. Rows are short-lived:

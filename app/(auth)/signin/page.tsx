@@ -10,7 +10,7 @@ export const metadata = { title: "Sign in" };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; publish?: string }>;
+  searchParams: Promise<{ next?: string; publish?: string; reset?: string }>;
 }) {
   const query = await searchParams;
   if (await getCurrentUser()) {
@@ -29,9 +29,11 @@ export default async function SignInPage({
     <>
       <h1 className="font-display text-2xl text-ink">Welcome back</h1>
       <p className="mt-1 mb-6 text-sm text-ink-soft">
-        {publish
-          ? "Sign in to publish this night."
-          : "Pick up where you left off."}
+        {query.reset === "1"
+          ? "Your password is set. Sign in with it."
+          : publish
+            ? "Sign in to publish this night."
+            : "Pick up where you left off."}
       </p>
       <AuthForm
         action={signInAction}
@@ -39,7 +41,12 @@ export default async function SignInPage({
         next={next}
         publish={publish}
       />
-      <p className="mt-6 text-center text-sm text-ink-soft">
+      <p className="mt-4 text-center text-sm">
+        <Link href="/forgot-password" className="text-ink-soft hover:text-ink hover:underline">
+          Forgot your password?
+        </Link>
+      </p>
+      <p className="mt-3 text-center text-sm text-ink-soft">
         New here?{" "}
         <Link
           href={

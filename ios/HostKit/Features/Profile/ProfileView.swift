@@ -4,6 +4,14 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppModel.self) private var model
     @State private var isEditing = false
+    @State private var verifySent = false
+
+    private func resendVerification() async {
+        if let verified = try? await model.api.resendVerification() {
+            verifySent = true
+            if verified { await model.refreshProfile() }
+        }
+    }
 
     var body: some View {
         Form {
@@ -49,6 +57,19 @@ struct ProfileView: View {
                             }
                         }
                         .scrollIndicators(.hidden)
+                    }
+                    if user.emailVerified == false {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Confirm your email").font(.inter(.subheadline, .semibold))
+                            Text(verifySent
+                                ? "Sent again — check your inbox."
+                                : "We sent a link to \(user.email). Opening it keeps your account recoverable.")
+                                .font(.inter(.footnote)).foregroundStyle(.secondary)
+                            if !verifySent {
+                                Button("Resend the link") { Task { await resendVerification() } }
+                                    .font(.inter(.footnote, .semibold))
+                            }
+                        }
                     }
                     Button("Edit profile") { isEditing = true }
                 } footer: {

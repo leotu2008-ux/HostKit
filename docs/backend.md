@@ -1,0 +1,43 @@
+# HostKit backend
+
+What holds the data, images and accounts, what's live today, and what still
+needs a key from you. HostKit's backend is the Next.js app itself: every
+`/api/v1` route and server action runs on Vercel functions against one
+Postgres database. There is no second service to deploy.
+
+## The pieces
+
+| Concern | Where it lives | Status |
+| --- | --- | --- |
+| **Data** | Postgres via Prisma 7 (`prisma/schema.prisma`, migrations in `prisma/migrations`). On Vercel: the Storage-attached Prisma Postgres / Neon (`DATABASE_URL`, `DIRECT_URL`). `vercel-build` runs `prisma migrate deploy` on every deploy. | **Live** |
+| **Accounts** | Email + password. Web: Auth.js credentials with JWT sessions (`lib/auth.ts`). App: 30-day HMAC bearer tokens (`lib/api/token.ts`). Passwords bcrypt-hashed; sign-in takes the same time for unknown emails. | **Live** |
+| **Account recovery** | Password reset by one-time link (`lib/account.ts`, `/forgot-password`, `/reset-password`, `POST /api/v1/auth/forgot` + `/reset`). Tokens stored hashed, one hour, single use. | **Live**; needs Resend to actually email |
+| **Email verification** | A link on sign-up and on demand (`/verify-email?token=`, `POST /api/v1/auth/verify`); `User.emailVerifiedAt`; a nudge on the profile until confirmed. Students' `.edu` school stays a claim until this is set. | **Live**; needs Resend to actually email |
+| **Abuse limits** | Fixed-window counters in Postgres (`lib/rate-limit.ts`): sign-in 10/15 min per email and 30 per address, sign-up 10/hour per address, reset links 3/hour per email, verification resends 3/hour. | **Live** |
+| **Images** | `lib/images.ts`: profile pictures, event covers, club pictures. Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise bytes go into the `Image` table and out through `/api/images/:id`. | Works either way; **Blob recommended** for production |
+| **Email** | Resend (`lib/email/resend.ts`): blasts, approvals, promotions, club posts and updates, resets, verification. | Needs `RESEND_API_KEY` + `RESEND_FROM` |
+| **SMS** | Twilio (`lib/sms`): phone verification codes, SMS blasts. | Needs `TWILIO_*` |
+| **Push** | APNs (`lib/push/apns.ts`). | Needs a paid Apple team + `APNS_*` |
+| **Campus sync** | Daily cron (`vercel.json` → `/api/cron/campus-sync`) plus on-demand refresh. | Needs `CRON_SECRET` for the schedule |
+| **Venue search (web)** | Apple Maps Server API. | Needs `APPLE_MAPS_*` |
+
+## What to set in Vercel, in order of impact
+
+1. **`RESEND_API_KEY`, `RESEND_FROM`** — turns on every email: password resets, verification, approvals, club updates. Until then reset and verification links are written to the function logs (and, outside production, returned to the client) so the flows can be exercised.
+2. **`BLOB_READ_WRITE_TOKEN`** — Vercel → Storage → Blob. Moves uploads out of Postgres onto a CDN. Existing rows keep serving from `/api/images/:id`.
+3. **`CRON_SECRET`** — any random string; Vercel sends it on the scheduled campus sync.
+4. **`DIRECT_URL`** — the provider's non-pooled URL so `prisma migrate deploy` doesn't go through the pooler.
+5. `TWILIO_*`, `APPLE_MAPS_*`, `APNS_*` — when you want texts, web venue search and push.
+
+## Data safety
+
+- **Backups.** Prisma Postgres and Neon both keep point-in-time history on the dashboard; turn on the longest retention your plan allows. There is no app-level backup job.
+- **Migrations** are forward-only and applied on deploy. Never edit an applied migration; add a new one (`npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`).
+- **Deleting an account** cascades through events, registrations, follows, tokens and notifications by schema. There is no self-serve delete yet — see below.
+
+## Not built yet
+
+- **Self-serve account deletion and data export** (needed for App Store review).
+- **OAuth sign-in** (Apple, Google). The credentials model is fine for now; adding a provider is an Auth.js config change plus a token exchange for the app.
+- **Sessions you can revoke**: app tokens are stateless and last 30 days; a password reset does not invalidate them.
+- **Object-level authorization tests** on every route. The permission helpers exist (`manageableEvent`, `canManageClub`); a review pass with the smoke scripts under `tests/e2e` would harden them.
