@@ -39,7 +39,7 @@ export function Avatar({
     <span
       aria-hidden
       className={cx(
-        "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber font-semibold text-white",
+        "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-ink-soft to-ink font-semibold text-paper",
         className,
       )}
       style={style}

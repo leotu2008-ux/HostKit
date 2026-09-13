@@ -54,7 +54,7 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
         ) : (
           <div
             aria-hidden
-            className="absolute inset-0 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-clay)_28%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-amber)_22%,transparent),transparent)]"
+            className="absolute inset-0 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-brand)_10%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-clay)_5%,transparent),transparent)]"
           />
         )}
       </div>

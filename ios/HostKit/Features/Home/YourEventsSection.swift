@@ -28,7 +28,7 @@ struct YourEventsSection: View {
                         .foregroundStyle(.secondary)
                     HStack(spacing: 8) {
                         Button("Create event") { router.startCreate() }
-                            .buttonStyle(.glassProminent)
+                            .buttonStyle(.prominent)
                         Button("Sign in", action: onSignIn)
                             .buttonStyle(.glass)
                     }

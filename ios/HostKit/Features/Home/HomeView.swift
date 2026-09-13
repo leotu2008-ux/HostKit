@@ -103,7 +103,7 @@ struct HomeView: View {
                     dismissSchoolPrompt()
                     isEditingProfile = true
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.prominent)
                 Button("Not a student", action: dismissSchoolPrompt)
                     .buttonStyle(.glass)
             }

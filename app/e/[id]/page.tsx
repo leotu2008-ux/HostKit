@@ -80,7 +80,7 @@ function HostedBy({
         </div>
       ) : (
         <div className="mt-2.5 flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-ink-soft to-ink text-[12px] font-semibold text-paper">
             {(name ?? "?").slice(0, 1).toUpperCase()}
           </span>
           <span className="font-medium text-ink">
@@ -176,7 +176,7 @@ export default async function PublicEventPage({
             {school ? (
               <>
                 {" · "}
-                <span className="rounded-full bg-clay-wash px-2 py-0.5 text-[12px] font-medium text-clay-deep">
+                <span className="rounded-full bg-brand-wash px-2 py-0.5 text-[12px] font-medium text-brand">
                   {school.name}
                 </span>
               </>
@@ -324,7 +324,7 @@ export default async function PublicEventPage({
             </div>
             <a
               href="#register"
-              className="inline-flex min-h-11 items-center rounded-full bg-clay px-6 text-sm font-medium text-white"
+              className="inline-flex min-h-11 items-center rounded-full bg-clay px-6 text-sm font-medium text-on-clay"
             >
               {registerMode === "request" ? "Request" : registerMode === "waitlist" ? "Waitlist" : "Register"}
             </a>

@@ -16,7 +16,7 @@ const BUTTON_BASE =
   "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
-  primary: "bg-clay text-white hover:bg-clay-deep",
+  primary: "bg-clay text-on-clay hover:bg-clay-deep",
   secondary:
     "bg-surface text-ink border border-line-strong hover:border-ink-mute hover:bg-sunk",
   ghost: "text-ink-soft hover:bg-sunk hover:text-ink",
@@ -124,7 +124,7 @@ export type Tone = "neutral" | "clay" | "forest" | "amber" | "danger";
 
 const TONE: Record<Tone, string> = {
   neutral: "bg-sunk text-ink-soft",
-  clay: "bg-clay-wash text-clay-deep",
+  clay: "bg-brand-wash text-brand",
   forest: "bg-forest-wash text-forest",
   amber: "bg-amber-wash text-amber",
   danger: "bg-danger-wash text-danger",

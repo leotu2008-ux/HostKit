@@ -71,7 +71,7 @@ struct RegisterSheet: View {
                         Text(doneDescription)
                     } actions: {
                         Button("Done") { dismiss() }
-                            .buttonStyle(.glassProminent)
+                            .buttonStyle(.prominent)
                     }
                 } else {
                     Form {

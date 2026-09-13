@@ -182,7 +182,7 @@ export default async function EventOverviewPage({
               <ul className="divide-y divide-line">
                 {requests.map((guest) => (
                   <li key={guest.id} className="flex items-center gap-3 px-5 py-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-ink-soft to-ink text-[12px] font-semibold text-paper">
                       {initials(guest.name)}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -296,7 +296,7 @@ export default async function EventOverviewPage({
                   const isIn = Boolean(guest.checkedInAt);
                   return (
                     <li key={guest.id} className="flex items-center gap-3 px-5 py-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-ink-soft to-ink text-[12px] font-semibold text-paper">
                         {initials(guest.name)}
                       </span>
                       <div className="min-w-0 flex-1">

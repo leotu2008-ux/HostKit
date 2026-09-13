@@ -72,7 +72,7 @@ export default async function InboxPage() {
                         </span>
                         <span className="block text-[13px] text-ink-mute">{n.body}</span>
                       </span>
-                      {!n.readAt ? <span aria-label="Unread" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay" /> : null}
+                      {!n.readAt ? <span aria-label="Unread" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand" /> : null}
                     </div>
                   );
                   return href ? (

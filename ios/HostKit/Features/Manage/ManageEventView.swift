@@ -120,7 +120,7 @@ struct ManageEventView: View {
                         text: event.statusLabel,
                         tint: event.published ? .accentColor : .secondary)
                     if let school = event.school {
-                        StatusPill(text: school.short, tint: .accentColor)
+                        StatusPill(text: school.short, tint: .brand)
                     }
                 }
                 Text(event.title).font(.event(22)).lineLimit(2)
@@ -134,7 +134,7 @@ struct ManageEventView: View {
                 } label: {
                     Text(model.isSignedIn ? "Publish" : "Sign in")
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.prominent)
                 .disabled(isPublishing)
             }
         }

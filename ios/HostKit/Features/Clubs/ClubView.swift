@@ -141,7 +141,7 @@ struct ClubView: View {
                     Text("/c/\(club.handle)").font(.inter(.caption)).foregroundStyle(.secondary)
                     HStack(spacing: 6) {
                         if let school = club.school {
-                            StatusPill(text: school.short, tint: .accentColor)
+                            StatusPill(text: school.short, tint: .brand)
                         }
                         if let label = club.categoryLabel {
                             StatusPill(text: label)
@@ -170,7 +170,7 @@ struct ClubView: View {
                     } label: {
                         Label("Follow", systemImage: "plus").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.prominent)
                     .controlSize(.large)
                     .disabled(isBusy)
                 }

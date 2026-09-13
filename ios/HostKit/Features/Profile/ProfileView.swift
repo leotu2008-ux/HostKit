@@ -25,7 +25,7 @@ struct ProfileView: View {
                             if user.school != nil || user.company != nil {
                                 HStack(spacing: 6) {
                                     if let school = user.school {
-                                        StatusPill(text: school.name, tint: .accentColor)
+                                        StatusPill(text: school.name, tint: .brand)
                                         if let year = user.classYear {
                                             StatusPill(text: "Class of \(year)")
                                         }
