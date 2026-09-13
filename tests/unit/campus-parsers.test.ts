@@ -246,7 +246,7 @@ describe("selectUpcoming", () => {
 
 describe("campusgroups parser", () => {
   const xml = `<?xml version="1.0"?><rss><channel>
-    <item><eventId>1</eventId><group>Babson Club Pickleball</group><title>Pickleball Open Play &amp; More</title>
+    <item><eventId>1</eventId><group>Babson Club Pickleball</group><groupId>g-pickle</groupId><groupType>Student Organization</groupType><title>Pickleball Open Play &amp; More</title>
       <description>Come play.</description><eventStartDateTime>2026-09-14T17:00:00.0000000-04:00</eventStartDateTime>
       <eventEndDateTime>2026-09-14T19:00:00.0000000-04:00</eventEndDateTime><allDayEvent>0</allDayEvent>
       <eventLocation>Private Location (sign in to display)</eventLocation><link>https://belong.babson.edu/BCP/rsvp?id=1</link>
@@ -262,6 +262,8 @@ describe("campusgroups parser", () => {
     expect(events[0].startsAt.toISOString()).toBe("2026-09-14T17:00:00.000Z");
     expect(events[0].endsAt?.toISOString()).toBe("2026-09-14T19:00:00.000Z");
     expect(events[0].host).toBe("Babson Club Pickleball");
+    expect(events[0].hostId).toBe("g-pickle");
+    expect(events[0].hostKind).toBe("Student Organization");
     expect(events[0].location).toBeNull();
     expect(events[0].imageUrl).toBe("https://belong.babson.edu/upload/x.jpg");
     expect(events[0].url).toBe("https://belong.babson.edu/BCP/rsvp?id=1");
