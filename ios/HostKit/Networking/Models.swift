@@ -48,7 +48,7 @@ nonisolated struct HostEvent: Codable, Identifiable, Hashable, Sendable {
     var coverUrl: String?
     let webPath: String
 
-    var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+    var coverURL: URL? { URL.photo(coverUrl) }
     var registrationState: RegistrationState {
         registration ?? ((registered ?? false) ? .going : .none)
     }
@@ -166,7 +166,7 @@ nonisolated struct EventClub: Codable, Hashable, Sendable {
     let name: String
     let imageUrl: String?
     let webPath: String
-    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var imageURL: URL? { URL.photo(imageUrl) }
 }
 
 /// A club page. Mirrors `ApiClub` in `lib/api/serialize.ts`.
@@ -186,8 +186,8 @@ nonisolated struct Club: Codable, Identifiable, Hashable, Sendable {
     var isFollowing: Bool
     var canManage: Bool
     let webPath: String
-    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
-    var coverURL: URL? { coverUrl.flatMap(URL.init(string:)) }
+    var imageURL: URL? { URL.photo(imageUrl) }
+    var coverURL: URL? { URL.photo(coverUrl) }
 }
 
 /// What kind of club, for browsing. Mirrors CLUB_CATEGORIES in lib/club-format.ts.
@@ -232,7 +232,7 @@ nonisolated struct ClubMemberRow: Codable, Identifiable, Hashable, Sendable {
     let name: String
     let imageUrl: String?
     let role: String
-    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var imageURL: URL? { URL.photo(imageUrl) }
 }
 
 nonisolated struct ClubPage: Decodable, Sendable {
@@ -299,7 +299,7 @@ nonisolated struct Attendee: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let firstName: String
     let imageUrl: String?
-    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var imageURL: URL? { URL.photo(imageUrl) }
 
     /// "Ada, Grace and 12 others are going" — same rules as `goingSentence` on the web.
     static func sentence(_ names: [String], total: Int) -> String {
@@ -441,7 +441,7 @@ nonisolated struct HostUser: Codable, Hashable, Sendable {
     var emailVerified: Bool?
 
     var isStudent: Bool { school != nil }
-    var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
+    var imageURL: URL? { URL.photo(imageUrl) }
     var hasVerifiedPhone: Bool { phone != nil && (phoneVerified ?? false) }
 }
 
@@ -629,5 +629,18 @@ nonisolated enum Cities {
         let a = sin(dLat / 2) * sin(dLat / 2)
             + cos(toRad(lat1)) * cos(toRad(lat2)) * sin(dLng / 2) * sin(dLng / 2)
         return 3958.8 * 2 * atan2(sqrt(a), sqrt(1 - a))
+    }
+}
+
+nonisolated extension URL {
+    /// A stored photo. Vercel Blob gives a full URL; without it the server
+    /// keeps the bytes itself and returns a `/api/images/…` path, which is
+    /// only meaningful on that server — so resolve it there.
+    static func photo(_ string: String?) -> URL? {
+        guard let string, !string.isEmpty else { return nil }
+        if string.hasPrefix("/") {
+            return URL(string: string, relativeTo: Session.serverURL)?.absoluteURL
+        }
+        return URL(string: string)
     }
 }

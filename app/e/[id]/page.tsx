@@ -156,8 +156,15 @@ export default async function PublicEventPage({
 
       <div className="mx-auto grid w-full max-w-5xl gap-8 px-4 pt-6 pb-32 md:grid-cols-[minmax(0,330px)_minmax(0,1fr)] md:gap-12 md:px-8 md:pt-12 md:pb-16">
         <aside className="space-y-6">
-          <div className="aspect-square overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
-            <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" />
+          {/* A photo keeps its own shape; only the drawn cover is a square. */}
+          <div
+            className={
+              event.coverUrl
+                ? "overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]"
+                : "aspect-square overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]"
+            }
+          >
+            <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" natural />
           </div>
           <div className="hidden md:block">
             <HostedBy name={event.owner?.name ?? null} club={event.club} following={followsClub} preview={preview} />

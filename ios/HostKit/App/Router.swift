@@ -30,6 +30,10 @@ final class Router {
         case "profile": tab = .profile
         default: break
         }
+        // `… -hostkit-event <id>` lands on that event's page.
+        if let id = UserDefaults.standard.string(forKey: "hostkit-event") {
+            openGuestEvent(id)
+        }
     }
 
     func startCreate() {

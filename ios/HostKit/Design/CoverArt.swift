@@ -1,22 +1,75 @@
 import SwiftUI
 
 /// The host's photo when they've added one, over the generated cover
-/// (which also shows while the photo loads).
+/// (which also shows while the photo loads). The art sets the size and the
+/// photo fills it: as an overlay it can't grow the layout, so a big photo
+/// never spills past its tile.
 struct EventCover: View {
     let event: HostEvent
 
     var body: some View {
-        ZStack {
-            CoverArt(seed: event.id)
-            if let url = event.coverURL {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Color.clear
+        CoverArt(seed: event.id)
+            .overlay {
+                if let url = event.coverURL {
+                    AsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Color.clear
+                    }
                 }
             }
+            .clipped()
+    }
+}
+
+/// The photo at its own shape, for the event page: a wide poster stays
+/// wide, a tall one tall, with nothing cropped away. The box is sized from
+/// the picture's real dimensions (kept between 4:5 and 2:1 so a very tall
+/// or very wide one doesn't take over the screen; past that the photo is
+/// fitted over a blurred copy of itself rather than cut). The generated
+/// cover shows while it loads, or if it can't.
+struct CoverPhoto: View {
+    let url: URL
+    let seed: String
+    @State private var image: UIImage?
+    @State private var failed = false
+
+    private static let narrowest = 4.0 / 5.0
+    private static let widest = 2.0
+
+    var body: some View {
+        Group {
+            if let image {
+                let ratio = image.size.width / max(image.size.height, 1)
+                let box = min(max(ratio, Self.narrowest), Self.widest)
+                Color.clear
+                    .aspectRatio(box, contentMode: .fit)
+                    .overlay {
+                        if box != ratio {
+                            Image(uiImage: image).resizable().scaledToFill()
+                                .blur(radius: 24)
+                                .opacity(0.8)
+                        }
+                    }
+                    .overlay {
+                        Image(uiImage: image).resizable().scaledToFit()
+                    }
+                    .clipped()
+            } else {
+                CoverArt(seed: seed)
+                    .aspectRatio(failed ? 1 : 16 / 10, contentMode: .fit)
+            }
         }
-        .clipped()
+        .task(id: url) {
+            failed = false
+            image = await Self.load(url)
+            failed = image == nil
+        }
+    }
+
+    private static func load(_ url: URL) async -> UIImage? {
+        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return nil }
+        return UIImage(data: data)
     }
 }
 
