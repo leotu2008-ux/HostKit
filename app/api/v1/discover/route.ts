@@ -6,7 +6,7 @@ import { refreshIfStale } from "@/lib/campus/sync";
 import { apiUser, json } from "@/lib/api/http";
 import { eventInclude, serializeClub, serializeEvent, serializeSchool } from "@/lib/api/serialize";
 import { clubViewer } from "@/lib/api/clubs";
-import { followingEvents, suggestedClubs } from "@/lib/clubs";
+import { followingEvents, followingOfficialEvents, suggestedClubs } from "@/lib/clubs";
 import { myUpcomingEvents } from "@/lib/mine";
 import { upcomingOnly } from "@/lib/upcoming";
 import { registrationStates } from "@/lib/registration";
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   const city = isCity(rawCity) ? rawCity : null;
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
-  const [events, campus, mine, following, clubs, rel, official, officialInfo] = await Promise.all([
+  const [events, campus, mine, following, clubs, rel, official, officialInfo, followingOfficial] = await Promise.all([
     db.event.findMany({
       where: { ...live, ...(city ? { city } : {}) },
       orderBy,
@@ -48,6 +48,7 @@ export async function GET(request: Request) {
     clubViewer(viewer?.id ?? null),
     campusPreviewFor(viewer?.schoolDomain, 12),
     campusSourcesInfo(viewer?.schoolDomain),
+    viewer ? followingOfficialEvents(viewer.id, 12) : Promise.resolve([]),
   ]);
   if (viewer?.schoolDomain) after(() => refreshIfStale(viewer.schoolDomain));
 
@@ -66,7 +67,9 @@ export async function GET(request: Request) {
     events: events.map(out),
     campus: campus.map(out),
     mine: mine.map(out),
-    following: following.map(out),
+    following: [...following.map(out), ...followingOfficial.map(serializeCampusEvent)].sort(
+      (a, b) => (a.startsAt ?? "9").localeCompare(b.startsAt ?? "9"),
+    ),
     clubs: clubs.map((c) => serializeClub(c, rel)),
     school: serializeSchool(viewer?.schoolDomain),
     official: official.map(serializeCampusEvent),

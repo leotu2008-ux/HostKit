@@ -7,6 +7,7 @@ import type {
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
 import { clubCategoryLabel } from "@/lib/club-format";
+import { sourceByKey } from "@/lib/campus/sources";
 
 export type ApiSchool = { domain: string; name: string; short: string; city: string | null };
 
@@ -105,6 +106,10 @@ export type ApiClub = {
   isFollowing: boolean;
   canManage: boolean;
   webPath: string;
+  /** A real organisation synced from the school's calendar; nobody here runs it. */
+  isOfficial: boolean;
+  /** The feed it was synced from ("Belong @ Babson"), when official. */
+  source: string | null;
 };
 
 /** A note from the admins to followers. */
@@ -135,10 +140,13 @@ export function serializeClub(
     schoolDomain: string | null;
     city: string | null;
     category?: string | null;
+    sourceRef?: string | null;
+    isOfficial?: boolean;
     _count: { followers: number };
   },
   viewer: { following: Set<string>; managed: Set<string> },
 ): ApiClub {
+  const sourceKey = club.sourceRef ? club.sourceRef.slice(0, club.sourceRef.lastIndexOf(":")) : null;
   return {
     id: club.id,
     handle: club.handle,
@@ -154,6 +162,8 @@ export function serializeClub(
     isFollowing: viewer.following.has(club.id),
     canManage: viewer.managed.has(club.id),
     webPath: `/c/${club.handle}`,
+    isOfficial: club.isOfficial ?? false,
+    source: sourceKey ? (sourceByKey(sourceKey)?.name ?? null) : null,
   };
 }
 

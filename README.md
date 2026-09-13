@@ -192,6 +192,15 @@ the "Create event" buttons, not a tab).
     `DELETE …/updates/:id`).
   - The event page's **Hosted by** row has a Follow button, and a club page
     shows past events and how many it has run.
+  - **Official clubs are real.** When a school's calendar names the
+    organisation behind each event (Babson's *Belong* does: Sigma Kappa,
+    eTower, Babson Club Pickleball, the Blank Center…), the campus sync keeps
+    a Club for it (`Club.sourceRef`, `isOfficial`; `lib/campus/sync.ts`
+    `syncOfficialClubs`). They carry an **Official** badge, nobody here runs
+    them, their events come from the feed (`CampusEvent.hostRef`), and
+    following one puts those events under From clubs you follow. HostKit
+    never invents a club: seeds create none, and the only other way a club
+    exists is a person starting one.
 - **Approval and the waitlist** (`lib/registration.ts`, `lib/waitlist.ts`):
   Promote → "Approve registrations" turns registrations into requests the
   host answers from Overview. A full event takes registrations onto a

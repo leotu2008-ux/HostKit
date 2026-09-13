@@ -9,6 +9,7 @@ import { parseCards } from "@/lib/campus/parsers/cards";
 import { parseBabson } from "@/lib/campus/parsers/babson";
 import type { ParsedEvent } from "@/lib/campus/parsers/types";
 import { startOfDay } from "@/lib/plan";
+import { suggestHandle } from "@/lib/club-format";
 
 /**
  * Pulls each school's official calendar into CampusEvent. Runs from the cron
@@ -132,10 +133,63 @@ export function selectUpcoming(events: ParsedEvent[], now = new Date()): ParsedE
     .slice(0, MAX_PER_SOURCE);
 }
 
+/** "<sourceKey>:<groupId>" — how a synced club and its events find each other. */
+export function hostRefFor(sourceKey: string, hostId: string | null | undefined): string | null {
+  return hostId ? `${sourceKey}:${hostId}` : null;
+}
+
+/**
+ * Keeps a Club row for every real organisation the feed names (Belong at
+ * Babson lists the student org or department behind each event). These are
+ * the school's actual clubs — created once, renamed if the feed renames
+ * them, never invented and never deleted here (people follow them).
+ */
+export async function syncOfficialClubs(source: CampusSource, events: ParsedEvent[]): Promise<number> {
+  const orgs = new Map<string, { name: string; kind: string | null }>();
+  for (const e of events) {
+    const ref = hostRefFor(source.key, e.hostId);
+    if (ref && e.host && !orgs.has(ref)) orgs.set(ref, { name: e.host, kind: e.hostKind ?? null });
+  }
+  if (orgs.size === 0) return 0;
+  const existing = await db.club.findMany({
+    where: { sourceRef: { in: [...orgs.keys()] } },
+    select: { id: true, sourceRef: true, name: true },
+  });
+  const byRef = new Map(existing.map((c) => [c.sourceRef!, c]));
+  for (const [ref, org] of orgs) {
+    const name = org.name.replace(/\s+/g, " ").trim().slice(0, 60);
+    const current = byRef.get(ref);
+    if (current) {
+      if (current.name !== name) await db.club.update({ where: { id: current.id }, data: { name } });
+      continue;
+    }
+    // A handle from the name; on a clash, add a short suffix from the ref.
+    const base = suggestHandle(name);
+    const suffix = ref.replace(/[^a-z0-9]/gi, "").slice(-4).toLowerCase();
+    const handle = (await db.club.findUnique({ where: { handle: base }, select: { id: true } }))
+      ? `${base.slice(0, 25)}-${suffix}`
+      : base;
+    await db.club.create({
+      data: {
+        handle,
+        name,
+        sourceRef: ref,
+        isOfficial: true,
+        schoolDomain: source.schoolDomain,
+        // The feed's own word for it ("Student Organization", "Department") goes in the blurb
+        // until an admin claims the page and writes a real one.
+        blurb: org.kind,
+      },
+    });
+  }
+  return orgs.size;
+}
+
 export async function syncSource(source: CampusSource): Promise<SyncResult> {
   const now = new Date();
   try {
     const events = selectUpcoming(await fetchSource(source), now);
+    await syncOfficialClubs(source, events);
     await db.$transaction(async (tx) => {
       await tx.campusEvent.deleteMany({
         where: { sourceKey: source.key, externalId: { notIn: events.map((e) => e.externalId) } },
@@ -151,6 +205,7 @@ export async function syncSource(source: CampusSource): Promise<SyncResult> {
           location: e.location,
           restricted: e.restricted ?? false,
           host: e.host ?? null,
+          hostRef: hostRefFor(source.key, e.hostId),
           url: e.url,
           imageUrl: e.imageUrl,
         };

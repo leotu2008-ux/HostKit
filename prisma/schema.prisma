@@ -64,6 +64,11 @@ model Club {
   blurb        String?
   imageUrl     String?
   coverUrl     String?
+  /// Set on clubs synced from a school's official calendar
+  /// ("<sourceKey>:<groupId>", lib/campus/sync.ts). Real organisations,
+  /// nobody here runs them; their events come from the feed.
+  sourceRef    String?  @unique
+  isOfficial   Boolean  @default(false)
   /// The creator's school, when they're a student — surfaces the club and
   /// its events to that campus first.
   schoolDomain String?
@@ -395,6 +400,8 @@ model CampusEvent {
   restricted   Boolean  @default(false)
   /// The club or department putting it on, when the feed says.
   host         String?
+  /// Links the event to a synced Club (Club.sourceRef) when the feed names one.
+  hostRef      String?
   /// The event's page on the school's site.
   url          String
   imageUrl     String?
@@ -403,6 +410,7 @@ model CampusEvent {
 
   @@unique([sourceKey, externalId])
   @@index([schoolDomain, startsAt])
+  @@index([hostRef])
 }
 
 /// When each feed last ran, and how it went.

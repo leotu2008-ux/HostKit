@@ -186,8 +186,13 @@ nonisolated struct Club: Codable, Identifiable, Hashable, Sendable {
     var isFollowing: Bool
     var canManage: Bool
     let webPath: String
+    /// A real organisation synced from the school's calendar; nobody here runs it.
+    var isOfficial: Bool?
+    /// The feed it was synced from ("Belong @ Babson"), when official.
+    var source: String?
     var imageURL: URL? { URL.photo(imageUrl) }
     var coverURL: URL? { URL.photo(coverUrl) }
+    var official: Bool { isOfficial ?? false }
 }
 
 /// What kind of club, for browsing. Mirrors CLUB_CATEGORIES in lib/club-format.ts.

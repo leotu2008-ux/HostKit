@@ -14,4 +14,9 @@ export type ParsedEvent = {
   host?: string | null;
   /** Listed for the school community only; the place needs a school sign-in. */
   restricted?: boolean;
+  /** The feed's own id for that organisation, when it has one — lets the
+   *  sync keep a Club for it (lib/campus/sync.ts). */
+  hostId?: string | null;
+  /** The feed's word for the organisation: "Student Organization", "Department"… */
+  hostKind?: string | null;
 };
