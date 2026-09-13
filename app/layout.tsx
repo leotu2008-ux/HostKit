@@ -46,6 +46,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full bg-paper">
         <script dangerouslySetInnerHTML={{ __html: SPLASH_BOOTSTRAP }} />
+        {/* No scripts at all: nothing would ever mark the splash done. */}
+        <noscript>
+          <style>{`.launch-splash{display:none}`}</style>
+        </noscript>
         <LaunchSplash />
         <AppFrame>{children}</AppFrame>
       </body>

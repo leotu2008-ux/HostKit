@@ -39,6 +39,12 @@ npm run db:seed             # 72 venues and vendors across 3 cities
 npm run dev                 # http://localhost:3000
 ```
 
+Open the dev server as `localhost`, `127.0.0.1`, or your machine's Wi-Fi
+address from a phone (`192.168.x.x:3000`) — those origins are listed in
+`allowedDevOrigins` in `next.config.ts`. `next dev` refuses to serve its
+scripts to any other hostname, and a page without scripts looks stuck on
+the launch splash.
+
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 You can draft a night before you have an account. Publishing — listing it on
