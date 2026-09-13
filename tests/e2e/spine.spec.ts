@@ -31,7 +31,14 @@ async function signUp(page: Page) {
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', PASSWORD);
   await page.click('button[type="submit"]');
-  await page.waitForURL((url) => url.pathname === "/events" || url.pathname.startsWith("/events/claim") || url.pathname === "/events");
+  // Sign-up waits for the confirmation link. Without an email service the
+  // dev server hands the link back; opening it lands on sign-in.
+  await page.getByText("Check your inbox").waitFor();
+  await page.click('a:has-text("open it")');
+  await page.waitForURL(/\/signin\?verified=1/);
+  await page.fill('input[name="email"]', email);
+  await page.fill('input[name="password"]', PASSWORD);
+  await page.click('button[type="submit"]');
   await page.waitForURL("**/events");
   return email;
 }

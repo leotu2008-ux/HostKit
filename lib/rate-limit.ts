@@ -48,6 +48,8 @@ export const LIMITS = {
   signUp: { perIp: [10, 60 * 60_000] },
   forgot: { perIp: [10, 60 * 60_000], perEmail: [3, 60 * 60_000] },
   verify: { perUser: [3, 60 * 60_000] },
+  /** "Resend the confirmation link" for an address that can’t sign in yet. */
+  resend: { perIp: [10, 60 * 60_000], perEmail: [3, 60 * 60_000] },
   /** Drafts made without an account: cheap rows anyone can create. */
   draft: { perIp: [20, 60 * 60_000] },
   /** Photo uploads: up to 5 MB each, so a quota per account (or address). */

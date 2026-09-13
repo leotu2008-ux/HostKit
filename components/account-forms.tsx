@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import {
   forgotPasswordAction,
   resendVerificationAction,
+  resendVerificationToAction,
   resetPasswordAction,
   type AccountFormState,
 } from "@/lib/actions/account";
@@ -20,7 +21,7 @@ function Submit({ label, size = "lg" }: { label: string; size?: "sm" | "md" | "l
 }
 
 /** Shown in development when no email service is configured: the link itself. */
-function DevLink({ link }: { link?: string }) {
+export function DevLink({ link }: { link?: string }) {
   if (!link) return null;
   return (
     <p className="rounded-lg bg-amber-wash px-3 py-2 text-[13px] text-amber">
@@ -69,6 +70,38 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <Input name="confirm" type="password" autoComplete="new-password" required minLength={8} />
       </Field>
       <Submit label="Set new password" />
+    </form>
+  );
+}
+
+/**
+ * "Resend the confirmation link" for an address that can’t sign in yet —
+ * after sign-up, on a refused sign-in, on /check-email. With `email` the
+ * address is fixed; without it the person types it. Always says "sent".
+ */
+export function ResendVerificationForm({ email }: { email?: string }) {
+  const [state, formAction] = useActionState<AccountFormState, FormData>(resendVerificationToAction, undefined);
+  if (state?.sent) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-lg bg-forest-wash px-3 py-2 text-sm text-forest">
+          If that address has an unconfirmed account, a fresh link is on its way. It works for a day.
+        </p>
+        <DevLink link={state.devLink} />
+      </div>
+    );
+  }
+  return (
+    <form action={formAction} className="space-y-3">
+      <FormError>{state?.error}</FormError>
+      {email ? (
+        <input type="hidden" name="email" value={email} />
+      ) : (
+        <Field label="Email">
+          <Input name="email" type="email" autoComplete="email" required />
+        </Field>
+      )}
+      <Submit label="Resend the link" size={email ? "sm" : "lg"} />
     </form>
   );
 }
