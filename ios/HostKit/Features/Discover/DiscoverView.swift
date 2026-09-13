@@ -10,7 +10,10 @@ struct DiscoverView: View {
     @State private var hasSettledCity = Session.city != nil
     @State private var feed = DiscoverFeed(events: [])
     @State private var isLoading = true
-    @State private var path: [HostEvent] = []
+    // Type-erased: the stack holds events, clubs and the campus list. A
+    // typed [HostEvent] path can't represent the campus screen, and pushing
+    // an event from there made SwiftUI pop straight back.
+    @State private var path = NavigationPath()
     @State private var query = ""
 
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -129,6 +132,7 @@ struct DiscoverView: View {
             .navigationDestination(for: Club.self) { club in
                 ClubView(handle: club.handle)
             }
+            .navigationDestination(for: CampusRoute.self) { _ in CampusView() }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { LogoMark() }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -143,7 +147,7 @@ struct DiscoverView: View {
                 // Fetch before clearing the id: clearing changes this task's
                 // id, which cancels it — and the request with it.
                 let event = try? await model.event(id: id)
-                if let event { path = [event] }
+                if let event { path = NavigationPath([event]) }
                 router.openGuestEventID = nil
             }
             .refreshable { await load() }
@@ -164,7 +168,7 @@ struct DiscoverView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                NavigationLink("See all") { CampusView() }
+                NavigationLink("See all", value: CampusRoute.all)
                     .font(.inter(.subheadline, .medium))
             }
             if feed.onCampus.isEmpty {
@@ -249,4 +253,9 @@ struct DiscoverView: View {
     DiscoverView()
         .environment(AppModel())
         .environment(Router.shared)
+}
+
+/// The full campus list, pushed by value so it sits in Discover's path.
+private enum CampusRoute: Hashable {
+    case all
 }

@@ -75,9 +75,8 @@ struct CampusView: View {
         .background { BrandWash() }
         .navigationTitle(feed.school.map { "On campus at \($0.short)" } ?? "Campus events")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(for: HostEvent.self) { event in
-            EventDetailView(event: event)
-        }
+        // Event pages come from Discover's stack, which pushes this screen;
+        // declaring the destination again here would shadow it.
         .task { await load() }
         .refreshable { await load() }
     }
