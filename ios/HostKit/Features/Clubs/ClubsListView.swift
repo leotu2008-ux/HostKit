@@ -10,7 +10,8 @@ struct ClubCard: View {
             HostAvatar(name: club.name, imageURL: club.imageURL, size: compact ? 40 : 48)
             VStack(alignment: .leading, spacing: 2) {
                 Text(club.name).font(.inter(.body, .medium)).lineLimit(1)
-                Text([club.school?.short, "\(club.followers) \(club.followers == 1 ? "follower" : "followers")"]
+                Text([club.school?.short, compact ? nil : club.categoryLabel,
+                      "\(club.followers) \(club.followers == 1 ? "follower" : "followers")"]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(.inter(.caption)).foregroundStyle(.secondary).lineLimit(1)
             }
@@ -31,22 +32,43 @@ struct ClubsListView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var isCreating = false
+    @State private var query = ""
+    @State private var category: ClubCategory?
+
+    /// A search term or a category switches the list to `results` over every club.
+    private var isBrowsing: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty || category != nil }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 if let errorMessage { NoticeBanner(text: errorMessage) }
-                if model.isSignedIn {
-                    section("Your clubs", feed.mine,
-                            empty: "You don’t run a club yet. Start a page and post events as the club.")
+                categoryChips
+                if isBrowsing {
+                    section(
+                        [query.trimmingCharacters(in: .whitespaces).isEmpty ? nil : "“\(query.trimmingCharacters(in: .whitespaces))”",
+                         category?.label].compactMap { $0 }.joined(separator: " · "),
+                        feed.results,
+                        empty: isLoading ? "Searching…" : "No clubs match. Try another word or kind — or start it yourself.")
+                } else {
+                    if model.isSignedIn {
+                        section("Your clubs", feed.mine,
+                                empty: "You don’t run a club yet. Start a page and post events as the club.")
+                    }
+                    section(model.user?.school.map { "At \($0.short)" } ?? "Around", feed.suggested,
+                            empty: isLoading ? "Loading…" : "No clubs here yet — be the first to start one.")
                 }
-                section(model.user?.school.map { "At \($0.short)" } ?? "Around", feed.suggested,
-                        empty: isLoading ? "Loading…" : "No clubs here yet — be the first to start one.")
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
         .background { BrandWash() }
+        .searchable(text: $query, prompt: "Search clubs")
+        .task(id: "\(query)|\(category?.rawValue ?? "")") {
+            // Let typing settle before hitting the server.
+            if isBrowsing { try? await Task.sleep(for: .milliseconds(250)) }
+            guard !Task.isCancelled else { return }
+            await load()
+        }
         .navigationTitle("Clubs")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Club.self) { club in ClubView(handle: club.handle) }
@@ -62,8 +84,31 @@ struct ClubsListView: View {
                 feed.mine.insert(created, at: 0)
             }
         }
-        .task { await load() }
         .refreshable { await load() }
+    }
+
+    private var categoryChips: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                ForEach([nil] + ClubCategory.allCases.map(Optional.some), id: \.self) { option in
+                    let selected = option == category
+                    Button {
+                        category = option
+                    } label: {
+                        Text(option?.label ?? "All")
+                            .font(.inter(.subheadline, .medium))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(selected ? Color(uiColor: .systemBackground) : .primary)
+                            .background(selected ? Color.primary : Color.clear, in: .capsule)
+                            .overlay(Capsule().strokeBorder(selected ? .clear : Color.secondary.opacity(0.3)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
     }
 
     private func section(_ title: String, _ clubs: [Club], empty: String) -> some View {
@@ -88,7 +133,10 @@ struct ClubsListView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            feed = try await model.api.clubs(city: Session.city.flatMap { $0.isEmpty ? nil : $0 })
+            feed = try await model.api.clubs(
+                city: Session.city.flatMap { $0.isEmpty ? nil : $0 },
+                q: query.trimmingCharacters(in: .whitespaces),
+                category: category?.rawValue)
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -107,6 +155,7 @@ struct NewClubView: View {
     @State private var handleEdited = false
     @State private var blurb = ""
     @State private var city: String = ""
+    @State private var category: ClubCategory?
     @State private var isSaving = false
     @State private var errorMessage: String?
 
@@ -137,6 +186,10 @@ struct NewClubView: View {
                 }
                 Section {
                     TextField("What it's about", text: $blurb, axis: .vertical).lineLimit(2...4)
+                    Picker("Kind of club", selection: $category) {
+                        Text("Not set").tag(ClubCategory?.none)
+                        ForEach(ClubCategory.allCases) { Text($0.label).tag(ClubCategory?.some($0)) }
+                    }
                     Picker("City", selection: $city) {
                         Text("Not set").tag("")
                         ForEach(Cities.all, id: \.self) { Text($0).tag($0) }
@@ -170,7 +223,8 @@ struct NewClubView: View {
                 name: name.trimmingCharacters(in: .whitespaces),
                 handle: handle,
                 blurb: blurb.isEmpty ? nil : blurb,
-                city: city.isEmpty ? nil : city))
+                city: city.isEmpty ? nil : city,
+                category: category?.rawValue))
             onCreated(club)
             dismiss()
         } catch {

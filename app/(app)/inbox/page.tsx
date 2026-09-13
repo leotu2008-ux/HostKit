@@ -9,6 +9,7 @@ export const metadata = { title: "Inbox" };
 
 const ICON: Record<string, string> = {
   club_published: "📣",
+  club_update: "💬",
   registration_request: "🙋",
   registration_approved: "✅",
   waitlist_promoted: "🎟️",

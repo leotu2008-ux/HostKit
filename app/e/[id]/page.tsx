@@ -9,6 +9,8 @@ import { registrationState } from "@/lib/registration";
 import { waitlistPositionFor } from "@/lib/waitlist";
 import { attendeesPreview, type Attendee } from "@/lib/attendees";
 import { GoingRow } from "@/components/going-row";
+import { FollowButton } from "@/components/follow-button";
+import { followedClubIds } from "@/lib/clubs";
 import { Avatar } from "@/components/avatar";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
@@ -53,23 +55,29 @@ function timeRange(date: Date | null, hours: number): string {
 function HostedBy({
   name,
   club,
+  following,
   preview,
 }: {
   name: string | null;
   club: { handle: string; name: string; imageUrl: string | null } | null;
+  /** Whether the viewer follows the club — the row is where people meet it. */
+  following: boolean;
   preview: { attendees: Attendee[]; total: number };
 }) {
   return (
     <div className="border-t border-line pt-5">
       <p className="text-[13px] font-medium text-ink-mute">Hosted by</p>
       {club ? (
-        <Link href={`/c/${club.handle}`} className="mt-2.5 flex items-center gap-3 hover:text-clay">
-          <Avatar name={club.name} imageUrl={club.imageUrl} size={32} className="rounded-lg" />
-          <span className="min-w-0">
-            <span className="block font-medium text-ink">{club.name}</span>
-            <span className="block text-[12px] text-ink-mute">Club page →</span>
-          </span>
-        </Link>
+        <div className="mt-2.5 flex items-center gap-3">
+          <Link href={`/c/${club.handle}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-clay">
+            <Avatar name={club.name} imageUrl={club.imageUrl} size={32} className="rounded-lg" />
+            <span className="min-w-0">
+              <span className="block truncate font-medium text-ink">{club.name}</span>
+              <span className="block text-[12px] text-ink-mute">Club page →</span>
+            </span>
+          </Link>
+          <FollowButton handle={club.handle} following={following} />
+        </div>
       ) : (
         <div className="mt-2.5 flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-clay to-amber text-[12px] font-semibold text-white">
@@ -108,10 +116,12 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const [registration, preview] = await Promise.all([
+  const [registration, preview, followingIds] = await Promise.all([
     registrationState(event.id, user?.id ?? null),
     attendeesPreview(event.id),
+    event.clubId ? followedClubIds(user?.id ?? null) : Promise.resolve(new Set<string>()),
   ]);
+  const followsClub = event.clubId ? followingIds.has(event.clubId) : false;
   const alreadyGoing = registration === "going";
   const waitlistPlace =
     registration === "waitlisted" ? await waitlistPositionFor(event.id, user?.id ?? null) : null;
@@ -150,7 +160,7 @@ export default async function PublicEventPage({
             <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="(min-width: 768px) 330px, 100vw" />
           </div>
           <div className="hidden md:block">
-            <HostedBy name={event.owner?.name ?? null} club={event.club} preview={preview} />
+            <HostedBy name={event.owner?.name ?? null} club={event.club} following={followsClub} preview={preview} />
           </div>
         </aside>
 
@@ -290,7 +300,7 @@ export default async function PublicEventPage({
           </section>
 
           <div className="mt-10 md:hidden">
-            <HostedBy name={event.owner?.name ?? null} club={event.club} preview={preview} />
+            <HostedBy name={event.owner?.name ?? null} club={event.club} following={followsClub} preview={preview} />
           </div>
 
           {isOwner ? (

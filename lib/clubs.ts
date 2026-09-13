@@ -1,10 +1,21 @@
 import { db } from "@/lib/db";
 import { goingCount } from "@/lib/api/serialize";
-import { upcomingOnly } from "@/lib/upcoming";
-import type { ClubInput } from "@/lib/club-format";
+import { pastOnly, upcomingOnly } from "@/lib/upcoming";
+import { isClubCategory, type ClubInput } from "@/lib/club-format";
+import { notify } from "@/lib/notify";
 
-export { HANDLE_PATTERN, RESERVED_HANDLES, clubSchema, suggestHandle } from "@/lib/club-format";
-export type { ClubInput } from "@/lib/club-format";
+export {
+  CLUB_CATEGORIES,
+  CLUB_CATEGORY_KEYS,
+  HANDLE_PATTERN,
+  RESERVED_HANDLES,
+  clubCategoryLabel,
+  clubPostSchema,
+  clubSchema,
+  isClubCategory,
+  suggestHandle,
+} from "@/lib/club-format";
+export type { ClubCategory, ClubInput } from "@/lib/club-format";
 
 /**
  * Clubs: a page people follow, run by its admins, that events can be posted
@@ -28,6 +39,7 @@ export const clubSelect = {
   coverUrl: true,
   schoolDomain: true,
   city: true,
+  category: true,
   _count: { select: { followers: true } },
 } as const;
 
@@ -43,6 +55,7 @@ export async function createClub(
       name: input.name,
       blurb: input.blurb || null,
       city: input.city || null,
+      category: input.category || null,
       schoolDomain: user.schoolDomain,
       members: { create: { userId: user.id, role: "OWNER" } },
       // Founders follow their own club so it shows up on their Home.
@@ -156,4 +169,96 @@ export async function removeMember(clubId: string, userId: string) {
     if (owners <= 1) throw new ClubError("A club keeps at least one owner.", 400);
   }
   await db.clubMember.delete({ where: { clubId_userId: { clubId, userId } } });
+}
+
+/**
+ * Browse every club: a search term (name, blurb or handle) and/or a
+ * category. The viewer's school's clubs come first, then by followers.
+ */
+export async function searchClubs(input: {
+  q?: string | null;
+  category?: string | null;
+  schoolDomain?: string | null;
+  take?: number;
+}) {
+  const q = input.q?.trim() ?? "";
+  const category = isClubCategory(input.category) ? input.category : null;
+  if (!q && !category) return [];
+  const take = input.take ?? 40;
+  const rows = await db.club.findMany({
+    where: {
+      ...(category ? { category } : {}),
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" as const } },
+              { blurb: { contains: q, mode: "insensitive" as const } },
+              { handle: { contains: q.toLowerCase().replace(/\s+/g, "-") } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ followers: { _count: "desc" } }, { name: "asc" }],
+    take: take * 2,
+    select: clubSelect,
+  });
+  const mine = input.schoolDomain ?? null;
+  return rows
+    .sort((a, b) => Number(b.schoolDomain === mine) - Number(a.schoolDomain === mine))
+    .slice(0, take);
+}
+
+/** Events the club already ran, newest first, and how many it has run in all. */
+export async function clubPastEvents(clubId: string, take = 6) {
+  const listed = { clubId, published: true as const, visibility: { not: "PRIVATE" as const } };
+  const [rows, total] = await Promise.all([
+    db.event.findMany({
+      where: { ...listed, ...pastOnly() },
+      orderBy: [{ date: "desc" }],
+      take,
+      include: {
+        owner: { select: { name: true } },
+        club: { select: { handle: true, name: true, imageUrl: true } },
+        ...goingCount,
+      },
+    }),
+    db.event.count({ where: listed }),
+  ]);
+  return { rows, total };
+}
+
+// ---------------------------------------------------------------------------
+// Updates: a short note from the admins to everyone following.
+// ---------------------------------------------------------------------------
+
+export const clubPostSelect = {
+  id: true,
+  body: true,
+  createdAt: true,
+  author: { select: { id: true, name: true, imageUrl: true } },
+} as const;
+
+export async function clubUpdates(clubId: string, take = 10) {
+  return db.clubPost.findMany({ where: { clubId }, orderBy: { createdAt: "desc" }, take, select: clubPostSelect });
+}
+
+/** Posts an update and tells every follower (Inbox; email when configured). */
+export async function postClubUpdate(club: { id: string; name: string }, authorId: string, body: string) {
+  const post = await db.clubPost.create({ data: { clubId: club.id, authorId, body }, select: clubPostSelect });
+  const followers = await db.follow.findMany({ where: { clubId: club.id }, select: { userId: true } });
+  const short = body.length > 70 ? `${body.slice(0, 69).trimEnd()}…` : body;
+  await notify(
+    followers.map((f) => f.userId).filter((id) => id !== authorId),
+    {
+      kind: "club_update",
+      title: `${club.name}: ${short}`,
+      body: body.length > 70 ? body : "Open the club page for more.",
+      clubId: club.id,
+    },
+  );
+  return post;
+}
+
+export async function deleteClubUpdate(clubId: string, postId: string) {
+  await db.clubPost.deleteMany({ where: { id: postId, clubId } });
 }

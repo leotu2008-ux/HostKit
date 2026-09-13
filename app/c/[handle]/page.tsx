@@ -3,11 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { canManageClub, clubByHandle, followedClubIds } from "@/lib/clubs";
+import { canManageClub, clubByHandle, clubPastEvents, clubUpdates, followedClubIds } from "@/lib/clubs";
+import { clubCategoryLabel } from "@/lib/club-format";
 import { schoolFor } from "@/lib/schools";
 import { upcomingOnly } from "@/lib/upcoming";
 import { eventInclude } from "@/lib/api/serialize";
 import { Avatar } from "@/components/avatar";
+import { ClubUpdateForm } from "@/components/club-update-form";
+import { ClubUpdates } from "@/components/club-updates";
 import { EventCard, toEventCard } from "@/components/event-card";
 import { FollowButton } from "@/components/follow-button";
 import { Badge, ButtonLink, EmptyState } from "@/components/ui";
@@ -23,7 +26,7 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
   const [user, club] = await Promise.all([getCurrentUser(), clubByHandle(handle)]);
   if (!club) notFound();
 
-  const [following, canManage, events, members] = await Promise.all([
+  const [following, canManage, events, members, past, updates] = await Promise.all([
     followedClubIds(user?.id ?? null),
     canManageClub(user?.id ?? null, club.id),
     db.event.findMany({
@@ -37,8 +40,11 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
       orderBy: [{ role: "asc" }, { createdAt: "asc" }],
       select: { role: true, user: { select: { id: true, name: true, imageUrl: true } } },
     }),
+    clubPastEvents(club.id, 6),
+    clubUpdates(club.id, 10),
   ]);
   const school = schoolFor(club.schoolDomain);
+  const category = clubCategoryLabel(club.category);
 
   return (
     <main className="relative isolate flex-1">
@@ -61,11 +67,18 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
             <p className="mt-1 flex flex-wrap items-center gap-2 text-[14px] text-ink-soft">
               <span className="font-mono text-ink-mute">/c/{club.handle}</span>
               {school ? <Badge tone="clay">{school.name}</Badge> : null}
+              {category ? <Badge>{category}</Badge> : null}
               {club.city ? <span>{club.city.split(",")[0]}</span> : null}
               <span>
                 <span className="tabular font-medium text-ink">{club._count.followers}</span>{" "}
                 {club._count.followers === 1 ? "follower" : "followers"}
               </span>
+              {past.total > 0 ? (
+                <span>
+                  <span className="tabular font-medium text-ink">{past.total}</span>{" "}
+                  {past.total === 1 ? "event hosted" : "events hosted"}
+                </span>
+              ) : null}
             </p>
           </div>
           <div className="flex items-center gap-2 pb-1">
@@ -79,6 +92,24 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
         </div>
 
         {club.blurb ? <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-soft">{club.blurb}</p> : null}
+
+        {canManage || updates.length > 0 ? (
+          <section className="mt-8">
+            <h2 className="font-display mb-3 text-xl text-ink">Updates</h2>
+            {canManage ? (
+              <div className="mb-4 rounded-card border border-line bg-surface p-4">
+                <ClubUpdateForm handle={club.handle} followers={club._count.followers} />
+              </div>
+            ) : null}
+            {updates.length === 0 ? (
+              <p className="text-[14px] text-ink-mute">
+                Nothing posted yet. A short note here goes straight to every follower.
+              </p>
+            ) : (
+              <ClubUpdates handle={club.handle} updates={updates} canManage={canManage} />
+            )}
+          </section>
+        ) : null}
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
           <section>
@@ -98,6 +129,19 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
                 ))}
               </ul>
             )}
+
+            {past.rows.length > 0 ? (
+              <>
+                <h2 className="font-display mt-10 mb-3 text-xl text-ink">Past events</h2>
+                <ul className="grid gap-3 md:grid-cols-2">
+                  {past.rows.map((event) => (
+                    <li key={event.id} className="opacity-80">
+                      <EventCard href={`/e/${event.id}`} event={toEventCard(event)} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
           </section>
 
           <aside>

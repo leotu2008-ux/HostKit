@@ -11,12 +11,18 @@ import { isPushConfigured, sendPush } from "@/lib/push/apns";
 
 export type NotificationKind =
   | "club_published"
+  | "club_update"
   | "registration_request"
   | "registration_approved"
   | "waitlist_promoted"
   | "blast";
 
-const EMAIL_KINDS = new Set<NotificationKind>(["club_published", "registration_approved", "waitlist_promoted"]);
+const EMAIL_KINDS = new Set<NotificationKind>([
+  "club_published",
+  "club_update",
+  "registration_approved",
+  "waitlist_promoted",
+]);
 
 export type Notice = {
   kind: NotificationKind;

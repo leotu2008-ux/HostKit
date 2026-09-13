@@ -179,6 +179,16 @@ the "Create event" buttons, not a tab).
   and surfaces there. Events can be posted **as** a club from Create, the
   club's admins run those events alongside the owner, and followers see the
   club's events under **From clubs you follow** on Home.
+  - Clubs have a **kind** (Social, Professional, Sports & fitness, Arts &
+    music, Cultural, Service, Academic — `lib/club-format.ts`); `/clubs` and
+    the app's Clubs screen search every club by name and browse by kind
+    (`GET /api/v1/clubs?q=&category=` → `results`).
+  - Admins post **Updates** from the club page: a short note that lands in
+    every follower's Inbox (`club_update`, emailed when Resend is set up)
+    and stays on the page (`ClubPost`; `POST /api/v1/clubs/:handle/updates`,
+    `DELETE …/updates/:id`).
+  - The event page's **Hosted by** row has a Follow button, and a club page
+    shows past events and how many it has run.
 - **Approval and the waitlist** (`lib/registration.ts`, `lib/waitlist.ts`):
   Promote → "Approve registrations" turns registrations into requests the
   host answers from Overview. A full event takes registrations onto a

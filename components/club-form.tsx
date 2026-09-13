@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createClubAction, updateClubAction, type ClubFormState } from "@/lib/actions/clubs";
-import { suggestHandle } from "@/lib/club-format";
+import { CLUB_CATEGORIES, suggestHandle } from "@/lib/club-format";
 import { CITIES } from "@/lib/catalog";
 import { Button, Field, FormError, Input, Select, Textarea } from "@/components/ui";
 
@@ -20,7 +20,7 @@ function Submit({ label }: { label: string }) {
 export function ClubForm({
   club,
 }: {
-  club?: { handle: string; name: string; blurb: string | null; city: string | null };
+  club?: { handle: string; name: string; blurb: string | null; city: string | null; category?: string | null };
 }) {
   const [state, formAction] = useActionState<ClubFormState, FormData>(
     club ? updateClubAction : createClubAction,
@@ -77,6 +77,17 @@ export function ClubForm({
 
       <Field label="What it's about" hint="One or two lines. Optional.">
         <Textarea name="blurb" rows={3} maxLength={280} defaultValue={club?.blurb ?? ""} />
+      </Field>
+
+      <Field label="Kind of club" hint="Helps people browse. Optional.">
+        <Select name="category" defaultValue={club?.category ?? ""} className="w-64">
+          <option value="">Not set</option>
+          {Object.entries(CLUB_CATEGORIES).map(([key, label]) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
+        </Select>
       </Field>
 
       <Field label="City" hint="Where you mostly host.">

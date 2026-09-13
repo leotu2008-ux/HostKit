@@ -56,7 +56,7 @@ export default async function EditClubPage({ params }: { params: Promise<{ handl
 
       <Card className="mt-4 p-5">
         <h2 className="mb-4 font-display text-lg text-ink">Details</h2>
-        <ClubForm club={{ handle: club.handle, name: club.name, blurb: club.blurb, city: club.city }} />
+        <ClubForm club={{ handle: club.handle, name: club.name, blurb: club.blurb, city: club.city, category: club.category }} />
       </Card>
 
       <Card className="mt-4 p-5">

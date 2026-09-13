@@ -14,6 +14,8 @@ struct ClubView: View {
     @State private var isSigningIn = false
     @State private var isPickingPhoto = false
     @State private var photoItem: PhotosPickerItem?
+    @State private var draft = ""
+    @State private var isPosting = false
 
     var body: some View {
         ScrollView {
@@ -23,6 +25,10 @@ struct ClubView: View {
 
                     if let blurb = page.club.blurb, !blurb.isEmpty {
                         Text(blurb).font(.inter(.body)).lineSpacing(3)
+                    }
+
+                    if page.club.canManage || !page.updates.isEmpty {
+                        updatesSection(page)
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -40,6 +46,17 @@ struct ClubView: View {
                             ForEach(page.events) { event in
                                 NavigationLink(value: event) { EventRow(event: event) }
                                     .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    if !page.past.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Past events").font(.inter(.title3, .semibold))
+                            ForEach(page.past) { event in
+                                NavigationLink(value: event) { EventRow(event: event) }
+                                    .buttonStyle(.plain)
+                                    .opacity(0.8)
                             }
                         }
                     }
@@ -126,7 +143,13 @@ struct ClubView: View {
                         if let school = club.school {
                             StatusPill(text: school.short, tint: .accentColor)
                         }
+                        if let label = club.categoryLabel {
+                            StatusPill(text: label)
+                        }
                         StatusPill(text: "\(club.followers) \(club.followers == 1 ? "follower" : "followers")")
+                        if let hosted = page?.stats?.eventsHosted, hosted > 0 {
+                            StatusPill(text: "\(hosted) \(hosted == 1 ? "event" : "events")")
+                        }
                     }
                 }
                 Spacer(minLength: 0)
@@ -157,6 +180,82 @@ struct ClubView: View {
                         .controlSize(.large)
                 }
             }
+        }
+    }
+
+    /// Admins' notes to followers; admins get a composer and can take one down.
+    @ViewBuilder
+    private func updatesSection(_ page: ClubPage) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Updates").font(.inter(.title3, .semibold))
+            if page.club.canManage {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Doors at 7, bring a friend. Anything followers should know.", text: $draft, axis: .vertical)
+                        .lineLimit(2...5)
+                        .font(.inter(.body))
+                    HStack {
+                        Text("Lands in \(page.club.followers) \(page.club.followers == 1 ? "follower’s" : "followers’") Inbox.")
+                            .font(.inter(.caption)).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Post") { Task { await postUpdate() } }
+                            .buttonStyle(.glassProminent)
+                            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isPosting)
+                    }
+                }
+                .padding(12)
+                .background(.background, in: .rect(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.quaternary))
+            }
+            if page.updates.isEmpty {
+                Text("Nothing posted yet. A short note here goes straight to every follower.")
+                    .font(.inter(.subheadline)).foregroundStyle(.secondary)
+            }
+            ForEach(page.updates) { update in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        if let author = update.author {
+                            HostAvatar(name: author.name, imageURL: author.imageURL, size: 20)
+                            Text(author.name).font(.inter(.caption, .medium))
+                        }
+                        Text(update.createdAt.formatted(.relative(presentation: .named)))
+                            .font(.inter(.caption)).foregroundStyle(.secondary)
+                        Spacer()
+                        if page.club.canManage {
+                            Button("Remove", role: .destructive) { Task { await deleteUpdate(update) } }
+                                .font(.inter(.caption))
+                        }
+                    }
+                    Text(update.body).font(.inter(.body)).lineSpacing(2)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: .rect(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.quaternary))
+            }
+        }
+    }
+
+    private func postUpdate() async {
+        guard let handle = page?.club.handle else { return }
+        isPosting = true
+        defer { isPosting = false }
+        do {
+            let update = try await model.api.postClubUpdate(handle: handle, body: draft.trimmingCharacters(in: .whitespacesAndNewlines))
+            page?.updates.insert(update, at: 0)
+            draft = ""
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteUpdate(_ update: ClubUpdate) async {
+        guard let handle = page?.club.handle else { return }
+        do {
+            try await model.api.deleteClubUpdate(handle: handle, id: update.id)
+            page?.updates.removeAll { $0.id == update.id }
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 

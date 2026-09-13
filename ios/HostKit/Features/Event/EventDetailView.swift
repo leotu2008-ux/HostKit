@@ -7,10 +7,31 @@ struct EventDetailView: View {
     @State private var event: HostEvent
     @State private var isRegistering = false
     @State private var calendarAdded: Bool
+    /// nil until the club page answered whether the viewer follows it.
+    @State private var followsClub: Bool?
+    @State private var isFollowBusy = false
+    @State private var isSigningIn = false
 
     init(event: HostEvent) {
         _event = State(initialValue: event)
         _calendarAdded = State(initialValue: Session.calendarEntries[event.id] != nil)
+    }
+
+    private func loadFollowState() async {
+        guard let club = event.club, followsClub == nil else { return }
+        if let page = try? await model.api.club(handle: club.handle) { followsClub = page.club.isFollowing }
+    }
+
+    private func toggleFollow(_ handle: String, _ following: Bool) async {
+        guard model.isSignedIn else {
+            isSigningIn = true
+            return
+        }
+        isFollowBusy = true
+        defer { isFollowBusy = false }
+        if let updated = try? await model.api.setFollowing(handle: handle, !following) {
+            followsClub = updated.isFollowing
+        }
     }
 
     /// Official events have no registration, so the calendar is a button.
@@ -39,16 +60,35 @@ struct EventDetailView: View {
                         .font(.event(34))
                         .fixedSize(horizontal: false, vertical: true)
                     if let club = event.club {
-                        NavigationLink {
-                            ClubView(handle: club.handle)
-                        } label: {
-                            HStack(spacing: 8) {
-                                HostAvatar(name: club.name, imageURL: club.imageURL, size: 24)
-                                Text("Hosted by \(club.name)").font(.inter(.subheadline))
-                                Image(systemName: "chevron.right").font(.inter(.caption)).foregroundStyle(.secondary)
+                        HStack(spacing: 8) {
+                            NavigationLink {
+                                ClubView(handle: club.handle)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    HostAvatar(name: club.name, imageURL: club.imageURL, size: 24)
+                                    Text("Hosted by \(club.name)").font(.inter(.subheadline)).lineLimit(1)
+                                    Image(systemName: "chevron.right").font(.inter(.caption)).foregroundStyle(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            Spacer(minLength: 0)
+                            // Follow right here, where people meet the club.
+                            if let following = followsClub {
+                                if following {
+                                    Button("Following") { Task { await toggleFollow(club.handle, true) } }
+                                        .font(.inter(.caption, .semibold))
+                                        .buttonStyle(.glass)
+                                        .controlSize(.small)
+                                        .disabled(isFollowBusy)
+                                } else {
+                                    Button("Follow") { Task { await toggleFollow(club.handle, false) } }
+                                        .font(.inter(.caption, .semibold))
+                                        .buttonStyle(.glassProminent)
+                                        .controlSize(.small)
+                                        .disabled(isFollowBusy)
+                                }
                             }
                         }
-                        .buttonStyle(.plain)
                     } else if let host = event.hostName {
                         HStack(spacing: 8) {
                             HostAvatar(name: host, size: 24)
@@ -129,7 +169,9 @@ struct EventDetailView: View {
                 if state == .going { event.going += 1 }
             }
         }
+        .sheet(isPresented: $isSigningIn) { SignInView() }
         .task { await refresh() }
+        .task(id: event.club?.handle) { await loadFollowState() }
     }
 
     @ViewBuilder
