@@ -94,6 +94,26 @@ async function deliver(
   return process.env.NODE_ENV !== "production" ? { devLink: link } : {};
 }
 
+/**
+ * Runs a send whose caller must answer the same way regardless — the
+ * password-reset and resend-confirmation forms, which never say whether an
+ * address has an account. A provider failure is the operator's problem, not
+ * a signal to hand back, so it is logged and swallowed. Sign-up is the
+ * exception: it needs the throw, to undo the account it just wrote.
+ */
+async function blindly(
+  what: string,
+  to: string,
+  send: () => Promise<{ devLink?: string }>,
+): Promise<{ devLink?: string }> {
+  try {
+    return await send();
+  } catch (error) {
+    console.error(`[account] ${what} email to ${to} failed`, error);
+    return {};
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Password reset
 // ---------------------------------------------------------------------------
@@ -108,18 +128,23 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
   if (!user) return {};
   const token = await issue(user.id, "reset", RESET_TTL_MS);
   const link = `${origin}/reset-password?token=${token}`;
-  return deliver(
-    email,
-    "Reset your HostKit password",
-    [
-      `Hi ${user.name.split(" ")[0]},`,
-      "",
-      "Someone asked to reset the password on this HostKit account. If that was you, open this link within the hour:",
+  // Blind on the way out too: a send that fails only for addresses we hold
+  // would answer differently from one for an address we don't, which is the
+  // enumeration this function exists to avoid. The operator gets the log.
+  return blindly("password reset", email, () =>
+    deliver(
+      email,
+      "Reset your HostKit password",
+      [
+        `Hi ${user.name.split(" ")[0]},`,
+        "",
+        "Someone asked to reset the password on this HostKit account. If that was you, open this link within the hour:",
+        link,
+        "",
+        "If it wasn't you, ignore this — your password hasn't changed.",
+      ].join("\n"),
       link,
-      "",
-      "If it wasn't you, ignore this — your password hasn't changed.",
-    ].join("\n"),
-    link,
+    ),
   );
 }
 
@@ -178,8 +203,9 @@ export async function resendVerificationTo(rawEmail: string, origin: string): Pr
     select: { id: true, email: true, name: true, emailVerifiedAt: true },
   });
   if (!user || user.emailVerifiedAt) return {};
-  const result = await sendVerification(user, origin);
-  return { devLink: result.devLink };
+  return blindly("confirmation", email, async () => ({
+    devLink: (await sendVerification(user, origin)).devLink,
+  }));
 }
 
 /** Marks the address verified. Returns the account, or null for a bad link. */
