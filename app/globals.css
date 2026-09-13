@@ -150,14 +150,41 @@ html[data-splash="done"] .launch-splash {
 }
 
 html[data-splash="pending"] {
-  background: #000;
   /* One clock for overlay + logo so they fade out together. */
   --launch-splash-duration: 1s;
   --launch-splash-ease: cubic-bezier(0.2, 0.85, 0.22, 1);
 }
 
+/* Black behind the overlay so nothing flashes before it paints — but only
+   for the splash's own duration. If the page's JavaScript never runs (a
+   blocked script, a slow network) the flag stays "pending", and a page
+   left on black looks like a loading screen that never ends. */
+html[data-splash="pending"] {
+  animation: launch-splash-ground var(--launch-splash-duration) step-end forwards;
+}
+
 html[data-splash="pending"] body {
-  background: #000;
+  animation: launch-splash-ground-body var(--launch-splash-duration) step-end forwards;
+}
+
+@keyframes launch-splash-ground {
+  0%,
+  99% {
+    background-color: #000;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes launch-splash-ground-body {
+  0%,
+  99% {
+    background-color: #000;
+  }
+  100% {
+    background-color: var(--color-paper);
+  }
 }
 
 html[data-splash="pending"] .launch-splash {
@@ -201,6 +228,8 @@ html[data-splash="pending"] .launch-splash-logo {
   }
 }
 
+/* Ends hidden and untouchable, so a faded overlay can never sit over the
+   page swallowing taps if the script that removes it never runs. */
 @keyframes launch-splash-overlay {
   0%,
   55% {
@@ -209,6 +238,7 @@ html[data-splash="pending"] .launch-splash-logo {
   100% {
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
   }
 }
 
