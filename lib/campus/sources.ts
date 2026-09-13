@@ -41,6 +41,10 @@ export type CampusSource = {
   dateBox?: { month: string; day: string; year?: string; time?: string };
   /** For `ics`: the feed writes local times with a "Z" suffix (BU does). */
   icsUtcIsLocal?: boolean;
+  /** Keep only events whose place matches this (a regex): home games, say. */
+  only?: { location: string };
+  /** Drop what this regex matches from every title ("[W] Babson College " on scores). */
+  titleStrip?: string;
 };
 
 const NY = "America/New_York";
@@ -80,6 +84,20 @@ export const CAMPUS_SOURCES: CampusSource[] = [
     url: "https://www.babson.edu/about/events/?search=all",
     kind: "babson",
     timeZone: NY,
+  },
+  {
+    // Sidearm's public iCalendar: every game, home and away. Home games only —
+    // the ones at Babson Park — since those are the nights on campus.
+    key: "babson.edu/athletics",
+    schoolDomain: "babson.edu",
+    name: "Babson Athletics",
+    homepage: "https://babsonathletics.com/calendar",
+    url: "https://babsonathletics.com/calendar.ashx/calendar.ics",
+    kind: "ics",
+    timeZone: NY,
+    only: { location: "Babson Park" },
+    // Played games get a "[W]" / "[L]" result tag in front.
+    titleStrip: "^(\\[[A-Z]\\]\\s*)?Babson College\\s+",
   },
   {
     key: "olin.edu/events",

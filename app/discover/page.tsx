@@ -7,7 +7,7 @@ import { CITY_COOKIE } from "@/lib/city-cookie";
 import { groupByDay } from "@/lib/day-groups";
 import { upcomingOnly } from "@/lib/upcoming";
 import { suggestedClubs } from "@/lib/clubs";
-import { campusEventsFor } from "@/lib/campus/feed";
+import { campusPreviewFor } from "@/lib/campus/feed";
 import { sourcesFor } from "@/lib/campus/sources";
 import { CampusMixByDay, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
@@ -64,7 +64,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
       include,
     }),
     searching ? Promise.resolve([]) : suggestedClubs({ schoolDomain: user?.schoolDomain ?? null, city }, 8),
-    campusEventsFor(user?.schoolDomain, searching ? 60 : 12, q),
+    campusPreviewFor(user?.schoolDomain, searching ? 60 : 12, q),
   ]);
 
   const days = groupByDay(nearby);

@@ -42,6 +42,23 @@ async function fetchText(url: string): Promise<string> {
 
 /** Fetches and parses one source, without touching the database. */
 export async function fetchSource(source: CampusSource): Promise<ParsedEvent[]> {
+  return applySourceRules(source, await fetchRaw(source));
+}
+
+/** The trims a source asks for that no parser knows: keep some places, drop a title prefix. */
+export function applySourceRules(source: CampusSource, events: ParsedEvent[]): ParsedEvent[] {
+  const only = source.only ? new RegExp(source.only.location, "i") : null;
+  const strip = source.titleStrip ? new RegExp(source.titleStrip) : null;
+  return events
+    .filter((e) => !only || (e.location !== null && only.test(e.location)))
+    .map((e) => {
+      if (!strip) return e;
+      const trimmed = e.title.replace(strip, "").trim();
+      return trimmed && trimmed !== e.title ? { ...e, title: trimmed } : e;
+    });
+}
+
+async function fetchRaw(source: CampusSource): Promise<ParsedEvent[]> {
   const opts = { timeZone: source.timeZone, pageUrl: source.homepage };
   switch (source.kind) {
     case "localist": {
@@ -126,6 +143,7 @@ export async function syncSource(source: CampusSource): Promise<SyncResult> {
           endsAt: e.endsAt,
           allDay: e.allDay,
           location: e.location,
+          restricted: e.restricted ?? false,
           host: e.host ?? null,
           url: e.url,
           imageUrl: e.imageUrl,

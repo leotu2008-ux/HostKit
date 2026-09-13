@@ -8,7 +8,8 @@ import { parseCampusGroups } from "@/lib/campus/parsers/campusgroups";
 import { parseRss } from "@/lib/campus/parsers/rss";
 import { parseClock, parseIcsDate, parseOffsetIso, wallClock } from "@/lib/campus/time";
 import { decodeEntities, htmlToText } from "@/lib/campus/text";
-import { selectUpcoming } from "@/lib/campus/sync";
+import { applySourceRules, selectUpcoming } from "@/lib/campus/sync";
+import { collapseSeries, seriesLabel } from "@/lib/campus/series";
 import { CAMPUS_SOURCES, sourcesFor } from "@/lib/campus/sources";
 import { SCHOOLS } from "@/lib/schools";
 
@@ -254,18 +255,19 @@ describe("campusgroups parser", () => {
     <item><eventId>3</eventId><title>Date only</title><eventDate>9/16/2026</eventDate><eventLocation>Reynolds</eventLocation><privacyLevel>0</privacyLevel></item>
   </channel></rss>`;
 
-  it("reads public items with times, host and photo; skips private ones", () => {
+  it("reads items with times, host and photo; keeps community-only ones, marked", () => {
     const events = parseCampusGroups(xml, { timeZone: NY, pageUrl: "https://belong.babson.edu/events" });
-    expect(events.map((e) => e.title)).toEqual(["Pickleball Open Play & More", "Date only"]);
+    expect(events.map((e) => e.title)).toEqual(["Pickleball Open Play & More", "Members only", "Date only"]);
+    expect(events.map((e) => e.restricted)).toEqual([false, true, false]);
     expect(events[0].startsAt.toISOString()).toBe("2026-09-14T17:00:00.000Z");
     expect(events[0].endsAt?.toISOString()).toBe("2026-09-14T19:00:00.000Z");
     expect(events[0].host).toBe("Babson Club Pickleball");
     expect(events[0].location).toBeNull();
     expect(events[0].imageUrl).toBe("https://belong.babson.edu/upload/x.jpg");
     expect(events[0].url).toBe("https://belong.babson.edu/BCP/rsvp?id=1");
-    expect(events[1].startsAt.toISOString()).toBe("2026-09-16T00:00:00.000Z");
-    expect(events[1].location).toBe("Reynolds");
-    expect(events[1].url).toBe("https://belong.babson.edu/events");
+    expect(events[2].startsAt.toISOString()).toBe("2026-09-16T00:00:00.000Z");
+    expect(events[2].location).toBe("Reynolds");
+    expect(events[2].url).toBe("https://belong.babson.edu/events");
   });
 });
 
@@ -325,12 +327,57 @@ describe("sources", () => {
     const domains = new Set(SCHOOLS.map((s) => s.domain));
     for (const s of CAMPUS_SOURCES) expect(domains.has(s.schoolDomain)).toBe(true);
     expect(new Set(CAMPUS_SOURCES.map((s) => s.key)).size).toBe(CAMPUS_SOURCES.length);
-    expect(sourcesFor("babson.edu")).toHaveLength(2);
+    expect(sourcesFor("babson.edu")).toHaveLength(3);
     expect(sourcesFor(null)).toEqual([]);
     // Every top-50 school is in the catalog, feed or not.
     for (const d of ["princeton.edu", "stanford.edu", "caltech.edu", "umich.edu", "purdue.edu", "rochester.edu"]) {
       expect(SCHOOLS.some((s) => s.domain === d)).toBe(true);
     }
     expect(SCHOOLS.length).toBeGreaterThanOrEqual(50);
+  });
+});
+
+describe("source rules", () => {
+  const ev = (title: string, location: string | null) => ({
+    externalId: title, title, description: null, startsAt: new Date("2026-09-20T18:00:00Z"), endsAt: null,
+    allDay: false, location, url: "u", imageUrl: null,
+  });
+  it("keeps only matching places and drops a title prefix", () => {
+    const source = sourcesFor("babson.edu").find((s) => s.key === "babson.edu/athletics")!;
+    const out = applySourceRules(source, [
+      ev("Babson College Women's Soccer vs NYU", "Babson Park, Mass., Hartwell-Rogers Field"),
+      ev("Babson College Field Hockey at Middlebury", "Middlebury, Vt. / Peter Kohn Field"),
+      ev("[L] Babson College Women's Soccer vs #2 Emory", "Babson Park, Mass., Hartwell-Rogers Field"),
+      ev("Babson College ", "Babson Park"),
+    ]);
+    expect(out.map((e) => e.title)).toEqual(["Women's Soccer vs NYU", "Women's Soccer vs #2 Emory", "Babson College "]);
+  });
+  it("is a no-op for sources without rules", () => {
+    const source = sourcesFor("babson.edu").find((s) => s.key === "babson.edu/belong")!;
+    expect(applySourceRules(source, [ev("Anything", null)])).toHaveLength(1);
+  });
+});
+
+describe("series", () => {
+  const row = (title: string, host: string | null, start: string) => ({ title, host, startsAt: new Date(start), id: `${title}${start}` });
+  it("folds repeats of a title and host into the first date", () => {
+    const out = collapseSeries([
+      row("Pickleball Open Play", "Babson Club Pickleball", "2026-09-14T17:00:00Z"),
+      row("Blank School Welcome Back", "Blank School", "2026-09-16T11:30:00Z"),
+      row("Pickleball Open Play", "Babson Club Pickleball", "2026-09-16T17:00:00Z"),
+      row("pickleball open play", "Babson Club Pickleball", "2026-09-21T17:00:00Z"),
+      row("Pickleball Open Play", "PickleBOS", "2026-09-18T15:00:00Z"),
+    ]);
+    expect(out.map((e) => [e.title, e.repeats?.count ?? null])).toEqual([
+      ["Pickleball Open Play", 3],
+      ["Blank School Welcome Back", null],
+      ["Pickleball Open Play", null],
+    ]);
+    expect(out[0].repeats?.label).toBe("Mon & Wed · 5:00 PM · 3 dates");
+  });
+  it("labels many days and mixed times honestly", () => {
+    expect(seriesLabel(["2026-09-14T17:00:00Z", "2026-09-15T17:00:00Z", "2026-09-16T17:00:00Z", "2026-09-17T17:00:00Z"].map((s) => new Date(s))))
+      .toBe("Most days · 5:00 PM · 4 dates");
+    expect(seriesLabel(["2026-09-14T17:00:00Z", "2026-09-21T19:00:00Z"].map((s) => new Date(s)))).toBe("Mon · 2 dates");
   });
 });

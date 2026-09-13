@@ -5,6 +5,7 @@ import { schoolFor } from "@/lib/schools";
 import { sourceByKey, sourcesFor } from "@/lib/campus/sources";
 import { durationHours } from "@/lib/campus/time";
 import { lastSyncedAt } from "@/lib/campus/sync";
+import { collapseSeries, type Series } from "@/lib/campus/series";
 
 /**
  * Reading official campus events for the feeds. They're served in the same
@@ -30,10 +31,29 @@ export type CampusEventRow = {
   endsAt: Date | null;
   allDay: boolean;
   location: string | null;
+  restricted: boolean;
   host: string | null;
   url: string;
   imageUrl: string | null;
 };
+
+/** A feed row as the previews show it: one per series, with the rest folded in. */
+export type CampusPreviewRow = CampusEventRow & { repeats: Series | null };
+
+/**
+ * The short "At [School]" lists: recurring listings folded to one row each
+ * (see lib/campus/series.ts), soonest first, `take` rows. Reads well past
+ * `take` so a campus that lists open play every day still has room for the
+ * rest.
+ */
+export async function campusPreviewFor(
+  schoolDomain: string | null | undefined,
+  take: number,
+  q: string | null = null,
+): Promise<CampusPreviewRow[]> {
+  const rows = await campusEventsFor(schoolDomain, Math.max(take * 10, 120), q);
+  return collapseSeries(rows).slice(0, take);
+}
 
 /** Upcoming official events for a school, soonest first; `q` matches the title, host or place. */
 export async function campusEventsFor(
@@ -75,7 +95,7 @@ export async function campusSourcesInfo(schoolDomain: string | null | undefined)
   };
 }
 
-export function serializeCampusEvent(row: CampusEventRow): ApiEvent {
+export function serializeCampusEvent(row: CampusEventRow & { repeats?: Series | null }): ApiEvent {
   const school = schoolFor(row.schoolDomain);
   const source = sourceByKey(row.sourceKey);
   return {
@@ -112,6 +132,8 @@ export function serializeCampusEvent(row: CampusEventRow): ApiEvent {
       url: row.url,
       allDay: row.allDay,
       endsAt: row.endsAt ? row.endsAt.toISOString() : null,
+      restricted: row.restricted,
+      repeats: row.repeats ?? null,
     },
   };
 }

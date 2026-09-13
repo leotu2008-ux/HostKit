@@ -1,5 +1,5 @@
 import { parseIcsDate } from "@/lib/campus/time";
-import { htmlToText, oneLine } from "@/lib/campus/text";
+import { decodeEntities, htmlToText, oneLine } from "@/lib/campus/text";
 import type { ParsedEvent } from "@/lib/campus/parsers/types";
 
 /**
@@ -87,11 +87,13 @@ function toEvent(props: Prop[], opts: IcsOptions): ParsedEvent | null {
     get("X-MICROSOFT-CDO-ALLDAYEVENT")?.value.toUpperCase() === "TRUE" ||
     get("X-LIVEWHALE-ALL-DAY")?.value === "1";
 
-  const url =
+  // Some feeds (Sidearm's athletics calendars) HTML-escape the "&" in links.
+  const url = decodeEntities(
     get("URL")?.value.trim() ||
-    get("X-TRUMBA-LINK")?.value.trim() ||
-    firstHttpUrl(get("DESCRIPTION")?.value ?? "") ||
-    opts.pageUrl;
+      get("X-TRUMBA-LINK")?.value.trim() ||
+      firstHttpUrl(get("DESCRIPTION")?.value ?? "") ||
+      opts.pageUrl,
+  );
   const image =
     get("X-LIVEWHALE-IMAGE")?.value.trim() ||
     get("IMAGE")?.value.trim() ||

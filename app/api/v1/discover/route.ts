@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { db } from "@/lib/db";
 import { isCity } from "@/lib/catalog";
-import { campusEventsFor, campusSourcesInfo, serializeCampusEvent } from "@/lib/campus/feed";
+import { campusPreviewFor, campusSourcesInfo, serializeCampusEvent } from "@/lib/campus/feed";
 import { refreshIfStale } from "@/lib/campus/sync";
 import { apiUser, json } from "@/lib/api/http";
 import { eventInclude, serializeClub, serializeEvent, serializeSchool } from "@/lib/api/serialize";
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     viewer ? followingEvents(viewer.id, 12) : Promise.resolve([]),
     suggestedClubs({ schoolDomain: viewer?.schoolDomain ?? null, city }, 12),
     clubViewer(viewer?.id ?? null),
-    campusEventsFor(viewer?.schoolDomain, 12),
+    campusPreviewFor(viewer?.schoolDomain, 12),
     campusSourcesInfo(viewer?.schoolDomain),
   ]);
   if (viewer?.schoolDomain) after(() => refreshIfStale(viewer.schoolDomain));

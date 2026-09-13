@@ -23,6 +23,8 @@ export type EventCardEvent = {
   /** When known; official events without one show no duration at all. */
   endsAt?: Date | null;
   official?: boolean;
+  /** A recurring listing folded to one row: "Mon & Wed · 5:00 PM · 12 dates". */
+  repeats?: string | null;
 };
 
 /** "Fri, Sep 18 · 7:30 PM · 4h", "Fri, Sep 18 · All day", or — for an
@@ -73,16 +75,20 @@ export function toCampusCard(row: {
   endsAt: Date | null;
   allDay?: boolean;
   location: string | null;
+  restricted?: boolean;
   host: string | null;
   imageUrl: string | null;
   schoolDomain: string;
   sourceName?: string | null;
+  repeats?: { label: string } | null;
 }): EventCardEvent & { href: string } {
   const hours = row.endsAt ? Math.round((row.endsAt.getTime() - row.startsAt.getTime()) / 3_600_000) : 2;
+  // A community-only listing keeps its place behind the school's sign-in.
+  const place = row.restricted && !row.location ? `Place on ${row.sourceName ?? "the school's site"} (sign in)` : row.location;
   return {
     id: `campus_${row.id}`,
     title: row.title,
-    city: row.location ?? (schoolFor(row.schoolDomain)?.city ?? ""),
+    city: place ?? (schoolFor(row.schoolDomain)?.city ?? ""),
     date: row.startsAt,
     durationHours: Math.min(24, Math.max(1, hours || 1)),
     hostName: row.host ?? row.sourceName ?? undefined,
@@ -92,6 +98,7 @@ export function toCampusCard(row: {
     allDay: row.allDay ?? false,
     endsAt: row.endsAt,
     official: true,
+    repeats: row.repeats?.label ?? null,
     href: `/campus/${row.id}`,
   };
 }
@@ -130,6 +137,9 @@ export function EventCard({
           {event.hostName ? `By ${event.hostName} · ` : ""}
           {event.city}
         </p>
+        {event.repeats ? (
+          <p className="mt-0.5 truncate text-[12px] text-ink-mute">Repeats · {event.repeats}</p>
+        ) : null}
         {typeof event.going === "number" || event.status || school ? (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {school ? (
