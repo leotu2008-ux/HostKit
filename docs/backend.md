@@ -34,6 +34,24 @@ Postgres database. There is no second service to deploy.
 - **Backups.** Prisma Postgres and Neon both keep point-in-time history on the dashboard; turn on the longest retention your plan allows. There is no app-level backup job.
 - **Migrations** are forward-only and applied on deploy. Never edit an applied migration; add a new one (`npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`).
 - **Deleting an account** cascades through events, registrations, follows, tokens and notifications by schema. There is no self-serve delete yet — see below.
+- **Never point `migrate dev` at the hosted database.** It authors migrations and offers to drop the database when it has drifted; a half-applied run leaves a failed row in `_prisma_migrations` and then *every* deploy fails. `npm run db:migrate` and `db:reset` now refuse a non-local `DATABASE_URL` (`scripts/guard-local-db.mjs`); `ALLOW_REMOTE_MIGRATE=1` overrides it deliberately. `npm run db:deploy` is the safe one — it only applies migrations that already exist.
+
+### When a deploy fails with P3009
+
+`migrate found failed migrations in the target database` means a previous
+run died partway and left its row behind; nothing new will apply until that
+row is cleared. Find the named migration, decide whether its statements
+actually landed, and tell Prisma:
+
+```bash
+# with DATABASE_URL pointing at the hosted database
+npx prisma migrate resolve --rolled-back <migration_name>   # it did not apply
+npx prisma migrate resolve --applied     <migration_name>   # it did apply
+```
+
+Then redeploy. A migration named in the error but **absent from
+`prisma/migrations/`** was authored by a stray `migrate dev` against
+production — that one is always `--rolled-back`.
 
 ## Not built yet
 
