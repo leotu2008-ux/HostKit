@@ -1,6 +1,7 @@
 import { EventCard, toCampusCard, toEventCard, type EventCardEvent } from "@/components/event-card";
 import type { CampusEventRow } from "@/lib/campus/feed";
 import { sourceByKey } from "@/lib/campus/sources";
+import { groupByDay } from "@/lib/day-groups";
 
 type HostedRow = Parameters<typeof toEventCard>[0];
 
@@ -31,5 +32,22 @@ export function CampusMixList({ rows }: { rows: Mixed[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The same list split by calendar day, so a week reads as a week. */
+export function CampusMixByDay({ rows }: { rows: Mixed[] }) {
+  return (
+    <div className="space-y-6">
+      {groupByDay(rows).map((day) => (
+        <section key={day.key} aria-label={day.label}>
+          <h3 className="mb-2 flex items-baseline gap-2 text-[15px] font-semibold text-ink">
+            {day.label}
+            {day.relative ? <span className="text-[13px] font-normal text-ink-mute">{day.relative}</span> : null}
+          </h3>
+          <CampusMixList rows={day.items} />
+        </section>
+      ))}
+    </div>
   );
 }

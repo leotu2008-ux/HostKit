@@ -177,11 +177,23 @@ struct DiscoverView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 14))
             } else {
-                ForEach(feed.onCampus.prefix(6)) { event in
-                    NavigationLink(value: event) {
-                        EventRow(event: event)
+                // By day, like the city list below, so a week reads as a week.
+                ForEach(DayGroup.group(Array(feed.onCampus.prefix(8)))) { group in
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(group.label).font(.inter(.subheadline, .semibold))
+                            if let relative = group.relative {
+                                Text(relative).font(.inter(.subheadline)).foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.top, 4)
+                        ForEach(group.events) { event in
+                            NavigationLink(value: event) {
+                                EventRow(event: event)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }

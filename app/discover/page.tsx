@@ -9,7 +9,7 @@ import { upcomingOnly } from "@/lib/upcoming";
 import { suggestedClubs } from "@/lib/clubs";
 import { campusEventsFor } from "@/lib/campus/feed";
 import { sourcesFor } from "@/lib/campus/sources";
-import { CampusMixList, mixCampus } from "@/components/campus-mix";
+import { CampusMixByDay, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
 import { SearchBox } from "@/components/search-box";
 import { eventSearch, searchTerm } from "@/lib/search";
@@ -149,7 +149,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
                 action={<ButtonLink href="/events/new">Create event</ButtonLink>}
               />
             ) : (
-              <CampusMixList rows={onCampus} />
+              <CampusMixByDay rows={onCampus} />
             )}
           </section>
         ) : null}
