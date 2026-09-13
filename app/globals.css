@@ -4,8 +4,8 @@
    HostKit design tokens.
 
    Clean and bright, the way the best event apps feel: near-white grounds,
-   hairline borders, a sans UI, and one warm clay accent that stays HostKit's
-   own. Event titles are the only serif on the page — they're the part that
+   hairline borders, a sans UI, a monochrome accent (ink on light, white on
+   dark) for actions, and the brand orange in hints only. Event titles are the only serif on the page — they're the part that
    should feel like an invitation. Dark is a true night ground, not a grey
    invert, so covers glow on it.
 --------------------------------------------------------------------------- */
@@ -25,10 +25,18 @@
   --color-line: #e7e6e3;
   --color-line-strong: #d5d3cf;
 
-  /* Accent — clay. Primary actions, active state, brand marks. */
-  --color-clay: #c64a22;
-  --color-clay-deep: #a63c19;
-  --color-clay-wash: #fcede7;
+  /* Accent — "clay" by name for history, monochrome in practice: ink on
+     light, white on dark. Primary actions, active state, focus. `on-clay`
+     is the text that sits on it. */
+  --color-clay: #141414;
+  --color-clay-deep: #000000;
+  --color-clay-wash: #ececea;
+  --color-on-clay: #ffffff;
+
+  /* Brand — the orange, in hints only: the "Kit" in the wordmark, school
+     chips, unread marks, a faint glow. Never a button. */
+  --color-brand: #c64a22;
+  --color-brand-wash: #fcede7;
 
   /* Forest — confirmed, booked, going. */
   --color-forest: #1f6f4f;
@@ -67,9 +75,12 @@
     --color-ink-mute: #8b8985;
     --color-line: #2a2a2d;
     --color-line-strong: #3c3c40;
-    --color-clay: #e5643a;
-    --color-clay-deep: #c64a22;
-    --color-clay-wash: #36201a;
+    --color-clay: #ffffff;
+    --color-clay-deep: #e2e2e0;
+    --color-clay-wash: #2a2a2d;
+    --color-on-clay: #141414;
+    --color-brand: #e5643a;
+    --color-brand-wash: #36201a;
     --color-forest: #7fcca6;
     --color-forest-wash: #16271f;
     --color-amber: #efbd5c;
@@ -109,7 +120,7 @@ body {
 
 ::selection {
   background: var(--color-clay);
-  color: #fff;
+  color: var(--color-on-clay);
 }
 
 /* A consistent, visible focus ring everywhere — keyboard users are planning

@@ -36,7 +36,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
                 className="h-7 w-7 rounded-[8px] ring-1 ring-line"
               />
               <span>
-                Host<span className="text-clay">Kit</span>
+                Host<span className="text-brand">Kit</span>
               </span>
             </span>
           </AccountMenu>
@@ -64,7 +64,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
                   <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                 </svg>
                 {unread > 0 ? (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-clay px-1 text-[10px] font-semibold text-white">
+                  <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white">
                     {unread > 99 ? "99+" : unread}
                   </span>
                 ) : null}

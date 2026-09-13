@@ -77,7 +77,7 @@ export default async function HomePage() {
       {!remembered ? <CityDetector /> : null}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-clay)_9%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-clay)_5%,transparent),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-brand)_10%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-clay)_5%,transparent),transparent)]"
       />
 
       <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-12 md:px-8 md:pt-14">
@@ -85,7 +85,7 @@ export default async function HomePage() {
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="" width={44} height={44} priority className="h-11 w-11 rounded-[12px] ring-1 ring-line" />
           <p className="font-event text-[28px] leading-none text-ink md:text-[32px]">
-            Host<span className="text-clay">Kit</span>
+            Host<span className="text-brand">Kit</span>
           </p>
         </div>
         <h1 className="font-display mt-6 text-[34px] leading-[1.1] text-ink md:text-[46px]">

@@ -144,7 +144,7 @@ struct EventDetailView: View {
                 Spacer()
                 if let url = official.pageURL {
                     Button("Open", systemImage: "arrow.up.right") { openURL(url) }
-                        .buttonStyle(.glassProminent)
+                        .buttonStyle(.prominent)
                         .controlSize(.large)
                 }
             }
@@ -177,7 +177,7 @@ struct EventDetailView: View {
                     Button(event.requiresApproval ?? false ? "Request to join" : event.isFull ? "Join waitlist" : "Register") {
                         isRegistering = true
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.prominent)
                     .controlSize(.large)
                 }
             }

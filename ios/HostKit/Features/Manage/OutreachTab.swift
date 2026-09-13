@@ -49,7 +49,7 @@ struct OutreachTab: View {
                 Label("Add someone", systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.prominent)
             .controlSize(.large)
             .padding()
         }
@@ -167,7 +167,7 @@ private struct DraftMessageSheet: View {
                         ]
                         if let url = parts?.url { openURL(url) }
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.prominent)
                 }
                 .controlSize(.large)
             }

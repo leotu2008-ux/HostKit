@@ -23,7 +23,7 @@ struct AccountMenu: View {
                                 if user.school != nil || user.company != nil {
                                     HStack(spacing: 6) {
                                         if let school = user.school {
-                                            StatusPill(text: school.short, tint: .accentColor)
+                                            StatusPill(text: school.short, tint: .brand)
                                             if let year = user.classYear {
                                                 StatusPill(text: "Class of \(year)")
                                             }
@@ -43,7 +43,7 @@ struct AccountMenu: View {
                                 .font(.inter(.footnote))
                                 .foregroundStyle(.secondary)
                             Button("Sign in or create an account") { isSigningIn = true }
-                                .buttonStyle(.glassProminent)
+                                .buttonStyle(.prominent)
                                 .padding(.top, 4)
                         }
                         .padding(.vertical, 4)

@@ -50,7 +50,7 @@ struct InboxView: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: notice.symbol)
                 .font(.inter(size: 16, .semibold))
-                .foregroundStyle(notice.isUnread ? Color.accentColor : .secondary)
+                .foregroundStyle(notice.isUnread ? Color.brand : .secondary)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(notice.title).font(.inter(.body, notice.isUnread ? .semibold : .medium))

@@ -35,7 +35,7 @@ struct MyEventsView: View {
                         Text("Create an event right here — no account needed until you publish it.")
                     } actions: {
                         Button("Create event") { router.startCreate() }
-                            .buttonStyle(.glassProminent)
+                            .buttonStyle(.prominent)
                         Button("Sign in") { isSigningIn = true }
                     }
                 }

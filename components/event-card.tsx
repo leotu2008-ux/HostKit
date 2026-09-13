@@ -133,7 +133,7 @@ export function EventCard({
         {typeof event.going === "number" || event.status || school ? (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {school ? (
-              <span className="rounded-full bg-clay-wash px-2 py-0.5 text-[11px] font-medium text-clay-deep">
+              <span className="rounded-full bg-brand-wash px-2 py-0.5 text-[11px] font-medium text-brand">
                 {school.short}
               </span>
             ) : null}

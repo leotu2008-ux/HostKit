@@ -23,7 +23,7 @@ struct EventRow: View {
                     .lineLimit(1)
                 HStack(spacing: 6) {
                     if let school = event.school {
-                        StatusPill(text: school.short, tint: .accentColor)
+                        StatusPill(text: school.short, tint: .brand)
                     }
                     if showsStatus {
                         StatusPill(text: event.statusLabel, tint: event.published ? .accentColor : .secondary)

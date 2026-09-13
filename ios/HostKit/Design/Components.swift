@@ -7,6 +7,41 @@ extension Font {
     }
 }
 
+// `Color.brand` is generated from Assets.xcassets/Brand.colorset: the orange,
+// in hints only (school pills, unread marks, a faint glow). Never a button —
+// the accent (white / ink) does those.
+
+/// The primary button: a solid capsule in the accent (white in dark, ink in
+/// light) with the label in the opposite. System `.glassProminent` assumes a
+/// coloured tint and paints its label white, which vanishes on a white fill.
+struct ProminentButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.controlSize) private var controlSize
+
+    private var vertical: CGFloat {
+        switch controlSize {
+        case .mini, .small: 6
+        case .large, .extraLarge: 13
+        default: 10
+        }
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.inter(controlSize == .small || controlSize == .mini ? .subheadline : .body, .semibold))
+            .foregroundStyle(Color(uiColor: .systemBackground))
+            .padding(.horizontal, controlSize == .small || controlSize == .mini ? 12 : 18)
+            .padding(.vertical, vertical)
+            .background(Color.primary.opacity(isEnabled ? 1 : 0.35), in: .capsule)
+            .opacity(configuration.isPressed ? 0.75 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+extension ButtonStyle where Self == ProminentButtonStyle {
+    static var prominent: ProminentButtonStyle { ProminentButtonStyle() }
+}
+
 /// The HostKit mark in a navigation bar's leading slot. Tapping it opens the
 /// account menu: profile, past events, settings, sign out. Image only — the
 /// toolbar hides text in a button label but still reserves its width, which
@@ -174,9 +209,9 @@ struct AmbientBackground: View {
 struct BrandWash: View {
     var body: some View {
         ZStack {
-            // A quiet neutral glow now that the accent is monochrome.
+            // A faint hint of the brand orange, then a neutral glow.
             RadialGradient(
-                colors: [Color.primary.opacity(0.10), .clear],
+                colors: [Color.brand.opacity(0.14), .clear],
                 center: .init(x: 0.15, y: 0), startRadius: 0, endRadius: 320)
             RadialGradient(
                 colors: [Color.primary.opacity(0.05), .clear],

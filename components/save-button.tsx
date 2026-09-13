@@ -45,7 +45,7 @@ export function SaveButton({
         className={cx(
           "flex size-9 items-center justify-center rounded-full border transition-colors",
           optimisticSaved
-            ? "border-clay bg-clay text-white"
+            ? "border-clay bg-clay text-on-clay"
             : "border-line-strong bg-surface/90 text-ink-soft hover:border-ink-mute hover:text-ink",
         )}
       >
