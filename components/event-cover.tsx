@@ -21,12 +21,28 @@ export function EventCover({
   title,
   coverUrl,
   sizes = "(min-width: 768px) 400px, 100vw",
+  natural = false,
 }: {
   id: string;
   title: string;
   coverUrl?: string | null;
   sizes?: string;
+  /** Show a photo at its own shape (the event page) rather than filling a box (cards). */
+  natural?: boolean;
 }) {
+  if (coverUrl && natural) {
+    return (
+      <Image
+        src={coverUrl}
+        alt={title}
+        width={1600}
+        height={1000}
+        sizes={sizes}
+        className="block h-auto w-full"
+        unoptimized={!isOurs(coverUrl)}
+      />
+    );
+  }
   if (coverUrl) {
     return (
       <span className="relative block h-full w-full">

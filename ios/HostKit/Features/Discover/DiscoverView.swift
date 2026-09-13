@@ -140,8 +140,11 @@ struct DiscoverView: View {
             // A tapped reminder lands here with the event to open.
             .task(id: router.openGuestEventID) {
                 guard let id = router.openGuestEventID else { return }
+                // Fetch before clearing the id: clearing changes this task's
+                // id, which cancels it — and the request with it.
+                let event = try? await model.event(id: id)
+                if let event { path = [event] }
                 router.openGuestEventID = nil
-                if let event = try? await model.event(id: id) { path = [event] }
             }
             .refreshable { await load() }
         }

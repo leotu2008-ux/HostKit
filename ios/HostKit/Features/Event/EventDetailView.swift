@@ -22,11 +22,19 @@ struct EventDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                EventCover(event: event)
-                    .aspectRatio(1, contentMode: .fit)
-                    .clipShape(.rect(cornerRadius: 24))
-                    .shadow(color: .black.opacity(0.25), radius: 30, y: 18)
-                    .padding(.horizontal, 24)
+                // A photo keeps its own shape (a wide poster stays wide, no
+                // crop-and-zoom); only the drawn cover is a square.
+                Group {
+                    if let url = event.coverURL {
+                        CoverPhoto(url: url, seed: event.id)
+                    } else {
+                        EventCover(event: event)
+                            .aspectRatio(1, contentMode: .fit)
+                    }
+                }
+                .clipShape(.rect(cornerRadius: 24))
+                .shadow(color: .black.opacity(0.25), radius: 30, y: 18)
+                .padding(.horizontal, 24)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text([

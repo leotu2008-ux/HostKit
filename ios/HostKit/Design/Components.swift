@@ -149,16 +149,18 @@ struct AmbientBackground: View {
     var coverURL: URL? = nil
 
     var body: some View {
-        ZStack {
-            CoverArt(seed: seed)
-            if let coverURL {
-                AsyncImage(url: coverURL) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Color.clear
+        // The photo is an overlay so it fills the art's size, never its own.
+        CoverArt(seed: seed)
+            .overlay {
+                if let coverURL {
+                    AsyncImage(url: coverURL) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Color.clear
+                    }
                 }
             }
-        }
+            .clipped()
             .scaleEffect(1.6)
             .blur(radius: 70)
             .opacity(0.5)
