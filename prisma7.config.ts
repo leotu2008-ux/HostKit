@@ -9,8 +9,16 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // generate does not need a live URL; migrate/seed do. Prefer a direct
-    // (non-pooled) URL when the host provides one.
-    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
+    // generate does not need a live URL; migrate/seed do. They must not go
+    // through a connection pooler: `migrate deploy` takes a Postgres
+    // advisory lock, which a transaction-mode pooler can hand to a different
+    // backend on the next statement, and the build then times out waiting
+    // for its own lock. Prefer DIRECT_URL, then the non-pooled URL Vercel's
+    // Neon integration provides, and only then the pooled DATABASE_URL.
+    url:
+      process.env.DIRECT_URL ??
+      process.env.DATABASE_POSTGRES_URL_NON_POOLING ??
+      process.env.DATABASE_URL ??
+      "",
   },
 });
