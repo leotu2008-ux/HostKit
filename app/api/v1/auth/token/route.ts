@@ -5,6 +5,7 @@ import { issueToken } from "@/lib/api/token";
 import { apiError, json, readJson } from "@/lib/api/http";
 import { serializeUser } from "@/lib/api/serialize";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
+import { unverifiedMessage } from "@/lib/account";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -40,6 +41,11 @@ export async function POST(request: Request) {
   );
   if (!ok || !user) {
     return apiError("That email and password don't match.", 401);
+  }
+  // Right password, unconfirmed address: say so (the password proved it's
+  // them), with a code the app uses to offer a resend.
+  if (!user.emailVerifiedAt) {
+    return json({ error: unverifiedMessage(user.email), code: "email_unverified" }, 403);
   }
 
   return json({

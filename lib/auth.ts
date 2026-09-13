@@ -1,8 +1,13 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
+
+/** Right password, unconfirmed address: sign-in says so, with a resend. */
+export class EmailUnverified extends CredentialsSignin {
+  code = "unverified";
+}
 
 export const credentialsSchema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -36,6 +41,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const hash = user?.passwordHash ?? DUMMY_HASH;
         const ok = await bcrypt.compare(parsed.data.password, hash);
         if (!ok || !user) return null;
+        // Only after the password matched, so this never confirms an address
+        // to someone who doesn't know the password.
+        if (!user.emailVerifiedAt) throw new EmailUnverified();
 
         return { id: user.id, email: user.email, name: user.name, sessionVersion: user.sessionVersion };
       },

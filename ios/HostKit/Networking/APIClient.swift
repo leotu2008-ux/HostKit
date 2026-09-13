@@ -3,6 +3,8 @@ import Foundation
 nonisolated struct APIError: LocalizedError, Sendable {
     let message: String
     let status: Int
+    /// A machine-readable reason, when the server gives one ("email_unverified").
+    var code: String? = nil
 
     var errorDescription: String? { message }
 
@@ -103,11 +105,23 @@ nonisolated struct APIClient: Sendable {
         return (envelope.token, envelope.user)
     }
 
-    /// Creates an account and signs it in. A .edu email makes it a student.
-    func signUp(name: String, email: String, password: String) async throws -> (token: String, user: HostUser) {
+    /// Creates an account. A .edu email makes it a student. The server holds
+    /// the account until the link in the confirmation email is opened, so this
+    /// answers `.pending`; an older server that signs in straight away
+    /// answers `.signedIn`.
+    func signUp(name: String, email: String, password: String) async throws -> SignUpOutcome {
         let body = try Self.encode(["name": name, "email": email, "password": password])
-        let envelope: TokenEnvelope = try await send("POST", "/api/v1/auth/signup", body: body)
-        return (envelope.token, envelope.user)
+        let envelope: SignUpEnvelope = try await send("POST", "/api/v1/auth/signup", body: body)
+        if let token = envelope.token, let user = envelope.user { return .signedIn(token: token, user: user) }
+        return .pending(email: envelope.email ?? email, devLink: envelope.devLink.flatMap(URL.init(string:)))
+    }
+
+    /// Another confirmation link for an address that can't sign in yet.
+    /// Always succeeds, on purpose. Returns the link only on a development
+    /// server with no email service.
+    func resendVerification(to email: String) async throws -> URL? {
+        let envelope: ResendEnvelope = try await send("POST", "/api/v1/auth/verify/resend", body: try Self.encode(["email": email]))
+        return envelope.devLink.flatMap(URL.init(string:))
     }
 
     /// Asks for a password-reset link by email. Always succeeds, on purpose.
@@ -323,7 +337,7 @@ nonisolated struct APIClient: Sendable {
 
         guard (200..<300).contains(status) else {
             if isJSON, let failure = try? Self.decoder().decode(ErrorEnvelope.self, from: data) {
-                throw APIError(message: failure.error, status: status)
+                throw APIError(message: failure.error, status: status, code: failure.code)
             }
             throw APIError(message: status == 404 ? APIError.notAnAPI : "The server said \(status).", status: status)
         }
@@ -426,6 +440,30 @@ nonisolated struct TokenEnvelope: Decodable, Sendable {
     let token: String
     let user: HostUser
 }
+
+/// Sign-up: a pending account (`pending`, `email`) or, from an older server,
+/// a token and user.
+nonisolated struct SignUpEnvelope: Decodable, Sendable {
+    let token: String?
+    let user: HostUser?
+    let pending: Bool?
+    let email: String?
+    let devLink: String?
+}
+
+nonisolated enum SignUpOutcome: Sendable {
+    case signedIn(token: String, user: HostUser)
+    /// The account waits for the link in the email.
+    case pending(email: String, devLink: URL?)
+}
+
+nonisolated struct ResendEnvelope: Decodable, Sendable {
+    let ok: Bool
+    let devLink: String?
+}
 nonisolated struct OKEnvelope: Decodable, Sendable { let ok: Bool }
 nonisolated struct VerifyEnvelope: Decodable, Sendable { let ok: Bool; let verified: Bool }
-nonisolated struct ErrorEnvelope: Decodable, Sendable { let error: String }
+nonisolated struct ErrorEnvelope: Decodable, Sendable {
+    let error: String
+    let code: String?
+}

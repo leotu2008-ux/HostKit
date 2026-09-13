@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Sign in or create an account, on one sheet. Creating an account signs you
-/// in straight away; a .edu email makes it a student account.
+/// Sign in or create an account, on one sheet. A new account waits for the
+/// link in its confirmation email before it can sign in; a .edu email makes
+/// it a student account.
 struct SignInView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -17,15 +18,21 @@ struct SignInView: View {
     @State private var password = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String?
-    @State private var resetSent = false
+    @State private var showsPassword = false
+    /// An address that has an account but hasn’t opened its link yet.
+    @State private var pendingEmail: String?
+    /// The link itself, only from a development server with no email service.
+    @State private var devLink: URL?
+    @State private var resent = false
 
-    private func forgot() async {
+    private func resend() async {
+        guard let pendingEmail else { return }
         isSubmitting = true
         errorMessage = nil
         defer { isSubmitting = false }
         do {
-            try await model.api.forgotPassword(email: email.trimmingCharacters(in: .whitespaces))
-            resetSent = true
+            devLink = try await model.api.resendVerification(to: pendingEmail)
+            resent = true
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -63,9 +70,27 @@ struct SignInView: View {
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    SecureField("Password", text: $password)
+                    HStack {
+                        Group {
+                            if showsPassword {
+                                TextField("Password", text: $password)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                            } else {
+                                SecureField("Password", text: $password)
+                            }
+                        }
                         .textContentType(mode == .create ? .newPassword : .password)
                         .onSubmit { if canSubmit { Task { await submit() } } }
+                        Button {
+                            showsPassword.toggle()
+                        } label: {
+                            Image(systemName: showsPassword ? "eye.slash" : "eye")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(showsPassword ? "Hide password" : "Show password")
+                    }
                 } footer: {
                     switch mode {
                     case .signIn:
@@ -77,15 +102,43 @@ struct SignInView: View {
                     }
                 }
 
-                if mode == .signIn {
+                Section {
+                    Button {
+                        Task { await submit() }
+                    } label: {
+                        Text(isSubmitting ? "One moment…" : mode == .signIn ? "Sign in" : "Create account")
+                            .font(.inter(.body, .semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .disabled(!canSubmit)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    if mode == .signIn {
+                        NavigationLink("Forgot your password?") {
+                            ForgotPasswordView(email: email.trimmingCharacters(in: .whitespaces))
+                        }
+                        .font(.inter(.subheadline))
+                    }
+                }
+
+                if let pendingEmail {
                     Section {
-                        if resetSent {
-                            Text("If that address has an account, a reset link is on its way. Open it on any device, then sign in here.")
+                        Text("We sent a confirmation link to \(pendingEmail). Open it, then sign in here.")
+                            .font(.inter(.footnote))
+                        if let devLink {
+                            Link("Open the confirmation link (development)", destination: devLink)
+                        }
+                        if resent {
+                            Text("Sent again — check your inbox.")
                                 .font(.inter(.footnote)).foregroundStyle(.secondary)
                         } else {
-                            Button("Forgot your password?") { Task { await forgot() } }
-                                .disabled(!email.contains("@") || isSubmitting)
+                            Button("Resend the link") { Task { await resend() } }
+                                .disabled(isSubmitting)
                         }
+                    } header: {
+                        Text("Check your inbox")
                     }
                 }
 
@@ -99,14 +152,11 @@ struct SignInView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(mode == .signIn ? "Sign in" : "Create") { Task { await submit() } }
-                        .disabled(!canSubmit)
-                }
             }
             .onChange(of: mode) { errorMessage = nil }
+            .onChange(of: email) { pendingEmail = nil }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
 
     private func submit() async {
@@ -118,12 +168,25 @@ struct SignInView: View {
             case .signIn:
                 try await model.signIn(email: email, password: password)
             case .create:
-                try await model.signUp(
+                let outcome = try await model.signUp(
                     name: name.trimmingCharacters(in: .whitespaces),
                     email: email.trimmingCharacters(in: .whitespaces),
                     password: password)
+                if case .pending(let address, let link) = outcome {
+                    // The account exists; it signs in once the link is opened.
+                    pendingEmail = address
+                    devLink = link
+                    resent = false
+                    mode = .signIn
+                    return
+                }
             }
             dismiss()
+        } catch let error as APIError where error.code == "email_unverified" {
+            // Right password, unconfirmed address: show the resend, not a failure.
+            pendingEmail = email.trimmingCharacters(in: .whitespaces).lowercased()
+            devLink = nil
+            resent = false
         } catch {
             errorMessage = error.localizedDescription
         }

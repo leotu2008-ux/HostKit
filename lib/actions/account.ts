@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { AccountError, requestPasswordReset, resetPassword, sendVerification, siteOrigin } from "@/lib/account";
+import { AccountError, requestPasswordReset, resendVerificationTo, resetPassword, sendVerification, siteOrigin } from "@/lib/account";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export type AccountFormState = { error?: string; sent?: boolean; devLink?: string } | undefined;
@@ -32,13 +32,30 @@ export async function resetPasswordAction(_prev: AccountFormState, formData: For
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
   if (password !== confirm) return { error: "Those passwords don't match." };
+  let email: string;
   try {
-    await resetPassword(token, password);
+    email = await resetPassword(token, password);
   } catch (error) {
     if (error instanceof AccountError) return { error: error.message };
     throw error;
   }
-  redirect("/signin?reset=1");
+  redirect(`/signin?reset=1&email=${encodeURIComponent(email)}`);
+}
+
+/** Sign-up / check-email → "Resend the link", for an address that can’t sign in yet. Blind. */
+export async function resendVerificationToAction(_prev: AccountFormState, formData: FormData): Promise<AccountFormState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email.includes("@")) return { error: "Enter your email address." };
+  const h = await headers();
+  try {
+    await assertRateLimit(`resend:ip:${clientIp(h)}`, ...LIMITS.resend.perIp);
+    await assertRateLimit(`resend:email:${email}`, ...LIMITS.resend.perEmail);
+    const { devLink } = await resendVerificationTo(email, siteOrigin(h));
+    return { sent: true, devLink };
+  } catch (error) {
+    if (error instanceof RateLimitError) return { error: error.message };
+    throw error;
+  }
 }
 
 /** Profile → "Resend the link". */

@@ -49,11 +49,36 @@ async function consume(token: string, kind: "reset" | "verify"): Promise<{ userI
   return { userId: row.userId };
 }
 
-async function deliver(to: string, subject: string, text: string, link: string): Promise<{ devLink?: string }> {
+/**
+ * True when a confirmation link can actually reach someone: an email
+ * service is configured, or this is development (where the link is handed
+ * back instead). Sign-up refuses otherwise — an account nobody can confirm
+ * is worse than no account.
+ */
+export function verificationDeliverable(): boolean {
+  return isEmailConfigured() || process.env.NODE_ENV !== "production";
+}
+
+export const NOT_DELIVERABLE_MESSAGE =
+  "Email isn’t set up on this server yet, so new accounts can’t be confirmed. Ask whoever runs it to add RESEND_API_KEY and RESEND_FROM.";
+
+/** What sign-in says to an account that hasn’t confirmed its address. */
+export function unverifiedMessage(email: string): string {
+  return `Confirm your email first — we sent a link to ${email}. Open it, then sign in.`;
+}
+
+async function deliver(
+  to: string,
+  subject: string,
+  text: string,
+  link: string,
+  required = false,
+): Promise<{ devLink?: string }> {
   if (isEmailConfigured()) {
     await sendEmails([{ to, subject, text }]);
     return {};
   }
+  if (required && process.env.NODE_ENV === "production") throw new AccountError(NOT_DELIVERABLE_MESSAGE, 503);
   console.log(`[account] no email configured — ${subject} for ${to}: ${link}`);
   return process.env.NODE_ENV !== "production" ? { devLink: link } : {};
 }
@@ -87,23 +112,27 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
   );
 }
 
-export async function resetPassword(token: string, newPassword: string): Promise<void> {
+/** Returns the account's email, so sign-in can be prefilled. */
+export async function resetPassword(token: string, newPassword: string): Promise<string> {
   if (newPassword.length < 8) throw new AccountError("Use at least 8 characters.", 400);
   if (newPassword.length > 128) throw new AccountError("Use at most 128 characters.", 400);
   const hit = await consume(token, "reset");
   if (!hit) throw new AccountError("That reset link has expired or was already used. Ask for a new one.", 400);
   // Every existing session and API token dies with the old password.
-  await db.user.update({
+  const user = await db.user.update({
     where: { id: hit.userId },
     data: { passwordHash: await bcrypt.hash(newPassword, 10), sessionVersion: { increment: 1 } },
+    select: { email: true },
   });
+  return user.email;
 }
 
 // ---------------------------------------------------------------------------
 // Email verification
 // ---------------------------------------------------------------------------
 
-/** Sends (or re-sends) the verification link. No-op once verified. */
+/** Sends (or re-sends) the confirmation link. No-op once verified. Sign-in
+ *  is refused until the link is opened, so this has to get through. */
 export async function sendVerification(
   user: { id: string; email: string; name: string; emailVerifiedAt: Date | null },
   origin: string,
@@ -117,21 +146,41 @@ export async function sendVerification(
     [
       `Hi ${user.name.split(" ")[0]},`,
       "",
-      "Tap this link to confirm this is your address (it works for 24 hours):",
+      "Tap this link to confirm this is your address and finish creating your account (it works for 24 hours):",
       link,
       "",
-      "Confirming keeps your account recoverable and, for students, backs up your school.",
+      "Until you do, you can’t sign in. If you didn’t sign up for HostKit, ignore this.",
     ].join("\n"),
     link,
+    true,
   );
 }
 
-/** Marks the address verified. Returns the user id, or null for a bad link. */
-export async function verifyEmail(token: string): Promise<string | null> {
+/**
+ * Another link for someone who can’t sign in yet. Blind: the same answer
+ * whether or not the address has an account, or is already confirmed.
+ */
+export async function resendVerificationTo(rawEmail: string, origin: string): Promise<{ devLink?: string }> {
+  const email = rawEmail.trim().toLowerCase();
+  const user = await db.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, name: true, emailVerifiedAt: true },
+  });
+  if (!user || user.emailVerifiedAt) return {};
+  const result = await sendVerification(user, origin);
+  return { devLink: result.devLink };
+}
+
+/** Marks the address verified. Returns the account, or null for a bad link. */
+export async function verifyEmail(token: string): Promise<{ id: string; email: string } | null> {
   const hit = await consume(token, "verify");
   if (!hit) return null;
-  await db.user.update({ where: { id: hit.userId }, data: { emailVerifiedAt: new Date() } });
-  return hit.userId;
+  const user = await db.user.update({
+    where: { id: hit.userId },
+    data: { emailVerifiedAt: new Date() },
+    select: { id: true, email: true },
+  });
+  return user;
 }
 
 /** Best effort after sign-up: never fails the sign-up itself. */

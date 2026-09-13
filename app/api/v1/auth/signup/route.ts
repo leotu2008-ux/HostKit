@@ -1,11 +1,9 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { issueToken } from "@/lib/api/token";
 import { apiError, json, readJson } from "@/lib/api/http";
-import { serializeUser } from "@/lib/api/serialize";
 import { schoolDomainFor } from "@/lib/schools";
-import { sendVerificationQuietly, siteOrigin } from "@/lib/account";
+import { AccountError, NOT_DELIVERABLE_MESSAGE, sendVerification, siteOrigin, verificationDeliverable } from "@/lib/account";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 // Same rules as the website's sign-up form (lib/actions/auth.ts).
@@ -15,8 +13,12 @@ const schema = z.object({
   password: z.string().min(8, "Use at least 8 characters.").max(128, "Use at most 128 characters."),
 });
 
-/** Creates an account and signs it in, in one step. A .edu address makes it
- *  a student account. */
+/**
+ * Creates an account. A .edu address makes it a student account. Answers
+ * 202 `{ pending: true, email }`: the account can't sign in until the link
+ * in the confirmation email is opened (`devLink` comes back only without an
+ * email service, outside production).
+ */
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) {
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
   if (existing) {
     return apiError("That email is already registered. Try signing in.", 409);
   }
+  if (!verificationDeliverable()) return apiError(NOT_DELIVERABLE_MESSAGE, 503);
 
   const user = await db.user.create({
     data: {
@@ -44,6 +47,11 @@ export async function POST(request: Request) {
     },
   });
 
-  await sendVerificationQuietly(user, siteOrigin(request.headers));
-  return json({ token: issueToken(user.id, user.sessionVersion), user: serializeUser(user) }, 201);
+  try {
+    const { devLink } = await sendVerification(user, siteOrigin(request.headers));
+    return json({ pending: true, email: user.email, ...(devLink ? { devLink } : {}) }, 202);
+  } catch (error) {
+    if (error instanceof AccountError) return apiError(error.message, error.status);
+    throw error;
+  }
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
@@ -8,10 +8,18 @@ import { db } from "@/lib/db";
 import { headers } from "next/headers";
 import { safeNextPath } from "@/lib/listing";
 import { schoolDomainFor } from "@/lib/schools";
-import { sendVerificationQuietly, siteOrigin } from "@/lib/account";
+import { AccountError, NOT_DELIVERABLE_MESSAGE, sendVerification, siteOrigin, unverifiedMessage, verificationDeliverable } from "@/lib/account";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
-export type AuthFormState = { error?: string } | undefined;
+export type AuthFormState =
+  | {
+      error?: string;
+      /** Sign-in refused because the address isn’t confirmed: offer a resend. */
+      unverifiedEmail?: string;
+      /** Sign-up done; the account waits for its link. `devLink` only without an email service, outside production. */
+      pending?: { email: string; devLink?: string };
+    }
+  | undefined;
 
 const signUpSchema = z.object({
   name: z.string().trim().min(1, "Tell us your name."),
@@ -44,6 +52,7 @@ export async function signUpAction(
   if (existing) {
     return { error: "That email is already registered. Try signing in." };
   }
+  if (!verificationDeliverable()) return { error: NOT_DELIVERABLE_MESSAGE };
 
   // A .edu address makes this a student account; the domain picks the school.
   const user = await db.user.create({
@@ -54,9 +63,15 @@ export async function signUpAction(
       schoolDomain: schoolDomainFor(email),
     },
   });
-  await sendVerificationQuietly(user, siteOrigin(h));
-
-  return attemptSignIn(email, password, formData);
+  // The account exists but can’t sign in until the link in the email is
+  // opened. The form shows "check your inbox" with a resend.
+  try {
+    const { devLink } = await sendVerification(user, siteOrigin(h));
+    return { pending: { email, devLink } };
+  } catch (error) {
+    if (error instanceof AccountError) return { error: error.message };
+    throw error;
+  }
 }
 
 export async function signInAction(
@@ -102,6 +117,9 @@ async function attemptSignIn(
   } catch (error) {
     // Auth.js signals a successful sign-in by throwing a redirect. Only a real
     // AuthError means the credentials were wrong.
+    if (error instanceof CredentialsSignin && error.code === "unverified") {
+      return { error: unverifiedMessage(email), unverifiedEmail: email };
+    }
     if (error instanceof AuthError) {
       return { error: "That email and password don't match." };
     }

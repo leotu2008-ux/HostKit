@@ -30,9 +30,12 @@ final class AppModel {
         await adopt(try await api.signIn(email: email, password: password))
     }
 
-    /// Creates the account and signs in, in one go.
-    func signUp(name: String, email: String, password: String) async throws {
-        await adopt(try await api.signUp(name: name, email: email, password: password))
+    /// Creates the account. Normally the account then waits for the link in
+    /// the confirmation email (`.pending`); an older server signs in at once.
+    func signUp(name: String, email: String, password: String) async throws -> SignUpOutcome {
+        let outcome = try await api.signUp(name: name, email: email, password: password)
+        if case .signedIn(let token, let user) = outcome { await adopt((token, user)) }
+        return outcome
     }
 
     private func adopt(_ result: (token: String, user: HostUser)) async {
