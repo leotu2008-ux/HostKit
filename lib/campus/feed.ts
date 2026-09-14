@@ -55,6 +55,34 @@ export async function campusPreviewFor(
   return collapseSeries(rows).slice(0, take);
 }
 
+/**
+ * Two feeds often carry the same night: a club posts it on the student-org
+ * platform and the school repeats it on its own calendar, under the same
+ * name on the same day. Keeping both made the campus list read like a
+ * stutter. One row survives per title-and-day — whichever of them says more,
+ * since the two rarely carry the same photo, place and host.
+ */
+export function dedupeAcrossSources<T extends CampusEventRow>(rows: T[]): T[] {
+  const said = (row: T) =>
+    [row.imageUrl, row.location, row.host, row.description].filter(Boolean).length;
+  const key = (row: T) =>
+    `${row.startsAt.toISOString().slice(0, 10)}|${row.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
+
+  const best = new Map<string, T>();
+  const order: string[] = [];
+  for (const row of rows) {
+    const k = key(row);
+    const seen = best.get(k);
+    if (!seen) {
+      best.set(k, row);
+      order.push(k);
+    } else if (said(row) > said(seen)) {
+      best.set(k, row);
+    }
+  }
+  return order.map((k) => best.get(k)!);
+}
+
 /** Upcoming official events for a school, soonest first; `q` matches the title, host or place. */
 export async function campusEventsFor(
   schoolDomain: string | null | undefined,
@@ -73,11 +101,12 @@ export async function campusEventsFor(
         ],
       }
     : {};
-  return db.campusEvent.findMany({
+  const rows = await db.campusEvent.findMany({
     where: { schoolDomain, startsAt: { gte: today }, ...search },
     orderBy: [{ startsAt: "asc" }, { title: "asc" }],
     take,
   });
+  return dedupeAcrossSources(rows);
 }
 
 export async function campusEventById(id: string): Promise<CampusEventRow | null> {

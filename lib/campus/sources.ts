@@ -42,8 +42,8 @@ export type CampusSource = {
   dateBox?: { month: string; day: string; year?: string; time?: string };
   /** For `ics`: the feed writes local times with a "Z" suffix (BU does). */
   icsUtcIsLocal?: boolean;
-  /** Keep only events whose place matches this (a regex): home games, say. */
-  only?: { location: string };
+  /** Keep only events matching these (regexes): home games, say. */
+  only?: { location?: string; title?: string };
   /** Drop what this regex matches from every title ("[W] Babson College " on scores). */
   titleStrip?: string;
 };
@@ -97,6 +97,43 @@ function engage(domain: string, short: string, stem: string, timeZone: string): 
   };
 }
 
+function escapeRe(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * A Sidearm athletics calendar. Nearly every college athletics site runs on
+ * Sidearm and they all publish the same iCalendar path, so one helper covers
+ * the lot — and these games are the campus events least likely to appear on
+ * the school's own events page.
+ *
+ * Home games only. Sidearm writes "<school> <sport> vs <opponent>" when the
+ * game is at home and "... at <opponent>" when it isn't, and a match three
+ * states away is not a night you can go to. `longName` is the school as the
+ * feed spells it, trimmed off the front of every title along with the
+ * "[W]"/"[L]" result tag Sidearm adds once a game has been played; pass null
+ * where the feed has no consistent prefix.
+ */
+function sidearm(
+  domain: string,
+  name: string,
+  host: string,
+  longName: string | null,
+  timeZone: string,
+): CampusSource {
+  return {
+    key: `${domain}/athletics`,
+    schoolDomain: domain,
+    name,
+    homepage: `https://${host}/calendar`,
+    url: `https://${host}/calendar.ashx/calendar.ics`,
+    kind: "ics",
+    timeZone,
+    only: { title: " vs " },
+    titleStrip: `^(\\[[A-Z]\\]\\s*)?${longName ? `${escapeRe(longName)}\\s*` : ""}`,
+  };
+}
+
 export const CAMPUS_SOURCES: CampusSource[] = [
   {
     key: "babson.edu/belong",
@@ -115,20 +152,6 @@ export const CAMPUS_SOURCES: CampusSource[] = [
     url: "https://www.babson.edu/about/events/?search=all",
     kind: "babson",
     timeZone: NY,
-  },
-  {
-    // Sidearm's public iCalendar: every game, home and away. Home games only —
-    // the ones at Babson Park — since those are the nights on campus.
-    key: "babson.edu/athletics",
-    schoolDomain: "babson.edu",
-    name: "Babson Athletics",
-    homepage: "https://babsonathletics.com/calendar",
-    url: "https://babsonathletics.com/calendar.ashx/calendar.ics",
-    kind: "ics",
-    timeZone: NY,
-    only: { location: "Babson Park" },
-    // Played games get a "[W]" / "[L]" result tag in front.
-    titleStrip: "^(\\[[A-Z]\\]\\s*)?Babson College\\s+",
   },
   {
     key: "olin.edu/events",
@@ -368,6 +391,33 @@ export const CAMPUS_SOURCES: CampusSource[] = [
   // upenn.edu, emory.edu, illinois.edu, osu.edu, ucla.edu, olin.edu's and
   // wellesley.edu's orgs, brandeis.edu's orgs (campusgroups.brandeis.edu
   // needs a login). Add a line here when one turns up.
+
+  // Athletics. Home games, from each school's Sidearm calendar — the
+  // events least likely to be on the school's own events page.
+
+  sidearm("babson.edu", "Babson Athletics", "babsonathletics.com", "Babson College", NY),
+  sidearm("mit.edu", "MIT Athletics", "mitathletics.com", "Massachusetts Institute of Technology", NY),
+  sidearm("harvard.edu", "Harvard Athletics", "gocrimson.com", "Harvard University", NY),
+  sidearm("bu.edu", "BU Athletics", "goterriers.com", "Boston University", NY),
+  sidearm("northeastern.edu", "Northeastern Athletics", "nuhuskies.com", "Northeastern University", NY),
+  sidearm("bc.edu", "BC Athletics", "bceagles.com", "Boston College", NY),
+  sidearm("tufts.edu", "Tufts Athletics", "gotuftsjumbos.com", "Tufts University", NY),
+  sidearm("wellesley.edu", "Wellesley Athletics", "wellesleyblue.com", "Wellesley College", NY),
+  sidearm("nyu.edu", "NYU Athletics", "gonyuathletics.com", "New York University", NY),
+  sidearm("columbia.edu", "Columbia Athletics", "gocolumbialions.com", "Columbia University", NY),
+  sidearm("cornell.edu", "Cornell Athletics", "cornellbigred.com", "Cornell", NY),
+  sidearm("yale.edu", "Yale Athletics", "yalebulldogs.com", "Yale University", NY),
+  sidearm("princeton.edu", "Princeton Athletics", "goprincetontigers.com", null, NY),
+  sidearm("brown.edu", "Brown Athletics", "brownbears.com", null, NY),
+  sidearm("dartmouth.edu", "Dartmouth Athletics", "dartmouthsports.com", "Dartmouth College", NY),
+  sidearm("upenn.edu", "Penn Athletics", "pennathletics.com", "University of Pennsylvania", NY),
+  sidearm("jhu.edu", "Johns Hopkins Athletics", "hopkinssports.com", null, NY),
+  sidearm("duke.edu", "Duke Athletics", "goduke.com", "Duke University", NY),
+  sidearm("umich.edu", "Michigan Athletics", "mgoblue.com", "University of Michigan", NY),
+  sidearm("rice.edu", "Rice Athletics", "riceowls.com", "Rice University", CHI),
+  sidearm("berkeley.edu", "Cal Athletics", "calbears.com", "California", LA),
+  sidearm("caltech.edu", "Caltech Athletics", "gocaltech.com", "California Institute of Technology", LA),
+
 ];
 
 export function sourcesFor(schoolDomain: string | null | undefined): CampusSource[] {
