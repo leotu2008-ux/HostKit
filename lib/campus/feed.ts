@@ -65,8 +65,12 @@ export async function campusPreviewFor(
 export function dedupeAcrossSources<T extends CampusEventRow>(rows: T[]): T[] {
   const said = (row: T) =>
     [row.imageUrl, row.location, row.host, row.description].filter(Boolean).length;
+  // Keyed on the exact start, not the day. Every cross-source duplicate we
+  // see shares a start to the minute, while a title repeated at two times in
+  // one day — "Wellness Through Mattering" at 4pm and again at 7pm — is two
+  // sessions someone might attend, and merging those loses a real event.
   const key = (row: T) =>
-    `${row.startsAt.toISOString().slice(0, 10)}|${row.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
+    `${row.startsAt.toISOString()}|${row.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
 
   const best = new Map<string, T>();
   const order: string[] = [];

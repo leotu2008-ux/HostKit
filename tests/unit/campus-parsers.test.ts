@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseIcs } from "@/lib/campus/parsers/ics";
+import { expandRrule, parseIcs } from "@/lib/campus/parsers/ics";
 import { parseLocalist } from "@/lib/campus/parsers/localist";
 import { parseBedework } from "@/lib/campus/parsers/bedework";
 import { parseCards } from "@/lib/campus/parsers/cards";
@@ -474,11 +474,79 @@ describe("cross-source duplicates", () => {
     ]);
   });
 
+  it("keeps a title repeated at a different hour — two sessions, not a copy", () => {
+    const out = dedupeAcrossSources([
+      row("Wellness Through Mattering", "2026-09-16"),
+      { ...row("Wellness Through Mattering", "2026-09-16"), startsAt: new Date("2026-09-16T19:00:00Z") },
+    ]);
+    expect(out).toHaveLength(2);
+  });
+
   it("treats spacing and case as the same title", () => {
     const out = dedupeAcrossSources([
       row("Welcome  BBQ", "2026-09-14"),
       row("welcome bbq", "2026-09-14"),
     ]);
     expect(out).toHaveLength(1);
+  });
+});
+
+describe("recurring events", () => {
+  const from = new Date("2026-09-14T17:00:00Z");
+  const horizon = new Date("2026-12-14T17:00:00Z");
+  const days = (out: Date[]) => out.map((d) => d.toISOString().slice(0, 10));
+
+  it("repeats weekly until the horizon", () => {
+    const out = expandRrule("FREQ=WEEKLY", from, new Date("2026-10-12T17:00:00Z"));
+    expect(days(out)).toEqual(["2026-09-14", "2026-09-21", "2026-09-28", "2026-10-05", "2026-10-12"]);
+  });
+
+  it("honours COUNT and INTERVAL", () => {
+    expect(days(expandRrule("FREQ=WEEKLY;COUNT=3", from, horizon))).toEqual([
+      "2026-09-14", "2026-09-21", "2026-09-28",
+    ]);
+    expect(days(expandRrule("FREQ=DAILY;INTERVAL=3;COUNT=3", from, horizon))).toEqual([
+      "2026-09-14", "2026-09-17", "2026-09-20",
+    ]);
+  });
+
+  it("stops at UNTIL", () => {
+    const out = expandRrule("FREQ=WEEKLY;UNTIL=20260928T235959Z", from, horizon);
+    expect(days(out)).toEqual(["2026-09-14", "2026-09-21", "2026-09-28"]);
+  });
+
+  it("reads BYDAY, so a Tue/Thu seminar lands on both", () => {
+    const out = expandRrule("FREQ=WEEKLY;BYDAY=TU,TH;COUNT=4", from, horizon);
+    // 14 Sep 2026 is a Monday, so the first occurrences are the 15th and 17th.
+    expect(days(out)).toEqual(["2026-09-15", "2026-09-17", "2026-09-22", "2026-09-24"]);
+    expect(out[0].toISOString().slice(11, 16)).toBe("17:00");
+  });
+
+  it("keeps the single start when the rule is unreadable", () => {
+    expect(days(expandRrule("FREQ=FORTNIGHTLY", from, horizon))).toEqual(["2026-09-14"]);
+  });
+
+  it("expands a whole VEVENT, skipping EXDATE, with ids per occurrence", () => {
+    const feed = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "UID:weekly@x",
+      "SUMMARY:Thesis Seminar",
+      "DTSTART:20260914T170000Z",
+      "DTEND:20260914T180000Z",
+      "RRULE:FREQ=WEEKLY;COUNT=4",
+      "EXDATE:20260921T170000Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const events = parseIcs(feed, { timeZone: NY, pageUrl: "https://example.edu/events" });
+    expect(events.map((e) => e.startsAt.toISOString().slice(0, 10))).toEqual([
+      "2026-09-14", "2026-09-28", "2026-10-05",
+    ]);
+    expect(new Set(events.map((e) => e.externalId)).size).toBe(3);
+    // Each occurrence keeps the original hour-long length. 17:00Z is 1pm
+    // Eastern, and we store the school's wall clock encoded as UTC.
+    expect(events[1].startsAt.toISOString()).toBe("2026-09-28T13:00:00.000Z");
+    expect(events[1].endsAt?.toISOString()).toBe("2026-09-28T14:00:00.000Z");
   });
 });
