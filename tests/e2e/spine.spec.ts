@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { SPLASH_STORAGE_KEY } from "../../lib/splash";
 
 /**
- * The spine: everything HostKit claims to do, in the order a host does it.
+ * The spine: everything the app claims to do, in the order a host does it.
  *
  * This is deliberately one long test rather than several short ones. The
  * product's whole claim is that these steps are connected — that booking a

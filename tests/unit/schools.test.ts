@@ -52,7 +52,7 @@ describe("nearestCity", () => {
     expect(nearestCity(40.6782, -73.9442)).toBe("New York, NY");
   });
 
-  it("gives up somewhere HostKit doesn't cover", () => {
+  it("gives up somewhere we don't cover", () => {
     // Chicago
     expect(nearestCity(41.8781, -87.6298)).toBeNull();
   });

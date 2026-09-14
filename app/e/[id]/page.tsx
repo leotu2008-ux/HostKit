@@ -21,6 +21,8 @@ import { eventUrl } from "@/lib/promote";
 import { AddToCalendar } from "@/components/add-to-calendar";
 import { EventCover } from "@/components/event-cover";
 import { RegisterForm } from "@/components/register-form";
+import { BuyTicketsForm } from "@/components/ticket-forms";
+import { onSale, tiersForEvent } from "@/lib/tickets";
 import { MapsLink } from "@/components/maps-link";
 import {
   DateTile,
@@ -117,11 +119,15 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const [registration, preview, followingIds] = await Promise.all([
+  const [registration, preview, followingIds, tiers] = await Promise.all([
     registrationState(event.id, user?.id ?? null),
     attendeesPreview(event.id),
     event.clubId ? followedClubIds(user?.id ?? null) : Promise.resolve(new Set<string>()),
+    tiersForEvent(event.id),
   ]);
+  // A night with tickets sells them instead of taking free registrations.
+  const forSale = tiers.filter((tier) => onSale(tier));
+  const ticketed = tiers.length > 0;
   const followsClub = event.clubId ? followingIds.has(event.clubId) : false;
   const alreadyGoing = registration === "going";
   const waitlistPlace =
@@ -241,10 +247,32 @@ export default async function PublicEventPage({
             className="mt-8 scroll-mt-20 overflow-hidden rounded-2xl border border-line bg-surface/85 backdrop-blur"
           >
             <p className="border-b border-line bg-sunk/60 px-5 py-2.5 text-[13px] font-medium text-ink-soft">
-              Registration
+              {ticketed ? "Tickets" : "Registration"}
             </p>
             <div className="p-5">
-              {!event.published ? (
+              {ticketed ? (
+                !event.published ? (
+                  <p className="text-[15px] text-ink-soft">
+                    This is a draft. Publish it before tickets go on sale.
+                  </p>
+                ) : forSale.length === 0 ? (
+                  <p className="text-[15px] text-ink-soft">
+                    {tiers.every((tier) => tier.left === 0)
+                      ? "Sold out."
+                      : "Tickets aren’t on sale right now."}
+                  </p>
+                ) : (
+                  <BuyTicketsForm
+                    eventId={event.id}
+                    tiers={forSale.map((tier) => ({
+                      id: tier.id,
+                      name: tier.name,
+                      priceCents: tier.priceCents,
+                      left: tier.left,
+                    }))}
+                  />
+                )
+              ) : !event.published ? (
                 <p className="text-[15px] text-ink-soft">
                   This is a draft. Publish it from the dashboard before guests
                   can register.

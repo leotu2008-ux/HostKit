@@ -13,14 +13,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "HostKit",
-    template: "%s · HostKit",
+    default: "Student Events",
+    template: "%s · Student Events",
   },
   description:
-    "Find a night, register in a tap, or plan your own — timeline, budget, and guest list in one place.",
+    "Sell tickets to your event, share the link, and scan people in at the door.",
   appleWebApp: {
     capable: true,
-    title: "HostKit",
+    title: "Student Events",
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },

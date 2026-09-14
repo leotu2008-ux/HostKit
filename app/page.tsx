@@ -87,16 +87,16 @@ export default async function HomePage() {
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="" width={44} height={44} priority className="h-11 w-11 rounded-[12px] ring-1 ring-line" />
           <p className="font-event text-[28px] leading-none text-ink md:text-[32px]">
-            Host<span className="text-brand">Kit</span>
+            Student <span className="text-brand">Events</span>
           </p>
         </div>
         <h1 className="font-display mt-6 text-[34px] leading-[1.1] text-ink md:text-[46px]">
-          {user ? `${greeting()}, ${user.name.split(" ")[0]}` : "Host the night. Find the next one."}
+          {user ? `${greeting()}, ${user.name.split(" ")[0]}` : "Sell the ticket. Run the door."}
         </h1>
         <p className="mt-2 max-w-xl text-[16px] leading-relaxed text-ink-soft">
           {user
             ? "Here’s what’s coming up for you, and what’s on around you."
-            : "Student socials, professional mixers, and nights just for fun. Create an event in a minute — no account needed until you publish."}
+            : "Formals, mixers, and nights your org actually charges for. Put a ticket on sale in a minute and scan people in at the door."}
         </p>
         {!user ? (
           <div className="mt-6 flex flex-wrap gap-2">

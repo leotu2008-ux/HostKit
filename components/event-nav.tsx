@@ -13,6 +13,7 @@ const GROUPS = [
     { href: "/blasts", label: "Blasts" },
     { href: "/promote", label: "Promote" },
     { href: "/guests", label: "Guests" },
+    { href: "/tickets", label: "Tickets" },
     { href: "/check-in", label: "Door" },
   ],
   [

@@ -212,7 +212,7 @@ export function EventIntakeForm({
               ))}
             </select>
             <span className="mt-1.5 block text-sm text-ink-mute">
-              Where the night is, and where HostKit looks for venues.
+              Where the night is, and where we look for venues.
             </span>
           </label>
           <VenueField city={city} />
@@ -241,7 +241,7 @@ export function EventIntakeForm({
               />
             </Row>
             {ticketType === "PAID" ? (
-              <Row label="Price" hint="HostKit shows it; you collect it.">
+              <Row label="Price" hint="Shown on the page; tickets collect it.">
                 <Input
                   name="ticketPrice"
                   inputMode="decimal"

@@ -37,7 +37,7 @@ export default async function RunSheetPage({
       <div className="space-y-6">
         <EmptyState
           title="No run sheet yet"
-          body="HostKit can draft one from your bookings — load-in times for every vendor you've booked, the setup steps people forget, and a running order for this kind of event. Every line is editable."
+          body="Student Events can draft one from your bookings — load-in times for every vendor you've booked, the setup steps people forget, and a running order for this kind of event. Every line is editable."
           action={<GenerateRunSheet eventId={event.id} />}
         />
         <Card className="p-5">

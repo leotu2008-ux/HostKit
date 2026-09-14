@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { shouldShowTabBar } from "@/components/tab-bar";
 
 /**
- * Tells iOS users how to install HostKit to their home screen.
+ * Tells iOS users how to install Student Events to their home screen.
  *
  * iOS has no install-prompt API — the only path is Safari's Share sheet, and
  * the only way to get there is to say so. Shown only on iOS, only in a
@@ -73,7 +73,7 @@ export function InstallPrompt() {
     >
       <ShareIcon />
       <p className="min-w-0 flex-1 leading-snug">
-        Add HostKit to your home screen: tap{" "}
+        Add Student Events to your home screen: tap{" "}
         <span className="font-semibold">Share</span>, then{" "}
         <span className="font-semibold">Add to Home Screen</span>.
       </p>

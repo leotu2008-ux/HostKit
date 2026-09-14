@@ -14,7 +14,7 @@ function Submit() {
   );
 }
 
-/** Add an admin by the email of an existing HostKit account. */
+/** Add an admin by the email of an existing Student Events account. */
 export function AdminForm({
   handle,
   action,

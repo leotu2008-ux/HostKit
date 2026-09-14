@@ -98,7 +98,7 @@ export default async function GuestsPage({
           title="The list"
           hint={
             guests.length > 0
-              ? "Each guest has their own RSVP link. HostKit doesn't send email — copy the link and share it however you normally would."
+              ? "Each guest has their own RSVP link. Student Events doesn't send email — copy the link and share it however you normally would."
               : undefined
           }
         />

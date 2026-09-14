@@ -18,7 +18,7 @@ function Submit({ canSend }: { canSend: boolean }) {
 
 /**
  * Write one message to a slice of the guest list. With email configured it
- * goes out; otherwise HostKit records it and hands over the recipients to
+ * goes out; otherwise Student Events records it and hands over the recipients to
  * paste into whatever the host uses. With Twilio configured, guests with a
  * verified phone can be texted too.
  */

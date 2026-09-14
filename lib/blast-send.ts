@@ -24,7 +24,7 @@ export type BlastOutcome = {
 /** The text: the message, personalised, with who it's from. */
 export function smsText(body: string, name: string, host: string): string {
   const message = personalize(body, name).trim();
-  return `${message}\n— ${host} via HostKit. Reply STOP to opt out.`;
+  return `${message}\n— ${host} via Student Events. Reply STOP to opt out.`;
 }
 
 /**

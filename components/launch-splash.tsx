@@ -7,7 +7,7 @@ import { SPLASH_STORAGE_KEY } from "@/lib/splash";
 const FALLBACK_MS = 1400;
 
 /**
- * First-load splash: black screen, HostKit mark pops in (scale + fade),
+ * First-load splash: black screen, the mark pops in (scale + fade),
  * briefly holds, then logo and overlay fade out together. Visibility is
  * driven by `data-splash` on `<html>` (set before paint); this component
  * only records that the session has seen it once the overlay animation
