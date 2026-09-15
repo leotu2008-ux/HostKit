@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { currentProfile } from "@/lib/session";
 import { CITIES, isCity, type City } from "@/lib/catalog";
@@ -9,6 +10,7 @@ import { upcomingOnly } from "@/lib/upcoming";
 import { suggestedClubs } from "@/lib/clubs";
 import { campusPreviewFor } from "@/lib/campus/feed";
 import { sourcesFor } from "@/lib/campus/sources";
+import { fillIfEmpty, refreshIfStale } from "@/lib/campus/sync";
 import { CampusMixByDay, mixCampus } from "@/components/campus-mix";
 import { CityDetector } from "@/components/city-detector";
 import { SearchBox } from "@/components/search-box";
@@ -44,6 +46,11 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
 
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly(), ...eventSearch(q) };
 
+  // Discover is where students land, so it is where an empty campus reads as
+  // a broken app. /campus has always filled itself on first open; this is the
+  // same courtesy on the page people actually arrive at.
+  await fillIfEmpty(user?.schoolDomain);
+
   const [campus, nearby, clubs, official] = await Promise.all([
     user?.schoolDomain
       ? db.event.findMany({
@@ -69,6 +76,10 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
 
   const days = groupByDay(nearby);
   const cityShort = city ? city.split(",")[0] : null;
+  // Anything already on screen beats a slow page, so the refresh happens
+  // after the response rather than in front of it.
+  if (user?.schoolDomain) after(() => refreshIfStale(user.schoolDomain));
+
   const school = user?.school ?? null;
   const onCampus = mixCampus(campus, official, searching ? 60 : 8);
   const feeds = sourcesFor(school?.domain);
