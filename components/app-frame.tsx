@@ -7,6 +7,7 @@ import { DesktopNav, TabBar } from "@/components/tab-bar";
 import { signOutAction } from "@/lib/actions/auth";
 import { currentProfile } from "@/lib/session";
 import { unreadCount } from "@/lib/notify";
+import { paletteCss, paletteFor } from "@/lib/school-color";
 
 /**
  * The app shell. Phones get a compact header and the bottom tab bar; wider
@@ -21,8 +22,18 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
     ? { name: user.name, email: user.email, imageUrl: user.imageUrl, school: user.school, classYear: user.classYear }
     : null;
 
+  // The accent follows the student's school. Signed out, or at a school whose
+  // colour we don't hold, the tokens in globals.css stand as they are.
+  const palette = user?.school?.color ? paletteFor(user.school.color) : null;
+
   return (
     <div className="flex min-h-dvh w-full flex-col">
+      {palette ? (
+        <style
+          // Generated from a hex in lib/schools.ts, never from user input.
+          dangerouslySetInnerHTML={{ __html: paletteCss(palette) }}
+        />
+      ) : null}
       <header className="no-print sticky top-0 z-40 border-b border-line/70 bg-paper/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 md:px-8">
           <AccountMenu user={menuUser} signOut={signOutAction} align="left" label="Account menu">
