@@ -49,6 +49,7 @@ export const SCHOOLS: School[] = [
   { domain: "uchicago.edu", name: "University of Chicago", short: "UChicago", city: null },
   { domain: "brown.edu", name: "Brown University", short: "Brown", city: null },
   { domain: "columbia.edu", name: "Columbia University", short: "Columbia", city: NYC },
+  { domain: "barnard.edu", name: "Barnard College", short: "Barnard", city: NYC },
   { domain: "dartmouth.edu", name: "Dartmouth College", short: "Dartmouth", city: null },
   { domain: "ucla.edu", name: "UCLA", short: "UCLA", city: LA },
   { domain: "berkeley.edu", name: "UC Berkeley", short: "Berkeley", city: null },

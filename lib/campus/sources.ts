@@ -369,6 +369,7 @@ export const CAMPUS_SOURCES: CampusSource[] = [
   campusgroups("rochester.edu", "Rochester", "rochester", NY),
   campusgroups("fsu.edu", "FSU", "fsu", NY),
   engage("bc.edu", "BC", "bc", NY),
+  engage("barnard.edu", "Barnard", "barnard", NY),
   engage("uchicago.edu", "UChicago", "uchicago", CHI),
   engage("berkeley.edu", "Berkeley", "berkeley", LA),
   engage("rice.edu", "Rice", "rice", CHI),
