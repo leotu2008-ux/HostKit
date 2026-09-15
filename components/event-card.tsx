@@ -161,7 +161,13 @@ export function EventCard({
         ) : null}
       </div>
       <div className="h-[84px] w-[84px] shrink-0 overflow-hidden rounded-xl bg-sunk">
-        <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="168px" />
+        <EventCover
+          id={event.id}
+          title={event.title}
+          coverUrl={event.coverUrl}
+          host={event.hostName}
+          sizes="168px"
+        />
       </div>
     </Link>
   );
