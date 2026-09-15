@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
-import { isEmailConfigured } from "@/lib/email/resend";
+import { isEmailConfigured } from "@/lib/email/send";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 import { BlastComposer } from "@/components/blast-composer";
 import { Badge, Card, EmptyState, SectionHeading } from "@/components/ui";

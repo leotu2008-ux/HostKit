@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { isEmailConfigured, sendEmails } from "@/lib/email/resend";
+import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { isPushConfigured, sendPush } from "@/lib/push/apns";
 
 /**

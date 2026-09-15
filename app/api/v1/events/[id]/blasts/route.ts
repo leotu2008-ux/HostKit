@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
 import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
 import { sendBlast } from "@/lib/blast-send";
-import { isEmailConfigured } from "@/lib/email/resend";
+import { isEmailConfigured } from "@/lib/email/send";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 
 async function feed(eventId: string) {
