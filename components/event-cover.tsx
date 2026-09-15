@@ -20,12 +20,18 @@ export function EventCover({
   id,
   title,
   coverUrl,
+  type,
+  host,
   sizes = "(min-width: 768px) 400px, 100vw",
   natural = false,
 }: {
   id: string;
   title: string;
   coverUrl?: string | null;
+  /** HostKit's own EventType, when the caller has it. */
+  type?: string | null;
+  /** The club or department, which sometimes says more than the title does. */
+  host?: string | null;
   sizes?: string;
   /** Show a photo at its own shape (the event page) rather than filling a box (cards). */
   natural?: boolean;
@@ -57,5 +63,5 @@ export function EventCover({
       </span>
     );
   }
-  return <CoverArt id={id} title={title} />;
+  return <CoverArt id={id} title={title} type={type} host={host} />;
 }
