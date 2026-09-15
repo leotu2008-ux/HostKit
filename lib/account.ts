@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { EmailSendError, isEmailConfigured, sendEmails } from "@/lib/email/resend";
+import { EmailSendError, isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { schoolDomainFor } from "@/lib/schools";
 
 /**

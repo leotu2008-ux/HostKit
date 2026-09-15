@@ -7,7 +7,7 @@ import {
   type Recipient,
   type Segment,
 } from "@/lib/blasts";
-import { isEmailConfigured, sendEmails } from "@/lib/email/resend";
+import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { isSmsConfigured, sendSms } from "@/lib/sms/twilio";
 import { notify } from "@/lib/notify";
 

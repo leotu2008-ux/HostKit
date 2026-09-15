@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EmailSendError, classifyEmailFailure } from "@/lib/email/resend";
+import { EmailSendError, classifyEmailFailure } from "@/lib/email/send";
 import { messageForSendFailure, sendBlockedMessage, sendFailedMessage } from "@/lib/account";
 
 /**
