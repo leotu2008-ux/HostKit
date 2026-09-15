@@ -1,0 +1,98 @@
+name: CI
+
+# Every pull request, and main itself so a bad merge is caught immediately.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same branch cancels the run already in flight.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, types, unit, end to end
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # The app is useless without Postgres: migrations, the seed and every
+    # Playwright run talk to it. A service container is thrown away with the job.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hostkit
+          POSTGRES_PASSWORD: hostkit
+          POSTGRES_DB: hostkit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://hostkit:hostkit@127.0.0.1:5432/hostkit?schema=public
+      # Never a real secret: this database and this runner live for one job.
+      AUTH_SECRET: ci-only-not-a-real-secret-ci-only-not-real
+      AUTH_TRUST_HOST: "true"
+      # Mail, blob storage, Twilio and Apple Maps are all optional by design.
+      # Leaving them unset is deliberate: CI exercises the no-provider paths.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall runs `prisma generate`.
+      - name: Install
+        run: npm ci
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed
+        run: npm run db:seed
+
+      # The regression guard for the bug this workflow was added alongside:
+      # a seeded account created without a confirmation can never sign in.
+      - name: Seeded accounts can sign in
+        run: npx tsx scripts/check-seed-verified.ts
+
+      - name: Lint
+        run: npm run lint
+
+      # PageProps and LayoutProps are generated, not hand-written, so tsc
+      # cannot run until Next has written .next/types.
+      - name: Generate route types
+        run: npx next typegen
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # playwright.config.ts starts `npm run dev` itself and waits for it.
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
