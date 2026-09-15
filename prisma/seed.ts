@@ -197,7 +197,26 @@ async function seedCatalog() {
 
 const DEMO_EMAIL = "maya@hostkit.demo";
 
+/**
+ * Confirms a demo account that was seeded before seeded accounts were born
+ * confirmed.
+ *
+ * Sign-in refuses an address that was never confirmed, and a demo account has
+ * no inbox to confirm from. Creating them confirmed fixes a fresh database,
+ * but not the ones already out there: both seed steps below return early when
+ * the account already has its nights, so an existing unconfirmed demo account
+ * would stay locked out of production forever. This runs before that check.
+ */
+async function confirmDemoAccount(email: string): Promise<void> {
+  const { count } = await db.user.updateMany({
+    where: { email, emailVerifiedAt: null },
+    data: { emailVerifiedAt: new Date() },
+  });
+  if (count > 0) console.log(`Confirmed ${email} so it can sign in.`);
+}
+
 async function seedDemoNights() {
+  await confirmDemoAccount(DEMO_EMAIL);
   const existing = await db.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (existing) {
     const nights = await db.event.count({ where: { ownerId: existing.id } });
@@ -310,6 +329,7 @@ const STUDENT_EMAIL = "sam@babson.edu";
 /** A demo Babson student with a couple of campus nights, so the student side
  *  of Discover has something to show. Same password as the demo host. */
 async function seedCampusDemo() {
+  await confirmDemoAccount(STUDENT_EMAIL);
   const existing = await db.user.findUnique({ where: { email: STUDENT_EMAIL } });
   if (existing) {
     const nights = await db.event.count({ where: { ownerId: existing.id } });
