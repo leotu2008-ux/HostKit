@@ -322,6 +322,8 @@ model Event {
   runSheetItems    RunSheetItem[]
   collaborators    EventCollaborator[]
   blasts           Blast[]
+  ticketTiers      TicketTier[]
+  orders           Order[]
 
   @@index([ownerId])
   @@index([clubId])
@@ -676,4 +678,95 @@ model RunSheetItem {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId, startsAt])
+}
+
+// ---------------------------------------------------------------------------
+// Tickets — what's for sale, who bought it, and what gets scanned at the door.
+//
+// Deliberately separate from `Guest`. A guest is someone on a list who may
+// reply; a ticket is an admission someone holds, and the two have different
+// lives: a guest can change their mind, a ticket is sold, transferred,
+// refunded or torn. Free events keep using Guest and never touch these.
+// ---------------------------------------------------------------------------
+
+/// One thing you can buy for an event: "General", "Early bird", "Alumni".
+model TicketTier {
+  id           String    @id @default(cuid())
+  eventId      String
+  name         String
+  /// Zero is allowed: a free tier still produces a scannable ticket.
+  priceCents   Int       @default(0)
+  /// How many exist in total. What's left is counted from live tickets.
+  quantity     Int
+  /// Optional window. Null on either side means "whenever the event is live".
+  salesOpenAt  DateTime?
+  salesCloseAt DateTime?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@index([eventId])
+}
+
+enum OrderStatus {
+  /// Placed, money not in yet. Where an order sits while the organiser is
+  /// still being paid by cash or a transfer app.
+  PENDING
+  /// Paid for. Only these tickets open the door.
+  PAID
+  /// Money returned. The tickets are void.
+  REFUNDED
+  /// Called off before it was ever paid.
+  CANCELLED
+}
+
+/// One purchase. Buyers never need an account — the email is how the
+/// tickets reach them and the token is how they come back to them.
+model Order {
+  id         String      @id @default(cuid())
+  eventId    String
+  email      String
+  name       String
+  status     OrderStatus @default(PENDING)
+  totalCents Int         @default(0)
+  /// How the money actually arrived: "cash", "venmo", later "stripe".
+  paidVia    String?
+  paidAt     DateTime?
+  /// The buyer's private link back to their tickets. Random, not a cuid.
+  token      String      @unique
+  note       String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@index([eventId, createdAt])
+  @@index([email])
+}
+
+/// One admission. `token` is what the door scans.
+model Ticket {
+  id           String    @id @default(cuid())
+  orderId      String
+  ticketTierId String
+  /// Named when the buyer says who each seat is for; otherwise the buyer.
+  holderName   String?
+  /// Random bytes, not a cuid — this is the only thing between a stranger
+  /// and a free entry.
+  token        String    @unique
+  checkedInAt  DateTime?
+  /// Set when an order is refunded, so a torn ticket stays auditable
+  /// rather than vanishing.
+  voidedAt     DateTime?
+  createdAt    DateTime  @default(now())
+
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketTier TicketTier @relation(fields: [ticketTierId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([ticketTierId])
 }

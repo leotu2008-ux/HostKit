@@ -5,6 +5,8 @@ import {
   undoCheckInAction,
 } from "@/lib/actions/checkin";
 import { Button, Card, EmptyState, Input } from "@/components/ui";
+import { DoorScanner } from "@/components/ticket-forms";
+import { takingsFor } from "@/lib/tickets";
 
 export default async function CheckInPage({
   params,
@@ -34,6 +36,7 @@ export default async function CheckInPage({
       )
     : guests;
 
+  const takings = await takingsFor(event.id);
   const inCount = guests.filter((g) => g.checkedInAt).length;
   const going = guests.filter(
     (g) => g.rsvpStatus === "ATTENDING" || g.checkedInAt,
@@ -51,6 +54,18 @@ export default async function CheckInPage({
           checked in · {going} going
         </p>
       </div>
+
+      {takings.sold > 0 ? (
+        <section className="rounded-card border border-line bg-surface p-4">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="font-medium text-ink">Scan a ticket</h3>
+            <p className="tabular text-[13px] text-ink-mute">
+              {takings.checkedIn} of {takings.sold} in
+            </p>
+          </div>
+          <DoorScanner eventId={event.id} />
+        </section>
+      ) : null}
 
       <form className="flex gap-2">
         <Input
