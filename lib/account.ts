@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { isEmailConfigured, sendEmails } from "@/lib/email/resend";
+import { EmailSendError, isEmailConfigured, sendEmails } from "@/lib/email/resend";
 import { schoolDomainFor } from "@/lib/schools";
 
 /**
@@ -76,6 +76,26 @@ export function unverifiedMessage(email: string): string {
  */
 export function sendFailedMessage(email: string): string {
   return `We couldn’t send the confirmation email to ${email}, so the account wasn’t created. Check the address and try again.`;
+}
+
+/**
+ * What sign-up says when the send failed on this server's side — a sending
+ * domain that was never verified, or a bad API key. Telling someone to check
+ * an address that is perfectly fine sends them hunting for a typo that does
+ * not exist, so this says plainly that it is not them.
+ */
+export function sendBlockedMessage(email: string): string {
+  return `We couldn’t send the confirmation email to ${email}, and it isn’t your address — this server’s email isn’t finished being set up, so the account wasn’t created. Ask whoever runs it to verify a sending domain in Resend and point RESEND_FROM at it.`;
+}
+
+/** Picks the message that matches why the provider refused. */
+export function messageForSendFailure(email: string, error: unknown): string {
+  if (error instanceof EmailSendError) {
+    return error.cause === "recipient" ? sendFailedMessage(email) : sendBlockedMessage(email);
+  }
+  // No response at all (a timeout, DNS, a 500 at the provider) is not
+  // something the person signing up can act on either.
+  return sendBlockedMessage(email);
 }
 
 async function deliver(
@@ -264,7 +284,7 @@ export async function createAccountPendingVerification(input: {
     });
     if (error instanceof AccountError) throw error;
     console.error("[account] confirmation email failed", error);
-    throw new AccountError(sendFailedMessage(email), 502);
+    throw new AccountError(messageForSendFailure(email, error), 502);
   }
 }
 
