@@ -215,6 +215,9 @@ async function seedDemoNights() {
         email: DEMO_EMAIL,
         name: "Maya Chen",
         passwordHash,
+        // Seeded accounts have no inbox to confirm from, and sign-in refuses
+        // an unconfirmed address, so they are born confirmed.
+        emailVerifiedAt: new Date(),
       },
     }));
 
@@ -323,6 +326,8 @@ async function seedCampusDemo() {
         email: STUDENT_EMAIL,
         name: "Sam Okafor",
         passwordHash: await bcrypt.hash("hostkit-demo", 10),
+        // As above: no inbox, so confirm at creation or it can never sign in.
+        emailVerifiedAt: new Date(),
         schoolDomain: "babson.edu",
         classYear: new Date().getFullYear() + 2,
         bio: "Runs the entrepreneurship club's Thursday nights.",
