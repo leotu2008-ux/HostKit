@@ -8,6 +8,7 @@ import { parseEngage, type EngagePage } from "@/lib/campus/parsers/engage";
 import { parseRss } from "@/lib/campus/parsers/rss";
 import { parseCards } from "@/lib/campus/parsers/cards";
 import { parseBabson } from "@/lib/campus/parsers/babson";
+import { parsePennClubs, type PennClubsEvent } from "@/lib/campus/parsers/pennclubs";
 import type { ParsedEvent } from "@/lib/campus/parsers/types";
 import { startOfDay } from "@/lib/plan";
 import { suggestHandle } from "@/lib/club-format";
@@ -24,14 +25,28 @@ import { suggestHandle } from "@/lib/club-format";
 export const STALE_AFTER_MS = 6 * 60 * 60 * 1000;
 /** How far ahead to keep. Feeds that dump a whole year are trimmed to this. */
 const WINDOW_DAYS = 90;
-/** Most events kept per source; the soonest win. */
-const MAX_PER_SOURCE = 400;
+/**
+ * Most events kept per source; the soonest win. Measured against the live
+ * feeds, 400 was cutting deep — Vanderbilt offers 938 events inside the
+ * window, Duke 863, Brown 850 — so most of a busy campus was fetched and
+ * then dropped on the floor.
+ */
+const MAX_PER_SOURCE = 1200;
+/**
+ * Pages to walk on a paged platform. Each page is a round trip, and a
+ * fifteen-page campus was spending fifteen seconds of the run's budget on
+ * its own; eight pages is 800 events, well past what anyone scrolls.
+ */
+const MAX_PAGES = 8;
 const FETCH_TIMEOUT_MS = 20_000;
 /** A feed bigger than this is a broken feed, not a calendar. */
 const MAX_FEED_BYTES = 8 * 1024 * 1024;
 const USER_AGENT = "Mozilla/5.0 (compatible; HostKit/1.0; +https://host-kit-one.vercel.app)";
 
 export type SyncResult = { sourceKey: string; ok: boolean; count: number; error?: string };
+
+/** Marks a run we refused to trust, so the next one knows to stop arguing. */
+const SUSPECT = "feed looks wrong";
 
 async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, {
@@ -73,10 +88,12 @@ async function fetchRaw(source: CampusSource): Promise<ParsedEvent[]> {
   switch (source.kind) {
     case "localist": {
       const out: ParsedEvent[] = [];
-      // Localist pages at 100; three pages cover a busy campus's next 60 days.
-      for (let page = 1; page <= 3; page++) {
+      // Localist pages at 100. Walk until it says there is no next page —
+      // three pages over 60 days used to stop at 300 events on campuses
+      // that publish fifteen pages inside the window we actually show.
+      for (let page = 1; page <= MAX_PAGES; page++) {
         const sep = source.url.includes("?") ? "&" : "?";
-        const text = await fetchText(`${source.url}${sep}days=60&pp=100&page=${page}`);
+        const text = await fetchText(`${source.url}${sep}days=${WINDOW_DAYS}&pp=100&page=${page}`);
         const data = JSON.parse(text) as LocalistPage;
         out.push(...parseLocalist(data, opts));
         if (!data.page?.next_page) break;
@@ -92,10 +109,12 @@ async function fetchRaw(source: CampusSource): Promise<ParsedEvent[]> {
     case "campusgroups":
       return parseCampusGroups(await fetchText(source.url), opts);
     case "engage": {
-      // Upcoming only, soonest first, 100 a page; three pages is plenty.
+      // Upcoming only, soonest first, 100 a page, until a short page ends
+      // it. Georgia Tech alone reports 871 upcoming, so three pages lost
+      // two thirds of them.
       const out: ParsedEvent[] = [];
       const since = new Date().toISOString();
-      for (let page = 0; page < 3; page++) {
+      for (let page = 0; page < MAX_PAGES; page++) {
         const params = new URLSearchParams({
           endsAfter: since,
           orderByField: "endsOn",
@@ -131,6 +150,10 @@ async function fetchRaw(source: CampusSource): Promise<ParsedEvent[]> {
     }
     case "babson":
       return parseBabson(await fetchText(source.url), opts);
+    case "pennclubs": {
+      const data = JSON.parse(await fetchText(source.url)) as PennClubsEvent[];
+      return parsePennClubs(data, opts);
+    }
   }
 }
 
@@ -208,55 +231,122 @@ export async function syncOfficialClubs(source: CampusSource, events: ParsedEven
   return orgs.size;
 }
 
+type StoredEvent = {
+  title: string;
+  description: string | null;
+  startsAt: Date;
+  endsAt: Date | null;
+  allDay: boolean;
+  location: string | null;
+  restricted: boolean;
+  host: string | null;
+  hostRef: string | null;
+  url: string;
+  imageUrl: string | null;
+};
+
+/** True when the feed is telling us exactly what we already stored. */
+function sameEvent(a: StoredEvent, b: StoredEvent): boolean {
+  return (
+    a.title === b.title &&
+    a.description === b.description &&
+    a.startsAt.getTime() === b.startsAt.getTime() &&
+    (a.endsAt?.getTime() ?? null) === (b.endsAt?.getTime() ?? null) &&
+    a.allDay === b.allDay &&
+    a.location === b.location &&
+    a.restricted === b.restricted &&
+    a.host === b.host &&
+    a.hostRef === b.hostRef &&
+    a.url === b.url &&
+    a.imageUrl === b.imageUrl
+  );
+}
+
 export async function syncSource(source: CampusSource): Promise<SyncResult> {
   const now = new Date();
   try {
     const events = selectUpcoming(await fetchSource(source), now);
 
-    // Every run is a full replace, so a feed that answers with nothing would
-    // wipe the school. That happens — a calendar blocks the datacentre, or
-    // breaks for an afternoon — and an empty campus page is worse than a
-    // stale one. Keep what we have and record why.
-    if (events.length === 0) {
-      const kept = await db.campusEvent.count({ where: { sourceKey: source.key } });
-      if (kept > 0) {
-        const message = `feed returned no events; kept the ${kept} already stored`;
-        await db.campusSync.upsert({
-          where: { sourceKey: source.key },
-          create: { sourceKey: source.key, schoolDomain: source.schoolDomain, lastRunAt: now, lastError: message },
-          update: { lastRunAt: now, lastError: message },
-        });
-        console.error(`[campus] ${source.key}: ${message}`);
-        return { sourceKey: source.key, ok: false, count: kept, error: message };
-      }
+    // Every run is a full replace, so a bad answer would wipe the school.
+    // Nothing at all is the obvious case, but the dangerous one is a short
+    // answer: Brown's calendar handed back 845 events, then 85, then 845
+    // again within an hour. Either way, keep what we hold and say why.
+    //
+    // A feed really can shrink — a semester ends — so the refusal only
+    // lasts one run: if the previous run already flagged a shrink, the new
+    // figure is treated as the truth.
+    const kept = await db.campusEvent.count({ where: { sourceKey: source.key } });
+    const previous = await db.campusSync.findUnique({
+      where: { sourceKey: source.key },
+      select: { lastError: true },
+    });
+    const refusedBefore = previous?.lastError?.startsWith(SUSPECT) ?? false;
+    const suspect = kept > 20 && events.length < kept / 2;
+
+    if (kept > 0 && (events.length === 0 || suspect) && !refusedBefore) {
+      const message =
+        events.length === 0
+          ? `${SUSPECT}: returned nothing; kept the ${kept} already stored`
+          : `${SUSPECT}: returned ${events.length} against ${kept} stored; kept the stored ones`;
+      await db.campusSync.upsert({
+        where: { sourceKey: source.key },
+        create: { sourceKey: source.key, schoolDomain: source.schoolDomain, lastRunAt: now, lastError: message },
+        update: { lastRunAt: now, lastError: message },
+      });
+      console.error(`[campus] ${source.key}: ${message}`);
+      return { sourceKey: source.key, ok: false, count: kept, error: message };
     }
 
     await syncOfficialClubs(source, events);
+
+    // Write only what moved. A row per event upserted one at a time meant
+    // 1200 round trips per source, which ate the sweep's whole budget on a
+    // dozen schools. Between two daily runs almost nothing changes, so
+    // compare first and touch only the rows that differ.
+    const rows = events.map((e) => ({
+      sourceKey: source.key,
+      externalId: e.externalId,
+      schoolDomain: source.schoolDomain,
+      title: e.title,
+      description: e.description,
+      startsAt: e.startsAt,
+      endsAt: e.endsAt,
+      allDay: e.allDay,
+      location: e.location,
+      restricted: e.restricted ?? false,
+      host: e.host ?? null,
+      hostRef: hostRefFor(source.key, e.hostId),
+      url: e.url,
+      imageUrl: e.imageUrl,
+    }));
+
     await db.$transaction(async (tx) => {
-      await tx.campusEvent.deleteMany({
-        where: { sourceKey: source.key, externalId: { notIn: events.map((e) => e.externalId) } },
+      const existing = await tx.campusEvent.findMany({
+        where: { sourceKey: source.key },
+        select: {
+          id: true, externalId: true, title: true, description: true, startsAt: true,
+          endsAt: true, allDay: true, location: true, restricted: true, host: true,
+          hostRef: true, url: true, imageUrl: true,
+        },
       });
-      for (const e of events) {
-        const data = {
-          schoolDomain: source.schoolDomain,
-          title: e.title,
-          description: e.description,
-          startsAt: e.startsAt,
-          endsAt: e.endsAt,
-          allDay: e.allDay,
-          location: e.location,
-          restricted: e.restricted ?? false,
-          host: e.host ?? null,
-          hostRef: hostRefFor(source.key, e.hostId),
-          url: e.url,
-          imageUrl: e.imageUrl,
-        };
-        await tx.campusEvent.upsert({
-          where: { sourceKey_externalId: { sourceKey: source.key, externalId: e.externalId } },
-          create: { sourceKey: source.key, externalId: e.externalId, ...data },
-          update: data,
-        });
+      const before = new Map(existing.map((row) => [row.externalId, row]));
+      const wanted = new Set(rows.map((row) => row.externalId));
+
+      const departed = existing.filter((row) => !wanted.has(row.externalId)).map((row) => row.id);
+      if (departed.length > 0) await tx.campusEvent.deleteMany({ where: { id: { in: departed } } });
+
+      const fresh = rows.filter((row) => !before.has(row.externalId));
+      if (fresh.length > 0) await tx.campusEvent.createMany({ data: fresh, skipDuplicates: true });
+
+      for (const row of rows) {
+        const was = before.get(row.externalId);
+        // Keep the id stable when nothing changed — /campus/:id links and the
+        // phone's saved reminders are keyed on it.
+        if (!was || sameEvent(was, row)) continue;
+        const { sourceKey: _k, externalId: _e, ...data } = row;
+        await tx.campusEvent.update({ where: { id: was.id }, data });
       }
+
       await tx.campusSync.upsert({
         where: { sourceKey: source.key },
         create: { sourceKey: source.key, schoolDomain: source.schoolDomain, lastRunAt: now, lastOkAt: now, lastError: null, eventCount: events.length },
@@ -277,12 +367,14 @@ export async function syncSource(source: CampusSource): Promise<SyncResult> {
 }
 
 /**
- * How many feeds to work on at once. Sources are independent, and most of
- * each one's time is spent waiting on someone else's server, so running them
- * one after another spent the whole budget on a handful of schools — every
- * other campus stayed empty until a student happened to open it.
+ * How many feeds to work on at once. Sources are independent and nearly all
+ * of each one's time is spent waiting on someone else's server, so running
+ * them one after another spent the whole budget on a handful of schools —
+ * every other campus stayed empty until a student happened to open it.
+ * Measured on the full catalogue: 5 at a time reached 53 sources inside the
+ * budget, 10 reaches all 109.
  */
-const CONCURRENCY = 5;
+const CONCURRENCY = 10;
 
 /** Runs `work` over `items`, `limit` at a time, stopping when the budget is spent. */
 export async function inPool<T, R>(
@@ -308,11 +400,14 @@ export async function syncSchool(schoolDomain: string): Promise<SyncResult[]> {
 
 /**
  * The daily sweep: stalest sources first, several at a time, until the time
- * budget is spent so a slow feed can't push the run past the function's
- * limit. Vercel's Hobby plan allows one cron run a day, so this run is the
- * only chance most sources get.
+ * budget is spent. The budget only stops new work starting, and a feed
+ * already in flight can run another twenty seconds, so it sits well under
+ * the route's 60s limit rather than near it. Vercel's Hobby plan allows one
+ * cron run a day; sources rotate stalest-first, so the catalogue cycles in
+ * about two days, and anything a student actually opens is refreshed on
+ * sight by refreshIfStale and fillIfEmpty.
  */
-export async function syncAll(budgetMs = 50_000): Promise<SyncResult[]> {
+export async function syncAll(budgetMs = 35_000): Promise<SyncResult[]> {
   const started = Date.now();
   const runs = await db.campusSync.findMany({ select: { sourceKey: true, lastOkAt: true } });
   const lastOk = new Map(runs.map((r) => [r.sourceKey, r.lastOkAt?.getTime() ?? 0]));

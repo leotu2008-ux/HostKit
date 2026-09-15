@@ -14,12 +14,22 @@
  *                 month/day date box, or a "September 11, 2026, 8:30 p.m."
  *                 in its text, plus a link (Wellesley, Olin, Dartmouth, Rutgers)
  * - `babson`    — Babson's own events page (date boxes, no feed)
+ * - `pennclubs` — Penn Clubs' own JSON (Penn publishes nothing else)
  *
  * Pure data, safe to import from client code. The sync (lib/campus/sync.ts)
  * fetches these on a schedule and whenever a student's feed looks stale.
  */
 
-export type CampusSourceKind = "localist" | "ics" | "bedework" | "campusgroups" | "engage" | "rss" | "cards" | "babson";
+export type CampusSourceKind =
+  | "localist"
+  | "ics"
+  | "bedework"
+  | "campusgroups"
+  | "engage"
+  | "rss"
+  | "cards"
+  | "babson"
+  | "pennclubs";
 
 export type CampusSource = {
   /** Stable id, stored on every event it produces: "<domain>/<slug>". */
@@ -388,10 +398,31 @@ export const CAMPUS_SOURCES: CampusSource[] = [
   engage("wfu.edu", "Wake Forest", "wfu", NY),
   // bu.edu and columbia.edu also have Engage sites, but nothing upcoming on
   // them any more (they moved platforms); dropped so we don't credit an empty feed.
-  // Still no public feed of any kind (2026-09-12): caltech.edu, jhu.edu,
-  // upenn.edu, emory.edu, illinois.edu, osu.edu, ucla.edu, olin.edu's and
+  // Still no public feed of any kind (re-probed 2026-09-14, 360+ URLs):
+  // caltech.edu (WordPress, no calendar plugin, wp-json 403s), ucla.edu
+  // (Drupal shell, no host resolves), illinois.edu (the real calendar at
+  // calendars.illinois.edu/list/7 is HTML only). Also olin.edu's and
   // wellesley.edu's orgs, brandeis.edu's orgs (campusgroups.brandeis.edu
   // needs a login). Add a line here when one turns up.
+
+  // Found by probing the platform patterns on 2026-09-14, for schools that
+  // had no institutional calendar or no student-org feed at all.
+  trumba("emory.edu", "Emory Events", "https://emory.edu/events/", "emory-events", NY),
+  trumba("osu.edu", "Ohio State Events", "https://events.osu.edu/", "osu", NY),
+  campusgroups("jhu.edu", "Johns Hopkins", "jhu", NY),
+  campusgroups("bu.edu", "BU", "bostonu", NY),
+  campusgroups("umn.edu", "Minnesota", "twincitiesumn", CHI),
+  {
+    // Penn has no institutional calendar that resolves; its student
+    // activities directory is the only public feed the university offers.
+    key: "upenn.edu/pennclubs",
+    schoolDomain: "upenn.edu",
+    name: "Penn Clubs",
+    homepage: "https://pennclubs.com/events",
+    url: "https://pennclubs.com/api/events/?format=json",
+    kind: "pennclubs",
+    timeZone: NY,
+  },
 
   // Athletics. Home games, from each school's Sidearm calendar — the
   // events least likely to be on the school's own events page.
