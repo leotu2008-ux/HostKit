@@ -38,6 +38,12 @@
   --color-brand: #c64a22;
   --color-brand-wash: #fcede7;
 
+  /* The soft radial wash across the top of home, Discover and a club page.
+     Its own token, not the accent, so a school can tint the page without
+     repainting links and buttons. Defaults to the brand colour, which is
+     what the wash has always been. */
+  --color-wash: #c64a22;
+
   /* Forest — confirmed, booked, going. */
   --color-forest: #1f6f4f;
   --color-forest-wash: #e5f3eb;
@@ -81,6 +87,7 @@
     --color-on-clay: #141414;
     --color-brand: #e5643a;
     --color-brand-wash: #36201a;
+    --color-wash: #e5643a;
     --color-forest: #7fcca6;
     --color-forest-wash: #16271f;
     --color-amber: #efbd5c;
