@@ -66,6 +66,21 @@ describe("event templates", () => {
       }
     }
   });
+
+  it("funds at least three categories, except a named short list", () => {
+    // STUDY_BREAK is deliberately two categories (CATERING, RENTALS) — free
+    // food in the library doesn't need a florist. Any future template this
+    // small has to be added here on purpose, rather than the floor quietly
+    // dropping for everyone.
+    const ALLOWED_SMALL_BUDGET: ReadonlyArray<EventType> = ["STUDY_BREAK"];
+
+    for (const type of ALL_EVENT_TYPES) {
+      const floor = ALLOWED_SMALL_BUDGET.includes(type) ? 2 : 3;
+      expect(EVENT_TEMPLATES[type].budget.length, type).toBeGreaterThanOrEqual(
+        floor,
+      );
+    }
+  });
 });
 
 describe("generatePlan — budget", () => {
@@ -208,17 +223,13 @@ describe("generatePlan — timeline", () => {
         NOW,
       );
       expect(plan.tasks.length, type).toBeGreaterThan(5);
-      // Every template but STUDY_BREAK funds 3+ categories; STUDY_BREAK is a
-      // genuine two-category budget (CATERING, RENTALS). Deriving the floor
-      // from the template's own budget length — rather than hardcoding ">2"
-      // or special-casing the type name — keeps the original ">2 categories"
-      // guarantee for every other template while still passing for a
-      // deliberately smaller one, today or in the future.
-      const minCategories = Math.min(
-        2,
-        EVENT_TEMPLATES[type].budget.length - 1,
+      // A count comparison here would just restate plan.categories.length
+      // against the same budget array it is built from. Check the real
+      // invariant instead: the plan funds exactly the categories the
+      // template names, in the template's order — no drops, no reorders.
+      expect(plan.categories.map((c) => c.category)).toEqual(
+        EVENT_TEMPLATES[type].budget.map((b) => b.category),
       );
-      expect(plan.categories.length, type).toBeGreaterThan(minCategories);
     }
   });
 });
