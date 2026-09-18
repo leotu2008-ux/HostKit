@@ -3,6 +3,8 @@ import { requireEvent } from "@/lib/session";
 import { guestPhone, verifiedPhone } from "@/lib/api/serialize";
 import { formatPhone } from "@/lib/phone";
 import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
+import { predictTurnout, showHistoryFor } from "@/lib/turnout";
+import { daysUntil } from "@/lib/plan";
 import { updateGuestAction, removeGuestAction } from "@/lib/actions/guests";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
 import { AddGuestsForm } from "@/components/add-guests-form";
@@ -51,6 +53,24 @@ export default async function GuestsPage({
   const summary = summarizeGuests(guests);
   const head = effectiveHeadcount(event.guestCount, summary);
 
+  // How many of them actually turn up, which is a different question and the
+  // one that decides how much food to order.
+  const history = await showHistoryFor({
+    ownerId: event.ownerId,
+    schoolDomain: event.schoolDomain,
+  });
+  const turnout = predictTurnout({
+    attendingHeads: summary.confirmedHeads,
+    maybeHeads: summary.maybe,
+    noReplyHeads: Math.max(0, summary.expectedHeads - summary.confirmedHeads - summary.maybe),
+    capacity: event.guestCount,
+    daysUntil: daysUntil(event.date),
+    // The campus conflict count plugs in here once #48 lands; the model
+    // already takes it and treats null as "ordinary night".
+    conflicts: null,
+    history,
+  });
+
   return (
     <div className="space-y-8">
       <div className="grid gap-4">
@@ -64,6 +84,14 @@ export default async function GuestsPage({
               ? "Your figure from intake — add guests to refine it"
               : "Everyone who hasn't declined, including plus-ones"}
           </p>
+        </Card>
+
+        <Card className="p-5">
+          <p className="text-sm text-ink-soft">Likely through the door</p>
+          <p className="font-display tabular mt-1 text-2xl text-ink">
+            {turnout.low}–{turnout.high}
+          </p>
+          <p className="mt-1 text-sm text-ink-mute">{turnout.basis.join(" ")}</p>
         </Card>
 
         <Card className="p-5">
