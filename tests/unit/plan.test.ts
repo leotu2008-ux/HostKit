@@ -5,16 +5,34 @@ import {
   generatePlan,
   startOfDay,
 } from "@/lib/plan";
-import { EVENT_TEMPLATES } from "@/lib/templates";
+import { EVENT_TEMPLATES, templateFor } from "@/lib/templates";
 import { ALL_EVENT_TYPES } from "@/lib/catalog";
+import { EventType } from "@/generated/prisma/enums";
 
 const NOW = new Date("2026-01-15T09:30:00");
 const inDays = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
 
 describe("event templates", () => {
   it("covers every event type in the schema", () => {
-    for (const type of ALL_EVENT_TYPES) {
+    // Reads the enum straight from the Prisma client rather than
+    // ALL_EVENT_TYPES, so a type added to the schema and never templated
+    // fails this test even before anyone remembers to update the catalog.
+    for (const type of Object.values(EventType)) {
       expect(EVENT_TEMPLATES[type], `missing template: ${type}`).toBeDefined();
+    }
+  });
+
+  it("returns the matching template for each campus event type", () => {
+    const CAMPUS_TYPES = [
+      "MIXER",
+      "GENERAL_MEETING",
+      "FORMAL",
+      "PITCH_NIGHT",
+      "STUDY_BREAK",
+    ] as const;
+    for (const type of CAMPUS_TYPES) {
+      expect(templateFor(type)).toBe(EVENT_TEMPLATES[type]);
+      expect(templateFor(type).type).toBe(type);
     }
   });
 
@@ -46,6 +64,21 @@ describe("event templates", () => {
         expect(task.at, `${type}: ${task.title}`).toBeGreaterThanOrEqual(0);
         expect(task.at, `${type}: ${task.title}`).toBeLessThanOrEqual(1);
       }
+    }
+  });
+
+  it("funds at least three categories, except a named short list", () => {
+    // STUDY_BREAK is deliberately two categories (CATERING, RENTALS) — free
+    // food in the library doesn't need a florist. Any future template this
+    // small has to be added here on purpose, rather than the floor quietly
+    // dropping for everyone.
+    const ALLOWED_SMALL_BUDGET: ReadonlyArray<EventType> = ["STUDY_BREAK"];
+
+    for (const type of ALL_EVENT_TYPES) {
+      const floor = ALLOWED_SMALL_BUDGET.includes(type) ? 2 : 3;
+      expect(EVENT_TEMPLATES[type].budget.length, type).toBeGreaterThanOrEqual(
+        floor,
+      );
     }
   });
 });
@@ -190,7 +223,13 @@ describe("generatePlan — timeline", () => {
         NOW,
       );
       expect(plan.tasks.length, type).toBeGreaterThan(5);
-      expect(plan.categories.length, type).toBeGreaterThan(2);
+      // A count comparison here would just restate plan.categories.length
+      // against the same budget array it is built from. Check the real
+      // invariant instead: the plan funds exactly the categories the
+      // template names, in the template's order — no drops, no reorders.
+      expect(plan.categories.map((c) => c.category)).toEqual(
+        EVENT_TEMPLATES[type].budget.map((b) => b.category),
+      );
     }
   });
 });

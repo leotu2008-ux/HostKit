@@ -8,6 +8,7 @@ import {
 import {
   AddRunSheetItem,
   GenerateRunSheet,
+  RedraftRunSheet,
 } from "@/components/runsheet-forms";
 import { PrintButton } from "@/components/print-button";
 import { Card, EmptyState, SectionHeading } from "@/components/ui";
@@ -64,8 +65,9 @@ export default async function RunSheetPage({
             right — the times are suggestions, not instructions.
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <PrintButton />
+          <RedraftRunSheet eventId={event.id} />
           <form action={clearRunSheetAction}>
             <input type="hidden" name="eventId" value={event.id} />
             <button
@@ -77,6 +79,10 @@ export default async function RunSheetPage({
           </form>
         </div>
       </div>
+      <p className="no-print -mt-4 text-xs text-ink-mute">
+        Redraft keeps anything you wrote yourself — it only replaces the lines
+        HostKit generated. Clear removes everything, including your own.
+      </p>
 
       {/* The print view: this is what gets handed to whoever is running the
           day, so it has to survive being on paper. */}

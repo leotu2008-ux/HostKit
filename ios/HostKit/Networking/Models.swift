@@ -87,8 +87,20 @@ nonisolated enum EventKind: String, Codable, CaseIterable, Identifiable, Sendabl
     case launchParty = "LAUNCH_PARTY"
     case dinnerParty = "DINNER_PARTY"
     case fundraiser = "FUNDRAISER"
+    case mixer = "MIXER"
+    case generalMeeting = "GENERAL_MEETING"
+    case formal = "FORMAL"
+    case pitchNight = "PITCH_NIGHT"
+    case studyBreak = "STUDY_BREAK"
+    /// A type this build doesn't know — never fail the whole list over it.
+    case unknown = "UNKNOWN"
 
     var id: String { rawValue }
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = EventKind(rawValue: raw) ?? .unknown
+    }
 
     var label: String {
         switch self {
@@ -97,6 +109,12 @@ nonisolated enum EventKind: String, Codable, CaseIterable, Identifiable, Sendabl
         case .launchParty: "Launch party"
         case .dinnerParty: "Dinner party"
         case .fundraiser: "Fundraiser"
+        case .mixer: "Mixer"
+        case .generalMeeting: "General meeting"
+        case .formal: "Formal"
+        case .pitchNight: "Pitch night"
+        case .studyBreak: "Study break"
+        case .unknown: "Event"
         }
     }
 }

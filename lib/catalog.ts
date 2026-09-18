@@ -45,6 +45,11 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   LAUNCH_PARTY: "Launch party",
   DINNER_PARTY: "Dinner party",
   FUNDRAISER: "Fundraiser",
+  MIXER: "Mixer",
+  GENERAL_MEETING: "General meeting",
+  FORMAL: "Formal",
+  PITCH_NIGHT: "Pitch night",
+  STUDY_BREAK: "Study break",
 };
 
 export const ALL_CATEGORIES = Object.keys(CATEGORY_LABEL) as ListingCategory[];

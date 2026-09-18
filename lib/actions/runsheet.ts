@@ -2,17 +2,63 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
+import type { EventType } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { defaultStartHour, draftToDate, suggestRunSheet } from "@/lib/runsheet";
+import { removableRunSheetRowWhere, runSheetRowsToReplace } from "@/lib/replan";
 
 export type RunSheetFormState = { error?: string } | undefined;
 
 /**
- * Builds the first draft from the event's actual bookings. Refuses to run
- * over an existing sheet: regenerating would silently discard edits the host
- * made, which is the one thing a run sheet must never do.
+ * Builds a fresh draft from the event's current bookings and swaps it in for
+ * whatever the app generated before, in one transaction. A row a host wrote
+ * themselves is never in `remove`, so this is safe to run whether the sheet
+ * is empty (the first draft) or full (a redraft) — same call either way.
  */
+async function redraftRunSheet(event: {
+  id: string;
+  type: EventType;
+  date: Date;
+  durationHours: number;
+}) {
+  const [existing, booked] = await Promise.all([
+    db.runSheetItem.findMany({ where: { eventId: event.id } }),
+    db.inquiry.findMany({
+      where: { eventId: event.id, status: "BOOKED" },
+      include: { listing: { select: { name: true, category: true } } },
+    }),
+  ]);
+  const { remove } = runSheetRowsToReplace(existing);
+
+  const drafts = suggestRunSheet(
+    event,
+    booked.map((i) => ({
+      category: i.listing.category,
+      name: i.listing.name,
+    })),
+  );
+  const startHour = defaultStartHour(event.type);
+
+  await db.$transaction(async (tx) => {
+    // Re-checks source against current state rather than trusting the
+    // snapshot `remove` was built from — see removableRunSheetRowWhere.
+    await tx.runSheetItem.deleteMany({ where: removableRunSheetRowWhere(remove) });
+    await tx.runSheetItem.createMany({
+      data: drafts.map((draft) => ({
+        eventId: event.id,
+        startsAt: draftToDate(event.date, startHour, draft.offsetMinutes),
+        title: draft.title,
+        owner: draft.owner,
+        notes: draft.notes,
+        // Explicit, not relied on as the schema default — this is the whole
+        // feature's second-use guarantee.
+        source: "GENERATED" as const,
+      })),
+    });
+  });
+}
+
 export async function generateRunSheetAction(
   _prev: RunSheetFormState,
   formData: FormData,
@@ -24,37 +70,35 @@ export async function generateRunSheetAction(
     return { error: "Add a date to the event first — a run sheet needs one." };
   }
 
-  const existing = await db.runSheetItem.count({ where: { eventId } });
-  if (existing > 0) {
-    return { error: "There's already a run sheet here. Clear it first if you want to start over." };
-  }
-
-  const booked = await db.inquiry.findMany({
-    where: { eventId, status: "BOOKED" },
-    include: { listing: { select: { name: true, category: true } } },
-  });
-
-  const drafts = suggestRunSheet(
-    event,
-    booked.map((i) => ({
-      category: i.listing.category,
-      name: i.listing.name,
-    })),
-  );
-
-  const startHour = defaultStartHour(event.type);
-  await db.runSheetItem.createMany({
-    data: drafts.map((draft) => ({
-      eventId,
-      startsAt: draftToDate(event.date!, startHour, draft.offsetMinutes),
-      title: draft.title,
-      owner: draft.owner,
-      notes: draft.notes,
-    })),
+  await redraftRunSheet({
+    id: event.id,
+    type: event.type,
+    date: event.date,
+    durationHours: event.durationHours,
   });
 
   refresh();
   return undefined;
+}
+
+/**
+ * The redraft control on a populated run sheet. No FormState to thread back
+ * through — the page it lives on only renders once a date exists, so there's
+ * nothing here for a host to see go wrong.
+ */
+export async function regenerateRunSheetAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const { event } = await requireEvent(eventId);
+  if (!event.date) return;
+
+  await redraftRunSheet({
+    id: event.id,
+    type: event.type,
+    date: event.date,
+    durationHours: event.durationHours,
+  });
+
+  refresh();
 }
 
 const itemSchema = z.object({

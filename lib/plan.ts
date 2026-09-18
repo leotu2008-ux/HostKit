@@ -54,6 +54,56 @@ export function daysBetween(from: Date, to: Date): number {
 }
 
 /**
+ * Days of planning runway available: the event's own lead time, capped to the
+ * template's comfortable horizon so a rushed event compresses rather than
+ * getting tasks spread across time that doesn't exist. Split out of
+ * generatePlan so draftPlan (lib/ai/plan-draft.ts) can put a model-drafted
+ * plan on the same clock a templated one uses, without a template of its own.
+ */
+export function resolveHorizonDays(input: PlanInput, now = new Date()): number {
+  const template = templateFor(input.type);
+  const leadDays = input.date ? daysBetween(now, input.date) : null;
+  return leadDays === null
+    ? template.horizonDays
+    : Math.max(0, Math.min(template.horizonDays, leadDays));
+}
+
+/**
+ * Turns a task's position in the horizon (`at`: 1 = start of planning, 0 =
+ * the event) into a concrete offset and due date. Shared by generatePlan and
+ * draftPlan so a model-drafted task lands on the same calendar math as a
+ * templated one.
+ */
+export function taskTiming(
+  at: number,
+  horizonDays: number,
+  eventDate: Date | null,
+): { offsetDays: number; dueDate: Date | null } {
+  const offsetDays = Math.round(at * horizonDays);
+  return {
+    offsetDays,
+    dueDate: eventDate
+      ? startOfDay(new Date(eventDate.getTime() - offsetDays * DAY_MS))
+      : null,
+  };
+}
+
+/**
+ * Soonest first; ties break on title so ordering is stable across runs and a
+ * test can assert on it. Shared by generatePlan and draftPlan (lib/ai/plan-draft.ts)
+ * so a model-drafted plan and a templated one land on the same ordering rule.
+ */
+export function sortPlannedTasks<T extends { offsetDays: number; title: string }>(
+  tasks: T[],
+): T[] {
+  return [...tasks].sort((a, b) =>
+    b.offsetDays !== a.offsetDays
+      ? b.offsetDays - a.offsetDays
+      : a.title.localeCompare(b.title),
+  );
+}
+
+/**
  * Turns the intake answers into a budget, a timeline and a list of what the
  * event still needs.
  *
@@ -74,14 +124,7 @@ export function generatePlan(input: PlanInput, now = new Date()): GeneratedPlan 
     allocatedCents: amounts[i],
   }));
 
-  // Timeline. If the event is sooner than the template's comfortable runway,
-  // compress the whole plan into the time that actually exists rather than
-  // emitting tasks that were due before the host signed up.
-  const leadDays = input.date ? daysBetween(now, input.date) : null;
-  const horizonDays =
-    leadDays === null
-      ? template.horizonDays
-      : Math.max(0, Math.min(template.horizonDays, leadDays));
+  const horizonDays = resolveHorizonDays(input, now);
 
   const bookingTasks: TaskTemplate[] = template.required.map((category) => ({
     title:
@@ -92,26 +135,18 @@ export function generatePlan(input: PlanInput, now = new Date()): GeneratedPlan 
     category,
   }));
 
-  const tasks = [...SPINE_TASKS, ...bookingTasks, ...template.extraTasks]
-    .map((t) => {
-      const offsetDays = Math.round(t.at * horizonDays);
+  const tasks = sortPlannedTasks(
+    [...SPINE_TASKS, ...bookingTasks, ...template.extraTasks].map((t) => {
+      const { offsetDays, dueDate } = taskTiming(t.at, horizonDays, input.date);
       return {
         title: t.title,
         notes: t.notes,
         category: t.category,
         offsetDays,
-        dueDate: input.date
-          ? startOfDay(new Date(input.date.getTime() - offsetDays * DAY_MS))
-          : null,
+        dueDate,
       };
-    })
-    // Soonest first. Ties break on title so the order is stable across runs
-    // and a test can assert on it.
-    .sort((a, b) =>
-      b.offsetDays !== a.offsetDays
-        ? b.offsetDays - a.offsetDays
-        : a.title.localeCompare(b.title),
-    );
+    }),
+  );
 
   return {
     categories,
