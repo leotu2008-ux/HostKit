@@ -28,6 +28,13 @@ const DEFAULT_START_HOUR: Record<EventType, number> = {
   LAUNCH_PARTY: 18,
   DINNER_PARTY: 19,
   FUNDRAISER: 18,
+  // Entries below added alongside the campus event types in lib/templates.ts —
+  // this Record is exhaustive over EventType, so the enum change forces it.
+  MIXER: 19,
+  GENERAL_MEETING: 18,
+  FORMAL: 19,
+  PITCH_NIGHT: 18,
+  STUDY_BREAK: 20,
 };
 
 export function defaultStartHour(type: EventType): number {
@@ -90,6 +97,39 @@ const RUNNING_ORDER: Record<EventType, Array<[number, string]>> = {
     [165, "The ask and pledges"],
     [195, "Auction"],
     [240, "Music and close"],
+  ],
+  // Entries below added alongside the campus event types in lib/templates.ts —
+  // this Record is exhaustive over EventType, so the enum change forces it.
+  MIXER: [
+    [0, "Doors open"],
+    [30, "Drinks flowing"],
+    [90, "Mixer activity or icebreaker"],
+    [150, "Last call"],
+  ],
+  GENERAL_MEETING: [
+    [0, "Members arrive, food out"],
+    [15, "Meeting called to order"],
+    [90, "Open floor and announcements"],
+    [110, "Wrap up"],
+  ],
+  FORMAL: [
+    [0, "Doors and photos"],
+    [45, "Guests seated"],
+    [60, "Dinner served"],
+    [150, "Speeches or awards"],
+    [180, "Dance floor opens"],
+    [270, "Last dance"],
+  ],
+  PITCH_NIGHT: [
+    [0, "Doors open, judges seated"],
+    [20, "Welcome and rules"],
+    [30, "Pitches begin"],
+    [140, "Judges deliberate"],
+    [160, "Winners announced"],
+  ],
+  STUDY_BREAK: [
+    [0, "Doors open, food out"],
+    [90, "Last call for food"],
   ],
 };
 

@@ -225,6 +225,115 @@ export const EVENT_TEMPLATES: Record<EventType, EventTemplate> = {
       { title: "Set up donation collection and test it", at: 0.1 },
     ],
   },
+
+  MIXER: {
+    type: "MIXER",
+    blurb: "Two clubs, a room, and something to drink.",
+    horizonDays: 21,
+    defaultDurationHours: 3,
+    defaultGuestCount: 60,
+    budget: [
+      { category: "VENUE", weight: 0.4 },
+      { category: "CATERING", weight: 0.3 },
+      { category: "MUSIC_DJ", weight: 0.2 },
+      { category: "DECOR_STYLING", weight: 0.1 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Agree the split with the other club", at: 0.9 },
+      {
+        title: "Confirm the guest cap with the venue",
+        at: 0.5,
+        category: "VENUE",
+      },
+    ],
+  },
+
+  GENERAL_MEETING: {
+    type: "GENERAL_MEETING",
+    blurb: "The weekly one. Room, slides, and something to eat.",
+    horizonDays: 10,
+    defaultDurationHours: 2,
+    defaultGuestCount: 40,
+    budget: [
+      { category: "VENUE", weight: 0.35 },
+      { category: "CATERING", weight: 0.5 },
+      { category: "AV_PRODUCTION", weight: 0.15 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Book the room", at: 0.9, category: "VENUE" },
+      { title: "Send the agenda", at: 0.2 },
+    ],
+  },
+
+  FORMAL: {
+    type: "FORMAL",
+    blurb: "The big one. A room, a bus, and a photographer.",
+    horizonDays: 75,
+    defaultDurationHours: 5,
+    defaultGuestCount: 120,
+    budget: [
+      { category: "VENUE", weight: 0.35 },
+      { category: "CATERING", weight: 0.25 },
+      { category: "MUSIC_DJ", weight: 0.12 },
+      { category: "TRANSPORT", weight: 0.12 },
+      { category: "PHOTOGRAPHY", weight: 0.08 },
+      { category: "DECOR_STYLING", weight: 0.08 },
+    ],
+    required: ["VENUE", "CATERING", "TRANSPORT"],
+    extraTasks: [
+      { title: "Open ticket sales", at: 0.6 },
+      {
+        title: "Confirm the coach pickup points",
+        at: 0.3,
+        category: "TRANSPORT",
+      },
+      {
+        title: "Send the running order to the venue",
+        at: 0.1,
+        category: "VENUE",
+      },
+    ],
+  },
+
+  PITCH_NIGHT: {
+    type: "PITCH_NIGHT",
+    blurb: "Founders, judges, a projector that works.",
+    horizonDays: 35,
+    defaultDurationHours: 3,
+    defaultGuestCount: 80,
+    budget: [
+      { category: "VENUE", weight: 0.35 },
+      { category: "AV_PRODUCTION", weight: 0.3 },
+      { category: "CATERING", weight: 0.25 },
+      { category: "PHOTOGRAPHY", weight: 0.1 },
+    ],
+    required: ["VENUE", "AV_PRODUCTION"],
+    extraTasks: [
+      { title: "Confirm the judges", at: 0.7 },
+      { title: "Collect the decks", at: 0.25 },
+      {
+        title: "Test the projector and the clicker",
+        at: 0.05,
+        category: "AV_PRODUCTION",
+      },
+    ],
+  },
+
+  STUDY_BREAK: {
+    type: "STUDY_BREAK",
+    blurb: "Free food in the library, at the worst possible week.",
+    horizonDays: 7,
+    defaultDurationHours: 2,
+    defaultGuestCount: 50,
+    budget: [
+      { category: "CATERING", weight: 0.8 },
+      { category: "RENTALS", weight: 0.2 },
+    ],
+    required: ["CATERING"],
+    extraTasks: [{ title: "Clear it with the building", at: 0.6 }],
+  },
 };
 
 export function templateFor(type: EventType): EventTemplate {
