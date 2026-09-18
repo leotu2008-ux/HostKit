@@ -208,9 +208,17 @@ describe("generatePlan — timeline", () => {
         NOW,
       );
       expect(plan.tasks.length, type).toBeGreaterThan(5);
-      // STUDY_BREAK is a genuinely two-category template (CATERING, RENTALS),
-      // so this only checks for a real budget split, not a specific size.
-      expect(plan.categories.length, type).toBeGreaterThan(1);
+      // Every template but STUDY_BREAK funds 3+ categories; STUDY_BREAK is a
+      // genuine two-category budget (CATERING, RENTALS). Deriving the floor
+      // from the template's own budget length — rather than hardcoding ">2"
+      // or special-casing the type name — keeps the original ">2 categories"
+      // guarantee for every other template while still passing for a
+      // deliberately smaller one, today or in the future.
+      const minCategories = Math.min(
+        2,
+        EVENT_TEMPLATES[type].budget.length - 1,
+      );
+      expect(plan.categories.length, type).toBeGreaterThan(minCategories);
     }
   });
 });
