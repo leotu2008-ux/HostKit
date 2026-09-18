@@ -91,6 +91,8 @@ export async function addRunSheetItemAction(
       title: parsed.data.title,
       owner: parsed.data.owner || null,
       notes: parsed.data.notes || null,
+      // A person wrote this one, so a future regenerate must leave it alone.
+      source: "HUMAN",
     },
   });
 

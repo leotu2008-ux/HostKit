@@ -4,14 +4,38 @@ import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 
+/**
+ * The door.
+ *
+ * Admitting someone must not touch their RSVP. It used to set
+ * `rsvpStatus: "ATTENDING"` alongside the timestamp, which felt harmless and
+ * quietly destroyed the only thing worth measuring: after the night there was
+ * no way to tell a guest who said yes and came from one who never replied and
+ * turned up anyway. Undo made it worse, clearing the timestamp and leaving the
+ * invented "yes" behind.
+ *
+ * So the RSVP is left exactly as the guest set it, and the walk-up is recorded
+ * separately, at the door, where it is known.
+ */
+
 export async function checkInGuestAction(formData: FormData) {
   const eventId = String(formData.get("eventId") ?? "");
   const guestId = String(formData.get("guestId") ?? "");
   await requireEvent(eventId);
 
-  await db.guest.updateMany({
+  const guest = await db.guest.findFirst({
     where: { id: guestId, eventId },
-    data: { checkedInAt: new Date(), rsvpStatus: "ATTENDING" },
+    select: { id: true, rsvpStatus: true },
+  });
+  if (!guest) return;
+
+  await db.guest.update({
+    where: { id: guest.id },
+    data: {
+      checkedInAt: new Date(),
+      // Frozen now rather than derived later: rsvpStatus stays editable.
+      arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING",
+    },
   });
   refresh();
 }
@@ -23,7 +47,8 @@ export async function undoCheckInAction(formData: FormData) {
 
   await db.guest.updateMany({
     where: { id: guestId, eventId },
-    data: { checkedInAt: null },
+    // Undo has to undo everything the check-in wrote, or the next count is wrong.
+    data: { checkedInAt: null, arrivedWithoutRsvp: false },
   });
   refresh();
 }

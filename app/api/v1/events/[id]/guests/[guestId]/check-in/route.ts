@@ -23,11 +23,13 @@ export async function POST(
   });
   if (!guest) return apiError("Not found.", 404);
 
+  // The RSVP is the guest's, not the door's — see lib/actions/checkin.ts for
+  // why overwriting it here quietly destroyed the attendance signal.
   const updated = await db.guest.update({
     where: { id: guest.id },
     data: parsed.data.checkedIn
-      ? { checkedInAt: new Date(), rsvpStatus: "ATTENDING" }
-      : { checkedInAt: null },
+      ? { checkedInAt: new Date(), arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING" }
+      : { checkedInAt: null, arrivedWithoutRsvp: false },
   });
   return json({ guest: serializeGuest(updated) });
 }
