@@ -2,12 +2,13 @@ import { z } from "zod";
 import type { EventType, ListingCategory } from "@/generated/prisma/enums";
 import { ListingCategory as ListingCategoryEnum } from "@/generated/prisma/enums";
 import { CATEGORY_LABEL } from "@/lib/catalog";
-import { EVENT_TEMPLATES } from "@/lib/templates";
+import { EVENT_TEMPLATES, templateFor } from "@/lib/templates";
 import { allocateCents } from "@/lib/money";
 import { askOr } from "@/lib/ai/client";
 import {
   generatePlan,
   resolveHorizonDays,
+  sortPlannedTasks,
   taskTiming,
   type GeneratedPlan,
   type PlanInput,
@@ -45,10 +46,19 @@ const draftBudgetSchema = z.object({
   weight: z.number().positive(),
 });
 
-const draftSchema = z.object({
-  tasks: z.array(draftTaskSchema).min(3).max(25),
-  budget: z.array(draftBudgetSchema).min(1),
-});
+const draftSchema = z
+  .object({
+    tasks: z.array(draftTaskSchema).min(3).max(25),
+    budget: z.array(draftBudgetSchema).min(1),
+  })
+  // BudgetCategory is @@unique([eventId, category]) in the schema — a model
+  // returning the same category twice would throw and roll back event
+  // creation. Treated the same as any other malformed answer, so it falls
+  // back to the heuristic instead of reaching the database at all.
+  .refine((draft) => new Set(draft.budget.map((b) => b.category)).size === draft.budget.length, {
+    message: "budget categories must be distinct",
+    path: ["budget"],
+  });
 
 type DraftAnswer = z.infer<typeof draftSchema>;
 
@@ -104,8 +114,8 @@ function planFromDraft(
     allocatedCents: amounts[i],
   }));
 
-  const tasks: PlannedTask[] = draft.tasks
-    .map((t) => {
+  const tasks: PlannedTask[] = sortPlannedTasks(
+    draft.tasks.map((t) => {
       const { offsetDays, dueDate } = taskTiming(t.at, horizonDays, input.date);
       return {
         title: t.title,
@@ -114,19 +124,15 @@ function planFromDraft(
         offsetDays,
         dueDate,
       };
-    })
-    .sort((a, b) =>
-      b.offsetDays !== a.offsetDays
-        ? b.offsetDays - a.offsetDays
-        : a.title.localeCompare(b.title),
-    );
+    }),
+  );
 
   return {
     categories,
     tasks,
     // "Required" is a fact about the event type, not something for the model
     // to weigh in on — take it from the same template generatePlan uses.
-    required: EVENT_TEMPLATES[input.type].required,
+    required: templateFor(input.type).required,
     horizonDays,
   };
 }

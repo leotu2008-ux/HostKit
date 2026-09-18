@@ -3,12 +3,12 @@ import { requireEvent } from "@/lib/session";
 import { formatTime } from "@/lib/runsheet";
 import {
   clearRunSheetAction,
-  regenerateRunSheetAction,
   removeRunSheetItemAction,
 } from "@/lib/actions/runsheet";
 import {
   AddRunSheetItem,
   GenerateRunSheet,
+  RedraftRunSheet,
 } from "@/components/runsheet-forms";
 import { PrintButton } from "@/components/print-button";
 import { Card, EmptyState, SectionHeading } from "@/components/ui";
@@ -67,15 +67,7 @@ export default async function RunSheetPage({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <PrintButton />
-          <form action={regenerateRunSheetAction}>
-            <input type="hidden" name="eventId" value={event.id} />
-            <button
-              type="submit"
-              className="h-10 rounded-full px-4 text-sm font-medium text-ink-mute hover:text-ink"
-            >
-              Redraft the run sheet
-            </button>
-          </form>
+          <RedraftRunSheet eventId={event.id} />
           <form action={clearRunSheetAction}>
             <input type="hidden" name="eventId" value={event.id} />
             <button

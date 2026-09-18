@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { generatePlan } from "@/lib/plan";
-import { removableTaskWhere, tasksToReplace } from "@/lib/replan";
+import { dedupeGeneratedTasks, removableTaskWhere, tasksToReplace } from "@/lib/replan";
 
 /**
  * Re-drafts the timeline without touching what the host already did:
@@ -20,7 +20,7 @@ export async function regeneratePlanAction(formData: FormData) {
   const { event } = await requireEvent(eventId);
 
   const existing = await db.task.findMany({ where: { eventId } });
-  const { remove } = tasksToReplace(existing);
+  const { remove, keep } = tasksToReplace(existing);
 
   const plan = generatePlan({
     type: event.type,
@@ -28,12 +28,17 @@ export async function regeneratePlanAction(formData: FormData) {
     budgetTotalCents: event.budgetTotalCents,
   });
 
+  // A kept task (HUMAN, or GENERATED-and-DONE) already represents this piece
+  // of work; re-inserting its generated twin as a new TODO would undo it —
+  // see dedupeGeneratedTasks.
+  const tasksToInsert = dedupeGeneratedTasks(plan.tasks, keep);
+
   await db.$transaction(async (tx) => {
     // Re-checks source/status against current state rather than trusting the
     // snapshot `remove` was built from — see removableTaskWhere.
     await tx.task.deleteMany({ where: removableTaskWhere(remove) });
     await tx.task.createMany({
-      data: plan.tasks.map((t) => ({
+      data: tasksToInsert.map((t) => ({
         eventId,
         title: t.title,
         notes: t.notes ?? null,

@@ -40,6 +40,11 @@ const BY_EVENT_TYPE: Record<string, EventIcon> = {
   DINNER_PARTY: "food",
   CORPORATE_OFFSITE: "career",
   FUNDRAISER: "giving",
+  MIXER: "celebration",
+  FORMAL: "celebration",
+  GENERAL_MEETING: "meeting",
+  PITCH_NIGHT: "talk",
+  STUDY_BREAK: "study",
 };
 
 const SPORTS =

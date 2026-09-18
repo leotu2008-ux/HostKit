@@ -1,4 +1,4 @@
-import type { RowSource, TaskStatus } from "@/generated/prisma/enums";
+import type { ListingCategory, RowSource, TaskStatus } from "@/generated/prisma/enums";
 
 /**
  * Splits a set of existing rows into what a regenerate may delete and what it
@@ -59,4 +59,46 @@ export function removableTaskWhere(ids: string[]) {
 /** Same guard for a run sheet row removal — no status to re-check, only authorship. */
 export function removableRunSheetRowWhere(ids: string[]) {
   return { id: { in: ids }, source: "GENERATED" as const };
+}
+
+/** Whitespace- and case-insensitive, so "Book the Venue " and "book the venue"
+ *  are recognised as the same task even though nothing enforces exact casing
+ *  between two independently generated drafts. */
+function normalizeTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
+ * A freshly generated task duplicates a kept one when their titles match and,
+ * whenever both sides actually carry a category, the categories match too. A
+ * category is only a tie-breaker: most tasks (the spine) have none, and for
+ * those title equality alone is what "the same task" means. Two
+ * differently-categorised "Book the venue"-shaped tasks are genuinely
+ * different work, so they are never merged just because the words match.
+ */
+function isDuplicateTask(
+  generated: { title: string; category?: ListingCategory | null },
+  kept: { title: string; category?: ListingCategory | null },
+): boolean {
+  if (normalizeTitle(generated.title) !== normalizeTitle(kept.title)) return false;
+  if (generated.category && kept.category) {
+    return generated.category === kept.category;
+  }
+  return true;
+}
+
+/**
+ * Drops any freshly generated task that duplicates one already being kept.
+ * Without this, a redraft re-inserts "Book the caterer" as a brand new TODO
+ * next to the DONE row the host already ticked off — resurrecting a task
+ * whose completion closed automatically (lib/actions/inquiries.ts, on an
+ * inquiry reaching BOOKED) and that will now never auto-close again.
+ */
+export function dedupeGeneratedTasks<
+  G extends { title: string; category?: ListingCategory | null },
+  K extends { title: string; category?: ListingCategory | null },
+>(generatedTasks: G[], keptTasks: K[]): G[] {
+  return generatedTasks.filter(
+    (generated) => !keptTasks.some((kept) => isDuplicateTask(generated, kept)),
+  );
 }

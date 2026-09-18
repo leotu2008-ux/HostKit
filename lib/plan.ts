@@ -89,6 +89,21 @@ export function taskTiming(
 }
 
 /**
+ * Soonest first; ties break on title so ordering is stable across runs and a
+ * test can assert on it. Shared by generatePlan and draftPlan (lib/ai/plan-draft.ts)
+ * so a model-drafted plan and a templated one land on the same ordering rule.
+ */
+export function sortPlannedTasks<T extends { offsetDays: number; title: string }>(
+  tasks: T[],
+): T[] {
+  return [...tasks].sort((a, b) =>
+    b.offsetDays !== a.offsetDays
+      ? b.offsetDays - a.offsetDays
+      : a.title.localeCompare(b.title),
+  );
+}
+
+/**
  * Turns the intake answers into a budget, a timeline and a list of what the
  * event still needs.
  *
@@ -120,8 +135,8 @@ export function generatePlan(input: PlanInput, now = new Date()): GeneratedPlan 
     category,
   }));
 
-  const tasks = [...SPINE_TASKS, ...bookingTasks, ...template.extraTasks]
-    .map((t) => {
+  const tasks = sortPlannedTasks(
+    [...SPINE_TASKS, ...bookingTasks, ...template.extraTasks].map((t) => {
       const { offsetDays, dueDate } = taskTiming(t.at, horizonDays, input.date);
       return {
         title: t.title,
@@ -130,14 +145,8 @@ export function generatePlan(input: PlanInput, now = new Date()): GeneratedPlan 
         offsetDays,
         dueDate,
       };
-    })
-    // Soonest first. Ties break on title so the order is stable across runs
-    // and a test can assert on it.
-    .sort((a, b) =>
-      b.offsetDays !== a.offsetDays
-        ? b.offsetDays - a.offsetDays
-        : a.title.localeCompare(b.title),
-    );
+    }),
+  );
 
   return {
     categories,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  dedupeGeneratedTasks,
   removableRunSheetRowWhere,
   removableTaskWhere,
   runSheetRowsToReplace,
@@ -164,5 +165,57 @@ describe("removableRunSheetRowWhere", () => {
   it("carries the source re-check alongside the id filter", () => {
     const where = removableRunSheetRowWhere(["r1"]);
     expect(where).toEqual({ id: { in: ["r1"] }, source: "GENERATED" });
+  });
+});
+
+/**
+ * `dedupeGeneratedTasks` is the fix for the redraft-resurrects-work bug: a
+ * freshly generated task must not sit down beside a kept task that already
+ * represents the same piece of work, or a host's completed "Book the
+ * caterer" comes back as a brand new TODO.
+ */
+describe("dedupeGeneratedTasks", () => {
+  it("drops a generated task whose title exactly matches a kept task", () => {
+    const generated = [{ title: "Book the caterer", category: "CATERING" as const }];
+    const kept = [{ title: "Book the caterer", category: "CATERING" as const }];
+    expect(dedupeGeneratedTasks(generated, kept)).toEqual([]);
+  });
+
+  it("matches case-insensitively and across whitespace differences", () => {
+    const generated = [{ title: "  BOOK   the Caterer" }];
+    const kept = [{ title: "Book the caterer" }];
+    expect(dedupeGeneratedTasks(generated, kept)).toEqual([]);
+  });
+
+  it("keeps a generated task with the same title but a different category on both sides", () => {
+    // Two "Book the venue"-shaped tasks for different categories are
+    // genuinely different tasks, not duplicates.
+    const generated = [{ title: "Book the venue", category: "VENUE" as const }];
+    const kept = [{ title: "Book the venue", category: "CATERING" as const }];
+    expect(dedupeGeneratedTasks(generated, kept)).toEqual(generated);
+  });
+
+  it("matches on title alone when only one side has a category", () => {
+    const generated = [{ title: "Draft the guest list", category: "VENUE" as const }];
+    const kept = [{ title: "Draft the guest list" }];
+    expect(dedupeGeneratedTasks(generated, kept)).toEqual([]);
+  });
+
+  it("keeps every generated task with no title match in kept", () => {
+    const generated = [{ title: "Order the cake" }, { title: "Confirm final headcount" }];
+    const kept = [{ title: "Book the venue" }];
+    expect(dedupeGeneratedTasks(generated, kept)).toEqual(generated);
+  });
+
+  it("is independent per generated task, not all-or-nothing", () => {
+    const generated = [
+      { title: "Book the caterer", category: "CATERING" as const },
+      { title: "Order the cake", category: "CAKE_DESSERT" as const },
+    ];
+    const kept = [{ title: "Book the caterer", category: "CATERING" as const }];
+
+    const result = dedupeGeneratedTasks(generated, kept);
+
+    expect(result).toEqual([{ title: "Order the cake", category: "CAKE_DESSERT" as const }]);
   });
 });

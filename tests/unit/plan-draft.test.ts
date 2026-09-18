@@ -120,6 +120,26 @@ describe("draftPlan — validating the model's answer", () => {
     expect(plan).toEqual(generatePlan(input, NOW));
   });
 
+  it("falls back, exactly to generatePlan's own result, on a duplicate budget category", async () => {
+    // BudgetCategory is unique per (eventId, category) — a model repeating a
+    // category would throw at createMany and roll back event creation, so
+    // this must be caught here rather than reach the database.
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const draft = {
+      tasks: goodDraft.tasks,
+      budget: [
+        { category: "VENUE", weight: 0.6 },
+        { category: "VENUE", weight: 0.4 },
+      ],
+    };
+    const { plan, source } = await draftPlan(input, {
+      now: NOW,
+      fetchImpl: modelSays(JSON.stringify(draft)),
+    });
+    expect(source).toBe("fallback");
+    expect(plan).toEqual(generatePlan(input, NOW));
+  });
+
   it("falls back on an answer with only one task", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const draft = { tasks: [goodDraft.tasks[0]], budget: goodDraft.budget };
