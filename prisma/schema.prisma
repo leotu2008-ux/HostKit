@@ -15,34 +15,34 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String
+  passwordHash     String
   /// Bumped by a password reset. Tokens and sessions carry the version
   /// they were issued at; older ones stop working (lib/api/token.ts).
-  sessionVersion Int   @default(0)
+  sessionVersion   Int       @default(0)
   /// The `.edu` domain the account signed up with, e.g. "babson.edu". Set
   /// means "student"; lib/schools.ts turns it into a school and a home city.
-  schoolDomain String?
-  classYear    Int?
-  bio          String?
+  schoolDomain     String?
+  classYear        Int?
+  bio              String?
   /// Where they work, for hosts who aren't students (or are, and work too).
-  company      String?
+  company          String?
   /// Social handles, stored bare (no "@", no URL) — lib/socials.ts builds the links.
-  xHandle         String?
-  linkedinHandle  String?
-  instagramHandle String?
+  xHandle          String?
+  linkedinHandle   String?
+  instagramHandle  String?
   /// Profile picture, stored by lib/images.ts (Vercel Blob, or /api/images/:id).
-  imageUrl     String?
+  imageUrl         String?
   /// E.164, set only once a code sent to it has been confirmed.
-  phone           String?   @unique
-  phoneVerifiedAt DateTime?
+  phone            String?   @unique
+  phoneVerifiedAt  DateTime?
   /// Whether their name and photo may appear in "who's going" on event pages.
-  showOnGuestLists Boolean @default(true)
+  showOnGuestLists Boolean   @default(true)
   /// Set once a link sent to the address was opened (lib/account.ts).
-  emailVerifiedAt DateTime?
-  createdAt    DateTime @default(now())
+  emailVerifiedAt  DateTime?
+  createdAt        DateTime  @default(now())
 
   events             Event[]
   accountTokens      AccountToken[]
@@ -269,20 +269,20 @@ enum EventStatus {
 }
 
 model Event {
-  id               String      @id @default(cuid())
+  id               String          @id @default(cuid())
   /// Null until the host signs in. Drafts are claimed via `claimToken`.
   ownerId          String?
   title            String
   type             EventType
-  status           EventStatus @default(PLANNING)
+  status           EventStatus     @default(PLANNING)
   /// Start of the night, including time of day. Null while still deciding.
   date             DateTime?
   /// Set when the host is flexible: `date` is the earliest acceptable day and
   /// `endDate` the latest. Lead-time scoring uses the earliest.
   endDate          DateTime?
-  datesFlexible    Boolean     @default(false)
+  datesFlexible    Boolean         @default(false)
   /// Planned duration, used to price hourly listings against this event.
-  durationHours    Int         @default(6)
+  durationHours    Int             @default(6)
   guestCount       Int
   city             String
   /// Place name and street address for device maps. `city` stays the scout area.
@@ -311,13 +311,14 @@ model Event {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  owner            User?                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  club             Club?                @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  owner            User?               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  club             Club?               @relation(fields: [clubId], references: [id], onDelete: SetNull)
   savedListings    SavedListing[]
   inquiries        Inquiry[]
   budgetCategories BudgetCategory[]
   budgetItems      BudgetItem[]
   tasks            Task[]
+  outcome          EventOutcome?
   guests           Guest[]
   runSheetItems    RunSheetItem[]
   collaborators    EventCollaborator[]
@@ -331,7 +332,7 @@ model Event {
 
 /// People and places the host is lining up, separate from catalog scouting.
 model EventCollaborator {
-  id         String              @id @default(cuid())
+  id         String             @id @default(cuid())
   eventId    String
   kind       CollaboratorKind
   name       String
@@ -339,13 +340,13 @@ model EventCollaborator {
   phone      String?
   website    String?
   detail     String?
-  status     CollaboratorStatus  @default(PENDING)
-  source     CollaboratorSource  @default(MANUAL)
+  status     CollaboratorStatus @default(PENDING)
+  source     CollaboratorSource @default(MANUAL)
   /// The provider's id (an Apple Maps place id, or a catalog listing id).
   externalId String?
   lat        Float?
   lng        Float?
-  createdAt  DateTime            @default(now())
+  createdAt  DateTime           @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -381,7 +382,7 @@ model Blast {
 /// One event from a school's official calendar. Separate from Event: nobody
 /// hosts it here, there's no guest list, and the page to open is the school's.
 model CampusEvent {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   schoolDomain String
   /// Which feed it came from, e.g. "mit.edu/calendar" (lib/campus/sources.ts).
   sourceKey    String
@@ -393,11 +394,11 @@ model CampusEvent {
   /// convention as Event.date, so both apps format it the same way.
   startsAt     DateTime
   endsAt       DateTime?
-  allDay       Boolean  @default(false)
+  allDay       Boolean   @default(false)
   location     String?
   /// Listed for the school's own community: the feed shows the title and
   /// time to everyone but keeps the place behind a school sign-in.
-  restricted   Boolean  @default(false)
+  restricted   Boolean   @default(false)
   /// The club or department putting it on, when the feed says.
   host         String?
   /// Links the event to a synced Club (Club.sourceRef) when the feed names one.
@@ -405,8 +406,8 @@ model CampusEvent {
   /// The event's page on the school's site.
   url          String
   imageUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@unique([sourceKey, externalId])
   @@index([schoolDomain, startsAt])
@@ -487,9 +488,9 @@ model Listing {
   reviewCount  Int             @default(0)
   createdAt    DateTime        @default(now())
 
-  savedBy       SavedListing[]
-  inquiries     Inquiry[]
-  budgetItems   BudgetItem[]
+  savedBy     SavedListing[]
+  inquiries   Inquiry[]
+  budgetItems BudgetItem[]
 
   @@index([city, category])
   @@index([category])
@@ -525,16 +526,16 @@ enum InquiryStatus {
 }
 
 model Inquiry {
-  id           String        @id @default(cuid())
-  eventId      String
-  listingId    String
-  status       InquiryStatus @default(DRAFT)
-  message      String
-  quotedCents  Int?
-  sentAt       DateTime?
-  respondedAt  DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  eventId     String
+  listingId   String
+  status      InquiryStatus @default(DRAFT)
+  message     String
+  quotedCents Int?
+  sentAt      DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   listing    Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
@@ -549,12 +550,21 @@ model Inquiry {
 // the real commitments that land against them.
 // ---------------------------------------------------------------------------
 
+/// Who produced a row: the planner, or a person. Without this a regenerate
+/// cannot tell what it is safe to replace, which is why run sheets can only
+/// be cleared wholesale today.
+enum RowSource {
+  GENERATED
+  HUMAN
+}
+
 model BudgetCategory {
   id             String          @id @default(cuid())
   eventId        String
   category       ListingCategory
   name           String
   allocatedCents Int
+  source         RowSource       @default(GENERATED)
 
   event Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
   items BudgetItem[]
@@ -564,21 +574,21 @@ model BudgetCategory {
 }
 
 model BudgetItem {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   eventId        String
   categoryId     String
   label          String
-  estimatedCents Int      @default(0)
+  estimatedCents Int       @default(0)
   /// What it actually costs, once quoted or booked.
   actualCents    Int?
   /// What has been handed over so far — deposits and part payments.
-  paidCents      Int      @default(0)
+  paidCents      Int       @default(0)
   dueDate        DateTime?
   listingId      String?
   /// Set when this item was created by booking an inquiry, so the write-back
   /// is idempotent: re-booking updates the same row rather than duplicating it.
-  inquiryId      String?  @unique
-  createdAt      DateTime @default(now())
+  inquiryId      String?   @unique
+  createdAt      DateTime  @default(now())
 
   event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
   category BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -611,6 +621,7 @@ model Task {
   /// close the matching task automatically.
   category   ListingCategory?
   status     TaskStatus       @default(TODO)
+  source     RowSource        @default(GENERATED)
   createdAt  DateTime         @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -634,24 +645,28 @@ enum RsvpStatus {
 }
 
 model Guest {
-  id         String     @id @default(cuid())
-  eventId    String
+  id                 String     @id @default(cuid())
+  eventId            String
   /// Set when this row is a registration by an account (the public Register
   /// button). Null for names the host added to the list themselves.
-  userId     String?
-  name       String
-  email      String?
-  rsvpStatus RsvpStatus @default(INVITED)
-  plusOnes   Int        @default(0)
-  dietary    String?
-  note       String?
+  userId             String?
+  name               String
+  email              String?
+  rsvpStatus         RsvpStatus @default(INVITED)
+  plusOnes           Int        @default(0)
+  dietary            String?
+  note               String?
   /// The invitation link's secret. Code sets it from random bytes
   /// (lib/tokens.ts); the cuid default is only a safety net.
-  rsvpToken  String     @unique @default(cuid())
-  respondedAt DateTime?
+  rsvpToken          String     @unique @default(cuid())
+  respondedAt        DateTime?
   /// Set when door staff tap Check in. Null means not yet through the door.
-  checkedInAt DateTime?
-  createdAt  DateTime   @default(now())
+  checkedInAt        DateTime?
+  /// True when they were admitted without ever having RSVP'd yes. Frozen at
+  /// the door rather than derived later, because rsvpStatus can still be
+  /// edited afterwards and the whole point is to keep the two apart.
+  arrivedWithoutRsvp Boolean    @default(false)
+  createdAt          DateTime   @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -664,14 +679,44 @@ model Guest {
 // Day-of run sheet.
 // ---------------------------------------------------------------------------
 
+/// What actually happened, frozen once when an event finishes.
+///
+/// Every count in the app today is recomputed at request time and thrown
+/// away, so nothing survives to learn from. This is the training set: what we
+/// expected against what came through the door. Written once by
+/// lib/outcomes.ts and never updated.
+model EventOutcome {
+  id               String   @id @default(cuid())
+  eventId          String   @unique
+  /// What the app predicted before the night, from lib/guests.ts.
+  expectedHeads    Int
+  /// Guests who had said yes by the time the event closed.
+  attendingAtClose Int
+  /// Guests actually admitted.
+  checkedIn        Int
+  /// Of those admitted, how many never RSVP'd yes.
+  walkUps          Int
+  /// The host's planned headcount, which doubles as capacity.
+  capacity         Int
+  /// Competing events at the host's school that day, when the host is a
+  /// student. Null when we don't know the school.
+  campusConflicts  Int?
+  completedAt      DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([completedAt])
+}
+
 model RunSheetItem {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   eventId   String
   startsAt  DateTime
   title     String
   owner     String?
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  source    RowSource @default(GENERATED)
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
