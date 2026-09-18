@@ -42,3 +42,21 @@ export function runSheetRowsToReplace<T extends { id: string; source: RowSource 
   }
   return { remove, keep };
 }
+
+/**
+ * The delete-time guard for a task removal. `ids` is a snapshot taken before
+ * the transaction started, and it can go stale — `toggleTaskAction` is a
+ * plain, non-transactional write reachable from the same page as a redraft,
+ * so a host can tick a task off in the gap between the read and the delete.
+ * Re-asserting `source`/`status` here, rather than trusting the id list
+ * alone, means the delete only ever removes a row that is *still* replaceable
+ * at the moment it runs.
+ */
+export function removableTaskWhere(ids: string[]) {
+  return { id: { in: ids }, source: "GENERATED" as const, status: "TODO" as const };
+}
+
+/** Same guard for a run sheet row removal — no status to re-check, only authorship. */
+export function removableRunSheetRowWhere(ids: string[]) {
+  return { id: { in: ids }, source: "GENERATED" as const };
+}

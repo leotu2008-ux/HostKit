@@ -68,7 +68,6 @@ export default async function RunSheetPage({
         <div className="flex flex-wrap items-center gap-3">
           <PrintButton />
           <form action={regenerateRunSheetAction}>
-            {/* Keeps anything you wrote — see the helper text below. */}
             <input type="hidden" name="eventId" value={event.id} />
             <button
               type="submit"

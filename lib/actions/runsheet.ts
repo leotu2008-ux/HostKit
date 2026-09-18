@@ -6,7 +6,7 @@ import type { EventType } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { defaultStartHour, draftToDate, suggestRunSheet } from "@/lib/runsheet";
-import { runSheetRowsToReplace } from "@/lib/replan";
+import { removableRunSheetRowWhere, runSheetRowsToReplace } from "@/lib/replan";
 
 export type RunSheetFormState = { error?: string } | undefined;
 
@@ -41,7 +41,9 @@ async function redraftRunSheet(event: {
   const startHour = defaultStartHour(event.type);
 
   await db.$transaction(async (tx) => {
-    await tx.runSheetItem.deleteMany({ where: { id: { in: remove } } });
+    // Re-checks source against current state rather than trusting the
+    // snapshot `remove` was built from — see removableRunSheetRowWhere.
+    await tx.runSheetItem.deleteMany({ where: removableRunSheetRowWhere(remove) });
     await tx.runSheetItem.createMany({
       data: drafts.map((draft) => ({
         eventId: event.id,
@@ -49,6 +51,9 @@ async function redraftRunSheet(event: {
         title: draft.title,
         owner: draft.owner,
         notes: draft.notes,
+        // Explicit, not relied on as the schema default — this is the whole
+        // feature's second-use guarantee.
+        source: "GENERATED" as const,
       })),
     });
   });

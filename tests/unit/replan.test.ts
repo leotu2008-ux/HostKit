@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { runSheetRowsToReplace, tasksToReplace } from "@/lib/replan";
+import {
+  removableRunSheetRowWhere,
+  removableTaskWhere,
+  runSheetRowsToReplace,
+  tasksToReplace,
+} from "@/lib/replan";
 
 type FakeTask = { id: string; source: "GENERATED" | "HUMAN"; status: "TODO" | "DONE" };
 type FakeRow = { id: string; source: "GENERATED" | "HUMAN" };
@@ -109,5 +114,55 @@ describe("runSheetRowsToReplace", () => {
     const { remove, keep } = runSheetRowsToReplace([]);
     expect(remove).toEqual([]);
     expect(keep).toEqual([]);
+  });
+});
+
+/**
+ * `removableTaskWhere`/`removableRunSheetRowWhere` back the delete-time guard
+ * against a snapshot going stale: `remove` is a list of ids read before the
+ * transaction started, and a plain non-transactional write elsewhere (e.g.
+ * `toggleTaskAction`) can change a row's `status` in the gap before the
+ * delete runs. The fix is that the delete's own `where` re-asserts
+ * `source`/`status` instead of trusting the id list alone.
+ *
+ * This project has no seam for exercising a live Prisma `deleteMany` against
+ * a real race (no action-level DB tests exist anywhere in tests/unit/), so
+ * the strongest test reachable here is two-part: assert the `where` object
+ * actually carries the re-check fields (not just the id filter), then
+ * reimplement Prisma's `where`-match semantics by hand against a row whose
+ * state changed after the snapshot, and show that row would not match.
+ */
+describe("removableTaskWhere", () => {
+  function matches(where: ReturnType<typeof removableTaskWhere>, row: { id: string; source: string; status: string }) {
+    return (
+      where.id.in.includes(row.id) &&
+      row.source === where.source &&
+      row.status === where.status
+    );
+  }
+
+  it("carries the source and status re-check alongside the id filter", () => {
+    const where = removableTaskWhere(["t1"]);
+    expect(where).toEqual({ id: { in: ["t1"] }, source: "GENERATED", status: "TODO" });
+  });
+
+  it("would still match a row unchanged since the snapshot", () => {
+    const where = removableTaskWhere(["t1"]);
+    expect(matches(where, { id: "t1", source: "GENERATED", status: "TODO" })).toBe(true);
+  });
+
+  it("would not match a row ticked DONE after the snapshot was taken", () => {
+    // t1 was TODO when `remove` was built (that's why its id is in the list)
+    // but a host ticked it off before the delete ran.
+    const where = removableTaskWhere(["t1"]);
+    const rowNow = { id: "t1", source: "GENERATED", status: "DONE" };
+    expect(matches(where, rowNow)).toBe(false);
+  });
+});
+
+describe("removableRunSheetRowWhere", () => {
+  it("carries the source re-check alongside the id filter", () => {
+    const where = removableRunSheetRowWhere(["r1"]);
+    expect(where).toEqual({ id: { in: ["r1"] }, source: "GENERATED" });
   });
 });
