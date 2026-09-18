@@ -3,6 +3,7 @@ import { requireEvent } from "@/lib/session";
 import { formatTime } from "@/lib/runsheet";
 import {
   clearRunSheetAction,
+  regenerateRunSheetAction,
   removeRunSheetItemAction,
 } from "@/lib/actions/runsheet";
 import {
@@ -64,8 +65,18 @@ export default async function RunSheetPage({
             right — the times are suggestions, not instructions.
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <PrintButton />
+          <form action={regenerateRunSheetAction}>
+            {/* Keeps anything you wrote — see the helper text below. */}
+            <input type="hidden" name="eventId" value={event.id} />
+            <button
+              type="submit"
+              className="h-10 rounded-full px-4 text-sm font-medium text-ink-mute hover:text-ink"
+            >
+              Redraft the run sheet
+            </button>
+          </form>
           <form action={clearRunSheetAction}>
             <input type="hidden" name="eventId" value={event.id} />
             <button
@@ -77,6 +88,10 @@ export default async function RunSheetPage({
           </form>
         </div>
       </div>
+      <p className="no-print -mt-4 text-xs text-ink-mute">
+        Redraft keeps anything you wrote yourself — it only replaces the lines
+        HostKit generated. Clear removes everything, including your own.
+      </p>
 
       {/* The print view: this is what gets handed to whoever is running the
           day, so it has to survive being on paper. */}

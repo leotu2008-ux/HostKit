@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { toggleTaskAction } from "@/lib/actions/tasks";
+import { regeneratePlanAction } from "@/lib/actions/plan";
 import { daysBetween, startOfDay } from "@/lib/plan";
 import { summarizeBudget } from "@/lib/budget";
 import { computeCoverage, outstandingRequired } from "@/lib/coverage";
@@ -100,7 +101,22 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
               ? "Counted back from your event date. Tick things off as you go."
               : "Add a date to the event and these will get real due dates."
           }
+          action={
+            <form action={regeneratePlanAction}>
+              <input type="hidden" name="eventId" value={event.id} />
+              <button
+                type="submit"
+                className="h-10 rounded-full px-4 text-sm font-medium text-ink-mute hover:text-ink"
+              >
+                Redraft the plan
+              </button>
+            </form>
+          }
         />
+        <p className="-mt-3 mb-4 text-xs text-ink-mute">
+          Keeps anything you wrote or ticked off — only replaces what
+          HostKit generated and you haven&rsquo;t started.
+        </p>
 
         {open.length === 0 ? (
           <Card className="p-6 text-center text-ink-soft">
