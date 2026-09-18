@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "mcp": "tsx scripts/mcp-server.ts",
     "db:migrate": "node scripts/guard-local-db.mjs npx prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
@@ -23,6 +24,7 @@
     "vercel-build": "prisma generate && prisma migrate deploy && npm run db:seed && next build"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@types/nodemailer": "^8.0.1",
