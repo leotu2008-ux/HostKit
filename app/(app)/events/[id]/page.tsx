@@ -7,6 +7,9 @@ import { VISIBILITY_LABEL } from "@/lib/listing";
 import { formatCents } from "@/lib/money";
 import { formatEventDate, formatEventTime } from "@/lib/when";
 import { MapsLink } from "@/components/maps-link";
+import { NightAdvicePanel } from "@/components/night-advice";
+import { adviseNight } from "@/lib/campus/conflicts";
+import { schoolFor } from "@/lib/schools";
 import {
   DateTile,
   IconTile,
@@ -53,6 +56,11 @@ export default async function EventOverviewPage({
   const rawQ = Array.isArray(query.q) ? query.q[0] : query.q;
   const q = (rawQ ?? "").trim();
   const { event } = await requireEvent(id);
+
+  // What else is on at the host's school that night. Null when the host has no
+  // school, or the night is still undecided.
+  const school = schoolFor(event.schoolDomain);
+  const nightAdvice = await adviseNight(event.schoolDomain, event.date);
 
   const [guests, collaborators, blastCount] = await Promise.all([
     db.guest.findMany({
@@ -140,6 +148,9 @@ export default async function EventOverviewPage({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section className="space-y-6">
+          {nightAdvice && school ? (
+            <NightAdvicePanel advice={nightAdvice} schoolShort={school.short} />
+          ) : null}
           <Card className="divide-y divide-line overflow-hidden">
             <div className="px-5 py-4">
               <h2 className="font-display text-lg text-ink">Next up</h2>
