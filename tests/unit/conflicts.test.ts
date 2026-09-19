@@ -12,6 +12,7 @@ import {
   toWallClock,
   type NightLoad,
 } from "@/lib/campus/conflicts";
+import { BUSY_NIGHT_THRESHOLD } from "@/lib/turnout";
 
 const night = (iso: string, count: number): NightLoad => ({ night: new Date(iso), count });
 
@@ -31,6 +32,14 @@ describe("how busy a night is", () => {
   it("calls a crowded night busy", () => {
     expect(busyness(12)).toBe("busy");
     expect(busyness(147)).toBe("busy");
+  });
+
+  // lib/turnout.ts docks the turnout estimate at its own BUSY_NIGHT_THRESHOLD,
+  // a separate literal from the one here. Nothing else keeps the two in sync,
+  // so this test fails loudly if either is tuned without the other.
+  it("agrees with the turnout model about where busy starts", () => {
+    expect(busyness(BUSY_NIGHT_THRESHOLD)).toBe("busy");
+    expect(busyness(BUSY_NIGHT_THRESHOLD - 1)).not.toBe("busy");
   });
 });
 

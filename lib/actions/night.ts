@@ -19,9 +19,12 @@ export async function checkNightAction(
   const profile = await currentProfile();
   if (!profile?.schoolDomain || !date) return null;
 
-  // The date input gives a bare YYYY-MM-DD. Campus nights are evenings —
-  // NIGHT_FROM_HOUR is 17 — so check the evening of the chosen day rather
-  // than midnight, which would bucket into the night before.
+  // The T20:00:00 suffix matters: with no offset it forces local-time
+  // parsing, which toWallClock's local getters then re-encode onto the
+  // right night in any server zone. A bare YYYY-MM-DD would parse as UTC
+  // midnight instead, and those same local getters would read the day
+  // before it in any zone west of Greenwich. 20:00 sits inside the evening
+  // window campus nights use — NIGHT_FROM_HOUR is 17.
   const evening = new Date(`${date}T20:00:00`);
   if (Number.isNaN(evening.getTime())) return null;
 

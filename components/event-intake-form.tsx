@@ -204,6 +204,7 @@ export function EventIntakeForm({
               name="date"
               type="date"
               className={compact}
+              aria-describedby="night-note"
               onChange={(e) => {
                 const value = e.target.value;
                 if (!hasSchool || !value) {
@@ -219,7 +220,14 @@ export function EventIntakeForm({
             />
           </Row>
           {nightLine ? (
-            <div className="bg-amber-wash px-4 py-3 text-[13px] text-amber">{nightLine}</div>
+            <div
+              id="night-note"
+              role="status"
+              aria-live="polite"
+              className="bg-amber-wash px-4 py-3 text-[13px] text-amber"
+            >
+              {nightLine}
+            </div>
           ) : null}
           <Row label="Start">
             <input name="time" type="time" className={compact} />

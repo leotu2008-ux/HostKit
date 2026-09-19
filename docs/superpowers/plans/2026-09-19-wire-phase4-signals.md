@@ -15,7 +15,7 @@
 
 ## Why this, and not what was planned before
 
-The previous draft of this plan wired the model-backed `draftPlan` into the redraft button. **That is dropped.** Its stated rationale in `lib/ai/client.ts:8-10` — drafting for "an event type nobody wrote a template for" — cannot happen: `EVENT_TEMPLATES` is typed `Record<EventType, EventTemplate>`, a total record, so a missing template is a compile error. All 16 types have hand-written templates producing a 6-task universal spine plus type-specific extras plus budget-ordered booking tasks.
+The previous draft of this plan wired the model-backed `draftPlan` into the redraft button. **That is dropped.** Its stated rationale in `lib/ai/client.ts:8-10` — drafting for "an event type nobody wrote a template for" — cannot happen: `EVENT_TEMPLATES` is typed `Record<EventType, EventTemplate>`, a total record, so a missing template is a compile error. All 10 types have hand-written templates producing a 6-task universal spine plus type-specific extras plus budget-ordered booking tasks.
 
 The real problem was never that the templates are thin. It is that **the host cannot reach them.** Every event created on the web is a `DINNER_PARTY` because that is the only thing the form can submit. Fixing that is Task 1, and it is what makes the other two worth having.
 
@@ -57,7 +57,7 @@ Tasks 1 and 3 touch disjoint files. Task 2 depends on `loadForNight` and `confli
 
 ### Task 1: Let the host say what kind of night it is
 
-The five event types added in #52 — and the eleven before them — are unreachable. This is the whole of that gap.
+The five event types added in #52 — and the five before them — are unreachable. This is the whole of that gap.
 
 **Files:**
 - Modify: `lib/catalog.ts` (append, after `ALL_EVENT_TYPES` at line 56)
@@ -249,7 +249,7 @@ git add lib/catalog.ts tests/unit/catalog.test.ts components/event-intake-form.t
 git commit -m "$(cat <<'EOF'
 Let a host say what kind of night they are throwing
 
-The intake form submitted a hidden, hardcoded DINNER_PARTY, so the sixteen
+The intake form submitted a hidden, hardcoded DINNER_PARTY, so the ten
 templates behind it were unreachable and every event on the web was a
 dinner party. The picker orders student nights first, and the duration and
 capacity defaults now follow the choice.
