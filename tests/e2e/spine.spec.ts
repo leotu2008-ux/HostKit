@@ -43,10 +43,11 @@ async function signUp(page: Page) {
   return email;
 }
 
-// Every night is planned from the dinner-party template (there is no
-// kind-of-night picker): catering is the one essential booking.
+// This night is deliberately planned from the dinner-party template, chosen
+// through the picker: catering is the one essential booking.
 async function createNight(page: Page) {
   await page.goto("/events/new");
+  await page.selectOption('select[name="type"]', "DINNER_PARTY");
   const date = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
   await page.fill('input[name="date"]', date);
   await page.fill('input[name="title"]', "Sam & Ali's supper");

@@ -55,6 +55,29 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
 export const ALL_CATEGORIES = Object.keys(CATEGORY_LABEL) as ListingCategory[];
 export const ALL_EVENT_TYPES = Object.keys(EVENT_TYPE_LABEL) as EventType[];
 
+/**
+ * The picker, in the order a student host should meet it.
+ *
+ * Ordered rather than alphabetical because the front of this list is what
+ * most people will pick, and the real usage that motivated the five new types
+ * is student-organisation nights. Anything not named here still appears, in
+ * schema order, so a new EventType can never go missing from the form again —
+ * the failure this list exists to prevent.
+ */
+const EVENT_TYPE_ORDER: EventType[] = [
+  "MIXER",
+  "GENERAL_MEETING",
+  "STUDY_BREAK",
+  "PITCH_NIGHT",
+  "FORMAL",
+  "DINNER_PARTY",
+];
+
+export const EVENT_TYPE_OPTIONS: Array<{ value: EventType; label: string }> = [
+  ...EVENT_TYPE_ORDER,
+  ...ALL_EVENT_TYPES.filter((t) => !EVENT_TYPE_ORDER.includes(t)),
+].map((value) => ({ value, label: EVENT_TYPE_LABEL[value] }));
+
 export function categoryLabel(category: ListingCategory) {
   return CATEGORY_LABEL[category];
 }

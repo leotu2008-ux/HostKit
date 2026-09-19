@@ -3,13 +3,14 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createEventAction } from "@/lib/actions/events";
-import { CITIES } from "@/lib/catalog";
+import { CITIES, EVENT_TYPE_OPTIONS } from "@/lib/catalog";
 import { EVENT_TEMPLATES } from "@/lib/templates";
+import type { EventType } from "@/generated/prisma/enums";
 
-/** The planner template behind every night. There's no picker any more; the
- *  dinner-party plan is a sensible split for a typical night out. */
-const DEFAULT_TYPE = "DINNER_PARTY";
-const template = EVENT_TEMPLATES[DEFAULT_TYPE];
+/** The night a host most often means when they open this form. The picker
+ *  below can change it, and the plan, budget split and defaults all follow
+ *  from whatever they choose. */
+const DEFAULT_TYPE: EventType = "MIXER";
 
 /** Capacity: type a number, or nudge it with − and +. */
 function CapacityField({ name, defaultValue }: { name: string; defaultValue: number }) {
@@ -123,6 +124,10 @@ export function EventIntakeForm({
   clubs?: Array<{ id: string; name: string }>;
 }) {
   const [state, formAction] = useActionState(createEventAction, undefined);
+  const [type, setType] = useState<EventType>(DEFAULT_TYPE);
+  // Duration and capacity defaults belong to the chosen night, not to a
+  // hardcoded one — a study break is not a formal.
+  const template = EVENT_TEMPLATES[type];
   const [city, setCity] = useState<string>(CITIES[0]);
   const [ticketType, setTicketType] = useState<"FREE" | "PAID">("FREE");
   const [visibility, setVisibility] = useState<"PUBLIC" | "UNLISTED" | "PRIVATE">(
@@ -136,8 +141,6 @@ export function EventIntakeForm({
       action={formAction}
       className="grid gap-8 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-10"
     >
-      <input type="hidden" name="type" value={DEFAULT_TYPE} />
-
       <aside className="space-y-4">
         <div className="aspect-square overflow-hidden rounded-2xl bg-sunk shadow-[0_24px_60px_-28px_rgb(0_0_0/0.45)]">
           <CoverArt id={coverSeed} title={title || "New event"} />
@@ -177,6 +180,20 @@ export function EventIntakeForm({
         ) : null}
 
         <div className="divide-y divide-line rounded-card border border-line bg-surface">
+          <Row label="Kind">
+            <select
+              name="type"
+              value={type}
+              onChange={(e) => setType(e.target.value as EventType)}
+              className={compact}
+            >
+              {EVENT_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Row>
           <Row label="Date">
             <input name="date" type="date" className={compact} />
           </Row>
@@ -185,6 +202,7 @@ export function EventIntakeForm({
           </Row>
           <Row label="Hours" hint="Used to price hourly venues.">
             <input
+              key={type}
               name="durationHours"
               type="number"
               min={1}
@@ -254,7 +272,7 @@ export function EventIntakeForm({
               <input type="hidden" name="ticketPrice" value="" />
             )}
             <Row label="Capacity">
-              <CapacityField name="guestCount" defaultValue={template.defaultGuestCount} />
+              <CapacityField key={type} name="guestCount" defaultValue={template.defaultGuestCount} />
             </Row>
             <Row
               label="Visibility"
