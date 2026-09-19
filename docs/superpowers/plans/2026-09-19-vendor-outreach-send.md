@@ -45,7 +45,7 @@ So the recipient has to come from the host. That is honest: HostKit has no suppl
 - **Never send mail without `isEmailConfigured()` returning true**, and never swallow a send failure — use `classifyEmailFailure` and return a message, following `lib/email/failure.ts`.
 - **Never send without the host's explicit per-message approval.** One click, one message, one recipient.
 - **Never put the budget in a vendor message.** `lib/outreach.ts:15-17`: "Telling a vendor what you have to spend is how it becomes what you spend."
-- **Migrations:** this plan adds one. Generate it with `npm run db:migrate -- --name inquiry_recipient`, which runs `prisma migrate dev` behind `scripts/guard-local-db.mjs`. That guard **refuses to run against a non-local database** and exists because a `migrate dev` against hosted Postgres once left a half-applied migration that failed every deploy with P3009. Never set `ALLOW_REMOTE_MIGRATE=1`. Production applies migrations automatically: `vercel-build` runs `prisma migrate deploy` before `next build`.
+- **Migrations:** this plan adds one, **hand-written and applied with `prisma migrate deploy`** — see Task 1 Step 6 for why `migrate dev` cannot be used in this checkout. Never set `ALLOW_REMOTE_MIGRATE=1`; `scripts/guard-local-db.mjs` exists because a `migrate dev` against hosted Postgres once left a half-applied migration that failed every deploy with P3009. Production applies migrations automatically: `vercel-build` runs `prisma migrate deploy` before `next build`, so a hand-written file ships the same way a generated one would, and CI validates it against a throwaway database.
 - The new column must be **nullable** — existing `Inquiry` rows have no recipient and must keep working.
 - No new npm dependencies.
 - Commit messages: imperative, sentence case, **no** `feat:`/`fix:` prefix — match `git log`. End each commit message with:
@@ -159,19 +159,32 @@ In `prisma/schema.prisma`, inside the `Inquiry` model, add `toEmail` directly be
   toEmail     String?
 ```
 
-- [ ] **Step 6: Generate the migration**
+- [ ] **Step 6: Write the migration by hand, and apply it with `migrate deploy`**
 
-Run: `npm run db:migrate -- --name inquiry_recipient`
+**Do not run `prisma migrate dev`.** This checkout's local database carries pre-existing drift that has nothing to do with this task: `_prisma_migrations` holds 21 rows against 20 migration folders, the orphan being `20260914120000_tickets`, and the database still has `Order`, `Ticket` and `TicketTier` tables that no current migration creates. They are residue from PRs #36 and #37, both of which were **closed, never merged**, so production never received them.
 
-This runs `prisma migrate dev` behind `scripts/guard-local-db.mjs`, which refuses to run against anything but a local database. If it refuses, your `DATABASE_URL` is pointing at hosted Postgres — **fix the URL, never set `ALLOW_REMOTE_MIGRATE=1`**.
+`migrate dev` diffs the real schema against a shadow database, sees those three tables, calls it drift, and offers to **drop and recreate the database** — which would destroy roughly 42,000 local `CampusEvent` rows. `migrate deploy` performs no such comparison: it simply applies migration folders that are not yet recorded. So the migration gets written by hand and deployed.
 
-Expected: a new directory under `prisma/migrations/` whose `migration.sql` is a single additive statement, along the lines of:
+Create `prisma/migrations/20260919130000_inquiry_recipient/migration.sql` containing exactly:
 
 ```sql
+-- Where an inquiry goes. Null until the host finds the address: Listing holds
+-- no contact details, because HostKit has no supply side.
 ALTER TABLE "Inquiry" ADD COLUMN "toEmail" TEXT;
 ```
 
-Open the generated file and confirm it is only that. If it contains a `DROP`, or touches any table other than `Inquiry`, stop and report — your local database has drifted from the migration history.
+The timestamp must sort after the current newest folder, `20260919120000_campus_event_types` — `20260919130000` does.
+
+Then run: `npx prisma migrate deploy`
+
+Expected: `1 migration found` and `Applying migration 20260919130000_inquiry_recipient`, with no prompt of any kind. If it instead reports a failed migration (P3009) or a checksum mismatch, stop and report BLOCKED — do not attempt a repair.
+
+Then run: `npx prisma generate`
+
+Expected: clean. This regenerates the client so `Inquiry.toEmail` is typed; `migrate deploy` does not regenerate on its own the way `migrate dev` does.
+
+Finally, confirm the column actually landed: `npx prisma migrate status`
+Expected: `21 migrations found` and `Database schema is up to date!`
 
 - [ ] **Step 7: Accept the recipient in the update action**
 
