@@ -66,7 +66,7 @@ export async function loadOutreach(
       kind: "VENDOR",
       name: inquiry.listing.name,
       detail: CATEGORY_LABEL[inquiry.listing.category],
-      email: null,
+      email: inquiry.toEmail,
       phone: null,
       website: null,
       status: inquiry.status === "DRAFT" ? "PENDING" : inquiry.status,

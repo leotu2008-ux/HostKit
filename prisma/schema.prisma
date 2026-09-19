@@ -536,6 +536,9 @@ model Inquiry {
   listingId   String
   status      InquiryStatus @default(DRAFT)
   message     String
+  /// Where the inquiry goes. Null until the host finds the vendor's address —
+  /// Listing carries no contact details, because there is no supply side.
+  toEmail     String?
   quotedCents Int?
   sentAt      DateTime?
   respondedAt DateTime?

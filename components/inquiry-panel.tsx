@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { InquiryStatus } from "@/generated/prisma/enums";
 import {
   deleteInquiryAction,
+  sendInquiryAction,
   startInquiryAction,
   updateInquiryAction,
 } from "@/lib/actions/inquiries";
@@ -27,6 +28,23 @@ function Submit({ label }: { label: string }) {
     <Button type="submit" disabled={pending} className="w-full">
       {pending ? "Saving…" : label}
     </Button>
+  );
+}
+
+/** Disabled while pending (a second click would be a second email to a real
+ *  business) and while the message textarea has unsaved edits — sendInquiryAction
+ *  mails `inquiry.message` from the database, not whatever is on screen, so a
+ *  dirty textarea must not be sendable. */
+function SendButton({ dirty }: { dirty: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending || dirty}
+      className="h-10 rounded-full bg-ink px-4 text-sm font-medium text-surface disabled:opacity-50"
+    >
+      {pending ? "Sending…" : dirty ? "Save your changes first" : "Send it"}
+    </button>
   );
 }
 
@@ -57,12 +75,15 @@ export function InquiryPanel({
     status: InquiryStatus;
     message: string;
     quotedCents: number | null;
+    toEmail: string | null;
   };
   subject: string;
 }) {
   const [state, formAction] = useActionState(updateInquiryAction, undefined);
+  const [sendState, sendAction] = useActionState(sendInquiryAction, undefined);
   const [message, setMessage] = useState(inquiry.message);
   const [copied, setCopied] = useState(false);
+  const messageDirty = message !== inquiry.message;
 
   async function copy() {
     try {
@@ -81,6 +102,20 @@ export function InquiryPanel({
         <input type="hidden" name="eventId" value={eventId} />
         <input type="hidden" name="inquiryId" value={inquiry.id} />
         <FormError>{state?.error}</FormError>
+
+        <Field label="Their email">
+          {/* Keyed on the server value, like Status and Agreed price below:
+              this is an uncontrolled input, so without a remount it keeps
+              showing whatever the host typed — including an address the
+              server rejected and never stored — after the action lands. */}
+          <Input
+            key={inquiry.toEmail ?? "none"}
+            type="email"
+            name="toEmail"
+            defaultValue={inquiry.toEmail ?? ""}
+            placeholder="events@venue.com"
+          />
+        </Field>
 
         <Field
           label="Your message"
@@ -154,6 +189,19 @@ export function InquiryPanel({
 
         <Submit label="Save" />
       </form>
+
+      {/* Its own form: nested forms are invalid HTML, and a send must not
+          also submit the status select in the form above. */}
+      {inquiry.status === "DRAFT" && inquiry.toEmail ? (
+        <form action={sendAction}>
+          <input type="hidden" name="eventId" value={eventId} />
+          <input type="hidden" name="inquiryId" value={inquiry.id} />
+          <SendButton dirty={messageDirty} />
+        </form>
+      ) : null}
+      {sendState?.error ? (
+        <p className="text-[13px] text-danger">{sendState.error}</p>
+      ) : null}
 
       <form action={deleteInquiryAction}>
         <input type="hidden" name="eventId" value={eventId} />

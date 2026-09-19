@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { composeInquiry, describeDate, mailtoLink } from "@/lib/outreach";
+import {
+  composeInquiry,
+  describeDate,
+  inquiryEmail,
+  mailtoLink,
+  normalizeRecipient,
+} from "@/lib/outreach";
 import type { OutreachEvent } from "@/lib/outreach";
 
 const event = (over: Partial<OutreachEvent> = {}): OutreachEvent => ({
@@ -113,5 +119,58 @@ describe("mailtoLink", () => {
     expect(link.startsWith("mailto:?subject=")).toBe(true);
     expect(link).toContain("Hi%20%26%20hello");
     expect(link).toContain("%0A");
+  });
+});
+
+describe("the vendor's address", () => {
+  it("trims and lowercases, so the same inbox isn't stored two ways", () => {
+    expect(normalizeRecipient("  Events@Venue.COM ")).toBe("events@venue.com");
+  });
+
+  // An unsendable address must not be stored as if it were sendable: the send
+  // button keys off this field being present.
+  it("rejects anything that isn't an address", () => {
+    expect(normalizeRecipient("not an email")).toBeNull();
+    expect(normalizeRecipient("@venue.com")).toBeNull();
+    expect(normalizeRecipient("events@")).toBeNull();
+  });
+
+  it("treats blank and missing as no address, not as an error", () => {
+    expect(normalizeRecipient("")).toBeNull();
+    expect(normalizeRecipient("   ")).toBeNull();
+    expect(normalizeRecipient(null)).toBeNull();
+    expect(normalizeRecipient(undefined)).toBeNull();
+  });
+});
+
+describe("the email an inquiry becomes", () => {
+  const args = {
+    to: "events@venue.com",
+    subject: "Mixer inquiry — 12 March, 300 guests",
+    message: "Hello Venue,\n\nWe are planning a mixer.\n\nThanks,\nSam",
+    hostEmail: "sam@startup.com",
+  };
+
+  it("sends to the vendor and replies to the host", () => {
+    const email = inquiryEmail(args);
+
+    expect(email.to).toBe("events@venue.com");
+    // The whole reply-handling design rests on this: HostKit cannot read a
+    // vendor's reply, so the reply must go straight to a human who can.
+    expect(email.replyTo).toBe("sam@startup.com");
+  });
+
+  it("sends the host's own words, not a re-drafted message", () => {
+    const email = inquiryEmail(args);
+
+    expect(email.text).toBe(args.message);
+    expect(email.subject).toBe(args.subject);
+  });
+
+  it("omits replyTo rather than inventing one when the host has no address", () => {
+    const email = inquiryEmail({ ...args, hostEmail: null });
+
+    expect(email.replyTo).toBeUndefined();
+    expect(email.to).toBe("events@venue.com");
   });
 });

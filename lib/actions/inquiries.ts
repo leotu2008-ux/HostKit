@@ -6,7 +6,10 @@ import type { InquiryStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
-import { composeInquiry } from "@/lib/outreach";
+import { composeInquiry, inquiryEmail, normalizeRecipient } from "@/lib/outreach";
+import { isEmailConfigured, sendEmails } from "@/lib/email/send";
+import { EmailSendError } from "@/lib/email/failure";
+import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
 
 export type InquiryFormState = { error?: string } | undefined;
 
@@ -53,6 +56,7 @@ const updateSchema = z.object({
   status: z.enum(STATUSES as [string, ...string[]]),
   quoted: z.string().optional(),
   message: z.string().max(8000).optional(),
+  toEmail: z.string().max(320).optional(),
 });
 
 /**
@@ -75,6 +79,7 @@ export async function updateInquiryAction(
     status: formData.get("status"),
     quoted: formData.get("quoted") ?? undefined,
     message: formData.get("message") ?? undefined,
+    toEmail: formData.get("toEmail") ?? undefined,
   });
   if (!parsed.success) return { error: "That status isn't valid." };
 
@@ -100,6 +105,24 @@ export async function updateInquiryAction(
     return { error: "Add the agreed price before marking this booked." };
   }
 
+  // Absent field: leave toEmail alone (undefined below). Empty field: the
+  // host cleared it, deliberately — write null. Non-empty field that zod's
+  // email check rejects (e.g. "events@venue", no dot — type="email" does not
+  // catch that): refuse the save rather than silently discarding it, or the
+  // field would keep showing the text the host typed while nothing was
+  // actually stored.
+  let nextToEmail: string | null | undefined;
+  if (formData.has("toEmail")) {
+    const raw = parsed.data.toEmail?.trim() ?? "";
+    if (!raw) {
+      nextToEmail = null;
+    } else {
+      const normalized = normalizeRecipient(parsed.data.toEmail);
+      if (!normalized) return { error: "That email address doesn't look right." };
+      nextToEmail = normalized;
+    }
+  }
+
   await db.$transaction(async (tx) => {
     await tx.inquiry.update({
       where: { id: inquiry.id },
@@ -107,6 +130,12 @@ export async function updateInquiryAction(
         status,
         quotedCents,
         message: parsed.data.message ?? inquiry.message,
+        // Only touch toEmail when the form actually carried the field: an
+        // absent field means "leave it alone," an empty one means "clear
+        // it." Writing the key unconditionally would let any future caller
+        // of this action that doesn't post toEmail silently erase a stored
+        // address. See nextToEmail above for the invalid-address case.
+        ...(nextToEmail !== undefined ? { toEmail: nextToEmail } : {}),
         sentAt:
           status !== "DRAFT" && !inquiry.sentAt ? new Date() : inquiry.sentAt,
         respondedAt:
@@ -179,4 +208,122 @@ export async function deleteInquiryAction(formData: FormData) {
     await tx.inquiry.deleteMany({ where: { id: inquiryId, eventId } });
   });
   refresh();
+}
+
+/**
+ * Sends one inquiry, because the host pressed send on that one message.
+ *
+ * Deliberately not a batch: these are real businesses receiving mail with a
+ * host's name on it, and the approval is per message. Only a DRAFT can be
+ * sent, so a double-click cannot mail a vendor twice.
+ */
+export async function sendInquiryAction(
+  _prev: InquiryFormState,
+  formData: FormData,
+): Promise<InquiryFormState> {
+  const eventId = String(formData.get("eventId") ?? "");
+  const inquiryId = String(formData.get("inquiryId") ?? "");
+  const { event, user } = await requireEvent(eventId);
+
+  // requireEvent admits a signed-out visitor holding a draft-claim cookie
+  // (lib/session.ts:67). Every other outbound-email path refuses that — see
+  // sendBlastAction — and this one chooses both recipient and body, so it
+  // refuses harder: an anonymous send would leave from HostKit's own domain
+  // with no reply address on it.
+  if (!user?.email) {
+    return { error: "Sign in before sending this." };
+  }
+
+  try {
+    await assertRateLimit(`outreach:${user.id}`, ...LIMITS.outreach.perActor);
+  } catch (error) {
+    if (error instanceof RateLimitError) return { error: error.message };
+    throw error;
+  }
+
+  if (!isEmailConfigured()) {
+    return { error: "Email isn't set up yet, so nothing can be sent from here." };
+  }
+
+  const inquiry = await db.inquiry.findFirst({
+    where: { id: inquiryId, eventId },
+    include: { listing: true },
+  });
+  if (!inquiry) return { error: "That inquiry is no longer here." };
+
+  const to = normalizeRecipient(inquiry.toEmail);
+  if (!to) return { error: "Add the vendor's email address first." };
+
+  if (inquiry.status !== "DRAFT") {
+    // Cheap pre-check for a better message in the common case. It does not
+    // enforce the rule by itself — two near-simultaneous requests can both
+    // pass it — the claim below is what actually stops a double send.
+    return { error: "That inquiry has already been sent." };
+  }
+
+  const { subject } = composeInquiry(event, inquiry.listing, user.name ?? "the host");
+
+  // A row can legitimately be DRAFT with a sentAt already on it (send, then
+  // set status back to Draft — updateInquiryAction never clears the
+  // timestamp). Capture it before the claim so a failed re-send restores the
+  // original value instead of erasing history that goneQuiet reads.
+  const previousSentAt = inquiry.sentAt;
+
+  // Claim the row before sending, not after: two tabs (or a fast double-click
+  // that beats disabled={pending}) can both read a DRAFT and both pass the
+  // check above, but only one updateMany can match it. Whoever loses the
+  // claim never sends.
+  const claimed = await db.inquiry.updateMany({
+    where: { id: inquiry.id, status: "DRAFT" },
+    data: { status: "SENT", sentAt: new Date() },
+  });
+  if (claimed.count === 0) {
+    return { error: "That inquiry has already been sent." };
+  }
+
+  try {
+    await sendEmails([
+      inquiryEmail({ to, subject, message: inquiry.message, hostEmail: user.email }),
+    ]);
+  } catch (error) {
+    // Say which end failed, the way lib/email/failure.ts does elsewhere: a
+    // host who cannot tell "your sender isn't verified" from "that address
+    // bounced" will retry the wrong one forever.
+    //
+    // `cause` is a getter on EmailSendError (lib/email/failure.ts:26) that
+    // classifies the status and body into "sender" | "recipient" | "unknown".
+    // It is NOT called `failure` — that is the name of the returned type.
+    const failure = error instanceof EmailSendError ? error.cause : "unknown";
+
+    if (failure === "sender" || failure === "recipient") {
+      // The provider explicitly rejected this one — nothing left the
+      // building — so it is both safe and necessary to undo the claim and
+      // let the host fix it and resend.
+      await db.inquiry.updateMany({
+        where: { id: inquiry.id, status: "SENT" },
+        data: { status: "DRAFT", sentAt: previousSentAt },
+      });
+      return {
+        error:
+          failure === "recipient"
+            ? "That address bounced. Check it and try again."
+            : "The message couldn't be sent. Nothing was delivered.",
+      };
+    }
+
+    // "unknown" is exactly the class where the provider may have already
+    // accepted the message and the response was lost — a fetch timeout
+    // throws a plain TypeError here, not an EmailSendError. Reverting to
+    // DRAFT would invite a retry that mails the vendor twice, so the row
+    // stays claimed as SENT and we say we're not sure, rather than claim
+    // nothing went out. The status select already makes SENT→DRAFT a
+    // one-click recovery if the host wants to retry anyway.
+    return {
+      error:
+        "We couldn't confirm that went out. It's marked sent — set it back to Draft if you want to try again.",
+    };
+  }
+
+  refresh();
+  return undefined;
 }

@@ -5,6 +5,7 @@ import { scoreListing } from "@/lib/scoring";
 import { planningContext } from "@/lib/event-context";
 import { formatCents } from "@/lib/money";
 import { CATEGORY_LABEL, INQUIRY_STATUS_LABEL } from "@/lib/catalog";
+import { goneQuiet } from "@/lib/chase";
 import type { InquiryStatus, ListingCategory } from "@/generated/prisma/enums";
 import { ListingImage } from "@/components/listing-image";
 import { SaveButton } from "@/components/save-button";
@@ -43,6 +44,8 @@ export default async function ShortlistPage({
     planningContext(event),
   ]);
 
+  const quiet = goneQuiet(inquiries, new Date());
+
   const allocation = new Map(
     budgetCategories.map((c) => [c.category, c.allocatedCents]),
   );
@@ -72,6 +75,13 @@ export default async function ShortlistPage({
 
   return (
     <div className="space-y-12">
+      {quiet.length > 0 ? (
+        <p className="mb-4 text-[13px] text-ink-mute">
+          {quiet.length === 1
+            ? "1 inquiry has had no reply for a few days."
+            : `${quiet.length} inquiries have had no reply for a few days.`}
+        </p>
+      ) : null}
       {[...groups.entries()].map(([category, rows]) => (
         <section key={category}>
           <SectionHeading
