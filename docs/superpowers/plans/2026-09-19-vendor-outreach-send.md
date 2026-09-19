@@ -188,11 +188,15 @@ const updateSchema = z.object({
 
 Add `toEmail: formData.get("toEmail")` to the object passed to `updateSchema.safeParse(...)`, alongside the existing `status`, `quoted` and `message` entries.
 
-Then, in the `db.inquiry.update` call inside `updateInquiryAction`, include the normalized address in the `data` object:
+Then, in the `db.inquiry.update` call inside `updateInquiryAction`, include the normalized address in the `data` object — but **only when the form actually carried the field**:
 
 ```ts
-      toEmail: normalizeRecipient(parsed.data.toEmail),
+      ...(formData.has("toEmail")
+        ? { toEmail: normalizeRecipient(parsed.data.toEmail) }
+        : {}),
 ```
+
+The `formData.has` guard is load-bearing, not defensive noise. `normalizeRecipient(undefined)` returns `null`, so writing the key unconditionally would mean any future form that posts to this action without a `toEmail` input silently erases a stored address. Spreading the key in only when it was submitted makes an absent field mean "leave it alone" and an empty field mean "clear it" — which is what the host expects from each.
 
 Import it at the top of the file, extending the existing `@/lib/outreach` import:
 
