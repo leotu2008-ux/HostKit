@@ -5,6 +5,7 @@ import { formatPhone } from "@/lib/phone";
 import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
 import { predictTurnout, showHistoryFor } from "@/lib/turnout";
 import { daysUntil } from "@/lib/plan";
+import { conflictCountFor } from "@/lib/campus/conflicts";
 import { updateGuestAction, removeGuestAction } from "@/lib/actions/guests";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
 import { AddGuestsForm } from "@/components/add-guests-form";
@@ -54,20 +55,22 @@ export default async function GuestsPage({
   const head = effectiveHeadcount(event.guestCount, summary);
 
   // How many of them actually turn up, which is a different question and the
-  // one that decides how much food to order.
-  const history = await showHistoryFor({
-    ownerId: event.ownerId,
-    schoolDomain: event.schoolDomain,
-  });
+  // one that decides how much food to order. A crowded campus night costs a
+  // little of it, so the two queries go together.
+  const [history, conflicts] = await Promise.all([
+    showHistoryFor({
+      ownerId: event.ownerId,
+      schoolDomain: event.schoolDomain,
+    }),
+    conflictCountFor(event.schoolDomain, event.date),
+  ]);
   const turnout = predictTurnout({
     attendingHeads: summary.confirmedHeads,
     maybeHeads: summary.maybe,
     noReplyHeads: Math.max(0, summary.expectedHeads - summary.confirmedHeads - summary.maybe),
     capacity: event.guestCount,
     daysUntil: daysUntil(event.date),
-    // The campus conflict count plugs in here once #48 lands; the model
-    // already takes it and treats null as "ordinary night".
-    conflicts: null,
+    conflicts,
     history,
   });
 
