@@ -54,4 +54,6 @@ export const LIMITS = {
   draft: { perIp: [20, 60 * 60_000] },
   /** Photo uploads: up to 5 MB each, so a quota per account (or address). */
   upload: { perActor: [40, 60 * 60_000] },
+  /** Vendor inquiry sends: a real email to a real business, per signed-in host. */
+  outreach: { perActor: [30, 60 * 60_000] },
 } as const satisfies Record<string, Record<string, readonly [number, number]>>;

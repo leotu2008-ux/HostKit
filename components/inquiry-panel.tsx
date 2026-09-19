@@ -31,17 +31,19 @@ function Submit({ label }: { label: string }) {
   );
 }
 
-/** Disabled while pending: a second click would be a second email to a real
- *  business. */
-function SendButton() {
+/** Disabled while pending (a second click would be a second email to a real
+ *  business) and while the message textarea has unsaved edits — sendInquiryAction
+ *  mails `inquiry.message` from the database, not whatever is on screen, so a
+ *  dirty textarea must not be sendable. */
+function SendButton({ dirty }: { dirty: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || dirty}
       className="h-10 rounded-full bg-ink px-4 text-sm font-medium text-surface disabled:opacity-50"
     >
-      {pending ? "Sending…" : "Send it"}
+      {pending ? "Sending…" : dirty ? "Save your changes first" : "Send it"}
     </button>
   );
 }
@@ -81,6 +83,7 @@ export function InquiryPanel({
   const [sendState, sendAction] = useActionState(sendInquiryAction, undefined);
   const [message, setMessage] = useState(inquiry.message);
   const [copied, setCopied] = useState(false);
+  const messageDirty = message !== inquiry.message;
 
   async function copy() {
     try {
@@ -100,16 +103,19 @@ export function InquiryPanel({
         <input type="hidden" name="inquiryId" value={inquiry.id} />
         <FormError>{state?.error}</FormError>
 
-        <label className="block">
-          <span className="text-[13px] font-medium text-ink-soft">Their email</span>
-          <input
+        <Field label="Their email">
+          {/* Keyed on the server value, like Status and Agreed price below:
+              this is an uncontrolled input, so without a remount it keeps
+              showing whatever the host typed — including an address the
+              server rejected and never stored — after the action lands. */}
+          <Input
+            key={inquiry.toEmail ?? "none"}
             type="email"
             name="toEmail"
             defaultValue={inquiry.toEmail ?? ""}
             placeholder="events@venue.com"
-            className="mt-1 h-10 w-full rounded-lg border border-line bg-surface px-3 text-[14px] text-ink"
           />
-        </label>
+        </Field>
 
         <Field
           label="Your message"
@@ -190,7 +196,7 @@ export function InquiryPanel({
         <form action={sendAction}>
           <input type="hidden" name="eventId" value={eventId} />
           <input type="hidden" name="inquiryId" value={inquiry.id} />
-          <SendButton />
+          <SendButton dirty={messageDirty} />
         </form>
       ) : null}
       {sendState?.error ? (

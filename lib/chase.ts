@@ -30,6 +30,7 @@ export function goneQuiet<T extends ChaseableInquiry>(inquiries: T[], now: Date)
 
   return inquiries.filter((inquiry) => {
     if (inquiry.status !== "SENT") return false;
+    // Unreachable today; fails safe if a new terminal status is added.
     if (ANSWERED.includes(inquiry.status)) return false;
     if (inquiry.respondedAt) return false;
     // No timestamp means we cannot say how long it has been, and guessing
