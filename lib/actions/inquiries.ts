@@ -222,16 +222,36 @@ export async function sendInquiryAction(
   if (!to) return { error: "Add the vendor's email address first." };
 
   if (inquiry.status !== "DRAFT") {
+    // Cheap pre-check for a better message in the common case. It does not
+    // enforce the rule by itself — two near-simultaneous requests can both
+    // pass it — the claim below is what actually stops a double send.
     return { error: "That inquiry has already been sent." };
   }
 
   const { subject } = composeInquiry(event, inquiry.listing, user?.name ?? "the host");
+
+  // Claim the row before sending, not after: two tabs (or a fast double-click
+  // that beats disabled={pending}) can both read a DRAFT and both pass the
+  // check above, but only one updateMany can match it. Whoever loses the
+  // claim never sends.
+  const claimed = await db.inquiry.updateMany({
+    where: { id: inquiry.id, status: "DRAFT" },
+    data: { status: "SENT", sentAt: new Date() },
+  });
+  if (claimed.count === 0) {
+    return { error: "That inquiry has already been sent." };
+  }
 
   try {
     await sendEmails([
       inquiryEmail({ to, subject, message: inquiry.message, hostEmail: user?.email ?? null }),
     ]);
   } catch (error) {
+    // Undo the claim: a send that failed has to remain re-sendable.
+    await db.inquiry.updateMany({
+      where: { id: inquiry.id, status: "SENT" },
+      data: { status: "DRAFT", sentAt: null },
+    });
     // Say which end failed, the way lib/email/failure.ts does elsewhere: a
     // host who cannot tell "your sender isn't verified" from "that address
     // bounced" will retry the wrong one forever.
@@ -247,11 +267,6 @@ export async function sendInquiryAction(
           : "The message couldn't be sent. Nothing was delivered.",
     };
   }
-
-  await db.inquiry.update({
-    where: { id: inquiry.id },
-    data: { status: "SENT", sentAt: new Date() },
-  });
 
   refresh();
   return undefined;

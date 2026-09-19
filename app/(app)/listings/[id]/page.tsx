@@ -158,8 +158,8 @@ export default async function ListingPage({
                 Your inquiry
               </h2>
               <p className="mb-5 text-sm text-ink-soft">
-                HostKit can&rsquo;t send this for you — copy it into your own
-                email, then track what comes back here.
+                Add their email and send it from here, then track what comes
+                back. Replies go to your own inbox.
               </p>
               <InquiryPanel
                 eventId={event.id}
