@@ -6,7 +6,7 @@ import type { InquiryStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
-import { composeInquiry } from "@/lib/outreach";
+import { composeInquiry, normalizeRecipient } from "@/lib/outreach";
 
 export type InquiryFormState = { error?: string } | undefined;
 
@@ -53,6 +53,7 @@ const updateSchema = z.object({
   status: z.enum(STATUSES as [string, ...string[]]),
   quoted: z.string().optional(),
   message: z.string().max(8000).optional(),
+  toEmail: z.string().max(320).optional(),
 });
 
 /**
@@ -75,6 +76,7 @@ export async function updateInquiryAction(
     status: formData.get("status"),
     quoted: formData.get("quoted") ?? undefined,
     message: formData.get("message") ?? undefined,
+    toEmail: formData.get("toEmail") ?? undefined,
   });
   if (!parsed.success) return { error: "That status isn't valid." };
 
@@ -107,6 +109,14 @@ export async function updateInquiryAction(
         status,
         quotedCents,
         message: parsed.data.message ?? inquiry.message,
+        // Only touch toEmail when the form actually carried the field: an
+        // absent field means "leave it alone," an empty one means "clear
+        // it." normalizeRecipient(undefined) returns null, so writing the
+        // key unconditionally would let any future caller of this action
+        // that doesn't post toEmail silently erase a stored address.
+        ...(formData.has("toEmail")
+          ? { toEmail: normalizeRecipient(parsed.data.toEmail) }
+          : {}),
         sentAt:
           status !== "DRAFT" && !inquiry.sentAt ? new Date() : inquiry.sentAt,
         respondedAt:

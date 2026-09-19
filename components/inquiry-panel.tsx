@@ -57,6 +57,7 @@ export function InquiryPanel({
     status: InquiryStatus;
     message: string;
     quotedCents: number | null;
+    toEmail: string | null;
   };
   subject: string;
 }) {
@@ -81,6 +82,17 @@ export function InquiryPanel({
         <input type="hidden" name="eventId" value={eventId} />
         <input type="hidden" name="inquiryId" value={inquiry.id} />
         <FormError>{state?.error}</FormError>
+
+        <label className="block">
+          <span className="text-[13px] font-medium text-ink-soft">Their email</span>
+          <input
+            type="email"
+            name="toEmail"
+            defaultValue={inquiry.toEmail ?? ""}
+            placeholder="events@venue.com"
+            className="mt-1 h-10 w-full rounded-lg border border-line bg-surface px-3 text-[14px] text-ink"
+          />
+        </label>
 
         <Field
           label="Your message"

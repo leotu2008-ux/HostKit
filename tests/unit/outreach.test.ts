@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { composeInquiry, describeDate, mailtoLink } from "@/lib/outreach";
+import {
+  composeInquiry,
+  describeDate,
+  mailtoLink,
+  normalizeRecipient,
+} from "@/lib/outreach";
 import type { OutreachEvent } from "@/lib/outreach";
 
 const event = (over: Partial<OutreachEvent> = {}): OutreachEvent => ({
@@ -113,5 +118,26 @@ describe("mailtoLink", () => {
     expect(link.startsWith("mailto:?subject=")).toBe(true);
     expect(link).toContain("Hi%20%26%20hello");
     expect(link).toContain("%0A");
+  });
+});
+
+describe("the vendor's address", () => {
+  it("trims and lowercases, so the same inbox isn't stored two ways", () => {
+    expect(normalizeRecipient("  Events@Venue.COM ")).toBe("events@venue.com");
+  });
+
+  // An unsendable address must not be stored as if it were sendable: the send
+  // button keys off this field being present.
+  it("rejects anything that isn't an address", () => {
+    expect(normalizeRecipient("not an email")).toBeNull();
+    expect(normalizeRecipient("@venue.com")).toBeNull();
+    expect(normalizeRecipient("events@")).toBeNull();
+  });
+
+  it("treats blank and missing as no address, not as an error", () => {
+    expect(normalizeRecipient("")).toBeNull();
+    expect(normalizeRecipient("   ")).toBeNull();
+    expect(normalizeRecipient(null)).toBeNull();
+    expect(normalizeRecipient(undefined)).toBeNull();
   });
 });

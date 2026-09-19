@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type {
   CollaboratorKind,
   EventType,
@@ -187,4 +188,18 @@ export function composeInquiry(
 /** A mailto: link for the composed message, for hosts who want to just send it. */
 export function mailtoLink(subject: string, body: string): string {
   return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/**
+ * The vendor's address, or null when there isn't a usable one.
+ *
+ * Null rather than throwing because "no address yet" is the normal state of a
+ * draft — the host often writes the message before they have found who to
+ * send it to. Whether an inquiry can be sent is exactly whether this returns
+ * a string.
+ */
+export function normalizeRecipient(raw: string | null | undefined): string | null {
+  const trimmed = (raw ?? "").trim().toLowerCase();
+  if (!trimmed) return null;
+  return z.string().email().safeParse(trimmed).success ? trimmed : null;
 }
