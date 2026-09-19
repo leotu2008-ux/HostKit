@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createEventAction } from "@/lib/actions/events";
+import { checkNightAction } from "@/lib/actions/night";
 import { CITIES, EVENT_TYPE_OPTIONS } from "@/lib/catalog";
 import { EVENT_TEMPLATES } from "@/lib/templates";
 import type { EventType } from "@/generated/prisma/enums";
@@ -118,13 +119,17 @@ function Segmented<T extends string>({
 export function EventIntakeForm({
   signedIn,
   clubs = [],
+  hasSchool = false,
 }: {
   signedIn: boolean;
   /** Clubs the host manages — "Post as". */
   clubs?: Array<{ id: string; name: string }>;
+  /** Whether the host's profile names a school, so there is a campus to check. */
+  hasSchool?: boolean;
 }) {
   const [state, formAction] = useActionState(createEventAction, undefined);
   const [type, setType] = useState<EventType>(DEFAULT_TYPE);
+  const [nightLine, setNightLine] = useState<string | null>(null);
   // Duration and capacity defaults belong to the chosen night, not to a
   // hardcoded one — a study break is not a formal.
   const template = EVENT_TEMPLATES[type];
@@ -195,8 +200,27 @@ export function EventIntakeForm({
             </select>
           </Row>
           <Row label="Date">
-            <input name="date" type="date" className={compact} />
+            <input
+              name="date"
+              type="date"
+              className={compact}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (!hasSchool || !value) {
+                  setNightLine(null);
+                  return;
+                }
+                // Advisory only: a failure here must never block the form, so
+                // there is no error state — the note simply doesn't appear.
+                void checkNightAction(value)
+                  .then((note) => setNightLine(note?.line ?? null))
+                  .catch(() => setNightLine(null));
+              }}
+            />
           </Row>
+          {nightLine ? (
+            <div className="bg-amber-wash px-4 py-3 text-[13px] text-amber">{nightLine}</div>
+          ) : null}
           <Row label="Start">
             <input name="time" type="time" className={compact} />
           </Row>

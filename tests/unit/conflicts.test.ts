@@ -5,6 +5,8 @@ import {
   busyness,
   clashWindow,
   eveningOf,
+  loadForNight,
+  nightNote,
   nightOf,
   rankNights,
   toWallClock,
@@ -131,5 +133,41 @@ describe("suggesting a better night", () => {
   it("never offers a night that is no better", () => {
     const busyEverywhere = [night("2026-09-24T00:00:00Z", 14), night("2026-09-25T00:00:00Z", 20)];
     expect(betterNights(night("2026-09-24T00:00:00Z", 14), busyEverywhere)).toEqual([]);
+  });
+});
+
+describe("the load for one night", () => {
+  it("finds the night in a run of them", () => {
+    const loads = [
+      { night: new Date("2026-09-24T00:00:00Z"), count: 14 },
+      { night: new Date("2026-09-25T00:00:00Z"), count: 2 },
+    ];
+
+    expect(loadForNight(loads, new Date("2026-09-24T00:00:00Z")).count).toBe(14);
+  });
+
+  // "Nothing else is on" is a real answer, so a miss must not read as undefined.
+  it("reports an empty night when the run doesn't reach it", () => {
+    const night = new Date("2026-10-01T00:00:00Z");
+
+    expect(loadForNight([], night)).toEqual({ night, count: 0 });
+  });
+});
+
+describe("the note under the date field", () => {
+  // Same rule as the overview panel: a warning that fires on every night
+  // teaches people to ignore it.
+  it("says nothing about a quiet or ordinary night", () => {
+    expect(nightNote(0)).toBeNull();
+    expect(nightNote(3)).toBeNull();
+    expect(nightNote(11)).toBeNull();
+  });
+
+  it("speaks up once the night is busy, and counts the competition", () => {
+    const note = nightNote(14);
+
+    expect(note).not.toBeNull();
+    expect(note?.level).toBe("busy");
+    expect(note?.line).toContain("14");
   });
 });

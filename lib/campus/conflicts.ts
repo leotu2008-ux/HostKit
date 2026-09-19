@@ -124,6 +124,32 @@ export function betterNights(proposed: NightLoad, all: NightLoad[], take = 2): N
     .slice(0, take);
 }
 
+/**
+ * The load recorded for one night, or an empty night when the run doesn't
+ * cover it. Pulled out of adviseNight so a caller that wants only the number
+ * asks the same question the panel does, rather than a second, drifting one.
+ */
+export function loadForNight(loads: NightLoad[], night: Date): NightLoad {
+  return loads.find((l) => l.night.getTime() === night.getTime()) ?? { night, count: 0 };
+}
+
+/**
+ * One line for the host, at the moment they pick a date — or nothing at all.
+ *
+ * Silent on a quiet or ordinary night, on purpose and for the same reason
+ * NightAdvicePanel is: this fires while someone is filling in a form, and a
+ * note that always appears is furniture, not advice.
+ */
+export function nightNote(count: number): { level: Busyness; line: string } | null {
+  const level = busyness(count);
+  if (level !== "busy") return null;
+
+  return {
+    level,
+    line: `${count} other things are already on that evening at your school. Quieter nights are usually easier to fill.`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
@@ -206,7 +232,7 @@ export async function adviseNight(
   ]);
 
   const night = nightOf(when);
-  const load = loads.find((l) => l.night.getTime() === night.getTime()) ?? { night, count: 0 };
+  const load = loadForNight(loads, night);
 
   return {
     load,
@@ -214,4 +240,24 @@ export async function adviseNight(
     clashes,
     alternatives: betterNights(load, loads),
   };
+}
+
+/**
+ * How many other things are on the evening of `start` — the number alone, for
+ * callers that do not need the panel's clashes and alternatives.
+ *
+ * One night, so one query. Null when there is no school or no date, which
+ * predictTurnout reads as "ordinary night".
+ */
+export async function conflictCountFor(
+  schoolDomain: string | null | undefined,
+  start: Date | null | undefined,
+): Promise<number | null> {
+  if (!schoolDomain || !start) return null;
+
+  // Same crossing of the two time conventions adviseNight makes.
+  const when = toWallClock(start);
+  const loads = await nightLoads(schoolDomain, when, 1);
+
+  return loadForNight(loads, nightOf(when)).count;
 }

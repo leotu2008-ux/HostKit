@@ -1,11 +1,12 @@
 import { EventIntakeForm } from "@/components/event-intake-form";
-import { getCurrentUser } from "@/lib/session";
+import { currentProfile, getCurrentUser } from "@/lib/session";
 import { clubsFor } from "@/lib/clubs";
 
 export const metadata = { title: "Create event" };
 
 export default async function NewEventPage() {
   const user = await getCurrentUser();
+  const profile = user ? await currentProfile() : null;
   const clubs = user ? (await clubsFor(user.id)).map((c) => ({ id: c.id, name: c.name })) : [];
 
   return (
@@ -17,7 +18,11 @@ export default async function NewEventPage() {
         Name, time, place, tickets. You can do this before you have an account —
         publishing is the step that needs a sign-in.
       </p>
-      <EventIntakeForm signedIn={Boolean(user)} clubs={clubs} />
+      <EventIntakeForm
+        signedIn={Boolean(user)}
+        clubs={clubs}
+        hasSchool={Boolean(profile?.schoolDomain)}
+      />
     </div>
   );
 }
