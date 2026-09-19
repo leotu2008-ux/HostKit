@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { InquiryStatus } from "@/generated/prisma/enums";
 import {
   deleteInquiryAction,
+  sendInquiryAction,
   startInquiryAction,
   updateInquiryAction,
 } from "@/lib/actions/inquiries";
@@ -27,6 +28,21 @@ function Submit({ label }: { label: string }) {
     <Button type="submit" disabled={pending} className="w-full">
       {pending ? "Saving…" : label}
     </Button>
+  );
+}
+
+/** Disabled while pending: a second click would be a second email to a real
+ *  business. */
+function SendButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="h-10 rounded-full bg-ink px-4 text-sm font-medium text-surface disabled:opacity-50"
+    >
+      {pending ? "Sending…" : "Send it"}
+    </button>
   );
 }
 
@@ -62,6 +78,7 @@ export function InquiryPanel({
   subject: string;
 }) {
   const [state, formAction] = useActionState(updateInquiryAction, undefined);
+  const [sendState, sendAction] = useActionState(sendInquiryAction, undefined);
   const [message, setMessage] = useState(inquiry.message);
   const [copied, setCopied] = useState(false);
 
@@ -166,6 +183,19 @@ export function InquiryPanel({
 
         <Submit label="Save" />
       </form>
+
+      {/* Its own form: nested forms are invalid HTML, and a send must not
+          also submit the status select in the form above. */}
+      {inquiry.status === "DRAFT" && inquiry.toEmail ? (
+        <form action={sendAction}>
+          <input type="hidden" name="eventId" value={eventId} />
+          <input type="hidden" name="inquiryId" value={inquiry.id} />
+          <SendButton />
+        </form>
+      ) : null}
+      {sendState?.error ? (
+        <p className="text-[13px] text-danger">{sendState.error}</p>
+      ) : null}
 
       <form action={deleteInquiryAction}>
         <input type="hidden" name="eventId" value={eventId} />

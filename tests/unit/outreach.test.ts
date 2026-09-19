@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   composeInquiry,
   describeDate,
+  inquiryEmail,
   mailtoLink,
   normalizeRecipient,
 } from "@/lib/outreach";
@@ -139,5 +140,37 @@ describe("the vendor's address", () => {
     expect(normalizeRecipient("   ")).toBeNull();
     expect(normalizeRecipient(null)).toBeNull();
     expect(normalizeRecipient(undefined)).toBeNull();
+  });
+});
+
+describe("the email an inquiry becomes", () => {
+  const args = {
+    to: "events@venue.com",
+    subject: "Mixer inquiry — 12 March, 300 guests",
+    message: "Hello Venue,\n\nWe are planning a mixer.\n\nThanks,\nSam",
+    hostEmail: "sam@startup.com",
+  };
+
+  it("sends to the vendor and replies to the host", () => {
+    const email = inquiryEmail(args);
+
+    expect(email.to).toBe("events@venue.com");
+    // The whole reply-handling design rests on this: HostKit cannot read a
+    // vendor's reply, so the reply must go straight to a human who can.
+    expect(email.replyTo).toBe("sam@startup.com");
+  });
+
+  it("sends the host's own words, not a re-drafted message", () => {
+    const email = inquiryEmail(args);
+
+    expect(email.text).toBe(args.message);
+    expect(email.subject).toBe(args.subject);
+  });
+
+  it("omits replyTo rather than inventing one when the host has no address", () => {
+    const email = inquiryEmail({ ...args, hostEmail: null });
+
+    expect(email.replyTo).toBeUndefined();
+    expect(email.to).toBe("events@venue.com");
   });
 });

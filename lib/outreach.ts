@@ -5,6 +5,7 @@ import type {
   ListingCategory,
 } from "@/generated/prisma/enums";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
+import type { OutgoingEmail } from "@/lib/email/send";
 
 /**
  * Drafts the first message to a venue or vendor.
@@ -202,4 +203,29 @@ export function normalizeRecipient(raw: string | null | undefined): string | nul
   const trimmed = (raw ?? "").trim().toLowerCase();
   if (!trimmed) return null;
   return z.string().email().safeParse(trimmed).success ? trimmed : null;
+}
+
+/**
+ * The inquiry as a sendable email.
+ *
+ * `text` is whatever the host last saved, not a fresh draft: they are allowed
+ * to rewrite the message, and sending something other than what they approved
+ * would make the approval meaningless.
+ *
+ * `replyTo` is the host, never HostKit. Nothing here can read an inbox, so a
+ * reply that came back to the sending address would be lost — it has to reach
+ * the person who can answer it.
+ */
+export function inquiryEmail(args: {
+  to: string;
+  subject: string;
+  message: string;
+  hostEmail: string | null;
+}): OutgoingEmail {
+  return {
+    to: args.to,
+    subject: args.subject,
+    text: args.message,
+    ...(args.hostEmail ? { replyTo: args.hostEmail } : {}),
+  };
 }

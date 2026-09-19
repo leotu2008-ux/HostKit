@@ -6,7 +6,9 @@ import type { InquiryStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
-import { composeInquiry, normalizeRecipient } from "@/lib/outreach";
+import { composeInquiry, inquiryEmail, normalizeRecipient } from "@/lib/outreach";
+import { isEmailConfigured, sendEmails } from "@/lib/email/send";
+import { EmailSendError } from "@/lib/email/failure";
 
 export type InquiryFormState = { error?: string } | undefined;
 
@@ -189,4 +191,68 @@ export async function deleteInquiryAction(formData: FormData) {
     await tx.inquiry.deleteMany({ where: { id: inquiryId, eventId } });
   });
   refresh();
+}
+
+/**
+ * Sends one inquiry, because the host pressed send on that one message.
+ *
+ * Deliberately not a batch: these are real businesses receiving mail with a
+ * host's name on it, and the approval is per message. Only a DRAFT can be
+ * sent, so a double-click cannot mail a vendor twice.
+ */
+export async function sendInquiryAction(
+  _prev: InquiryFormState,
+  formData: FormData,
+): Promise<InquiryFormState> {
+  const eventId = String(formData.get("eventId") ?? "");
+  const inquiryId = String(formData.get("inquiryId") ?? "");
+  const { event, user } = await requireEvent(eventId);
+
+  if (!isEmailConfigured()) {
+    return { error: "Email isn't set up yet, so nothing can be sent from here." };
+  }
+
+  const inquiry = await db.inquiry.findFirst({
+    where: { id: inquiryId, eventId },
+    include: { listing: true },
+  });
+  if (!inquiry) return { error: "That inquiry is no longer here." };
+
+  const to = normalizeRecipient(inquiry.toEmail);
+  if (!to) return { error: "Add the vendor's email address first." };
+
+  if (inquiry.status !== "DRAFT") {
+    return { error: "That inquiry has already been sent." };
+  }
+
+  const { subject } = composeInquiry(event, inquiry.listing, user?.name ?? "the host");
+
+  try {
+    await sendEmails([
+      inquiryEmail({ to, subject, message: inquiry.message, hostEmail: user?.email ?? null }),
+    ]);
+  } catch (error) {
+    // Say which end failed, the way lib/email/failure.ts does elsewhere: a
+    // host who cannot tell "your sender isn't verified" from "that address
+    // bounced" will retry the wrong one forever.
+    //
+    // `cause` is a getter on EmailSendError (lib/email/failure.ts:26) that
+    // classifies the status and body into "sender" | "recipient" | "unknown".
+    // It is NOT called `failure` — that is the name of the returned type.
+    const failure = error instanceof EmailSendError ? error.cause : "unknown";
+    return {
+      error:
+        failure === "recipient"
+          ? "That address bounced. Check it and try again."
+          : "The message couldn't be sent. Nothing was delivered.",
+    };
+  }
+
+  await db.inquiry.update({
+    where: { id: inquiry.id },
+    data: { status: "SENT", sentAt: new Date() },
+  });
+
+  refresh();
+  return undefined;
 }
