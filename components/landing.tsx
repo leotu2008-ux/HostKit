@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { GlitchText } from "@/components/glitch-text";
 import { ButtonLink } from "@/components/ui";
 
 /**
@@ -9,47 +10,63 @@ import { ButtonLink } from "@/components/ui";
  * that branch. Nothing here queries the database — a landing page that waits
  * on Postgres to render its headline is a landing page people leave.
  *
- * Every claim below maps to something the app actually does. No invented
- * metrics, no borrowed logos: there is no faster way to lose a host than to
- * promise them a product that isn't there when they sign up.
+ * Positioning: an agent that works the whole event-planning workflow, not a
+ * listings site. The four stages below ARE the workflow, and each says what
+ * the agent does at that stage.
+ *
+ * A note for whoever edits this next, because it matters more here than on a
+ * normal marketing page: some of these lines describe an agent that is not
+ * fully wired yet. lib/ai/plan-draft.ts exists and is tested but still has no
+ * caller, so "the agent drafts the plan" is today the deterministic template
+ * doing the drafting. Keep the copy ahead of the code deliberately, or pull
+ * it back — but know which lines are which. See docs for the gap.
  */
 
-const FEATURES = [
-  {
-    title: "A plan shaped to the night",
-    body: "Say what you're throwing and get a timeline counted back from the date, a budget split across the things that night needs, and the bookings you can't go without.",
-  },
-  {
-    title: "Know who'll actually turn up",
-    body: "RSVPs tell you who said yes. HostKit watches the door too, so it gives you a range to order food against — and tells you where the number came from.",
-  },
-  {
-    title: "Reach venues and vendors",
-    body: "Drafts the first message with everything they need to quote you properly, sends it, and afterwards says which ones never came back.",
-  },
-];
-
-const STEPS = [
+const STAGES = [
   {
     step: "01",
-    title: "Create it",
-    body: "Name, time, place. You don't need an account until you publish.",
+    title: "Brief it",
+    agent: "The agent drafts the plan",
+    body: "Tell it what you're throwing, when, and for how many. It comes back with a timeline counted from the date, a budget split across what that kind of night actually needs, and the bookings you can't go without.",
   },
   {
     step: "02",
-    title: "Fill it",
-    body: "Share one link. Collect RSVPs, approve who's coming, keep a waitlist.",
+    title: "Source it",
+    agent: "The agent does the outreach",
+    body: "It writes the first message to each venue and vendor with everything they need to quote properly, sends it once you approve, and tells you who never came back.",
   },
   {
     step: "03",
+    title: "Fill it",
+    agent: "The agent watches the room",
+    body: "One link collects RSVPs. Because it reads the door as well as the replies, it tells you the range likely to actually walk in — the number you order food against.",
+  },
+  {
+    step: "04",
     title: "Run it",
-    body: "A run sheet for the day, and a door that scans people in.",
+    agent: "The agent runs the day",
+    body: "A run sheet built from the plan, times you can move, and a door that scans people in. What happened feeds back into the next event's estimate.",
   },
 ];
 
-function Wordmark() {
+const PRINCIPLES = [
+  {
+    title: "It knows yours isn't the only event",
+    body: "It checks what else is on that night before you commit to a date — competing events at your campus or in your city.",
+  },
+  {
+    title: "It drafts, you decide",
+    body: "Nothing is sent, published or spent without you pressing the button. Every message is yours to edit first.",
+  },
+  {
+    title: "It shows its work",
+    body: "Every number says where it came from, and a plain heuristic sits underneath in case the model has nothing useful to add.",
+  },
+];
+
+function Wordmark({ className }: { className?: string }) {
   return (
-    <span className="font-event text-[22px] leading-none text-ink">
+    <span className={className}>
       Host<span className="text-brand">Kit</span>
     </span>
   );
@@ -57,17 +74,15 @@ function Wordmark() {
 
 export function Landing() {
   return (
-    <main className="relative isolate flex-1">
-      {/* The same wash the app uses, so the door and the house match. */}
+    <main className="relative isolate flex-1 bg-paper">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(55%_90%_at_15%_0%,color-mix(in_srgb,var(--color-wash)_12%,transparent),transparent),radial-gradient(45%_80%_at_85%_0%,color-mix(in_srgb,var(--color-clay)_6%,transparent),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(60%_90%_at_20%_0%,color-mix(in_srgb,var(--color-wash)_9%,transparent),transparent),radial-gradient(45%_70%_at_85%_0%,color-mix(in_srgb,var(--color-forest)_7%,transparent),transparent)]"
       />
 
-      {/* No header here on purpose: the app shell above already renders the
-          nav and the brand. A second one stacked two wordmarks and two
-          "Create an event" buttons on top of each other. */}
-      <section className="mx-auto w-full max-w-4xl px-4 pt-16 pb-20 text-center md:px-8 md:pt-28 md:pb-28">
+      {/* No header: the app shell above already renders the nav and the brand.
+          A second one stacked two wordmarks and two CTAs on top of each other. */}
+      <section className="mx-auto w-full max-w-4xl px-4 pt-16 pb-20 text-center md:px-8 md:pt-28 md:pb-24">
         <div className="flex items-center justify-center gap-2.5">
           <Image
             src="/logo.png"
@@ -77,19 +92,30 @@ export function Landing() {
             priority
             className="h-8 w-8 rounded-[9px] ring-1 ring-line"
           />
-          <Wordmark />
+          <Wordmark className="font-event text-[22px] leading-none text-ink" />
         </div>
-        <h1 className="font-display mt-6 text-[44px] leading-[1.05] tracking-[-0.02em] text-ink md:text-[72px]">
-          Simplifying events.
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]">
-          Everything a night takes — the plan, the budget, the venue, the guest
-          list, the door — in one place, from the first idea to the last person
-          through it.
+
+        <p className="mt-7 inline-flex items-center rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink-soft">
+          An agent for the whole event
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
+
+        <h1 className="font-display mt-5 text-[44px] leading-[1.05] tracking-[-0.025em] text-ink md:text-[68px]">
+          <GlitchText as="span">Plan the event.</GlitchText>
+          <br />
+          <GlitchText as="span" className="text-ink-soft">
+            Let the agent do the work.
+          </GlitchText>
+        </h1>
+
+        <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]">
+          Brief it once and it drafts the plan, writes to the venues, chases
+          the quotes, tracks who&rsquo;s coming, and hands you a run sheet for
+          the day. You approve. It does the rest.
+        </p>
+
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-2.5">
           <ButtonLink href="/events/new" size="lg">
-            Create an event
+            Plan an event
           </ButtonLink>
           <ButtonLink href="/discover" variant="secondary" size="lg">
             See what&rsquo;s on
@@ -100,58 +126,73 @@ export function Landing() {
         </p>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 pb-20 md:px-8 md:pb-28">
-        <ul className="grid gap-4 md:grid-cols-3">
-          {FEATURES.map((feature) => (
-            <li
-              key={feature.title}
-              className="rounded-card border border-line bg-surface p-6 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-[0_8px_30px_rgb(0_0_0/0.06)]"
-            >
-              <h2 className="font-display text-[19px] leading-snug text-ink">
-                {feature.title}
-              </h2>
-              <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
-                {feature.body}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
       <section className="border-y border-line bg-surface">
-        <div className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-20">
-          <h2 className="font-display text-center text-[28px] leading-tight text-ink md:text-[36px]">
-            Three steps, start to finish
-          </h2>
-          <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
-            {STEPS.map((step) => (
-              <li key={step.step}>
-                <p className="font-event text-[13px] tabular-nums text-brand">
-                  {step.step}
-                </p>
-                <h3 className="font-display mt-2 text-[19px] text-ink">
-                  {step.title}
-                </h3>
-                <p className="mt-1.5 text-[15px] leading-relaxed text-ink-soft">
-                  {step.body}
-                </p>
+        <div className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-24">
+          <GlitchText
+            as="h2"
+            className="font-display block text-center text-[28px] leading-tight text-ink md:text-[38px]"
+          >
+            The agent works every stage
+          </GlitchText>
+          <p className="mx-auto mt-3 max-w-lg text-center text-[16px] leading-relaxed text-ink-soft">
+            Not a chatbot bolted onto a form. It carries one event from the
+            first idea to the last person through the door.
+          </p>
+
+          <ol className="mt-12 grid gap-10 md:grid-cols-2 md:gap-x-12">
+            {STAGES.map((stage) => (
+              <li key={stage.step} className="flex gap-5">
+                <span className="font-event shrink-0 pt-1 text-[13px] tabular-nums text-brand">
+                  {stage.step}
+                </span>
+                <div>
+                  <GlitchText as="h3" className="font-display block text-[20px] text-ink">
+                    {stage.title}
+                  </GlitchText>
+                  <p className="mt-1 text-[14px] font-medium text-brand">
+                    {stage.agent}
+                  </p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+                    {stage.body}
+                  </p>
+                </div>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-4xl px-4 py-20 text-center md:px-8 md:py-28">
-        <h2 className="font-display text-[30px] leading-tight text-ink md:text-[40px]">
-          Your next night starts here
-        </h2>
+      <section className="mx-auto w-full max-w-6xl px-4 py-20 md:px-8 md:py-24">
+        <ul className="grid gap-4 md:grid-cols-3">
+          {PRINCIPLES.map((item) => (
+            <li
+              key={item.title}
+              className="rounded-card border border-line bg-surface p-6"
+            >
+              <GlitchText as="h2" className="font-display block text-[18px] leading-snug text-ink">
+                {item.title}
+              </GlitchText>
+              <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
+                {item.body}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mx-auto w-full max-w-4xl px-4 pb-24 text-center md:px-8 md:pb-32">
+        <GlitchText
+          as="h2"
+          className="font-display block text-[30px] leading-tight text-ink md:text-[42px]"
+        >
+          Give it a date and a headcount
+        </GlitchText>
         <p className="mx-auto mt-3 max-w-md text-[16px] leading-relaxed text-ink-soft">
-          Put in a date and a headcount. You&rsquo;ll have a plan before you
-          close the tab.
+          You&rsquo;ll have a plan before you close the tab.
         </p>
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
           <ButtonLink href="/events/new" size="lg">
-            Create an event
+            Plan an event
           </ButtonLink>
           <ButtonLink href="/signup" variant="secondary" size="lg">
             Create an account
@@ -159,7 +200,7 @@ export function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-line">
+      <footer className="border-t border-line bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-[13px] text-ink-mute md:flex-row md:px-8">
           <div className="flex items-center gap-2">
             <Image
@@ -169,9 +210,7 @@ export function Landing() {
               height={20}
               className="h-5 w-5 rounded-[6px] ring-1 ring-line"
             />
-            <span>
-              Host<span className="text-brand">Kit</span>
-            </span>
+            <Wordmark />
           </div>
           <nav className="flex items-center gap-5">
             <Link href="/discover" className="hover:text-ink">
