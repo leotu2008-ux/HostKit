@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { SPLASH_STORAGE_KEY } from "../../lib/splash";
 
-test("plays the launch splash once, then reveals Discover", async ({ page }) => {
+// Signed out, "/" is the landing page — so the hero is what proves the page
+// rendered once the splash clears.
+test("plays the launch splash once, then reveals the landing page", async ({
+  page,
+}) => {
   await page.goto("/");
 
   const splash = page.getByTestId("launch-splash");
@@ -22,7 +26,9 @@ test("plays the launch splash once, then reveals Discover", async ({ page }) => 
 
   await expect(splash).toBeHidden({ timeout: 2500 });
 
-  await expect(page.getByRole("heading", { name: "Your events" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Simplifying events" }),
+  ).toBeVisible();
   await expect
     .poll(async () =>
       page.evaluate((key) => sessionStorage.getItem(key), SPLASH_STORAGE_KEY),
@@ -31,7 +37,9 @@ test("plays the launch splash once, then reveals Discover", async ({ page }) => 
 
   await page.reload();
   await expect(page.getByTestId("launch-splash")).toBeHidden();
-  await expect(page.getByRole("heading", { name: "Your events" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Simplifying events" }),
+  ).toBeVisible();
 });
 
 test("skips the splash when the user prefers reduced motion", async ({
@@ -41,5 +49,7 @@ test("skips the splash when the user prefers reduced motion", async ({
   await page.goto("/");
 
   await expect(page.getByTestId("launch-splash")).toBeHidden();
-  await expect(page.getByRole("heading", { name: "Your events" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Simplifying events" }),
+  ).toBeVisible();
 });
