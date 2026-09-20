@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { GlitchText } from "@/components/glitch-text";
 import { ButtonLink } from "@/components/ui";
 
 /**
@@ -99,9 +100,11 @@ export function Landing() {
         </p>
 
         <h1 className="font-display mt-5 text-[44px] leading-[1.05] tracking-[-0.025em] text-ink md:text-[68px]">
-          Plan the event.
+          <GlitchText as="span">Plan the event.</GlitchText>
           <br />
-          <span className="text-ink-soft">Let the agent do the work.</span>
+          <GlitchText as="span" className="text-ink-soft">
+            Let the agent do the work.
+          </GlitchText>
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]">
@@ -125,9 +128,12 @@ export function Landing() {
 
       <section className="border-y border-line bg-surface">
         <div className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-24">
-          <h2 className="font-display text-center text-[28px] leading-tight text-ink md:text-[38px]">
+          <GlitchText
+            as="h2"
+            className="font-display block text-center text-[28px] leading-tight text-ink md:text-[38px]"
+          >
             The agent works every stage
-          </h2>
+          </GlitchText>
           <p className="mx-auto mt-3 max-w-lg text-center text-[16px] leading-relaxed text-ink-soft">
             Not a chatbot bolted onto a form. It carries one event from the
             first idea to the last person through the door.
@@ -140,9 +146,9 @@ export function Landing() {
                   {stage.step}
                 </span>
                 <div>
-                  <h3 className="font-display text-[20px] text-ink">
+                  <GlitchText as="h3" className="font-display block text-[20px] text-ink">
                     {stage.title}
-                  </h3>
+                  </GlitchText>
                   <p className="mt-1 text-[14px] font-medium text-brand">
                     {stage.agent}
                   </p>
@@ -163,9 +169,9 @@ export function Landing() {
               key={item.title}
               className="rounded-card border border-line bg-surface p-6"
             >
-              <h2 className="font-display text-[18px] leading-snug text-ink">
+              <GlitchText as="h2" className="font-display block text-[18px] leading-snug text-ink">
                 {item.title}
-              </h2>
+              </GlitchText>
               <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
                 {item.body}
               </p>
@@ -175,9 +181,12 @@ export function Landing() {
       </section>
 
       <section className="mx-auto w-full max-w-4xl px-4 pb-24 text-center md:px-8 md:pb-32">
-        <h2 className="font-display text-[30px] leading-tight text-ink md:text-[42px]">
+        <GlitchText
+          as="h2"
+          className="font-display block text-[30px] leading-tight text-ink md:text-[42px]"
+        >
           Give it a date and a headcount
-        </h2>
+        </GlitchText>
         <p className="mx-auto mt-3 max-w-md text-[16px] leading-relaxed text-ink-soft">
           You&rsquo;ll have a plan before you close the tab.
         </p>
