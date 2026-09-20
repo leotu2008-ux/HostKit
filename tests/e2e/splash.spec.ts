@@ -27,7 +27,7 @@ test("plays the launch splash once, then reveals the landing page", async ({
   await expect(splash).toBeHidden({ timeout: 2500 });
 
   await expect(
-    page.getByRole("heading", { name: "Simplifying events" }),
+    page.getByRole("heading", { name: "Plan the event" }),
   ).toBeVisible();
   await expect
     .poll(async () =>
@@ -38,7 +38,7 @@ test("plays the launch splash once, then reveals the landing page", async ({
   await page.reload();
   await expect(page.getByTestId("launch-splash")).toBeHidden();
   await expect(
-    page.getByRole("heading", { name: "Simplifying events" }),
+    page.getByRole("heading", { name: "Plan the event" }),
   ).toBeVisible();
 });
 
@@ -50,6 +50,6 @@ test("skips the splash when the user prefers reduced motion", async ({
 
   await expect(page.getByTestId("launch-splash")).toBeHidden();
   await expect(
-    page.getByRole("heading", { name: "Simplifying events" }),
+    page.getByRole("heading", { name: "Plan the event" }),
   ).toBeVisible();
 });
