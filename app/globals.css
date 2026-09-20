@@ -249,72 +249,11 @@ html[data-splash="pending"] .launch-splash-logo {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Hover glitch.
-
-   Text breaks into blocky pixels and jitters, then settles. CSS has no
-   pixelate filter, so the blocks come from an SVG one (#pixel-glitch, defined
-   once in components/landing.tsx) — feFlood paints one cell, feTile repeats
-   it, and feMorphology dilates what survives into squares.
-
-   Discrete steps, not a transition: filters do not interpolate, so asking a
-   browser to tween between pixelated and clean gives you a blur, not a
-   glitch. The final frame clears both filter and transform so the text is
-   left perfectly legible — a decoration that damages reading is a bug.
-   --------------------------------------------------------------------------- */
-
-.glitch-text {
-  display: inline-block;
-  /* Its own layer, so the repaint doesn't drag the rest of the section. */
-  will-change: filter, transform;
-}
-
-.glitch-text:hover {
-  animation: text-glitch 460ms steps(1, end) 1;
-}
-
-@keyframes text-glitch {
-  0% {
-    filter: url(#pixel-glitch);
-    transform: translate3d(-2px, 1px, 0);
-    text-shadow: 2px 0 var(--color-brand), -2px 0 var(--color-forest);
-  }
-  25% {
-    filter: url(#pixel-glitch);
-    transform: translate3d(3px, -1px, 0);
-    text-shadow: -3px 0 var(--color-brand), 2px 0 var(--color-forest);
-  }
-  50% {
-    filter: url(#pixel-glitch);
-    transform: translate3d(-1px, -1px, 0);
-    text-shadow: 1px 0 var(--color-forest), -2px 0 var(--color-brand);
-  }
-  75% {
-    filter: url(#pixel-glitch);
-    transform: translate3d(2px, 1px, 0);
-    text-shadow: -1px 0 var(--color-brand);
-  }
-  100% {
-    filter: none;
-    transform: none;
-    text-shadow: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html[data-splash="pending"] .launch-splash,
   .launch-splash {
     display: none !important;
     animation: none !important;
-  }
-
-  /* Same bargain the splash makes: no motion, and nothing left distorted. */
-  .glitch-text,
-  .glitch-text:hover {
-    animation: none !important;
-    filter: none !important;
-    transform: none !important;
-    text-shadow: none !important;
   }
 }
 
