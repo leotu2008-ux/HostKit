@@ -14,6 +14,7 @@ import { CityDetector } from "@/components/city-detector";
 import { SchoolPrompt } from "@/components/school-prompt";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
 import { EventTile } from "@/components/event-tile";
+import { Landing } from "@/components/landing";
 import { ButtonLink, EmptyState } from "@/components/ui";
 
 export const metadata = { title: "Home" };
@@ -44,20 +45,27 @@ function greeting() {
  * on nearby. Discover proper lives at /discover.
  */
 export default async function HomePage() {
-  const [user, jar] = await Promise.all([currentProfile(), cookies()]);
+  const user = await currentProfile();
+
+  // A stranger gets the landing page, and gets it without waiting on the six
+  // queries below — none of which have anything to show someone with no
+  // events, no clubs and no school.
+  if (!user) return <Landing />;
+
+  const jar = await cookies();
   const remembered = jar.get(CITY_COOKIE)?.value;
   const city = isCity(remembered) ? remembered : (user?.school?.city ?? null);
   const live = { published: true as const, visibility: "PUBLIC" as const, ...upcomingOnly() };
 
   const [mine, nearby, campus, following, official, followingOfficial] = await Promise.all([
-    user ? myUpcomingEvents(user.id, 12) : Promise.resolve([]),
+    myUpcomingEvents(user.id, 12),
     db.event.findMany({
-      where: { ...live, ...(city ? { city } : {}), ...(user ? { ownerId: { not: user.id } } : {}) },
+      where: { ...live, ...(city ? { city } : {}), ownerId: { not: user.id } },
       orderBy,
       take: 4,
       include,
     }),
-    user?.schoolDomain
+    user.schoolDomain
       ? db.event.findMany({
           where: { ...live, schoolDomain: user.schoolDomain, ownerId: { not: user.id } },
           orderBy,
@@ -65,12 +73,12 @@ export default async function HomePage() {
           include,
         })
       : Promise.resolve([]),
-    user ? followingEvents(user.id, 4) : Promise.resolve([]),
-    campusPreviewFor(user?.schoolDomain, 4),
-    user ? followingOfficialEvents(user.id, 4) : Promise.resolve([]),
+    followingEvents(user.id, 4),
+    campusPreviewFor(user.schoolDomain, 4),
+    followingOfficialEvents(user.id, 4),
   ]);
   const fromClubs = mixCampus(following, followingOfficial, 4);
-  const school = user?.school ?? null;
+  const school = user.school ?? null;
   const onCampus = mixCampus(campus, official, 4);
   const cityShort = city ? city.split(",")[0] : null;
 
@@ -91,55 +99,24 @@ export default async function HomePage() {
           </p>
         </div>
         <h1 className="font-display mt-6 text-[34px] leading-[1.1] text-ink md:text-[46px]">
-          {user ? `${greeting()}, ${user.name.split(" ")[0]}` : "Host the night. Find the next one."}
+          {greeting()}, {user.name.split(" ")[0]}
         </h1>
         <p className="mt-2 max-w-xl text-[16px] leading-relaxed text-ink-soft">
-          {user
-            ? "Here’s what’s coming up for you, and what’s on around you."
-            : "Student socials, professional mixers, and nights just for fun. Create an event in a minute — no account needed until you publish."}
+          Here&rsquo;s what&rsquo;s coming up for you, and what&rsquo;s on around you.
         </p>
-        {!user ? (
-          <div className="mt-6 flex flex-wrap gap-2">
-            <ButtonLink href="/events/new" size="lg">
-              Create an event
-            </ButtonLink>
-            <ButtonLink href="/discover" variant="secondary" size="lg">
-              Discover events
-            </ButtonLink>
-          </div>
-        ) : null}
 
-        {user && !user.schoolDomain ? <SchoolPrompt /> : null}
+        {!user.schoolDomain ? <SchoolPrompt /> : null}
 
         <section className="mt-10" aria-labelledby="your-events">
           <div className="mb-3 flex items-end justify-between">
             <h2 id="your-events" className="font-display text-xl text-ink">
               Your events
             </h2>
-            {user ? (
-              <Link href="/events" className="text-sm font-medium text-ink-soft hover:text-ink">
-                View all →
-              </Link>
-            ) : null}
+            <Link href="/events" className="text-sm font-medium text-ink-soft hover:text-ink">
+              View all →
+            </Link>
           </div>
-          {!user ? (
-            <div className="rounded-card border border-line bg-surface p-5 md:flex md:items-center md:justify-between md:gap-6">
-              <div>
-                <p className="text-lg font-semibold text-ink">Sign in to see your events here</p>
-                <p className="mt-1 max-w-md text-[15px] text-ink-soft">
-                  What you host and what you’re going to, soonest first. Students: use your school .edu email.
-                </p>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2 md:mt-0 md:shrink-0">
-                <ButtonLink href="/signin" variant="secondary" size="lg">
-                  Sign in
-                </ButtonLink>
-                <ButtonLink href="/signup" variant="secondary" size="lg">
-                  Create an account
-                </ButtonLink>
-              </div>
-            </div>
-          ) : mine.length === 0 ? (
+          {mine.length === 0 ? (
             <EmptyState
               title="Nothing coming up"
               body="Create an event and it shows up here — so does anything you register for."
