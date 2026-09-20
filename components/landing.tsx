@@ -55,9 +55,34 @@ function Wordmark() {
   );
 }
 
+/**
+ * The pixelation half of the hover glitch (the motion half is .glitch-text in
+ * globals.css). CSS cannot pixelate, so this does it the SVG way: feFlood
+ * paints a single cell, feTile repeats that cell into a grid, compositing it
+ * against the text keeps only one sample per cell, and feMorphology dilates
+ * each survivor back out into a square block.
+ *
+ * Rendered once, hidden, because a filter has to exist in the document for
+ * `filter: url(#pixel-glitch)` to resolve.
+ */
+function PixelGlitchFilter() {
+  return (
+    <svg aria-hidden focusable="false" width="0" height="0" className="absolute">
+      <filter id="pixel-glitch" x="0" y="0">
+        <feFlood x="2" y="2" height="1" width="1" />
+        <feComposite width="5" height="5" />
+        <feTile result="grid" />
+        <feComposite in="SourceGraphic" in2="grid" operator="in" />
+        <feMorphology operator="dilate" radius="2.5" />
+      </filter>
+    </svg>
+  );
+}
+
 export function Landing() {
   return (
     <main className="relative isolate flex-1">
+      <PixelGlitchFilter />
       {/* The same wash the app uses, so the door and the house match. */}
       <div
         aria-hidden
@@ -79,7 +104,7 @@ export function Landing() {
           />
           <Wordmark />
         </div>
-        <h1 className="font-display mt-6 text-[44px] leading-[1.05] tracking-[-0.02em] text-ink md:text-[72px]">
+        <h1 className="glitch-text font-display mt-6 text-[44px] leading-[1.05] tracking-[-0.02em] text-ink md:text-[72px]">
           Simplifying events.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]">
@@ -107,7 +132,7 @@ export function Landing() {
               key={feature.title}
               className="rounded-card border border-line bg-surface p-6 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-[0_8px_30px_rgb(0_0_0/0.06)]"
             >
-              <h2 className="font-display text-[19px] leading-snug text-ink">
+              <h2 className="glitch-text font-display text-[19px] leading-snug text-ink">
                 {feature.title}
               </h2>
               <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
@@ -120,7 +145,7 @@ export function Landing() {
 
       <section className="border-y border-line bg-surface">
         <div className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-20">
-          <h2 className="font-display text-center text-[28px] leading-tight text-ink md:text-[36px]">
+          <h2 className="glitch-text font-display text-center text-[28px] leading-tight text-ink md:text-[36px]">
             Three steps, start to finish
           </h2>
           <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
@@ -129,7 +154,7 @@ export function Landing() {
                 <p className="font-event text-[13px] tabular-nums text-brand">
                   {step.step}
                 </p>
-                <h3 className="font-display mt-2 text-[19px] text-ink">
+                <h3 className="glitch-text font-display mt-2 text-[19px] text-ink">
                   {step.title}
                 </h3>
                 <p className="mt-1.5 text-[15px] leading-relaxed text-ink-soft">
@@ -142,7 +167,7 @@ export function Landing() {
       </section>
 
       <section className="mx-auto w-full max-w-4xl px-4 py-20 text-center md:px-8 md:py-28">
-        <h2 className="font-display text-[30px] leading-tight text-ink md:text-[40px]">
+        <h2 className="glitch-text font-display text-[30px] leading-tight text-ink md:text-[40px]">
           Your next night starts here
         </h2>
         <p className="mx-auto mt-3 max-w-md text-[16px] leading-relaxed text-ink-soft">
