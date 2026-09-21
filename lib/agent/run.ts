@@ -61,6 +61,11 @@ export type RunOptions = {
    *  has an owner, and absent from the cron (which has no request to read). */
   ipKey?: string | null;
   now?: Date;
+  /** How long this run may spend on steps, when the caller has less than
+   *  AGENT_TIME_BUDGET_MS to give it — the cron sweep runs several events
+   *  inside one function invocation and has to share its ceiling out. Never
+   *  raises the budget above the default. */
+  budgetMs?: number;
   /** Injectable for tests; forwarded to the model-backed steps. */
   fetchImpl?: typeof fetch;
 };
@@ -278,7 +283,7 @@ async function attemptRun(eventId: string, options: RunOptions): Promise<RunOutc
     });
   }
 
-  const deadline = Date.now() + AGENT_TIME_BUDGET_MS;
+  const deadline = Date.now() + Math.min(options.budgetMs ?? AGENT_TIME_BUDGET_MS, AGENT_TIME_BUDGET_MS);
   const results: StepResult[] = [];
 
   const planStep = byName.get("plan");

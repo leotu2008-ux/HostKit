@@ -5,7 +5,7 @@ import { CATEGORY_LABEL } from "@/lib/catalog";
 import { planningContext } from "@/lib/event-context";
 import { composeInquiry, type OutreachEvent } from "@/lib/outreach";
 import { isViable, scoreListing } from "@/lib/scoring";
-import { draftInquiry } from "@/lib/actions/inquiries";
+import { draftInquiry } from "@/lib/inquiries";
 
 /**
  * The agent's vendor step: for each category the plan allocated money to, the

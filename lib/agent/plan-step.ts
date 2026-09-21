@@ -1,7 +1,7 @@
 import type { EventType } from "@/generated/prisma/enums";
 import type { ActivityLine } from "@/lib/activity";
 import { draftPlan } from "@/lib/ai/plan-draft";
-import { regenerateTasksAndCategories } from "@/lib/actions/plan";
+import { regenerateTasksAndCategories } from "@/lib/replan-apply";
 
 /**
  * The agent's plan step: a budget split and a timeline for this event.
