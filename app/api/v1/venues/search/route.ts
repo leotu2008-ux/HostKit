@@ -1,11 +1,12 @@
 import { isCity } from "@/lib/catalog";
 import { apiError, json } from "@/lib/api/http";
-import { isVenueSearchConfigured, searchVenues } from "@/lib/venues/apple-maps";
+import { isVenueSearchConfigured, searchVenues } from "@/lib/venues/search";
 
 /**
  * Venues matching `q` around `city`, for the Create form on the web. iOS
  * searches MapKit directly. `unavailable` is true when the server has no
- * Apple Maps key, so the form can offer manual entry instead of an error.
+ * Google Places or Apple Maps key, so the form can offer manual entry
+ * instead of an error. Google wins when both are configured.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);

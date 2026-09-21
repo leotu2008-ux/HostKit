@@ -12,6 +12,7 @@ import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
 import { publishEvent } from "@/lib/publish";
 import { canManageClub } from "@/lib/clubs";
+import { venueSearchProvider } from "@/lib/venues/search";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 import { parseStart } from "@/lib/when";
 import { readyToPublish } from "@/lib/brief";
@@ -133,7 +134,7 @@ export async function createEventAction(
           externalId: input.venueExternalId || null,
           lat,
           lng,
-          source: "APPLE_MAPS",
+          source: venueSearchProvider() === "google" ? "GOOGLE_MAPS" : "APPLE_MAPS",
         }
       : null,
   });

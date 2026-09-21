@@ -160,6 +160,7 @@ export function Landing() {
                   Plan an event <span aria-hidden>→</span>
                 </>
               }
+              variant="brand"
               size="lg"
             />
             <ButtonLink href="/discover" variant="secondary" size="lg">
@@ -309,6 +310,7 @@ export function Landing() {
                   Plan an event <span aria-hidden>→</span>
                 </>
               }
+              variant="brand"
               size="lg"
             />
             <ButtonLink href="/signup" variant="secondary" size="lg">

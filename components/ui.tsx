@@ -10,7 +10,7 @@ export function cx(...parts: Array<string | false | null | undefined>) {
 // Buttons
 // ---------------------------------------------------------------------------
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand";
 
 const BUTTON_BASE =
   "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50";
@@ -21,6 +21,8 @@ const BUTTON_VARIANT: Record<Variant, string> = {
     "bg-surface text-ink border border-line-strong hover:border-ink-mute hover:bg-sunk",
   ghost: "text-ink-soft hover:bg-sunk hover:text-ink",
   danger: "bg-danger-wash text-danger hover:bg-danger hover:text-white",
+  // Same orange as the "Kit" in the wordmark (`text-brand`).
+  brand: "bg-brand text-white hover:opacity-90",
 };
 
 const BUTTON_SIZE = {

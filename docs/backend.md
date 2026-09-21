@@ -19,7 +19,7 @@ Postgres database. There is no second service to deploy.
 | **SMS** | Twilio (`lib/sms`): phone verification codes, SMS blasts. | Needs `TWILIO_*` |
 | **Push** | APNs (`lib/push/apns.ts`). | Needs a paid Apple team + `APNS_*` |
 | **Campus sync** | Daily cron (`vercel.json` → `/api/cron/campus-sync`) plus on-demand refresh. | Needs `CRON_SECRET` for the schedule |
-| **Venue search (web)** | Apple Maps Server API. | Needs `APPLE_MAPS_*` |
+| **Venue search (web)** | Google Places API (New) Text Search, or Apple Maps Server API if Google isn't configured. | Needs `GOOGLE_MAPS_API_KEY` or `APPLE_MAPS_*` |
 
 ## What to set in Vercel, in order of impact
 
@@ -27,7 +27,24 @@ Postgres database. There is no second service to deploy.
 2. **`BLOB_READ_WRITE_TOKEN`** — Vercel → Storage → Blob. Moves uploads out of Postgres onto a CDN. Existing rows keep serving from `/api/images/:id`.
 3. **`CRON_SECRET`** — any random string; Vercel sends it on the scheduled campus sync.
 4. **`DIRECT_URL`** — the provider's non-pooled URL so `prisma migrate deploy` doesn't go through the pooler.
-5. `TWILIO_*`, `APPLE_MAPS_*`, `APNS_*` — when you want texts, web venue search and push.
+5. `TWILIO_*`, `GOOGLE_MAPS_API_KEY` (or `APPLE_MAPS_*`), `APNS_*` — when you want texts, web venue search and push.
+
+## Enabling web venue search
+
+The Create form searches real places around the selected city. iOS does this
+on-device with MapKit; the website needs a server key.
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → create or pick a project → enable billing.
+2. APIs & Services → Library → enable **Places API (New)** (not only the legacy Places API).
+3. APIs & Services → Credentials → Create credentials → API key. Restrict it to Places API (New).
+4. Set `GOOGLE_MAPS_API_KEY` on the Vercel project (Production, Preview, Development) and redeploy.
+5. `/api/v1/venues/search` then returns venues with `unavailable: false`.
+
+Places SKUs have a monthly free usage cap (this replaced the old $200 credit).
+Phone and website on a result use Text Search Enterprise; name, address and
+coordinates are Pro. If Google isn't set, `APPLE_MAPS_TEAM_ID` /
+`APPLE_MAPS_KEY_ID` / `APPLE_MAPS_PRIVATE_KEY` are the fallback. Without either
+key the form offers typing an address (`unavailable: true`).
 
 ## Data safety
 

@@ -5,7 +5,8 @@
 
    Clean and bright, the way the best event apps feel: near-white grounds,
    hairline borders, a sans UI, a monochrome accent (ink on light, white on
-   dark) for actions, and the brand orange in hints only. Event titles are the only serif on the page — they're the part that
+   dark) for most actions, and the brand orange for the wordmark and the
+   landing "Plan an event" CTA. Event titles are the only serif on the page — they're the part that
    should feel like an invitation. Dark is a true night ground, not a grey
    invert, so covers glow on it.
 --------------------------------------------------------------------------- */
@@ -33,8 +34,8 @@
   --color-clay-wash: #ececea;
   --color-on-clay: #ffffff;
 
-  /* Brand — the orange, in hints only: the "Kit" in the wordmark, school
-     chips, unread marks, a faint glow. Never a button. */
+  /* Brand — the orange: the "Kit" in the wordmark, school chips, unread
+     marks, a faint glow, and the landing "Plan an event" CTA. */
   --color-brand: #c64a22;
   --color-brand-wash: #fcede7;
 

@@ -20,7 +20,7 @@ export function CreateEventButton({
 }: {
   label?: React.ReactNode;
   size?: "sm" | "md" | "lg";
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "brand";
   className?: string;
 }) {
   return (

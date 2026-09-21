@@ -18,8 +18,9 @@ import { washCss, washPaletteFor } from "@/lib/school-wash";
  * The top bar floats: a rounded pill that hugs its contents, centred under
  * the top edge with a soft shadow, and the page showing through around it —
  * rather than a full-width band with a rule under it, which read as a
- * separate frame sitting on top of the site. The logo and the avatar both
- * open the account menu.
+ * separate frame sitting on top of the site. It stays at the top of the
+ * page and scrolls away with it; it does not stick to the viewport. The
+ * logo and the avatar both open the account menu.
  */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
   const user = await currentProfile();
@@ -40,7 +41,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
           dangerouslySetInnerHTML={{ __html: washCss(wash) }}
         />
       ) : null}
-      <header className="no-print pointer-events-none sticky top-0 z-40 px-3 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:pt-3">
+      <header className="no-print pointer-events-none relative z-40 px-3 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:pt-3">
         <div className="pointer-events-auto mx-auto flex h-14 w-fit max-w-full items-center gap-6 rounded-full bg-surface/95 pr-2 pl-3 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_6px_24px_rgb(0_0_0/0.09),0_0_0_1px_rgb(0_0_0/0.04)] backdrop-blur-xl md:pl-4">
           <AccountMenu user={menuUser} signOut={signOutAction} align="left" label="Account menu">
             <span className="flex items-center gap-2 font-event text-[21px] text-ink">
