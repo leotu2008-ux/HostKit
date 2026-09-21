@@ -14,6 +14,7 @@ const ICON: Record<string, string> = {
   registration_approved: "✅",
   waitlist_promoted: "🎟️",
   blast: "✉️",
+  agent_briefing: "🗓️",
 };
 
 /** Everything that happened to you, newest first. */
@@ -62,7 +63,13 @@ export default async function InboxPage() {
               <p className="mb-2 text-[13px] font-medium text-ink-mute">{day.label}</p>
               <Card className="divide-y divide-line overflow-hidden">
                 {day.items.map((n) => {
-                  const href = n.eventId ? `/e/${n.eventId}` : n.clubId ? `/c/${clubHandles.get(n.clubId) ?? ""}` : null;
+                  const href = n.eventId
+                    ? n.kind === "agent_briefing"
+                      ? `/events/${n.eventId}`
+                      : `/e/${n.eventId}`
+                    : n.clubId
+                      ? `/c/${clubHandles.get(n.clubId) ?? ""}`
+                      : null;
                   const inner = (
                     <div className="flex items-start gap-3 px-5 py-3.5">
                       <span aria-hidden className="mt-0.5 text-lg">{ICON[n.kind] ?? "•"}</span>
