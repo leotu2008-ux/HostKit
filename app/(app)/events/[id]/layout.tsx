@@ -10,7 +10,7 @@ import { publishEventAction } from "@/lib/actions/events";
 import { removeCoverAction, setCoverAction } from "@/lib/actions/photos";
 import { AgentPanel } from "@/components/agent-panel";
 import { loadBriefing } from "@/lib/agent/load";
-import { isVenueSearchConfigured } from "@/lib/venues/apple-maps";
+import { isVenueSearchConfigured } from "@/lib/venues/search";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
