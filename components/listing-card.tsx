@@ -62,7 +62,7 @@ export function ListingCard({
   return (
     <article
       className={cx(
-        "group relative overflow-hidden rounded-card border border-line bg-surface transition-colors hover:border-line-strong",
+        "group relative overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-line-strong",
         disqualified && "opacity-70",
       )}
     >

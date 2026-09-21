@@ -38,7 +38,7 @@ export default async function EventLayout({
   const { event, user } = await requireEvent(id);
   const days = daysUntil(event.date);
 
-  const [briefing, agent, switcher, photo] = await Promise.all([
+  const [briefing, agent, switcher] = await Promise.all([
     loadBriefing(event),
     loadAgentStatus(event),
     // The switcher's list. A signed-out draft holder has no account to list
@@ -53,11 +53,6 @@ export default async function EventLayout({
           select: { id: true, title: true, date: true },
         })
       : Promise.resolve([] as SwitcherEvent[]),
-    // The session token carries id/name/email only, so the avatar's photo is
-    // one narrow read rather than the whole profile.
-    user
-      ? db.user.findUnique({ where: { id: user.id }, select: { imageUrl: true } })
-      : Promise.resolve(null),
   ]);
 
   return (
@@ -68,7 +63,6 @@ export default async function EventLayout({
         switcher={switcher}
         agent={agent}
         now={new Date().toISOString()}
-        user={user ? { name: user.name, email: user.email, imageUrl: photo?.imageUrl } : null}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <WorkspaceBar event={event} days={days} signedIn={Boolean(user)} />

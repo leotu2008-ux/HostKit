@@ -7,10 +7,7 @@ import { describeMissing } from "@/lib/brief";
 import { formatEventDate } from "@/lib/when";
 import { relativeTime } from "@/lib/activity-format";
 import type { AgentStatusView } from "@/lib/activity";
-import { AccountMenu } from "@/components/account-menu";
-import { Avatar } from "@/components/avatar";
 import { CreateEventButton } from "@/components/create-event-button";
-import { signOutAction } from "@/lib/actions/auth";
 import {
   BriefIcon,
   CheckIcon,
@@ -25,18 +22,18 @@ import { cx } from "@/components/ui";
 
 /**
  * The workspace's left rail: the brand, the event you're in (with a way to
- * jump to another), the six stages of running a night, the agent's pulse,
- * and who you're signed in as. It replaces components/event-sidebar.tsx,
- * which was the same six links with no shell around them.
+ * jump to another), the six stages of running a night, and the agent's
+ * pulse. It replaces components/event-sidebar.tsx, which was the same six
+ * links with no shell around them. The account and the inbox belong to the
+ * app bar, which carries them at every width.
  *
  * A client component for one reason — the active tab is the current URL.
  * Everything it renders past that is server data passed down as props, and
  * the switcher is a plain <details>, so opening it costs no JavaScript.
  *
  * Below lg it is the horizontal scroller it has always been: the six tabs
- * in a row above the app bar, without the switcher, the agent card or the
- * account row (all of which the app bar and the marketing chrome already
- * reach on a phone). Mobile is not the target, but it must not break.
+ * in a row above the app bar, without the brand, the switcher or the agent
+ * card. Mobile is not the target, but it must not break.
  */
 
 export type SwitcherEvent = { id: string; title: string; date: Date | null };
@@ -193,14 +190,12 @@ export function WorkspaceSidebar({
   switcher,
   agent,
   now,
-  user,
 }: {
   eventId: string;
   title: string;
   switcher: SwitcherEvent[];
   agent: AgentStatusView;
   now: string;
-  user: { name: string; email: string; imageUrl?: string | null } | null;
 }): React.JSX.Element {
   const pathname = usePathname();
   const base = `/events/${eventId}`;
@@ -266,25 +261,6 @@ export function WorkspaceSidebar({
           </div>
         </div>
 
-        <div className="mt-2 hidden lg:block">
-          {user ? (
-            <AccountMenu
-              user={{ name: user.name, email: user.email, imageUrl: user.imageUrl }}
-              signOut={signOutAction}
-              align="left"
-              label={`${user.name} — account menu`}
-            >
-              <span className="flex min-w-0 items-center gap-2 rounded-lg p-1 hover:bg-surface">
-                <Avatar name={user.name} imageUrl={user.imageUrl} size={28} />
-                <span className="min-w-0 truncate text-[13px] text-ink">{user.name}</span>
-              </span>
-            </AccountMenu>
-          ) : (
-            <Link href="/signin" className="block px-1 py-1.5 text-[13px] text-ink-soft hover:text-ink">
-              Sign in
-            </Link>
-          )}
-        </div>
       </div>
     </nav>
   );
