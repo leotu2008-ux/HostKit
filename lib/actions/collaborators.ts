@@ -15,7 +15,7 @@ const KINDS = ["VENUE", "SPEAKER", "COHOST"] as const;
 const STATUSES = ["PENDING", "CONFIRMED", "DECLINED"] as const;
 
 /** Readable labels for the outreach kinds, matching the section titles on
- *  the Outreach page (app/(app)/events/[id]/outreach/page.tsx). */
+ *  the Outreach page (app/(app)/events/[id]/(outreach)/outreach/page.tsx). */
 const KIND_LABEL: Record<(typeof KINDS)[number], string> = {
   VENUE: "Venue",
   SPEAKER: "Speaker",
