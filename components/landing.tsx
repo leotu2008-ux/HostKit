@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CloudSky } from "@/components/cloud-sky";
 import { GlitchText } from "@/components/glitch-text";
 import { ButtonLink } from "@/components/ui";
 
@@ -121,10 +122,7 @@ function Rails({ children }: { children: React.ReactNode }) {
 export function Landing() {
   return (
     <main className="relative isolate flex-1 bg-paper">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(60%_90%_at_20%_0%,color-mix(in_srgb,var(--color-wash)_8%,transparent),transparent),radial-gradient(45%_70%_at_85%_0%,color-mix(in_srgb,var(--color-forest)_6%,transparent),transparent)]"
-      />
+      <CloudSky />
 
       {/* No header: the app shell already renders the nav and the brand. */}
       <Rails>
