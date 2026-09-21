@@ -11,9 +11,14 @@ import { washCss, washPaletteFor } from "@/lib/school-wash";
 
 /**
  * The app shell. Phones get a compact header and the bottom tab bar; wider
- * screens get a full-width top bar with the same destinations and a Create
- * button, so the desktop site is a real layout rather than a phone column.
- * The logo and the avatar both open the account menu.
+ * screens get the same destinations and a Create button in the top bar, so
+ * the desktop site is a real layout rather than a phone column.
+ *
+ * The top bar floats: a rounded pill that hugs its contents, centred under
+ * the top edge with a soft shadow, and the page showing through around it —
+ * rather than a full-width band with a rule under it, which read as a
+ * separate frame sitting on top of the site. The logo and the avatar both
+ * open the account menu.
  */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
   const user = await currentProfile();
@@ -34,8 +39,8 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
           dangerouslySetInnerHTML={{ __html: washCss(wash) }}
         />
       ) : null}
-      <header className="no-print sticky top-0 z-40 border-b border-line/70 bg-paper/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 md:px-8">
+      <header className="no-print pointer-events-none sticky top-0 z-40 px-3 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:pt-3">
+        <div className="pointer-events-auto mx-auto flex h-14 w-fit max-w-full items-center gap-6 rounded-full bg-surface/95 pr-2 pl-3 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_6px_24px_rgb(0_0_0/0.09),0_0_0_1px_rgb(0_0_0/0.04)] backdrop-blur-xl md:pl-4">
           <AccountMenu user={menuUser} signOut={signOutAction} align="left" label="Account menu">
             <span className="flex items-center gap-2 font-event text-[21px] text-ink">
               <Image

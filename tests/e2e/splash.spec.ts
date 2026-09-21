@@ -6,7 +6,11 @@ import { SPLASH_STORAGE_KEY } from "../../lib/splash";
 test("plays the launch splash once, then reveals the landing page", async ({
   page,
 }) => {
-  await page.goto("/");
+  // The splash is visible from first paint (`data-splash` is set on <html>
+  // before paint) and gone ~1.4s after hydration, so the assertion must run
+  // as soon as the navigation commits — waiting for `load` (every image on
+  // the landing page) can arrive after the splash has already played.
+  await page.goto("/", { waitUntil: "commit" });
 
   const splash = page.getByTestId("launch-splash");
   await expect(splash).toBeVisible();
