@@ -9,20 +9,18 @@ import { runAgentAction } from "@/lib/actions/agent";
 import { cx } from "@/components/ui";
 
 /**
- * The workspace's left rail — the six stages of running a night, replacing
- * the old top strip (components/event-nav.tsx, still on disk for Milestone 4
- * to remove once every page it links has a home under one of these tabs).
+ * The workspace's left rail — the six stages of running a night. Replaces
+ * the old top strip (components/event-nav.tsx, removed in Milestone 4 now
+ * that every page it linked has a home under one of these tabs).
  */
 
 export type SidebarTab = { href: string; label: string; match: string[] };
 
-// The Venue tab points at the existing agent/venues page for now — Milestone
-// 4 moves it to its own /venue route, hence the match prefix already here.
 const TABS: SidebarTab[] = [
   { href: "", label: "Overview", match: [] },
   { href: "/brief", label: "Brief", match: [] },
   { href: "/plan", label: "Planning", match: ["/budget", "/runsheet"] },
-  { href: "/agent/venues", label: "Venue", match: ["/venue"] },
+  { href: "/venue", label: "Venue", match: ["/agent/venues"] },
   { href: "/outreach", label: "Outreach", match: ["/discover", "/shortlist"] },
   { href: "/guests", label: "Guests", match: ["/promote", "/blasts", "/check-in"] },
 ];

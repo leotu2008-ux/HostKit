@@ -99,11 +99,10 @@ function AgentCardAction({
       );
 
     case "find_venues":
-      // Venue search dark-launches until Milestone C ships its page; until
-      // then (or when Apple Maps isn't configured) send the host to the
-      // manual path they already know.
+      // Venue search dark-launches until Apple Maps is configured, in which
+      // case the Venue tab is where a host can actually see results.
       return venueSearchEnabled ? (
-        <ButtonLink href={`/events/${eventId}/agent/venues`} variant="secondary" size="sm">
+        <ButtonLink href={`/events/${eventId}/venue`} variant="secondary" size="sm">
           {action.label}
         </ButtonLink>
       ) : (
