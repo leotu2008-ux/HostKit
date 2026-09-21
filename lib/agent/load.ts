@@ -37,6 +37,7 @@ export async function loadBriefing(
       toEmail: i.toEmail,
       sentAt: i.sentAt,
       respondedAt: i.respondedAt,
+      category: i.listing.category,
     })),
     collaborators: collaborators.map((c) => ({ ...c, sentAt: null })),
     now,

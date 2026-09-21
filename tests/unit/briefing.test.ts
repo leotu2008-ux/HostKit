@@ -29,6 +29,7 @@ function inquiry(over: Partial<BriefingInquiry> & { id: string }): BriefingInqui
     toEmail: null,
     sentAt: null,
     respondedAt: null,
+    category: null,
     ...over,
   };
 }
@@ -109,6 +110,53 @@ describe("briefingFor — tasks", () => {
     });
     const item = b.items.find((i) => i.id === "task_due:t1")!;
     expect(item.action).toEqual({ type: "complete_task", taskId: "t1", label: "Mark done" });
+  });
+});
+
+describe("briefingFor — every emitted action.type is a known kind", () => {
+  it("exhaustively switches over every item's action, and a complete_task's taskId is in the input", () => {
+    const inputTasks = [task({ id: "t1", dueDate: NOW })];
+    const soonEvent = { id: "e1", title: "Fall Mixer", date: inDays(2) };
+    const b = briefingFor(soonEvent, {
+      tasks: inputTasks,
+      inquiries: [
+        inquiry({ id: "i1", status: "SENT", sentAt: daysAgo(CHASE_AFTER_DAYS) }),
+        inquiry({ id: "i2", status: "DRAFT", toEmail: "vendor@example.com" }),
+      ],
+      collaborators: [],
+      now: NOW,
+    });
+
+    // A rich-enough scenario to actually exercise every kind this function
+    // can emit: task_due (from t1), outreach_quiet (i1), outreach_unsent
+    // (i2), venue_missing (no VENUE collaborator or booked inquiry), and
+    // event_soon (soonEvent is within EVENT_SOON_DAYS).
+    const seenKinds = new Set(b.items.map((i) => i.kind));
+    expect(seenKinds).toEqual(
+      new Set(["task_due", "outreach_quiet", "outreach_unsent", "venue_missing", "event_soon"]),
+    );
+
+    for (const item of b.items) {
+      const action = item.action;
+      switch (action.type) {
+        case "complete_task": {
+          const taskId = action.taskId; // narrowed here, not inside the closure below
+          expect(inputTasks.some((t) => t.id === taskId)).toBe(true);
+          break;
+        }
+        case "open_outreach":
+        case "find_venues":
+        case "open_runsheet":
+        case "open_plan":
+          break;
+        default: {
+          // Exhaustive: adding a BriefingAction variant without a case here
+          // fails to compile, not just fails at runtime.
+          const _exhaustive: never = action;
+          throw new Error(`Unknown action type: ${JSON.stringify(_exhaustive)}`);
+        }
+      }
+    }
   });
 });
 
@@ -214,6 +262,36 @@ describe("briefingFor — venue_missing", () => {
       now: NOW,
     });
     expect(covered.items.find((i) => i.kind === "venue_missing")).toBeUndefined();
+  });
+
+  it("also counts as covered a BOOKED VENUE-category catalog inquiry, with no collaborator at all", () => {
+    const b = briefingFor(EVENT, {
+      tasks: [],
+      inquiries: [inquiry({ id: "i1", status: "BOOKED", category: "VENUE" })],
+      collaborators: [],
+      now: NOW,
+    });
+    expect(b.items.find((i) => i.kind === "venue_missing")).toBeUndefined();
+  });
+
+  it("a BOOKED inquiry in a different category does not cover the venue", () => {
+    const b = briefingFor(EVENT, {
+      tasks: [],
+      inquiries: [inquiry({ id: "i1", status: "BOOKED", category: "CATERING" })],
+      collaborators: [],
+      now: NOW,
+    });
+    expect(b.items.find((i) => i.kind === "venue_missing")).toBeDefined();
+  });
+
+  it("a VENUE-category inquiry that is only SENT, not BOOKED, does not cover the venue", () => {
+    const b = briefingFor(EVENT, {
+      tasks: [],
+      inquiries: [inquiry({ id: "i1", status: "SENT", category: "VENUE", sentAt: daysAgo(1) })],
+      collaborators: [],
+      now: NOW,
+    });
+    expect(b.items.find((i) => i.kind === "venue_missing")).toBeDefined();
   });
 });
 

@@ -79,6 +79,9 @@ export type BriefingInquiry = {
   toEmail: string | null;
   sentAt: Date | null;
   respondedAt: Date | null;
+  /** The listing's category — carried so venueMissingItem can tell a booked
+   *  venue apart from a booked caterer. */
+  category: ListingCategory | null;
 };
 
 export type BriefingCollaborator = {
@@ -203,16 +206,19 @@ function collaboratorItems(collaborators: BriefingCollaborator[], now: Date): Br
 
 function venueMissingItem(
   event: BriefingEvent,
+  inquiries: BriefingInquiry[],
   collaborators: BriefingCollaborator[],
   now: Date,
 ): BriefingItem | null {
-  // Note: a venue booked through a catalog Inquiry (rather than the agent's
-  // own venue search, Milestone C) never becomes an EventCollaborator until
-  // it is confirmed by hand, and the inquiries shape this function is given
-  // carries no listing category to detect that case. So this can false-
-  // positive on a venue that was booked the old way — accepted for A; C's
-  // attachVenueAction is the only path that clears this card going forward.
-  const hasVenue = collaborators.some((c) => c.kind === "VENUE");
+  // A venue counts as covered either way it can arrive: through the agent's
+  // own venue search (Milestone C), which lands as an EventCollaborator, or
+  // through the older path of booking a VENUE-category catalog Inquiry
+  // straight to BOOKED (lib/actions/inquiries.ts:149-175), which never
+  // touches EventCollaborator at all. Missing either half of this check
+  // would nag a host who has, in fact, already booked their venue.
+  const hasVenue =
+    collaborators.some((c) => c.kind === "VENUE") ||
+    inquiries.some((i) => i.category === "VENUE" && i.status === "BOOKED");
   if (hasVenue) return null;
 
   const days = daysUntil(event.date, now);
@@ -247,7 +253,7 @@ export function briefingFor(event: BriefingEvent, input: BriefingInput): Briefin
     ...collaboratorItems(input.collaborators, input.now),
   ];
 
-  const venueMissing = venueMissingItem(event, input.collaborators, input.now);
+  const venueMissing = venueMissingItem(event, input.inquiries, input.collaborators, input.now);
   if (venueMissing) items.push(venueMissing);
 
   const eventSoon = eventSoonItem(event, input.now);
