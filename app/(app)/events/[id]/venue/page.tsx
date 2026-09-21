@@ -8,6 +8,10 @@ import { VenueFinder } from "@/components/venue-finder";
 import { ContactLinks } from "@/components/contact-links";
 import { Badge, ButtonLink, Card, EmptyState, SectionHeading, type Tone } from "@/components/ui";
 
+// Server Actions inherit the page's route segment limit; "Find venues" makes
+// a Maps request and an up-to-8s model call, well past the 10s default.
+export const maxDuration = 60;
+
 export async function generateMetadata({ params }: PageProps<"/events/[id]/venue">) {
   const { id } = await params;
   const { event } = await requireEvent(id);
