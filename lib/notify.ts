@@ -15,13 +15,15 @@ export type NotificationKind =
   | "registration_request"
   | "registration_approved"
   | "waitlist_promoted"
-  | "blast";
+  | "blast"
+  | "agent_briefing";
 
 const EMAIL_KINDS = new Set<NotificationKind>([
   "club_published",
   "club_update",
   "registration_approved",
   "waitlist_promoted",
+  "agent_briefing",
 ]);
 
 export type Notice = {

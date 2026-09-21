@@ -8,6 +8,9 @@ import { EventCover } from "@/components/event-cover";
 import { ImageUpload } from "@/components/image-upload";
 import { publishEventAction } from "@/lib/actions/events";
 import { removeCoverAction, setCoverAction } from "@/lib/actions/photos";
+import { AgentPanel } from "@/components/agent-panel";
+import { loadBriefing } from "@/lib/agent/load";
+import { isVenueSearchConfigured } from "@/lib/venues/apple-maps";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
@@ -22,6 +25,7 @@ export default async function EventLayout({
   const { id } = await params;
   const { event, user } = await requireEvent(id);
   const days = daysUntil(event.date);
+  const briefing = await loadBriefing(event);
 
   return (
     <div className="px-4 py-4 md:py-2">
@@ -83,7 +87,19 @@ export default async function EventLayout({
         <EventNav eventId={event.id} />
       </div>
 
-      {children}
+      {/* The agent rides alongside the stage pages rather than living behind
+          its own tab, so it stays the thing watching the others rather than
+          another app the host has to remember to visit. Right rail on
+          lg+; below the content, full width, on narrower screens. */}
+      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-8">
+        <div className="min-w-0">{children}</div>
+        <AgentPanel
+          briefing={briefing}
+          eventId={event.id}
+          canSend={Boolean(user?.email)}
+          venueSearchEnabled={isVenueSearchConfigured()}
+        />
+      </div>
     </div>
   );
 }

@@ -18,6 +18,13 @@ export type OutreachRow = {
   listingPath: string | null;
   subject: string;
   message: string;
+  /** When a collaborator send went out. Null for inquiries — those track
+   *  sentAt on their own status machine instead (see status above). */
+  sentAt: Date | null;
+  /** Whether the send form should be offered: a collaborator row with an
+   *  email that has not already been sent. Inquiries send from their own
+   *  panel (lib/actions/inquiries.ts), not from here. */
+  canSend: boolean;
 };
 
 /**
@@ -55,7 +62,11 @@ export async function loadOutreach(
       source: "collaborator",
       listingPath: null,
       subject: draft.subject,
-      message: draft.body,
+      // The host's own edit, if they saved one, over the composed draft —
+      // sendCollaboratorAction mails exactly this, so the panel must show it.
+      message: c.message ?? draft.body,
+      sentAt: c.sentAt,
+      canSend: Boolean(c.email) && !c.sentAt,
     };
   });
 
@@ -74,6 +85,10 @@ export async function loadOutreach(
       listingPath: `/listings/${inquiry.listingId}?event=${event.id}`,
       subject: composeInquiry(event, inquiry.listing, hostName).subject,
       message: inquiry.message,
+      sentAt: inquiry.sentAt,
+      // Inquiries send from InquiryPanel (its own DRAFT/SENT status machine),
+      // not from an OutreachCard form — see components/outreach-card.tsx.
+      canSend: false,
     });
   }
   return rows;
