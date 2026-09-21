@@ -24,10 +24,31 @@ const STATUSES: InquiryStatus[] = [
 ];
 
 /**
- * Creates the inquiry for a listing, with the outreach message pre-drafted.
- * Idempotent per (event, listing) so hitting "inquire" twice reopens the same
- * thread rather than starting a second one.
+ * Opens the inquiry for a listing with the outreach message pre-drafted, and
+ * shortlists it — enquiring is a strong signal of intent. Shared by the host's
+ * own "inquire" button below and the agent's vendor step
+ * (lib/agent/vendor-step.ts).
+ *
+ * Idempotent per (event, listing): a second call reopens the same thread
+ * rather than starting a second one, and `update: {}` means it never
+ * overwrites a message the host has since edited. Status is DRAFT and stays
+ * DRAFT — this writes a draft, it does not mail anybody.
  */
+export async function draftInquiry(eventId: string, listingId: string, message: string) {
+  await db.inquiry.upsert({
+    where: { eventId_listingId: { eventId, listingId } },
+    create: { eventId, listingId, message, status: "DRAFT" },
+    update: {},
+  });
+
+  await db.savedListing.upsert({
+    where: { eventId_listingId: { eventId, listingId } },
+    create: { eventId, listingId },
+    update: {},
+  });
+}
+
+/** The host pressing "inquire" on a listing they found themselves. */
 export async function startInquiryAction(formData: FormData) {
   const eventId = String(formData.get("eventId") ?? "");
   const listingId = String(formData.get("listingId") ?? "");
@@ -37,19 +58,7 @@ export async function startInquiryAction(formData: FormData) {
   if (!listing) return;
 
   const { body } = composeInquiry(event, listing, user?.name ?? "the host");
-
-  await db.inquiry.upsert({
-    where: { eventId_listingId: { eventId, listingId } },
-    create: { eventId, listingId, message: body, status: "DRAFT" },
-    update: {},
-  });
-
-  // Enquiring is a strong signal of intent, so shortlist it too.
-  await db.savedListing.upsert({
-    where: { eventId_listingId: { eventId, listingId } },
-    create: { eventId, listingId },
-    update: {},
-  });
+  await draftInquiry(eventId, listingId, body);
   refresh();
 }
 

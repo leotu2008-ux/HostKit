@@ -17,6 +17,22 @@ function modelSays(text: string): typeof fetch {
   return replyWith({ content: [{ type: "text", text }] });
 }
 
+/** modelSays, plus the request bodies it was asked with — the only way to
+ *  assert what actually reached the prompt. */
+function capturing(text: string): { fetchImpl: typeof fetch; bodies: string[] } {
+  const bodies: string[] = [];
+  const fetchImpl = ((_url: string, init: RequestInit) => {
+    bodies.push(String(init.body));
+    return Promise.resolve(
+      new Response(JSON.stringify({ content: [{ type: "text", text }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+  }) as unknown as typeof fetch;
+  return { fetchImpl, bodies };
+}
+
 const NOW = new Date("2026-01-15T09:30:00");
 const inDays = (n: number) => new Date(NOW.getTime() + n * DAY_MS);
 
@@ -149,6 +165,34 @@ describe("draftPlan — validating the model's answer", () => {
     });
     expect(source).toBe("fallback");
     expect(plan).toEqual(generatePlan(input, NOW));
+  });
+});
+
+describe("draftPlan — the host's own words for the event", () => {
+  it("reaches the prompt, so an unrecognised kind isn't invisible to the model", async () => {
+    // eventTypeForKind maps nothing to "silent disco", so MIXER is all the
+    // type carries — the kind text is the only place the real event is.
+    const { fetchImpl, bodies } = capturing(JSON.stringify(goodDraft));
+    const { source } = await draftPlan({ ...input, kind: "silent disco" }, { now: NOW, fetchImpl });
+    expect(source).toBe("model");
+    expect(bodies[0]).toContain("Host's own words for this event: silent disco");
+  });
+
+  it("is left out of the prompt entirely when the host hasn't said one", async () => {
+    const { fetchImpl, bodies } = capturing(JSON.stringify(goodDraft));
+    await draftPlan(input, { now: NOW, fetchImpl });
+    expect(bodies[0]).not.toContain("Host's own words");
+  });
+
+  it("still yields a usable plan for an unrecognised kind with no model configured", async () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    const { plan, source } = await draftPlan({ ...input, kind: "silent disco" }, { now: NOW });
+    expect(source).toBe("fallback");
+    // The heuristic floor: the template for the event's type, unchanged by a
+    // kind it has never heard of.
+    expect(plan).toEqual(generatePlan(input, NOW));
+    expect(plan.tasks.length).toBeGreaterThan(0);
+    expect(plan.categories.length).toBeGreaterThan(0);
   });
 });
 

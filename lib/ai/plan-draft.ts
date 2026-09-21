@@ -74,14 +74,17 @@ function systemPrompt(): string {
   ].join("\n");
 }
 
-function userPrompt(
-  input: PlanInput & { title: string; city: string; guestCount: number },
-  horizonDays: number,
-): string {
+function userPrompt(input: DraftPlanInput, horizonDays: number): string {
   const budgetDollars = Math.round(input.budgetTotalCents / 100);
+  const kind = input.kind?.trim();
   return [
     `Event type: ${input.type}`,
     `Title: ${input.title}`,
+    // eventTypeForKind falls back to MIXER for anything its keyword table
+    // doesn't recognise (lib/brief.ts), so for a silent disco or a crawfish
+    // boil the type says almost nothing. Without this line the host's own
+    // words for their event never reach the model at all.
+    ...(kind ? [`Host's own words for this event: ${kind}`] : []),
     `City: ${input.city}`,
     `Guest count: ${input.guestCount}`,
     `Total budget: $${budgetDollars}`,
@@ -137,6 +140,14 @@ function planFromDraft(
   };
 }
 
+export type DraftPlanInput = PlanInput & {
+  title: string;
+  city: string;
+  guestCount: number;
+  /** The host's free-text kind, if they typed one. */
+  kind?: string | null;
+};
+
 export type DraftPlanOptions = {
   now?: Date;
   /** Injectable for tests; forwarded to askOr, defaults to global fetch. */
@@ -144,7 +155,7 @@ export type DraftPlanOptions = {
 };
 
 export async function draftPlan(
-  input: PlanInput & { title: string; city: string; guestCount: number },
+  input: DraftPlanInput,
   options: DraftPlanOptions = {},
 ): Promise<{ plan: GeneratedPlan; source: "model" | "fallback" }> {
   const now = options.now ?? new Date();

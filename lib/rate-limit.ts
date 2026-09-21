@@ -56,4 +56,6 @@ export const LIMITS = {
   upload: { perActor: [40, 60 * 60_000] },
   /** Vendor inquiry sends: a real email to a real business, per signed-in host. */
   outreach: { perActor: [30, 60 * 60_000] },
+  /** Agent runs: each one can make two model calls and a Maps search. */
+  agentRun: { perEvent: [6, 60 * 60_000], perIp: [8, 60 * 60_000], perOwner: [40, 60 * 60_000] },
 } as const satisfies Record<string, Record<string, readonly [number, number]>>;
