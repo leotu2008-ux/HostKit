@@ -1,5 +1,5 @@
 import { requireEvent } from "@/lib/session";
-import { isVenueSearchConfigured, searchVenues } from "@/lib/venues/apple-maps";
+import { isVenueSearchConfigured, searchVenues } from "@/lib/venues/search";
 import { venueQueryFor } from "@/lib/venues/query";
 import { rankVenuesForEvent } from "@/lib/ai/venue-rank";
 import { attachVenueAction } from "@/lib/actions/venues";
