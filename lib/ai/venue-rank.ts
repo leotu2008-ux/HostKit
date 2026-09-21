@@ -4,6 +4,7 @@ import { askOr } from "@/lib/ai/client";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { daysUntil, describeCountdown } from "@/lib/plan";
 import { rankVenues, type RankableEvent, type RankedVenue } from "@/lib/venues/rank";
+import { formatDuration } from "@/lib/when";
 import type { VenueResult } from "@/lib/venues/apple-maps";
 
 /**
@@ -74,7 +75,7 @@ function userPrompt(candidates: VenueResult[], event: VenueRankEvent, now: Date)
     `Event type: ${EVENT_TYPE_LABEL[event.type]}`,
     `City: ${event.city}`,
     `Guest count: ${event.guestCount}`,
-    `Duration: ${event.durationHours} hours`,
+    `Duration: ${formatDuration(event.durationHours)}`,
     `When: ${describeCountdown(daysUntil(event.date, now))}`,
     event.vibe ? `Vibe: ${event.vibe}` : null,
     event.venueAllocatedCents !== null

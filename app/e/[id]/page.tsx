@@ -14,7 +14,7 @@ import { FollowButton } from "@/components/follow-button";
 import { followedClubIds } from "@/lib/clubs";
 import { Avatar } from "@/components/avatar";
 import { formatCents } from "@/lib/money";
-import { formatEventDate, formatEventTime } from "@/lib/when";
+import { formatDurationLong, formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { eventUrl } from "@/lib/promote";
@@ -46,9 +46,9 @@ export async function generateMetadata({
 
 /** "7:30 PM – 11:30 PM", or just the length when no start time was set. */
 function timeRange(date: Date | null, hours: number): string {
-  if (!date) return `${hours} hours`;
+  if (!date) return formatDurationLong(hours);
   const hasClock = date.getHours() !== 12 || date.getMinutes() !== 0;
-  if (!hasClock) return `${hours} hours`;
+  if (!hasClock) return formatDurationLong(hours);
   const end = new Date(date.getTime() + hours * 3_600_000);
   return `${formatEventTime(date)} – ${formatEventTime(end)}`;
 }

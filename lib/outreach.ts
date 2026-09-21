@@ -6,6 +6,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import type { OutgoingEmail } from "@/lib/email/send";
+import { formatDurationLong } from "@/lib/when";
 
 /**
  * Drafts the first message to a venue or vendor.
@@ -176,7 +177,7 @@ export function composeInquiry(
   const body = [
     `Hello ${listing.name},`,
     "",
-    `I'm planning a ${eventLabel}${where} for ${guests}, running about ${event.durationHours} hours. ${describeDate(event)}.`,
+    `I'm planning a ${eventLabel}${where} for ${guests}, running about ${formatDurationLong(event.durationHours)}. ${describeDate(event)}.`,
     ...(event.vibe ? ["", `What we're going for: ${event.vibe}`] : []),
     "",
     "A few things it would help to know:",
