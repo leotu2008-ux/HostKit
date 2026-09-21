@@ -4,6 +4,13 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/session";
 import { registerGuest, type RegistrationState } from "@/lib/registration";
+import { record } from "@/lib/activity";
+
+const RSVP_TITLE: Record<"going" | "pending" | "waitlisted", (name: string) => string> = {
+  going: (name) => `${name} is going`,
+  pending: (name) => `${name} asked to come`,
+  waitlisted: (name) => `${name} joined the waitlist`,
+};
 
 export type RegisterState = { error?: string; ok?: boolean; state?: RegistrationState } | undefined;
 
@@ -25,6 +32,16 @@ export async function registerForEventAction(
   const user = await getCurrentUser();
   const result = await registerGuest({ eventId: parsed.data.eventId, viewer: user });
   if (!result.ok) return { error: result.error };
+
+  // Only a real, new decision is worth a line — re-registering into the same
+  // state (an existing row that already answers it) is a no-op, not news.
+  if (result.changed) {
+    await record(parsed.data.eventId, {
+      actor: "system",
+      kind: "guest_rsvp",
+      title: RSVP_TITLE[result.state](user?.name?.trim() || "A guest"),
+    });
+  }
 
   refresh();
   return { ok: true, state: result.state };

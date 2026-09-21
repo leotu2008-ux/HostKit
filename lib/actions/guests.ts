@@ -7,6 +7,7 @@ import { requireEvent } from "@/lib/session";
 import { parseGuestList } from "@/lib/guests";
 import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
 import { newRsvpToken } from "@/lib/tokens";
+import { record } from "@/lib/activity";
 
 export type GuestFormState = { error?: string; added?: number } | undefined;
 
@@ -143,6 +144,14 @@ export async function submitRsvpAction(
     },
   });
   if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(guest.eventId);
+
+  // Only the move into ATTENDING is a new "yes" worth a line — PENDING and
+  // WAITLISTED are unreachable from here (guarded above; those only ever
+  // come from registerForEventAction), and re-affirming an existing ATTENDING
+  // (e.g. editing dietary notes) isn't a new decision.
+  if (parsed.data.rsvpStatus === "ATTENDING" && guest.rsvpStatus !== "ATTENDING") {
+    await record(guest.eventId, { actor: "system", kind: "guest_rsvp", title: `${guest.name} is going` });
+  }
 
   refresh();
   return undefined;

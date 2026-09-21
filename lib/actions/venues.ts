@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
+import { record } from "@/lib/activity";
 
 /** Re-validates the hidden fields the venues page rendered — a host never
  *  types these, but the form is still a POST from a browser, so the numbers
@@ -68,6 +69,12 @@ export async function attachVenueAction(formData: FormData) {
           lat: data.lat,
           lng: data.lng,
         },
+      });
+      await record(event.id, {
+        actor: "host",
+        kind: "venue_attached",
+        title: `Added ${data.name} as a venue option`,
+        href: outreachHref,
       });
     }
   }

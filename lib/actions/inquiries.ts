@@ -5,11 +5,12 @@ import { z } from "zod";
 import type { InquiryStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { parseCents } from "@/lib/money";
+import { formatCents, parseCents } from "@/lib/money";
 import { composeInquiry, inquiryEmail, normalizeRecipient } from "@/lib/outreach";
 import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { EmailSendError } from "@/lib/email/failure";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
+import { record } from "@/lib/activity";
 
 export type InquiryFormState = { error?: string } | undefined;
 
@@ -192,6 +193,19 @@ export async function updateInquiryAction(
     }
   });
 
+  // Only the move into BOOKED/DECLINED is worth a line — resaving an edited
+  // message on an inquiry that's already in that status isn't new news.
+  if (status === "BOOKED" && inquiry.status !== "BOOKED") {
+    await record(eventId, {
+      actor: "host",
+      kind: "inquiry_booked",
+      title: `Booked ${inquiry.listing.name}`,
+      body: quotedCents !== null ? formatCents(quotedCents) : null,
+    });
+  } else if (status === "DECLINED" && inquiry.status !== "DECLINED") {
+    await record(eventId, { actor: "host", kind: "inquiry_declined", title: `Declined ${inquiry.listing.name}` });
+  }
+
   refresh();
   return undefined;
 }
@@ -323,6 +337,13 @@ export async function sendInquiryAction(
         "We couldn't confirm that went out. It's marked sent — set it back to Draft if you want to try again.",
     };
   }
+
+  await record(eventId, {
+    actor: "host",
+    kind: "inquiry_sent",
+    title: `Emailed ${inquiry.listing.name}`,
+    href: `/events/${eventId}/outreach`,
+  });
 
   refresh();
   return undefined;

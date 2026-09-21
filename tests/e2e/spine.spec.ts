@@ -75,6 +75,26 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
   await signUp(page);
   const event = await createNight(page);
 
+  await test.step("the Overview's activity feed shows what just happened", async () => {
+    await page.goto(event);
+    await expect(page.getByText("Event created")).toBeVisible();
+    await expect(page.getByText("Brief updated")).toBeVisible();
+  });
+
+  await test.step("publishing shows up live in the feed, in a second tab too", async () => {
+    // Already on the Overview from the previous step, with the header's
+    // Publish button available (the brief is complete and we're signed in).
+    // A second, already-open tab proves this is the poll picking it up, not
+    // something special about the tab that submitted the form.
+    const second = await page.context().newPage();
+    await second.goto(event);
+
+    await page.click('button:has-text("Publish")');
+    await expect(page.getByText("Published — guests can register")).toBeVisible({ timeout: 15_000 });
+    await expect(second.getByText("Published — guests can register")).toBeVisible({ timeout: 15_000 });
+    await second.close();
+  });
+
   await test.step("intake generates a budget and a timeline", async () => {
     await page.goto(`${event}/plan`);
     await expect(page.getByText("of $48,000")).toBeVisible();
