@@ -277,8 +277,13 @@ model Event {
   id               String          @id @default(cuid())
   /// Null until the host signs in. Drafts are claimed via `claimToken`.
   ownerId          String?
-  title            String
-  type             EventType
+  title            String          @default("Untitled event")
+  type             EventType       @default(MIXER)
+  /// The host's own words for what this is ('silent disco fundraiser').
+  /// `type` stays the internal planning key, derived from this by
+  /// lib/brief.ts eventTypeForKind; unrecognised text still reaches the
+  /// model through draftPlan.
+  kind             String?
   status           EventStatus     @default(PLANNING)
   /// Start of the night, including time of day. Null while still deciding.
   date             DateTime?
@@ -288,13 +293,13 @@ model Event {
   datesFlexible    Boolean         @default(false)
   /// Planned duration, used to price hourly listings against this event.
   durationHours    Int             @default(6)
-  guestCount       Int
-  city             String
+  guestCount       Int             @default(0)
+  city             String          @default("")
   /// Place name and street address for device maps. `city` stays the scout area.
   address          String?
   lat              Float?
   lng              Float?
-  budgetTotalCents Int
+  budgetTotalCents Int             @default(0)
   vibe             String?
   description      String?
   ticketType       TicketType      @default(FREE)
@@ -328,6 +333,8 @@ model Event {
   runSheetItems    RunSheetItem[]
   collaborators    EventCollaborator[]
   blasts           Blast[]
+  activities       Activity[]
+  agentRuns        AgentRun[]
 
   @@index([ownerId])
   @@index([clubId])
@@ -740,4 +747,60 @@ model RunSheetItem {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId, startsAt])
+}
+
+// ---------------------------------------------------------------------------
+// The event workspace: a live feed of what happened, and a record of what
+// the agent did about it.
+// ---------------------------------------------------------------------------
+
+/// One line in an event's feed: append-only, never edited or deleted except
+/// by the event itself going away.
+model Activity {
+  id        String   @id @default(cuid())
+  eventId   String
+  /// Who caused it: "host" | "agent" | "system".
+  actor     String
+  /// What kind of thing happened, e.g. "event_created", "brief_updated".
+  kind      String
+  title     String
+  body      String?
+  /// Where clicking the line should take you, when there's a good answer.
+  href      String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+}
+
+enum AgentRunStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+/// One attempt at the agent working an event: filling in a plan, finding
+/// vendors, writing outreach. `@@unique([eventId, briefHash])` is the
+/// idempotency guarantee — a set of facts is worked at most once.
+model AgentRun {
+  id         String         @id @default(cuid())
+  eventId    String
+  status     AgentRunStatus @default(QUEUED)
+  /// Why this run exists, e.g. "brief" for a brief that just became complete.
+  reason     String         @default("brief")
+  /// lib/brief.ts briefHash() at the moment this run was queued.
+  briefHash  String
+  attempts   Int            @default(0)
+  note       String?
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, briefHash])
+  @@index([eventId, createdAt])
+  @@index([status, createdAt])
 }
