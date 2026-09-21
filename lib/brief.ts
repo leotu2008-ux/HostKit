@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import type { EventType } from "@/generated/prisma/enums";
-import { isCity } from "@/lib/catalog";
 
 /**
  * What "not filled in yet" means for an event, in one place.
@@ -40,13 +39,21 @@ const FIELD_LABEL: Record<BriefField, string> = {
   budget: "a budget",
 };
 
-/** The fields still missing from a brief, in `BRIEF_FIELDS` order. Time-free
- *  on purpose — nothing here depends on "now", so it's safe to call anywhere. */
+/**
+ * The fields still missing from a brief, in `BRIEF_FIELDS` order. Time-free
+ * on purpose — nothing here depends on "now", so it's safe to call anywhere.
+ *
+ * City asks only that one was named, not that HostKit scouts it: scoutability
+ * is `isCity` (lib/catalog.ts), and it gates venue search and vendor drafting
+ * inside the agent's steps. Completeness is the weaker claim that the host has
+ * said where the night is, which is all the plan step needs — a Chicago mixer
+ * gets a drafted plan and a feed line explaining the skipped venue search.
+ */
 export function missingBriefFields(brief: BriefFacts): BriefField[] {
   const missing: BriefField[] = [];
   if (!((brief.kind ?? "").trim().length > 0)) missing.push("kind");
   if (!(brief.date instanceof Date && !Number.isNaN(brief.date.getTime()))) missing.push("date");
-  if (!isCity(brief.city)) missing.push("city");
+  if (brief.city.trim().length < 2) missing.push("city");
   if (!(Number.isInteger(brief.guestCount) && brief.guestCount >= 1)) missing.push("guests");
   if (!(Number.isInteger(brief.budgetTotalCents) && brief.budgetTotalCents > 0)) missing.push("budget");
   return missing;

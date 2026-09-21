@@ -11,7 +11,7 @@ import {
   readyToPublish,
   type BriefFacts,
 } from "@/lib/brief";
-import { ALL_EVENT_TYPES } from "@/lib/catalog";
+import { ALL_EVENT_TYPES, isCity } from "@/lib/catalog";
 
 /** A brief with every field filled in — flip one field at a time from here. */
 const complete = (over: Partial<BriefFacts> = {}): BriefFacts => ({
@@ -61,7 +61,7 @@ describe("missingBriefFields", () => {
     expect(missingBriefFields(complete({ date: null }))).toEqual(["date"]);
   });
 
-  it("flags city missing when not a known city", () => {
+  it("flags city missing when blank", () => {
     expect(missingBriefFields(complete({ city: "" }))).toEqual(["city"]);
   });
 
@@ -101,12 +101,29 @@ describe("missingBriefFields", () => {
     expect(missingBriefFields(complete({ city: "" }))).toContain("city");
   });
 
-  it("treats a city not in the catalog as incomplete", () => {
-    expect(missingBriefFields(complete({ city: "Paris, FR" }))).toContain("city");
+  it("treats a whitespace-only city as incomplete", () => {
+    expect(missingBriefFields(complete({ city: "   " }))).toContain("city");
+  });
+
+  it("treats a one-character city as incomplete", () => {
+    expect(missingBriefFields(complete({ city: "X" }))).toContain("city");
+  });
+
+  it("treats a city HostKit doesn't scout as complete", () => {
+    expect(missingBriefFields(complete({ city: "Paris, FR" }))).toEqual([]);
   });
 
   it("treats a known city as complete", () => {
     expect(missingBriefFields(complete({ city: "New York, NY" }))).toEqual([]);
+  });
+
+  it("does not use isCity for completeness — scoutability is a separate question", () => {
+    // The agent drafts a plan for any city it's given; only venue search and
+    // vendor drafting need one of the four in lib/catalog.ts. If these two
+    // ever agree again, the rule has regressed.
+    const unscouted = "Chicago, IL";
+    expect(isCity(unscouted)).toBe(false);
+    expect(briefIsComplete(complete({ city: unscouted }))).toBe(true);
   });
 
   it("treats whitespace-only kind as incomplete", () => {
