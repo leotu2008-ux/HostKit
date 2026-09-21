@@ -24,7 +24,15 @@ export async function loadBriefing(
     }),
     db.eventCollaborator.findMany({
       where: { eventId: event.id },
-      select: { id: true, kind: true, name: true, email: true, status: true },
+      select: {
+        id: true,
+        kind: true,
+        name: true,
+        email: true,
+        status: true,
+        sentAt: true,
+        respondedAt: true,
+      },
     }),
   ]);
 
@@ -39,7 +47,7 @@ export async function loadBriefing(
       respondedAt: i.respondedAt,
       category: i.listing.category,
     })),
-    collaborators: collaborators.map((c) => ({ ...c, sentAt: null })),
+    collaborators,
     now,
   });
 }

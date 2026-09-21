@@ -5,7 +5,7 @@ import type {
   ListingCategory,
   TaskStatus,
 } from "@/generated/prisma/enums";
-import { CHASE_AFTER_DAYS, goneQuiet } from "@/lib/chase";
+import { CHASE_AFTER_DAYS, goneQuiet, quietContacts } from "@/lib/chase";
 import { daysBetween, daysUntil, describeCountdown } from "@/lib/plan";
 
 /**
@@ -90,8 +90,10 @@ export type BriefingCollaborator = {
   name: string;
   email: string | null;
   status: CollaboratorStatus;
-  /** Always null until Milestone D wires the collaborator send loop. */
   sentAt: Date | null;
+  /** Optional so a caller that predates Milestone D (and every existing test
+   *  fixture) can omit it; treated as null when absent. */
+  respondedAt?: Date | null;
 };
 
 export type BriefingInput = {
@@ -171,6 +173,16 @@ function inquiryItems(inquiries: BriefingInquiry[], event: BriefingEvent, now: D
 
 function collaboratorItems(collaborators: BriefingCollaborator[], now: Date): BriefingItem[] {
   const items: BriefingItem[] = [];
+  // quietContacts owns the definition of "quiet" for a collaborator, the same
+  // way goneQuiet owns it for an inquiry above — computed once over the full
+  // list so the per-row loop below only has to ask "is this id in the set".
+  const quietIds = new Set(
+    quietContacts(
+      collaborators.map((c) => ({ ...c, respondedAt: c.respondedAt ?? null })),
+      now,
+    ).map((c) => c.id),
+  );
+
   for (const collaborator of collaborators) {
     if (collaborator.status !== "PENDING" || !collaborator.email) continue;
 
@@ -186,11 +198,7 @@ function collaboratorItems(collaborators: BriefingCollaborator[], now: Date): Br
       continue;
     }
 
-    // Unreachable until Milestone D starts writing sentAt, and superseded
-    // there by lib/chase.ts's quietContacts — kept here now so the rule in
-    // the plan's table is real code, not just documentation.
-    const cutoff = now.getTime() - CHASE_AFTER_DAYS * DAY_MS;
-    if (collaborator.sentAt.getTime() <= cutoff) {
+    if (quietIds.has(collaborator.id)) {
       items.push({
         id: `outreach_quiet:${collaborator.id}`,
         kind: "outreach_quiet",

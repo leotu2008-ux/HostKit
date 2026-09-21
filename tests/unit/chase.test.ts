@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CHASE_AFTER_DAYS, goneQuiet } from "@/lib/chase";
-import type { InquiryStatus } from "@/generated/prisma/enums";
+import { CHASE_AFTER_DAYS, goneQuiet, quietContacts } from "@/lib/chase";
+import type { CollaboratorStatus, InquiryStatus } from "@/generated/prisma/enums";
 
 const NOW = new Date("2026-03-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
@@ -56,5 +56,51 @@ describe("which inquiries have gone quiet", () => {
     const rows = [inquiry({ status: "SENT", sentAt: null })];
 
     expect(goneQuiet(rows, NOW)).toEqual([]);
+  });
+});
+
+function contact(over: {
+  status: CollaboratorStatus;
+  sentAt?: Date | null;
+  respondedAt?: Date | null;
+}) {
+  return { sentAt: null, respondedAt: null, ...over };
+}
+
+describe("which collaborators (venue/speaker/cohost) have gone quiet", () => {
+  it("counts a PENDING contact asked longer ago than the threshold", () => {
+    const rows = [contact({ status: "PENDING", sentAt: daysAgo(CHASE_AFTER_DAYS + 1) })];
+
+    expect(quietContacts(rows, NOW)).toHaveLength(1);
+  });
+
+  // Same boundary rule as goneQuiet: exactly the threshold already counts.
+  it("counts a PENDING contact asked exactly at the threshold", () => {
+    const rows = [contact({ status: "PENDING", sentAt: daysAgo(CHASE_AFTER_DAYS) })];
+
+    expect(quietContacts(rows, NOW)).toHaveLength(1);
+  });
+
+  it("never chases a contact who has already settled", () => {
+    const rows = [
+      contact({ status: "CONFIRMED", sentAt: daysAgo(30) }),
+      contact({ status: "DECLINED", sentAt: daysAgo(30) }),
+    ];
+
+    expect(quietContacts(rows, NOW)).toEqual([]);
+  });
+
+  it("ignores a contact who was never sent anything", () => {
+    const rows = [contact({ status: "PENDING", sentAt: null })];
+
+    expect(quietContacts(rows, NOW)).toEqual([]);
+  });
+
+  it("ignores a contact who already responded", () => {
+    const rows = [
+      contact({ status: "PENDING", sentAt: daysAgo(30), respondedAt: daysAgo(28) }),
+    ];
+
+    expect(quietContacts(rows, NOW)).toEqual([]);
   });
 });

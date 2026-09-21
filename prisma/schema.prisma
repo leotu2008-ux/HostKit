@@ -352,6 +352,17 @@ model EventCollaborator {
   lat        Float?
   lng        Float?
   createdAt  DateTime           @default(now())
+  /// When the host sent the drafted message. Null means never sent —
+  /// deliberately no ASKED status value; "asked" is status === PENDING with
+  /// sentAt set (see lib/chase.ts's quietContacts).
+  sentAt      DateTime?
+  /// When the collaborator answered. Only ever set by hand today; nothing
+  /// reads a mailbox. Present so quietContacts stops chasing someone who did
+  /// reply.
+  respondedAt DateTime?
+  /// The host's edited outreach message, if they changed it from the
+  /// composeInquiry draft. Null means "send the draft as computed".
+  message     String?
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
