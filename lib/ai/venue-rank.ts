@@ -25,8 +25,9 @@ const rankSchema = z.object({
 
 type RankAnswer = z.infer<typeof rankSchema>;
 
-/** The minimum a host should see regardless of how few picks the model made
- *  — matches rankVenues' own default floor. */
+/** The minimum a host should see regardless of how few picks the model made.
+ *  rankVenues has no floor of its own (its default is limit = 6, a ceiling);
+ *  3 is this module's own judgment call about a usable minimum. */
 const MIN_PICKS = 3;
 
 export type VenueRankEvent = {
@@ -51,7 +52,7 @@ export type VenueRankOptions = {
 function systemPrompt(): string {
   return [
     "You rank venue candidates for a HostKit event from a fixed list the caller gives you.",
-    "Pick between 1 and 6 candidates, best first, using only the ids you are given — copy them exactly. Never invent a venue, a phone number, a website or a capacity; everything about a candidate beyond its id and name may be wrong or missing, and that is fine to say.",
+    "Pick between 1 and 6 candidates, best first, using only the ids you are given — copy them exactly. Never invent a venue, a phone number, a website, a capacity or a price; everything about a candidate beyond its id and name may be wrong or missing, and that is fine to say.",
     "Give each pick one short reason, 3 to 140 characters, grounded only in what you were told.",
     "Return JSON only, matching the schema you are given.",
   ].join("\n");

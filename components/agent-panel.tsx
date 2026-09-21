@@ -24,8 +24,8 @@ export function AgentPanel({
   venueSearchEnabled: boolean;
 }) {
   return (
-    <div>
-      <h2 className="font-display text-lg text-ink">Agent</h2>
+    <aside aria-labelledby="agent-heading">
+      <h2 id="agent-heading" className="font-display text-lg text-ink">Agent</h2>
       {briefing.headline ? (
         <p className="mt-0.5 text-[13px] text-ink-mute">{briefing.headline}</p>
       ) : null}
@@ -45,6 +45,6 @@ export function AgentPanel({
           ))
         )}
       </div>
-    </div>
+    </aside>
   );
 }

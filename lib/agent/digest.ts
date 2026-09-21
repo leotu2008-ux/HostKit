@@ -16,16 +16,26 @@ import { notify } from "@/lib/notify";
  */
 
 /** Only the first this many events per run get the model's phrasing; the
- *  rest get the deterministic digestNotice. Bounds how many model calls one
- *  cron invocation can make against maxDuration. */
-const PHRASED_LIMIT = 100;
+ *  rest get the deterministic digestNotice. Calls are sequential and
+ *  phraseBriefing has a 6s timeout, so 8 × 6s = 48s worst case, leaving
+ *  headroom under the 60s maxDuration ceiling for the candidates' own
+ *  loadBriefing round trips. Do not raise this without also budgeting for
+ *  those. */
+const PHRASED_LIMIT = 8;
 
 export type DigestResult = { events: number; notified: number; skipped: number };
 
 export async function sendDailyBriefings(now = new Date()): Promise<DigestResult> {
+  // Unlike completeFinishedEvents' candidate set (which drains every day as
+  // events finish), this set never drains: PLANNING/CONFIRMED events pile up
+  // indefinitely, so without an order the same 500 rows can starve out an
+  // event that's tomorrow in favor of one eight months away. Soonest first
+  // (Prisma sorts null dates last) means the take: 500 cap drops the least
+  // urgent events, not an arbitrary slice.
   const candidates = await db.event.findMany({
     where: { status: { in: ["PLANNING", "CONFIRMED"] }, ownerId: { not: null }, ...upcomingOnly(now) },
     include: { club: { select: { members: { select: { userId: true } } } } },
+    orderBy: { date: "asc" },
     take: 500,
   });
 
@@ -37,15 +47,15 @@ export async function sendDailyBriefings(now = new Date()): Promise<DigestResult
   const allRecipients = [...new Set(candidates.flatMap(recipientsFor))];
 
   // One up-front read of today's notifications rather than one query per
-  // event: Notification has no schema change this milestone, so today's
-  // agent_briefing rows are the only record of who has already been told.
+  // event: today's agent_briefing rows are the only record of who has
+  // already been told. Filtered to that kind in the query itself — the
+  // [userId, createdAt] index still serves it — rather than fetching every
+  // notification kind for these users today and discarding the rest in memory.
   const already = await db.notification.findMany({
-    where: { userId: { in: allRecipients }, createdAt: { gte: startOfDay(now) } },
-    select: { userId: true, eventId: true, kind: true },
+    where: { userId: { in: allRecipients }, createdAt: { gte: startOfDay(now) }, kind: "agent_briefing" },
+    select: { userId: true, eventId: true },
   });
-  const alreadyNotified = new Set(
-    already.filter((n) => n.kind === "agent_briefing").map((n) => `${n.userId}:${n.eventId}`),
-  );
+  const alreadyNotified = new Set(already.map((n) => `${n.userId}:${n.eventId}`));
 
   let notified = 0;
   let skipped = 0;

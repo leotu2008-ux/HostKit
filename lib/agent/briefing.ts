@@ -29,6 +29,8 @@ import { daysBetween, daysUntil, describeCountdown } from "@/lib/plan";
 export const DUE_SOON_DAYS = 3;
 export const EVENT_SOON_DAYS = 7;
 export const MAX_ITEMS = 8;
+/** Inside this many days out, a missing venue escalates from "soon" to "now". */
+export const VENUE_URGENT_DAYS = 30;
 
 export type BriefingUrgency = "now" | "soon";
 
@@ -230,7 +232,7 @@ function venueMissingItem(
   if (hasVenue) return null;
 
   const days = daysUntil(event.date, now);
-  const urgency: BriefingUrgency = days !== null && days <= 30 ? "now" : "soon";
+  const urgency: BriefingUrgency = days !== null && days <= VENUE_URGENT_DAYS ? "now" : "soon";
   return {
     id: `venue_missing:${event.id}`,
     kind: "venue_missing",
