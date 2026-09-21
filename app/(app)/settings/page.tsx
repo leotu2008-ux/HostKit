@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { signOutAction } from "@/lib/actions/auth";
 import { setGuestListVisibilityAction } from "@/lib/actions/profile";
 import { currentProfile } from "@/lib/session";
@@ -14,6 +15,8 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-6 md:py-10">
       <h1 className="font-display text-[30px] leading-tight text-ink md:text-[36px]">Settings</h1>
+
+      <Card className="mt-6 p-5"><h2 className="font-display text-lg">AI connections</h2><p className="mt-2 text-ink-soft">Connect Claude or ChatGPT to your HostKit events.</p><Link href="/settings/connections" className="mt-3 inline-block font-medium underline">Manage connections</Link></Card>
 
       <Card className="mt-6 p-5">
         <h2 className="font-display text-lg text-ink">Phone number</h2>

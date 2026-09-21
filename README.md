@@ -394,3 +394,9 @@ steps are connected, and that's only tested by walking the connection.
 npm test          # unit
 npm run test:e2e  # end to end (starts a dev server if one isn't running)
 ```
+
+## Claude and ChatGPT connector
+
+HostKit can expose authenticated, read-only event and venue tools through MCP.
+See [MCP setup and connection guide](docs/mcp.md) for OAuth configuration,
+database migration, supported tools, and testing instructions.

@@ -44,6 +44,7 @@ model User {
   emailVerifiedAt  DateTime?
   createdAt        DateTime  @default(now())
 
+  mcpGrants          McpGrant[]
   events             Event[]
   accountTokens      AccountToken[]
   registrations      Guest[]
@@ -805,4 +806,28 @@ model AgentRun {
   @@unique([eventId, briefHash])
   @@index([eventId, createdAt])
   @@index([status, createdAt])
+}
+
+/// OAuth grants for the MCP connector. Raw credentials never enter the database.
+model McpGrant {
+  id              String    @id @default(cuid())
+  userId          String
+  clientId        String
+  sessionVersion  Int
+  resource        String
+  redirectUri     String
+  scopes          String[]
+  codeChallenge   String
+  codeHash        String?   @unique
+  codeExpiresAt   DateTime?
+  accessHash      String?   @unique
+  accessExpiresAt DateTime?
+  refreshHash     String?   @unique
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
