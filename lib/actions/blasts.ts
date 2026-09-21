@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireEvent } from "@/lib/session";
 import { SEGMENT_KEYS, type Segment } from "@/lib/blasts";
 import { sendBlast } from "@/lib/blast-send";
+import { record } from "@/lib/activity";
 
 export type BlastFormState =
   | {
@@ -45,6 +46,11 @@ export async function sendBlastAction(
       subject: parsed.data.subject,
       body: parsed.data.body,
       sms: parsed.data.sms === "on",
+    });
+    await record(event.id, {
+      actor: "host",
+      kind: "blast_sent",
+      title: `Update sent to ${outcome.recipients.length} guests`,
     });
     refresh();
     return {

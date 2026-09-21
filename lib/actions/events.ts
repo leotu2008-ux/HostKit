@@ -16,6 +16,7 @@ import { venueSearchProvider } from "@/lib/venues/search";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 import { parseStart } from "@/lib/when";
 import { readyToPublish } from "@/lib/brief";
+import { record } from "@/lib/activity";
 
 export type EventFormState = { error?: string } | undefined;
 
@@ -176,7 +177,12 @@ export async function createBlankEventAction(): Promise<void> {
     },
   });
   if (claimToken) await rememberDraftClaim({ id: event.id, token: claimToken });
-  // TODO(M2): record an "event_created" activity line here.
+  await record(event.id, {
+    actor: "system",
+    kind: "event_created",
+    title: "Event created",
+    body: "Fill in the brief and the agent gets going.",
+  });
   redirect(`/events/${event.id}`);
 }
 
@@ -201,6 +207,12 @@ export async function publishEventAction(formData: FormData) {
     user: { id: user.id, schoolDomain: profile?.schoolDomain ?? null },
     published: true,
   });
+  await record(event.id, {
+    actor: "host",
+    kind: "published",
+    title: "Published — guests can register",
+    href: `/e/${event.id}`,
+  });
   refresh();
 }
 
@@ -214,6 +226,7 @@ export async function unpublishEventAction(formData: FormData) {
     user: { id: user.id, schoolDomain: profile?.schoolDomain ?? null },
     published: false,
   });
+  await record(event.id, { actor: "host", kind: "unpublished", title: "Unpublished" });
   refresh();
 }
 

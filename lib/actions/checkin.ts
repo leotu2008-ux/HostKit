@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
+import { record } from "@/lib/activity";
 
 /**
  * The door.
@@ -25,7 +26,7 @@ export async function checkInGuestAction(formData: FormData) {
 
   const guest = await db.guest.findFirst({
     where: { id: guestId, eventId },
-    select: { id: true, rsvpStatus: true },
+    select: { id: true, name: true, rsvpStatus: true },
   });
   if (!guest) return;
 
@@ -37,6 +38,7 @@ export async function checkInGuestAction(formData: FormData) {
       arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING",
     },
   });
+  await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${guest.name} checked in` });
   refresh();
 }
 

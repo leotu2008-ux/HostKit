@@ -9,6 +9,7 @@ import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
 import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
 import { regenerateTasksAndCategories } from "@/lib/actions/plan";
+import { record } from "@/lib/activity";
 
 export type BriefFormState = { error?: string; saved?: boolean } | undefined;
 
@@ -109,7 +110,27 @@ export async function saveBriefAction(
     }
   }
 
-  // TODO(M2): record "brief_saved" with the changed field names.
+  // Every visible field rides in the same form, so a save that only touched
+  // one field must not read as "everything changed" — diff against what was
+  // actually there before this write.
+  const changedFields: string[] = [];
+  if (title !== event.title) changedFields.push("Title");
+  if ((kind ?? "") !== (event.kind ?? "")) changedFields.push("Kind");
+  if ((date?.getTime() ?? null) !== (event.date?.getTime() ?? null)) changedFields.push("Date");
+  if (durationHours !== event.durationHours) changedFields.push("Hours");
+  if (city !== event.city) changedFields.push("City");
+  if (guestCount !== event.guestCount) changedFields.push("Guests");
+  if (budgetTotalCents !== event.budgetTotalCents) changedFields.push("Budget");
+  if (description !== event.description) changedFields.push("Vibe");
+  if ((address || null) !== event.address) changedFields.push("Address");
+  if (changedFields.length > 0) {
+    await record(event.id, {
+      actor: "host",
+      kind: "brief_saved",
+      title: "Brief updated",
+      body: changedFields.join(" · "),
+    });
+  }
   // TODO(M3): after(() => runAgent(...)) when briefIsComplete
 
   // Milestone 1 has no agent run to draft the plan on save — the old create

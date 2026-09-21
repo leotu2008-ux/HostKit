@@ -9,9 +9,18 @@ import { composeInquiry, inquiryEmail, normalizeRecipient } from "@/lib/outreach
 import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { EmailSendError } from "@/lib/email/failure";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
+import { record } from "@/lib/activity";
 
 const KINDS = ["VENUE", "SPEAKER", "COHOST"] as const;
 const STATUSES = ["PENDING", "CONFIRMED", "DECLINED"] as const;
+
+/** Readable labels for the outreach kinds, matching the section titles on
+ *  the Outreach page (app/(app)/events/[id]/outreach/page.tsx). */
+const KIND_LABEL: Record<(typeof KINDS)[number], string> = {
+  VENUE: "Venue",
+  SPEAKER: "Speaker",
+  COHOST: "Cohost",
+};
 
 const addSchema = z.object({
   eventId: z.string().min(1),
@@ -63,10 +72,24 @@ export async function setCollaboratorStatusAction(formData: FormData) {
   const status = String(formData.get("status") ?? "");
   if (!STATUSES.includes(status as (typeof STATUSES)[number])) return;
   await requireEvent(eventId);
+
+  const before = await db.eventCollaborator.findFirst({
+    where: { id: collaboratorId, eventId },
+    select: { kind: true, name: true, status: true },
+  });
   await db.eventCollaborator.updateMany({
     where: { id: collaboratorId, eventId },
     data: { status: status as CollaboratorStatus },
   });
+  // Only the move into CONFIRMED is worth a line — re-picking the same
+  // status isn't new news.
+  if (before && status === "CONFIRMED" && before.status !== "CONFIRMED") {
+    await record(eventId, {
+      actor: "host",
+      kind: "collaborator_confirmed",
+      title: `${KIND_LABEL[before.kind]} confirmed: ${before.name}`,
+    });
+  }
   refresh();
 }
 
@@ -220,6 +243,13 @@ export async function sendCollaboratorAction(
       error: "We couldn't confirm that went out.",
     };
   }
+
+  await record(eventId, {
+    actor: "host",
+    kind: "collaborator_sent",
+    title: `Emailed ${collaborator.name}`,
+    href: `/events/${eventId}/outreach`,
+  });
 
   refresh();
   return undefined;

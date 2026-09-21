@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { describeMissing, type BriefField } from "@/lib/brief";
+import { describeMissing } from "@/lib/brief";
+import type { AgentStatusView } from "@/lib/activity";
 import { cx } from "@/components/ui";
 
 /**
@@ -12,16 +13,6 @@ import { cx } from "@/components/ui";
  */
 
 export type SidebarTab = { href: string; label: string; match: string[] };
-
-/** The agent's state, as the sidebar needs to know it. Milestone 2 moves
- *  this type to lib/activity.ts once a real loader produces it; today the
- *  layout builds a placeholder straight from the brief. */
-export type AgentStatusView = {
-  status: "idle" | "queued" | "running" | "failed" | "done";
-  lastRunAt: string | null;
-  startedAt: string | null;
-  needs: BriefField[];
-};
 
 // The Venue tab points at the existing agent/venues page for now — Milestone
 // 4 moves it to its own /venue route, hence the match prefix already here.

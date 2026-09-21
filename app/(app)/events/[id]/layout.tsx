@@ -1,6 +1,6 @@
 import { requireEvent } from "@/lib/session";
 import { daysUntil, describeCountdown } from "@/lib/plan";
-import { briefKindLabel, missingBriefFields, readyToPublish } from "@/lib/brief";
+import { briefKindLabel, readyToPublish } from "@/lib/brief";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { Badge, Button, ButtonLink } from "@/components/ui";
 import { EventCover } from "@/components/event-cover";
@@ -8,8 +8,9 @@ import { ImageUpload } from "@/components/image-upload";
 import { publishEventAction } from "@/lib/actions/events";
 import { removeCoverAction, setCoverAction } from "@/lib/actions/photos";
 import { AgentPanel } from "@/components/agent-panel";
-import { EventSidebar, type AgentStatusView } from "@/components/event-sidebar";
+import { EventSidebar } from "@/components/event-sidebar";
 import { loadBriefing } from "@/lib/agent/load";
+import { loadAgentStatus } from "@/lib/activity";
 import { isVenueSearchConfigured } from "@/lib/venues/search";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
@@ -25,15 +26,7 @@ export default async function EventLayout({
   const { id } = await params;
   const { event, user } = await requireEvent(id);
   const days = daysUntil(event.date);
-  const briefing = await loadBriefing(event);
-  // A placeholder until Milestone 3 wires up a real AgentRun loader — the
-  // sidebar just needs to know what the brief is still missing.
-  const agent: AgentStatusView = {
-    status: "idle",
-    lastRunAt: null,
-    startedAt: null,
-    needs: missingBriefFields(event),
-  };
+  const [briefing, agent] = await Promise.all([loadBriefing(event), loadAgentStatus(event)]);
 
   return (
     <div className="px-4 py-4 md:py-2">
