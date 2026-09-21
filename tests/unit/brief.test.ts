@@ -5,7 +5,6 @@ import {
   UNTITLED,
   briefHash,
   briefIsComplete,
-  briefKindLabel,
   describeMissing,
   eventTypeForKind,
   missingBriefFields,
@@ -201,22 +200,6 @@ describe("eventTypeForKind", () => {
       MIXER: "mixer",
     };
     expect(eventTypeForKind(phrase[type])).toBe(type);
-  });
-});
-
-describe("briefKindLabel", () => {
-  it("prefers the host's own words", () => {
-    expect(briefKindLabel({ kind: " Silent disco fundraiser ", type: "MIXER" })).toBe(
-      "Silent disco fundraiser",
-    );
-  });
-
-  it("falls back to the type label when there's no kind", () => {
-    expect(briefKindLabel({ kind: null, type: "MIXER" })).toBe("Mixer");
-  });
-
-  it("falls back when kind is blank", () => {
-    expect(briefKindLabel({ kind: "   ", type: "DINNER_PARTY" })).toBe("Dinner party");
   });
 });
 

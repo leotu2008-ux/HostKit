@@ -156,7 +156,7 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
         />
       </Field>
 
-      <details className="rounded-card border border-line bg-surface p-4" open={Boolean(event.address)}>
+      <details className="rounded-xl border border-line bg-surface p-4" open={Boolean(event.address)}>
         <summary className="cursor-pointer text-[15px] font-medium text-ink">
           I already have a venue
         </summary>

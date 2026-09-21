@@ -79,7 +79,7 @@ export default async function GuestsPage({
       <div className="grid gap-4">
         <Card className="p-5">
           <p className="text-sm text-ink-soft">Planning for</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
+          <p className="tabular mt-1 text-[20px] font-semibold text-ink">
             {head.count} guests
           </p>
           <p className="mt-1 text-sm text-ink-mute">
@@ -91,7 +91,7 @@ export default async function GuestsPage({
 
         <Card className="p-5">
           <p className="text-sm text-ink-soft">Likely through the door</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
+          <p className="tabular mt-1 text-[20px] font-semibold text-ink">
             {turnout.low}–{turnout.high}
           </p>
           <p className="mt-1 text-sm text-ink-mute">{turnout.basis.join(" ")}</p>
@@ -99,7 +99,7 @@ export default async function GuestsPage({
 
         <Card className="p-5">
           <p className="text-sm text-ink-soft">Confirmed</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
+          <p className="tabular mt-1 text-[20px] font-semibold text-ink">
             {summary.confirmedHeads}
           </p>
           <p className="mt-1 text-sm text-ink-mute">
@@ -110,7 +110,7 @@ export default async function GuestsPage({
 
         <Card className="p-5">
           <p className="text-sm text-ink-soft">Replies in</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
+          <p className="tabular mt-1 text-[20px] font-semibold text-ink">
             {summary.responseRate}%
           </p>
           <ProgressBar className="mt-3" percent={summary.responseRate} tone="forest" />

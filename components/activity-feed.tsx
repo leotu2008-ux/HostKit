@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { AgentStatusView } from "@/lib/activity";
 import { actorLabel, feedIsQuiet, latestAt, mergeFeed, relativeTime, type FeedRow } from "@/lib/activity-format";
-import { SectionHeading, EmptyState, cx } from "@/components/ui";
+import { Card, SectionHeading, EmptyState, cx } from "@/components/ui";
 
 /**
  * The Overview's live "what's happening" feed.
@@ -31,6 +31,7 @@ export function ActivityFeed({
   initial,
   agent: initialAgent,
   now,
+  frame,
   pollMs = 8_000,
   idleStopMs = 10 * 60_000,
 }: {
@@ -38,6 +39,10 @@ export function ActivityFeed({
   initial: FeedRow[];
   agent: AgentStatusView;
   now: string;
+  /** "card" puts the feed on its own surface. The heading and its live dot
+   *  stay inside this component either way — the dot and the paused/resume
+   *  button are its state, so the page can't own that row. */
+  frame?: "card";
   pollMs?: number;
   idleStopMs?: number;
 }): React.JSX.Element {
@@ -154,8 +159,10 @@ export function ActivityFeed({
     };
   }, [eventId, pollMs, idleStopMs]);
 
+  const Frame = frame === "card" ? CardFrame : PlainFrame;
+
   return (
-    <div>
+    <Frame>
       <SectionHeading
         title="What's happening"
         action={
@@ -202,6 +209,14 @@ export function ActivityFeed({
           })}
         </ol>
       )}
-    </div>
+    </Frame>
   );
+}
+
+function CardFrame({ children }: { children: React.ReactNode }) {
+  return <Card className="p-5">{children}</Card>;
+}
+
+function PlainFrame({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>;
 }

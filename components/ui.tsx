@@ -70,7 +70,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-card border border-line bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.03)]",
+        "rounded-xl border border-line bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.04)]",
         className,
       )}
       {...props}
@@ -78,6 +78,8 @@ export function Card({
   );
 }
 
+/** A section's label inside a workspace page: quiet, 15px, with the hint
+ *  under it and whatever acts on the section aligned to its top-right. */
 export function SectionHeading({
   title,
   hint,
@@ -88,12 +90,12 @@ export function SectionHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 className="font-display text-xl text-ink">{title}</h2>
-        {hint ? <p className="mt-1 text-sm text-ink-soft">{hint}</p> : null}
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
+        {hint ? <p className="mt-1 text-[13px] text-ink-mute">{hint}</p> : null}
       </div>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }
@@ -110,8 +112,8 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-card border border-dashed border-line-strong bg-surface/60 px-6 py-10 text-center">
-      <p className="font-display text-lg text-ink">{title}</p>
+    <div className="rounded-xl border border-dashed border-line-strong bg-surface/60 px-6 py-10 text-center">
+      <p className="text-[15px] font-semibold text-ink">{title}</p>
       <p className="mx-auto mt-1 max-w-md text-sm text-ink-soft">{body}</p>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>

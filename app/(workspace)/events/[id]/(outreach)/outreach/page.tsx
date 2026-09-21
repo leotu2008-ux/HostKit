@@ -46,7 +46,7 @@ export default async function OutreachPage({ params }: PageProps<"/events/[id]/o
     <div className="space-y-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl text-ink">Outreach</h2>
+          <h2 className="text-[20px] font-semibold text-ink">Outreach</h2>
           <p className="text-[13px] text-ink-mute">
             {rows.length === 0
               ? "Nobody lined up yet."

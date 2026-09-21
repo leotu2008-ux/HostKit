@@ -4,6 +4,9 @@ import { describeMissing, missingBriefFields } from "@/lib/brief";
 import { formatCents } from "@/lib/money";
 import { splitStart } from "@/lib/when";
 import { BriefForm } from "@/components/brief-form";
+import { EventCover } from "@/components/event-cover";
+import { ImageUpload } from "@/components/image-upload";
+import { removeCoverAction, setCoverAction } from "@/lib/actions/photos";
 import { Card } from "@/components/ui";
 
 // Server Actions inherit the page's route segment limit; Milestone 3 runs
@@ -39,6 +42,22 @@ export default async function BriefPage({ params }: PageProps<"/events/[id]/brie
 
   return (
     <div className="space-y-6">
+      {/* The cover used to be the workspace header's 80px photo on every
+          tab. It's a fact about the night like any other, so it lives with
+          the rest of them — same props, same actions, one page. */}
+      <div className="flex items-center gap-4">
+        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-sunk">
+          <EventCover id={event.id} title={event.title} coverUrl={event.coverUrl} sizes="160px" />
+        </div>
+        <ImageUpload
+          upload={setCoverAction}
+          remove={removeCoverAction}
+          hasImage={Boolean(event.coverUrl)}
+          fields={{ eventId: event.id }}
+          label="Change cover"
+        />
+      </div>
+
       <BriefForm
         event={{
           id: event.id,

@@ -7,10 +7,14 @@ import { cx } from "@/components/ui";
 export type SectionItem = { href: string; label: string };
 
 /**
- * The pill row a folded tab uses to switch between the pages it now owns
+ * The row a folded tab uses to switch between the pages it now owns
  * (Planning: Plan/Budget/Run sheet, Outreach: Threads/Vendors/Shortlist,
- * Guests: Guests/Promote/Blasts/Door). Same visual language as the
- * Upcoming/Past toggle on app/(app)/events/page.tsx.
+ * Guests: Guests/Promote/Blasts/Door).
+ *
+ * Underline tabs rather than the pill group it used to be: the sidebar is
+ * already a stack of pills, and a second pill group directly under it read
+ * as a competing primary nav. An underline sits *inside* the page instead —
+ * the standard "these are views of the same thing" mark.
  */
 export function SectionNav({
   items,
@@ -23,7 +27,7 @@ export function SectionNav({
 
   return (
     <nav aria-label={label} className="mb-6 max-w-full overflow-x-auto">
-      <div className="inline-flex gap-1 rounded-full bg-sunk p-1">
+      <div className="flex gap-5 border-b border-line">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
@@ -32,10 +36,10 @@ export function SectionNav({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "rounded-full px-3 py-1.5 text-[13px] font-medium",
+                "-mb-px shrink-0 border-b-2 pb-2.5 text-[13.5px]",
                 active
-                  ? "bg-surface text-ink shadow-[0_1px_3px_rgb(0_0_0/0.08)]"
-                  : "text-ink-soft hover:text-ink",
+                  ? "border-ink font-medium text-ink"
+                  : "border-transparent text-ink-soft hover:text-ink",
               )}
             >
               {item.label}

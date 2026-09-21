@@ -46,8 +46,8 @@ export function BlastComposer({
   if (state?.sent) {
     const { provider, count, emails, smsCount } = state.sent;
     return (
-      <div className="space-y-4 rounded-card border border-line bg-forest-wash/60 p-5">
-        <p className="font-display text-lg text-forest">
+      <div className="space-y-4 rounded-xl border border-line bg-forest-wash/60 p-5">
+        <p className="text-[15px] font-semibold text-forest">
           {provider === "resend"
             ? `Sent to ${count} ${count === 1 ? "guest" : "guests"}.`
             : `Recorded for ${count} ${count === 1 ? "guest" : "guests"}.`}

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { EventType } from "@/generated/prisma/enums";
-import { EVENT_TYPE_LABEL, isCity } from "@/lib/catalog";
+import { isCity } from "@/lib/catalog";
 
 /**
  * What "not filled in yet" means for an event, in one place.
@@ -102,10 +102,6 @@ export function eventTypeForKind(text: string | null | undefined): EventType | n
     if (keywords.some((keyword) => normalized.includes(keyword))) return type;
   }
   return null;
-}
-
-export function briefKindLabel(brief: { kind: string | null; type: EventType }): string {
-  return brief.kind?.trim() || EVENT_TYPE_LABEL[brief.type];
 }
 
 /**

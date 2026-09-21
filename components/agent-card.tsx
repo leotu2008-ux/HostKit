@@ -21,12 +21,12 @@ export function AgentCard({
   venueSearchEnabled: boolean;
 }) {
   return (
-    <Card className="flex items-start justify-between gap-3 px-4 py-3">
+    <Card className="flex items-start justify-between gap-3 p-3.5">
       <div className="min-w-0">
         <Badge tone={item.urgency === "now" ? "amber" : "neutral"} className="mb-1.5">
           {item.urgency === "now" ? "Now" : "Soon"}
         </Badge>
-        <p className="font-medium text-ink">{item.title}</p>
+        <p className="text-[13px] font-medium text-ink">{item.title}</p>
         <p className="text-[13px] text-ink-soft">{item.detail}</p>
       </div>
       <div className="shrink-0">

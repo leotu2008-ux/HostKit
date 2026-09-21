@@ -77,7 +77,7 @@ export default async function DiscoverPage({
           the re-render. */}
       <details
         open={activeFilterCount > 0 || filters.sort !== "fit"}
-        className="group rounded-card border border-line bg-surface"
+        className="group rounded-xl border border-line bg-surface"
       >
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-2">
