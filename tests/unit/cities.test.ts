@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CITIES } from "@/lib/catalog";
-import { US_CITIES, isScoutedCity, nearestUsCity, suggestCities } from "@/lib/cities";
+import { US_CITIES, detectCity, isScoutedCity, nearestUsCity, suggestCities } from "@/lib/cities";
 
 /**
  * The city table behind the Brief tab's typeahead.
@@ -123,6 +123,33 @@ describe("nearestUsCity", () => {
 
   it("honours a tighter radius", () => {
     expect(nearestUsCity(40.73, -73.99, 0.1)).toBeNull();
+  });
+});
+
+describe("detectCity", () => {
+  it("prefers the scouted metro over a nearer suburb inside it", () => {
+    // Babson/Wellesley: Cambridge is 10.7 miles away and Boston 12.7, but
+    // Boston is the city HostKit can actually scout a venue in.
+    expect(detectCity(42.2968, -71.2924)).toBe("Boston, MA");
+  });
+
+  it("prefers the scouted metro even from a listed city inside it", () => {
+    const cambridge = US_CITIES.find((city) => city.name === "Cambridge, MA")!;
+    expect(nearestUsCity(cambridge.lat, cambridge.lng)?.name).toBe("Cambridge, MA");
+    expect(detectCity(cambridge.lat, cambridge.lng)).toBe("Boston, MA");
+  });
+
+  it("falls back to the nearest listed city outside every scouted metro", () => {
+    expect(detectCity(41.8781, -87.6298)).toBe("Chicago, IL");
+  });
+
+  it("is null when nothing is close enough", () => {
+    expect(detectCity(0, 0)).toBeNull();
+  });
+
+  it("returns a scouted city from its own centre", () => {
+    expect(detectCity(40.7128, -74.006)).toBe("New York, NY");
+    expect(detectCity(30.2672, -97.7431)).toBe("Austin, TX");
   });
 });
 

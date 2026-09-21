@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import { isScoutedCity, nearestUsCity, suggestCities, type UsCity } from "@/lib/cities";
+import { detectCity, isScoutedCity, suggestCities, type UsCity } from "@/lib/cities";
 import { CITY_COOKIE } from "@/lib/city-cookie";
 import { Badge, Input, cx } from "@/components/ui";
 
@@ -59,25 +59,42 @@ export function CityField({ name, defaultValue }: { name: string; defaultValue?:
   const autoTried = useRef(false);
   const listId = useId();
 
-  const detect = (announce: boolean) => {
-    if (detected.current || !navigator.geolocation) return;
+  const failed = () => setHint("Couldn't get your location — type the city instead");
+
+  /**
+   * Ask the browser where it is and fill the field in.
+   *
+   * `replace` is the whole difference between the two callers. Pressing the
+   * pin is a host saying "put me where I am", so it overwrites whatever is
+   * there — including the city saved with the event, which is the normal
+   * state of this field and used to make the button a no-op that lied about
+   * why. The silent first-focus attempt gets `replace: false` instead: it
+   * never over-types a host who named somewhere themselves while the prompt
+   * sat open, and it says nothing either way.
+   */
+  const detect = ({ replace }: { replace: boolean }) => {
+    if (detected.current || !navigator.geolocation) {
+      if (replace) failed();
+      return;
+    }
     detected.current = true;
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const city = nearestUsCity(position.coords.latitude, position.coords.longitude);
-        // Never over-type a host who has since named somewhere themselves:
-        // the fix can arrive seconds after the prompt was answered.
-        if (!city || inputRef.current?.value) {
-          if (announce) setHint("Couldn't get your location — type the city instead");
+        const city = detectCity(position.coords.latitude, position.coords.longitude);
+        if (!city) {
+          // A real fix, but nowhere near anything listed — still a failure to
+          // answer the question the host asked.
+          if (replace) failed();
           return;
         }
-        setValue(city.name);
+        if (!replace && inputRef.current?.value) return;
+        setValue(city);
         setOptions([]);
         setOpen(false);
         setHint("Set from your location");
       },
       () => {
-        if (announce) setHint("Couldn't get your location — type the city instead");
+        if (replace) failed();
       },
       DETECT_OPTIONS,
     );
@@ -91,7 +108,7 @@ export function CityField({ name, defaultValue }: { name: string; defaultValue?:
     if (autoTried.current) return;
     autoTried.current = true;
     if (inputRef.current?.value || locationRefused()) return;
-    detect(false);
+    detect({ replace: false });
   };
 
   const change = (next: string) => {
@@ -167,7 +184,7 @@ export function CityField({ name, defaultValue }: { name: string; defaultValue?:
             // happened — that's the difference from the silent attempt.
             autoTried.current = true;
             detected.current = false;
-            detect(true);
+            detect({ replace: true });
           }}
           className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-ink-mute hover:bg-sunk hover:text-ink"
         >

@@ -101,10 +101,15 @@ export function CalendarPicker({
   name,
   defaultValue,
   onChange,
+  describedBy,
 }: {
   name: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+  /** An element describing this date, announced with the grid — the Brief
+   *  tab's campus-conflict note, which the native input used to carry as
+   *  aria-describedby. */
+  describedBy?: string;
 }) {
   const initial = defaultValue && fromKey(defaultValue) ? defaultValue : "";
   const [value, setValue] = useState(initial);
@@ -247,7 +252,13 @@ export function CalendarPicker({
           </div>
         </div>
 
-        <div role="grid" aria-label="Choose a date" onKeyDown={onKeyDown} ref={gridRef}>
+        <div
+          role="grid"
+          aria-label="Choose a date"
+          aria-describedby={describedBy}
+          onKeyDown={onKeyDown}
+          ref={gridRef}
+        >
           <div role="row" className="grid grid-cols-7">
             {WEEKDAYS.map((day) => (
               <span

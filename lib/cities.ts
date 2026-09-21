@@ -1,4 +1,4 @@
-import { CITIES, isCity, milesBetween } from "@/lib/catalog";
+import { CITIES, isCity, milesBetween, nearestCity } from "@/lib/catalog";
 
 /**
  * Every US city a host can name, as opposed to the four HostKit scouts.
@@ -331,6 +331,21 @@ export function nearestUsCity(lat: number, lng: number, maxMiles = 60): UsCity |
     if (!best || miles < best.miles) best = { city, miles };
   }
   return best && best.miles <= maxMiles ? best.city : null;
+}
+
+/**
+ * The city to put in the field for a browser's location fix.
+ *
+ * Nearest-by-distance is the wrong answer here. From Babson, Cambridge is
+ * 10.7 miles away and Boston 12.7 — so `nearestUsCity` alone would fill
+ * "Cambridge, MA" and silently cost that host venue and vendor drafting, for
+ * a night they would themselves describe as being in Boston. `nearestCity`
+ * already asks "which scouted metro is this point in?" with the same 60-mile
+ * radius, so it gets first refusal; only a point in no scouted metro falls
+ * through to the long table.
+ */
+export function detectCity(lat: number, lng: number): string | null {
+  return nearestCity(lat, lng) ?? nearestUsCity(lat, lng)?.name ?? null;
 }
 
 /** Whether HostKit scouts venues and vendors in this city — the "Scouted"

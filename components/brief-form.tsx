@@ -91,6 +91,7 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
           <CalendarPicker
             name="date"
             defaultValue={event.date}
+            describedBy={nightLine ? "night-note" : undefined}
             onChange={(value) => {
               if (!hasSchool || !value) {
                 setNightLine(null);
