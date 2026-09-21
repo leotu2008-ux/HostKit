@@ -122,9 +122,12 @@ function Rails({ children }: { children: React.ReactNode }) {
 export function Landing() {
   return (
     <main className="relative isolate flex-1 bg-paper">
-      <CloudSky />
-
       {/* No header: the app shell already renders the nav and the brand. */}
+      {/* The sky spans exactly the hero and the preview: it is sized by this
+          wrapper, not by a fixed height, so it ends where the preview does at
+          every viewport width. */}
+      <div className="relative isolate">
+      <CloudSky />
       <Rails>
         <section className="pt-16 pb-20 text-center md:pt-24 md:pb-24">
           <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink-soft">
@@ -213,6 +216,7 @@ export function Landing() {
           </div>
         </section>
       </Rails>
+      </div>
 
       <div className="border-y border-line bg-surface">
         <Rails>
