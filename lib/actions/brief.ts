@@ -1,0 +1,130 @@
+"use server";
+
+import { refresh } from "next/cache";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { requireEvent } from "@/lib/session";
+import { CITIES } from "@/lib/catalog";
+import { parseCents } from "@/lib/money";
+import { parseStart } from "@/lib/when";
+import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
+import { regenerateTasksAndCategories } from "@/lib/actions/plan";
+
+export type BriefFormState = { error?: string; saved?: boolean } | undefined;
+
+// Everything but eventId is optional: the Brief tab is one form a host fills
+// in over several visits, not a single all-or-nothing submission.
+const schema = z.object({
+  eventId: z.string().min(1),
+  title: z.string().trim().max(120).optional(),
+  kind: z.string().trim().max(60).optional(),
+  date: z.string().trim().optional(),
+  time: z.string().trim().optional(),
+  durationHours: z.coerce.number().int().min(1).max(24).optional(),
+  city: z.enum(CITIES as unknown as [string, ...string[]]).or(z.literal("")).optional(),
+  guestCount: z.coerce.number().int().min(0).max(100_000).optional(),
+  budget: z.string().trim().optional(),
+  description: z.string().trim().max(2000).optional(),
+  address: z.string().trim().max(200).optional(),
+});
+
+/** Saves the whole Brief tab in one shot. Every visible field rides in the
+ *  same form, so a save always writes the full set — there's no per-field
+ *  PATCH here. */
+export async function saveBriefAction(
+  _prev: BriefFormState,
+  formData: FormData,
+): Promise<BriefFormState> {
+  const parsed = schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const input = parsed.data;
+
+  const { event } = await requireEvent(input.eventId);
+
+  let budgetTotalCents = event.budgetTotalCents;
+  if (input.budget !== undefined) {
+    if (input.budget === "") {
+      // An emptied field means "no budget set yet", not a typo — the same
+      // "not filled in" sentinel guestCount 0 and city "" already use.
+      budgetTotalCents = 0;
+    } else {
+      const cents = parseCents(input.budget);
+      if (cents === null) return { error: "That planning budget doesn't look right." };
+      budgetTotalCents = cents;
+    }
+  }
+
+  const date = parseStart(input.date ?? "", input.time ?? "");
+  if (input.date && !date) {
+    return { error: "That date and time don't look right." };
+  }
+
+  const trimmedKind = (input.kind ?? "").trim();
+  const kind = trimmedKind || null;
+  // Only re-derive the planning type when the kind text itself changed — a
+  // host who corrected it must not lose that on an unrelated field's save.
+  const type =
+    trimmedKind !== (event.kind ?? "")
+      ? (eventTypeForKind(trimmedKind) ?? FALLBACK_TYPE)
+      : event.type;
+
+  const title = input.title?.trim() || UNTITLED;
+  const description = input.description?.trim() || null;
+  const durationHours = input.durationHours ?? event.durationHours;
+  const city = input.city ?? event.city;
+  const guestCount = input.guestCount ?? event.guestCount;
+  const address = input.address?.trim() || "";
+
+  await db.event.update({
+    where: { id: event.id },
+    data: {
+      title,
+      kind,
+      type,
+      date,
+      durationHours,
+      city,
+      guestCount,
+      budgetTotalCents,
+      description,
+      vibe: description,
+      address: address || null,
+    },
+  });
+
+  if (address) {
+    // A host who types a venue address here is telling the agent it can skip
+    // venue search — this is what lets it later find that out.
+    const existing = await db.eventCollaborator.findFirst({
+      where: { eventId: event.id, kind: "VENUE" },
+    });
+    if (existing) {
+      await db.eventCollaborator.update({ where: { id: existing.id }, data: { detail: address } });
+    } else {
+      await db.eventCollaborator.create({
+        data: { eventId: event.id, kind: "VENUE", name: address, detail: address, source: "MANUAL" },
+      });
+    }
+  }
+
+  // TODO(M2): record "brief_saved" with the changed field names.
+  // TODO(M3): after(() => runAgent(...)) when briefIsComplete
+
+  // Milestone 1 has no agent run to draft the plan on save — the old create
+  // path did that. Standing in for it until Milestone 3: the first time a
+  // brief completes, draft the plan the same way a redraft would, but only
+  // once (a second complete save must not keep re-drafting tasks nobody
+  // touched).
+  const updated = { title, kind, type, date, durationHours, city, guestCount, budgetTotalCents, vibe: description, description };
+  if (briefIsComplete(updated)) {
+    const categoryCount = await db.budgetCategory.count({ where: { eventId: event.id } });
+    if (categoryCount === 0) {
+      await regenerateTasksAndCategories(event.id, { type, date, budgetTotalCents });
+    }
+  }
+
+  refresh();
+  return { saved: true };
+}

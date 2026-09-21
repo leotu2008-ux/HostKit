@@ -13,27 +13,40 @@ import type { EventType } from "@/generated/prisma/enums";
  *  from whatever they choose. */
 const DEFAULT_TYPE: EventType = "MIXER";
 
-/** Capacity: type a number, or nudge it with − and +. */
-function CapacityField({ name, defaultValue }: { name: string; defaultValue: number }) {
+/** Capacity: type a number, or nudge it with − and +. Shared with the Brief
+ *  tab (components/brief-form.tsx), which passes `min={0}` and
+ *  `required={false}` — a blank event's guest count is genuinely unset, not
+ *  "at least one person", so 0 renders as an empty field there. */
+export function CapacityField({
+  name,
+  defaultValue,
+  min = 1,
+  required = true,
+}: {
+  name: string;
+  defaultValue: number;
+  min?: number;
+  required?: boolean;
+}) {
   const [value, setValue] = useState(defaultValue);
-  const clamp = (n: number) => Math.min(100_000, Math.max(1, n));
+  const clamp = (n: number) => Math.min(100_000, Math.max(min, n));
   const bump = (delta: number) => setValue((v) => clamp((Number.isFinite(v) ? v : 0) + delta));
   const bumpClass =
     "flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface text-lg text-ink hover:border-line-strong disabled:opacity-40";
 
   return (
     <div className="flex items-center gap-1.5">
-      <button type="button" onClick={() => bump(-1)} aria-label="Fewer" className={bumpClass} disabled={value <= 1}>
+      <button type="button" onClick={() => bump(-1)} aria-label="Fewer" className={bumpClass} disabled={value <= min}>
         −
       </button>
       <input
         name={name}
         type="number"
         inputMode="numeric"
-        min={1}
+        min={min}
         max={100000}
-        required
-        value={Number.isFinite(value) ? value : ""}
+        required={required}
+        value={Number.isFinite(value) && value !== 0 ? value : ""}
         onChange={(e) => setValue(e.target.value === "" ? NaN : Number(e.target.value))}
         onBlur={() => setValue((v) => clamp(Number.isFinite(v) ? v : defaultValue))}
         aria-label="Capacity"
