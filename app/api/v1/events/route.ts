@@ -52,7 +52,9 @@ const createSchema = z.object({
   title: z.string().trim().min(1, "Name this night.").max(120),
   type: z.enum(ALL_EVENT_TYPES as [string, ...string[]]),
   startsAt: z.string().nullable().optional(),
-  durationHours: z.number().int().min(1).max(24),
+  // Fractional since the web got a quarter-hour wheel; iOS still sends whole
+  // hours, which this accepts unchanged.
+  durationHours: z.number().min(0.25).max(24),
   capacity: z.number().int().min(1).max(100_000),
   city: z.enum(CITIES as unknown as [string, ...string[]]),
   address: z.string().trim().max(200).nullable().optional(),

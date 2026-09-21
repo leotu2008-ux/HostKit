@@ -243,4 +243,11 @@ describe("briefHash", () => {
   ] as const)("changes when %s changes", (_field, over) => {
     expect(briefHash(complete(over as Partial<BriefFacts>))).not.toBe(briefHash(complete()));
   });
+
+  it("tells a quarter hour apart from the hours either side of it", () => {
+    // The duration is stringified, not rounded, so widening the column to a
+    // float mustn't let 1h 30m pass for 1h or 2h and skip the agent.
+    const hash = (durationHours: number) => briefHash(complete({ durationHours }));
+    expect(new Set([hash(1), hash(1.25), hash(1.5), hash(1.75), hash(2)]).size).toBe(5);
+  });
 });

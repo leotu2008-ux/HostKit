@@ -9,6 +9,7 @@ import { eventTypeForKind } from "@/lib/brief";
 import { CalendarPicker } from "@/components/calendar-picker";
 import { CapacityField } from "@/components/capacity-field";
 import { CityField } from "@/components/city-field";
+import { DurationWheel } from "@/components/duration-wheel";
 import { TimeWheel } from "@/components/time-wheel";
 import { Button, Field, FormError, Input, Textarea } from "@/components/ui";
 
@@ -120,15 +121,8 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
         </div>
       ) : null}
 
-      <Field label="Hours">
-        <Input
-          name="durationHours"
-          type="number"
-          min={1}
-          max={24}
-          defaultValue={event.durationHours}
-          className="w-24"
-        />
+      <Field label="Duration" composite hint="Quarter-hour steps.">
+        <DurationWheel name="durationHours" defaultValue={event.durationHours} />
       </Field>
 
       <Field label="City">
