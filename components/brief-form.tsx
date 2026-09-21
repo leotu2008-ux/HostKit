@@ -4,10 +4,13 @@ import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { saveBriefAction } from "@/lib/actions/brief";
 import { checkNightAction } from "@/lib/actions/night";
-import { CITIES, EVENT_TYPE_LABEL, EVENT_TYPE_OPTIONS } from "@/lib/catalog";
+import { EVENT_TYPE_LABEL, EVENT_TYPE_OPTIONS } from "@/lib/catalog";
 import { eventTypeForKind } from "@/lib/brief";
+import { CalendarPicker } from "@/components/calendar-picker";
 import { CapacityField } from "@/components/capacity-field";
-import { Button, Field, FormError, Input, Select, Textarea } from "@/components/ui";
+import { CityField } from "@/components/city-field";
+import { TimeWheel } from "@/components/time-wheel";
+import { Button, Field, FormError, Input, Textarea } from "@/components/ui";
 
 /** The pre-filled values the Brief tab shows back to the host — strings and
  *  numbers only, already unpacked server-side (app/(app)/events/[id]/brief/page.tsx)
@@ -81,15 +84,14 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
         </datalist>
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Date">
-          <Input
+      {/* The calendar and the wheel each want their own ~320px column, so the
+          pair only sits side by side once there's room for both. */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Date" composite>
+          <CalendarPicker
             name="date"
-            type="date"
             defaultValue={event.date}
-            aria-describedby={nightLine ? "night-note" : undefined}
-            onChange={(e) => {
-              const value = e.target.value;
+            onChange={(value) => {
               if (!hasSchool || !value) {
                 setNightLine(null);
                 return;
@@ -102,8 +104,8 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
             }}
           />
         </Field>
-        <Field label="Start">
-          <Input name="time" type="time" defaultValue={event.time} />
+        <Field label="Start" composite>
+          <TimeWheel name="time" defaultValue={event.time} />
         </Field>
       </div>
       {nightLine ? (
@@ -129,14 +131,7 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
       </Field>
 
       <Field label="City">
-        <Select name="city" defaultValue={event.city}>
-          <option value="">Choose a city</option>
-          {CITIES.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </Select>
+        <CityField name="city" defaultValue={event.city} />
       </Field>
 
       <Field label="Guests">
