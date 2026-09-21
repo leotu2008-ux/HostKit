@@ -14,6 +14,9 @@ import {
 } from "@/components/date-tile";
 import { decideRequestAction } from "@/lib/actions/waitlist";
 import { Button, ButtonLink, Card, FormError } from "@/components/ui";
+import { loadActivity, loadAgentStatus } from "@/lib/activity";
+import { toFeedRow } from "@/lib/activity-format";
+import { ActivityFeed } from "@/components/activity-feed";
 
 function initials(name: string) {
   return (
@@ -42,10 +45,14 @@ export default async function EventOverviewPage({
   const rawPublish = Array.isArray(query.publish) ? query.publish[0] : query.publish;
   const { event } = await requireEvent(id);
 
-  const guests = await db.guest.findMany({
-    where: { eventId: event.id },
-    orderBy: [{ name: "asc" }],
-  });
+  const [guests, activityRows, agent] = await Promise.all([
+    db.guest.findMany({
+      where: { eventId: event.id },
+      orderBy: [{ name: "asc" }],
+    }),
+    loadActivity(event.id, { limit: 30 }),
+    loadAgentStatus(event),
+  ]);
 
   const going = guests.filter((g) => g.rsvpStatus === "ATTENDING").length;
   const checkedIn = guests.filter((g) => g.checkedInAt).length;
@@ -105,7 +112,12 @@ export default async function EventOverviewPage({
         ))}
       </div>
 
-      {/* M2: <ActivityFeed /> mounts here */}
+      <ActivityFeed
+        eventId={event.id}
+        initial={activityRows.map(toFeedRow)}
+        agent={agent}
+        now={new Date().toISOString()}
+      />
 
       {requests.length > 0 ? (
         <Card className="overflow-hidden">
