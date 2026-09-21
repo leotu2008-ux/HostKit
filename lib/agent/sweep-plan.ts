@@ -14,10 +14,16 @@
  * row is just the old attempt's corpse and re-running would redo finished
  * work and re-post its feed lines daily. If the brief moved on and the
  * follow-up run was *lost* — a dropped `after()`, an event written through
- * the iOS API — then nothing has planned the event as it now stands, and
- * clause (b) of the sweep's own query can't see it either (that one only
- * looks at events with no runs at all). `currentBriefHasRun` is what
- * separates them.
+ * the iOS API — then nothing has planned the event as it now stands.
+ * `currentBriefHasRun` is what separates them.
+ *
+ * That same fact is the whole test for the sweep's other input, the scan of
+ * every PLANNING event with a complete brief. An event whose last run is
+ * DONE has no unfinished row to be a candidate, and isn't an event with no
+ * runs at all either — so if its brief was then edited and the follow-up
+ * `after()` never fired, nothing but "the brief it carries now has no
+ * AgentRun row" can notice. Hence one question asked of both inputs rather
+ * than a selector per gap.
  */
 
 export type SweepCandidate = {
@@ -33,6 +39,13 @@ export type SweepCandidate = {
   currentBriefHasRun: boolean;
 };
 
+/** One event off the sweep's candidate scan: PLANNING, brief complete. */
+export type SweepEvent = {
+  id: string;
+  /** Whether any AgentRun row exists for the brief this event carries now. */
+  currentBriefHasRun: boolean;
+};
+
 export type SweepPlan = {
   /** Event ids to hand to runAgent, in the order given, deduped and capped. */
   run: string[];
@@ -41,14 +54,14 @@ export type SweepPlan = {
 };
 
 /**
- * `candidates` are unfinished runs (oldest first); `freshEventIds` are events
- * that have never had a run at all. `retire` is deliberately uncapped: it's
- * one cheap status write per row, and leaving any behind would re-starve the
- * next sweep.
+ * `candidates` are unfinished runs (oldest first); `events` are the scanned
+ * PLANNING events with a complete brief, soonest first. `retire` is
+ * deliberately uncapped: it's one cheap status write per row, and leaving any
+ * behind would re-starve the next sweep.
  */
 export function sweepPlan(
   candidates: SweepCandidate[],
-  freshEventIds: string[],
+  events: SweepEvent[],
   limit: number,
 ): SweepPlan {
   const retire: string[] = [];
@@ -65,9 +78,11 @@ export function sweepPlan(
     if (!candidate.currentBriefHasRun) runnable.push(candidate.eventId);
   }
 
-  // An event can have several unfinished rows, and can appear in both lists;
-  // it only ever needs one run.
-  const run = [...new Set([...runnable, ...freshEventIds])].slice(0, limit);
+  // An event can have several unfinished rows, and can appear in both lists
+  // — a QUEUED row is an unfinished candidate *and* a row for the current
+  // brief; it only ever needs one run.
+  const unplanned = events.filter((event) => !event.currentBriefHasRun).map((event) => event.id);
+  const run = [...new Set([...runnable, ...unplanned])].slice(0, limit);
 
   return { run, retire };
 }

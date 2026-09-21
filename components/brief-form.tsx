@@ -6,7 +6,7 @@ import { saveBriefAction } from "@/lib/actions/brief";
 import { checkNightAction } from "@/lib/actions/night";
 import { CITIES, EVENT_TYPE_LABEL, EVENT_TYPE_OPTIONS } from "@/lib/catalog";
 import { eventTypeForKind } from "@/lib/brief";
-import { CapacityField } from "@/components/event-intake-form";
+import { CapacityField } from "@/components/capacity-field";
 import { Button, Field, FormError, Input, Select, Textarea } from "@/components/ui";
 
 /** The pre-filled values the Brief tab shows back to the host — strings and

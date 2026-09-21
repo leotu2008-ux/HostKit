@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
 import { briefHash, briefIsComplete } from "@/lib/brief";
 import { MAX_ATTEMPTS, STALE_RUN_MS, runAgent } from "@/lib/agent/run";
-import { sweepPlan, type SweepCandidate } from "@/lib/agent/sweep-plan";
+import { sweepPlan, type SweepCandidate, type SweepEvent } from "@/lib/agent/sweep-plan";
 
 /**
  * The safety net behind `after()`: once a day, pick up the runs that never
- * finished and the events that never started one.
+ * finished and the events whose brief nothing has planned.
  *
  * Two kinds of gap. A run can be left QUEUED by the rate limit, FAILED by a
  * step that broke, or RUNNING by an instance that died — all recoverable, and
@@ -14,6 +14,14 @@ import { sweepPlan, type SweepCandidate } from "@/lib/agent/sweep-plan";
  * API writes events through its own routes, and a dropped invocation loses
  * the callback entirely. Neither case should need a host to notice and press
  * a button.
+ *
+ * The second gap is why the candidate scan below is every PLANNING event with
+ * a complete brief rather than only the events with no runs at all. An event
+ * whose last run finished DONE and whose brief was *then* edited has no
+ * unfinished row and is not run-less either: the lost follow-up leaves the
+ * host looking at "Idle · ran 3d ago" against a brief the agent never read.
+ * Scanning is cheap (one bounded query plus one hash each, in JS); it's the
+ * runs that are expensive, and SWEEP_LIMIT still caps those at five.
  *
  * Which of those rows are actually retryable is sweepPlan's decision, not a
  * property of the selector — see lib/agent/sweep-plan.ts for why an
@@ -41,6 +49,14 @@ const MIN_RUN_SLICE_MS = 12_000;
  *  is retired in the same sweep that still does real work. */
 const CANDIDATE_TAKE = SWEEP_LIMIT * 5;
 
+/** How many PLANNING events one sweep looks at, soonest first — the same
+ *  bound and ordering lib/agent/digest.ts scans with, and for the same
+ *  reason: this set never drains on its own, so without an order the cap
+ *  would drop tomorrow's night in favour of one eight months out. Past-dated
+ *  events sort first but don't accumulate: the close-events cron moves them
+ *  out of PLANNING daily (lib/outcomes.ts). */
+const EVENT_SCAN_TAKE = 500;
+
 export type SweepResult = {
   /** Events found worth a run. `ran + skipped` is lower when the sweep's
    *  clock cut it short — the next one picks those up. */
@@ -54,7 +70,7 @@ export type SweepResult = {
 export async function sweepAgentRuns(now = new Date()): Promise<SweepResult> {
   const staleBefore = new Date(now.getTime() - STALE_RUN_MS);
 
-  const [unfinished, neverRun] = await Promise.all([
+  const [unfinished, scanned] = await Promise.all([
     db.agentRun.findMany({
       where: {
         // A cancelled or already-finished event has nothing left to plan.
@@ -73,7 +89,6 @@ export async function sweepAgentRuns(now = new Date()): Promise<SweepResult> {
     db.event.findMany({
       where: {
         status: "PLANNING",
-        agentRuns: { none: {} },
         // The cheap half of briefIsComplete, as SQL. The rest of it (is this
         // a city HostKit knows?) is checked below — it can't be expressed
         // here, and a prefilter this narrow leaves little to throw away.
@@ -83,22 +98,35 @@ export async function sweepAgentRuns(now = new Date()): Promise<SweepResult> {
         guestCount: { gt: 0 },
         budgetTotalCents: { gt: 0 },
       },
-      orderBy: { createdAt: "asc" },
-      take: SWEEP_LIMIT * 2,
+      orderBy: { date: "asc" },
+      take: EVENT_SCAN_TAKE,
     }),
   ]);
 
-  // Which of the candidates' events already have a run for the brief they
-  // carry *now* — one query for the whole batch, since sweepPlan needs it to
-  // tell an old attempt's corpse from an event whose follow-up run was lost.
-  const currentPairs = [
-    ...new Map(
-      unfinished.map((run) => {
-        const hash = briefHash(run.event);
-        return [`${run.eventId}:${hash}`, { eventId: run.eventId, briefHash: hash }];
-      }),
-    ).values(),
-  ];
+  const complete = scanned.filter(briefIsComplete);
+
+  // The brief each event carries *now*, hashed once per event whichever input
+  // it came in on — a candidate row's `include: { event: true }` and the scan
+  // are the same row read twice.
+  const currentHash = new Map<string, string>();
+  for (const run of unfinished) currentHash.set(run.eventId, briefHash(run.event));
+  for (const event of complete) {
+    if (!currentHash.has(event.id)) currentHash.set(event.id, briefHash(event));
+  }
+
+  // Which of those briefs already have a run — one query for the whole batch,
+  // and the one fact both inputs are decided on: it tells an old attempt's
+  // corpse from an event whose follow-up run was lost, and a scanned event
+  // the agent has read from one it hasn't.
+  //
+  // Pairs rather than `eventId in (…) AND briefHash in (…)`: two events with
+  // identical brief facts hash the same (the seeded test events do), so a
+  // cross-product would report a run against the wrong event. Each pair hits
+  // the @@unique([eventId, briefHash]) index.
+  const currentPairs = [...currentHash].map(([eventId, hash]) => ({
+    eventId,
+    briefHash: hash,
+  }));
   const existing = new Set(
     (currentPairs.length === 0
       ? []
@@ -110,7 +138,7 @@ export async function sweepAgentRuns(now = new Date()): Promise<SweepResult> {
   );
 
   const candidates: SweepCandidate[] = unfinished.map((run) => {
-    const currentBriefHash = briefHash(run.event);
+    const currentBriefHash = currentHash.get(run.eventId)!;
     return {
       id: run.id,
       eventId: run.eventId,
@@ -120,11 +148,12 @@ export async function sweepAgentRuns(now = new Date()): Promise<SweepResult> {
     };
   });
 
-  const plan = sweepPlan(
-    candidates,
-    neverRun.filter(briefIsComplete).map((event) => event.id),
-    SWEEP_LIMIT,
-  );
+  const events: SweepEvent[] = complete.map((event) => ({
+    id: event.id,
+    currentBriefHasRun: existing.has(`${event.id}:${currentHash.get(event.id)}`),
+  }));
+
+  const plan = sweepPlan(candidates, events, SWEEP_LIMIT);
 
   if (plan.retire.length > 0) {
     // At MAX_ATTEMPTS so the row stops matching the selector above. The

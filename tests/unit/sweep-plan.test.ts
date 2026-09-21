@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { sweepPlan, type SweepCandidate } from "@/lib/agent/sweep-plan";
+import { sweepPlan, type SweepCandidate, type SweepEvent } from "@/lib/agent/sweep-plan";
+
+/** A scanned event whose brief as it stands now has no AgentRun row at all —
+ *  nothing has planned this brief, whatever its older rows say. */
+const unplanned = (id: string): SweepEvent => ({ id, currentBriefHasRun: false });
+
+/** A scanned event whose current brief already has a row: worked, running,
+ *  or queued for it. */
+const planned = (id: string): SweepEvent => ({ id, currentBriefHasRun: true });
 
 /** An unfinished run whose brief hasn't moved since it was claimed — the row
  *  runAgent will re-claim, so it's also the event's current-brief row. */
@@ -98,24 +106,54 @@ describe("sweepPlan — retiring rows runAgent can never reach", () => {
   });
 });
 
-describe("sweepPlan — events that never started a run", () => {
+describe("sweepPlan — scanned events with a complete brief", () => {
   it("adds them after the unfinished rows", () => {
-    const plan = sweepPlan([live("r1", "e1")], ["e2", "e3"], 5);
+    const plan = sweepPlan([live("r1", "e1")], [unplanned("e2"), unplanned("e3")], 5);
     expect(plan.run).toEqual(["e1", "e2", "e3"]);
   });
 
   it("doesn't run an event twice when it appears in both lists", () => {
-    expect(sweepPlan([live("r1", "e1")], ["e1"], 5).run).toEqual(["e1"]);
+    expect(sweepPlan([live("r1", "e1")], [unplanned("e1")], 5).run).toEqual(["e1"]);
   });
 
   it("is the only source of work when there are no unfinished rows", () => {
-    expect(sweepPlan([], ["e1", "e2"], 5)).toEqual({ run: ["e1", "e2"], retire: [] });
+    expect(sweepPlan([], [unplanned("e1"), unplanned("e2")], 5)).toEqual({
+      run: ["e1", "e2"],
+      retire: [],
+    });
+  });
+
+  it("runs an event whose last run is DONE, whose brief then changed, and whose after() was lost", () => {
+    // The gap the broad scan closes. The DONE row is finished, so it's not in
+    // `candidates` at all — the sweep's unfinished-row selector can't see it,
+    // and neither can a "no runs at all" clause. The only thing that says
+    // anything is wrong is that the brief the event carries *now* has no row.
+    expect(sweepPlan([], [unplanned("e1")], 5).run).toEqual(["e1"]);
+  });
+
+  it("leaves alone an event whose brief hasn't changed since its last run", () => {
+    // The whole point of the hash: a DONE row for this exact brief means the
+    // agent has read it. Re-running would redraft the same plan and re-post
+    // its feed lines on every single sweep.
+    expect(sweepPlan([], [planned("e1")], 5)).toEqual({ run: [], retire: [] });
+  });
+
+  it("doesn't run an event twice when its current brief is already QUEUED", () => {
+    // A rate-limited run parks at QUEUED, which is both an unfinished row
+    // (so, a candidate) and a row for the current hash (so, `planned`). It
+    // gets exactly one run out of the sweep, not one per list.
+    const plan = sweepPlan([live("r1", "e1")], [planned("e1")], 5);
+    expect(plan.run).toEqual(["e1"]);
   });
 });
 
 describe("sweepPlan — the limit", () => {
   it("caps the events it runs", () => {
-    const plan = sweepPlan([], ["e1", "e2", "e3", "e4", "e5", "e6", "e7"], 5);
+    const plan = sweepPlan(
+      [],
+      ["e1", "e2", "e3", "e4", "e5", "e6", "e7"].map(unplanned),
+      5,
+    );
     expect(plan.run).toEqual(["e1", "e2", "e3", "e4", "e5"]);
   });
 

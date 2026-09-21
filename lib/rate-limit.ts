@@ -58,4 +58,8 @@ export const LIMITS = {
   outreach: { perActor: [30, 60 * 60_000] },
   /** Agent runs: each one can make two model calls and a Maps search. */
   agentRun: { perEvent: [6, 60 * 60_000], perIp: [8, 60 * 60_000], perOwner: [40, 60 * 60_000] },
+  /** "Find venues" on the Venue tab: a paid Maps search plus a model call,
+   *  per press. `perIp` is the actor's bucket — the address for an unclaimed
+   *  draft, the account otherwise. */
+  venueSearch: { perEvent: [10, 60 * 60_000], perIp: [10, 60 * 60_000] },
 } as const satisfies Record<string, Record<string, readonly [number, number]>>;

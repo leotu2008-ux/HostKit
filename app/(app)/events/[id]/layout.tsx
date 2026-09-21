@@ -97,8 +97,18 @@ export default async function EventLayout({
           its own tab, so it stays the thing watching the others rather than
           another app the host has to remember to visit: a right rail once
           the sidebar and content have room to share the row (xl+), and
-          otherwise full width below the content. */}
-      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[220px_minmax(0,1fr)_320px] xl:gap-8">
+          otherwise full width below the content.
+
+          `app/(app)/layout.tsx` caps every page at max-w-5xl (1024px),
+          which is the right width for a single-column page but starves
+          this one: two fixed rails (220px + 320px) plus gaps leave the
+          content column under 400px. Rather than widen the shell for
+          every page, this three-column workspace alone breaks out of the
+          5xl column at xl, growing symmetrically toward 80rem (1280px)
+          and never past it. The negative margin is clamped to 0 below
+          that breakpoint (min(...) with a 0px floor) so it's a no-op
+          until the shell is actually the bottleneck. */}
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[220px_minmax(0,1fr)_320px] xl:gap-8 xl:-mx-[max(0px,min(8rem,calc((100vw-64rem)/2-1.5rem)))]">
         <EventSidebar eventId={event.id} agent={agent} now={new Date().toISOString()} />
         <div className="min-w-0">{children}</div>
         <AgentPanel
