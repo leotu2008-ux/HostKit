@@ -13,6 +13,7 @@ import {
   TicketIcon,
 } from "@/components/date-tile";
 import { decideRequestAction } from "@/lib/actions/waitlist";
+import { runAgentAction } from "@/lib/actions/agent";
 import { Button, ButtonLink, Card, FormError } from "@/components/ui";
 import { loadActivity, loadAgentStatus } from "@/lib/activity";
 import { toFeedRow } from "@/lib/activity-format";
@@ -118,6 +119,19 @@ export default async function EventOverviewPage({
         agent={agent}
         now={new Date().toISOString()}
       />
+
+      {/* The agent runs itself when the brief completes; this is for the host
+          who wants another pass on a brief that hasn't changed. Hidden while
+          it's working — pressing it again would only be told "already
+          running". */}
+      {briefIsComplete(event) && agent.status !== "running" ? (
+        <form action={runAgentAction}>
+          <input type="hidden" name="eventId" value={event.id} />
+          <Button type="submit" variant="secondary" size="sm">
+            Run the agent
+          </Button>
+        </form>
+      ) : null}
 
       {requests.length > 0 ? (
         <Card className="overflow-hidden">

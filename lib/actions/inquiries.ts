@@ -10,6 +10,7 @@ import { composeInquiry, inquiryEmail, normalizeRecipient } from "@/lib/outreach
 import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { EmailSendError } from "@/lib/email/failure";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
+import { draftInquiry } from "@/lib/inquiries";
 import { record } from "@/lib/activity";
 
 export type InquiryFormState = { error?: string } | undefined;
@@ -24,9 +25,9 @@ const STATUSES: InquiryStatus[] = [
 ];
 
 /**
- * Creates the inquiry for a listing, with the outreach message pre-drafted.
- * Idempotent per (event, listing) so hitting "inquire" twice reopens the same
- * thread rather than starting a second one.
+ * The host pressing "inquire" on a listing they found themselves. The write
+ * itself is lib/inquiries.ts's draftInquiry, shared with the agent's vendor
+ * step; the authentication is here, where the request is.
  */
 export async function startInquiryAction(formData: FormData) {
   const eventId = String(formData.get("eventId") ?? "");
@@ -37,19 +38,7 @@ export async function startInquiryAction(formData: FormData) {
   if (!listing) return;
 
   const { body } = composeInquiry(event, listing, user?.name ?? "the host");
-
-  await db.inquiry.upsert({
-    where: { eventId_listingId: { eventId, listingId } },
-    create: { eventId, listingId, message: body, status: "DRAFT" },
-    update: {},
-  });
-
-  // Enquiring is a strong signal of intent, so shortlist it too.
-  await db.savedListing.upsert({
-    where: { eventId_listingId: { eventId, listingId } },
-    create: { eventId, listingId },
-    update: {},
-  });
+  await draftInquiry(eventId, listingId, body);
   refresh();
 }
 

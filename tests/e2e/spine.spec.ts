@@ -68,6 +68,13 @@ async function createNight(page: Page) {
   await page.fill('input[name="address"]', "200 Kent Ave, Brooklyn, NY");
   await page.click('button:has-text("Save the brief")');
   await expect(page.getByText("Saved.")).toBeVisible();
+
+  // A complete brief starts the agent behind the response (after()), so the
+  // plan and budget every later step asserts on are its work, not the save's.
+  // Deterministic without ANTHROPIC_API_KEY: draftPlan's fallback is the same
+  // template, so it writes the same categories and tasks either way.
+  await page.goto(event);
+  await expect(page.getByText("Plan drafted")).toBeVisible({ timeout: 30_000 });
   return event;
 }
 
@@ -129,16 +136,26 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
     expect(await page.locator("article").count()).toBeGreaterThan(fitted);
   });
 
+  // Captured on the discover card so every later step can pick the host's own
+  // venue out of a shortlist the agent has also been adding to.
+  let venueName = "";
+  const venueRow = () => page.locator("tbody tr").filter({ hasText: venueName });
+
   await test.step("a venue can be shortlisted and compared", async () => {
     await page.goto(`${event}/discover?category=VENUE`);
-    await page.locator('article button[aria-label*="shortlist"]').first().click();
+    const card = page.locator("article").first();
+    venueName = (await card.locator("h3").innerText()).trim();
+    await card.locator('button[aria-label*="shortlist"]').click();
+
     await page.goto(`${event}/shortlist`);
-    await expect(page.locator("tbody tr")).toHaveCount(1);
-    await expect(page.getByText("for your 8 hours").first()).toBeVisible();
+    // The agent shortlists the vendors it drafted inquiries to, so this
+    // asserts the host's venue is on the list — not that it's alone on it.
+    await expect(venueRow()).toHaveCount(1);
+    await expect(venueRow().getByText("for your 8 hours")).toBeVisible();
   });
 
   await test.step("the inquiry is drafted with the event's details", async () => {
-    await page.locator("tbody tr td a").first().click();
+    await venueRow().locator("td a").first().click();
     await page.waitForURL(/\/listings\//);
     await page.click('button:has-text("Draft an inquiry")');
     const message = page.locator('textarea[name="message"]');
@@ -173,7 +190,7 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
 
   await test.step("declining the booking takes the money back out", async () => {
     await page.goto(`${event}/shortlist`);
-    await page.locator("tbody tr td a").first().click();
+    await venueRow().locator("td a").first().click();
     await page.waitForURL(/\/listings\//);
     await page.selectOption('select[name="status"]', "DECLINED");
     await page.click('button:has-text("Save")');

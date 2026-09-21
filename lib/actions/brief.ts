@@ -1,6 +1,8 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
@@ -8,7 +10,8 @@ import { CITIES } from "@/lib/catalog";
 import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
 import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
-import { regenerateTasksAndCategories } from "@/lib/actions/plan";
+import { clientIp } from "@/lib/rate-limit";
+import { runAgent } from "@/lib/agent/run";
 import { record } from "@/lib/activity";
 
 export type BriefFormState = { error?: string; saved?: boolean } | undefined;
@@ -131,21 +134,26 @@ export async function saveBriefAction(
       body: changedFields.join(" · "),
     });
   }
-  // TODO(M3): after(() => runAgent(...)) when briefIsComplete
-
-  // Milestone 1 has no agent run to draft the plan on save — the old create
-  // path did that. Standing in for it until Milestone 3: the first time a
-  // brief completes, draft the plan the same way a redraft would, but only
-  // once (a second complete save must not keep re-drafting tasks nobody
-  // touched).
   const updated = { title, kind, type, date, durationHours, city, guestCount, budgetTotalCents, vibe: description, description };
-  if (briefIsComplete(updated)) {
-    const categoryCount = await db.budgetCategory.count({ where: { eventId: event.id } });
-    if (categoryCount === 0) {
-      await regenerateTasksAndCategories(event.id, { type, date, budgetTotalCents });
-    }
-  }
 
   refresh();
+
+  // A brief with every fact in it is the agent's cue: it doesn't wait to be
+  // asked. Running it again on an unchanged brief is runAgent's problem, not
+  // this action's — the AgentRun row's briefHash is what makes a resave that
+  // touched nothing a no-op.
+  if (briefIsComplete(updated)) {
+    // Read the request data BEFORE after(): runAgent must also be callable
+    // from the cron, which has no headers to read.
+    const ipKey = event.ownerId ? null : clientIp(await headers());
+    // after() keeps the invocation alive via waitUntil, so the host gets the
+    // saved brief immediately and the agent works behind it. Nothing in here
+    // can refresh() anything — the response is already gone; the Overview
+    // feed's poll is what shows the result.
+    after(async () => {
+      await runAgent(event.id, { reason: "brief", ipKey });
+    });
+  }
+
   return { saved: true };
 }
