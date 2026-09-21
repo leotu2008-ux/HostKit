@@ -99,7 +99,7 @@ export default async function EventLayout({
           the sidebar and content have room to share the row (xl+), and
           otherwise full width below the content. */}
       <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[220px_minmax(0,1fr)_320px] xl:gap-8">
-        <EventSidebar eventId={event.id} agent={agent} />
+        <EventSidebar eventId={event.id} agent={agent} now={new Date().toISOString()} />
         <div className="min-w-0">{children}</div>
         <AgentPanel
           briefing={briefing}

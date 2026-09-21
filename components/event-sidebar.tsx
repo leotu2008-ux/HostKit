@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { describeMissing } from "@/lib/brief";
+import { relativeTime } from "@/lib/activity-format";
 import type { AgentStatusView } from "@/lib/activity";
+import { runAgentAction } from "@/lib/actions/agent";
 import { cx } from "@/components/ui";
 
 /**
@@ -27,7 +29,28 @@ const TABS: SidebarTab[] = [
 
 const dotClass = "h-1.5 w-1.5 shrink-0 rounded-full";
 
-function AgentStatusLine({ eventId, agent }: { eventId: string; agent: AgentStatusView }) {
+/** The status line's own affordance, sized for 13px text rather than the
+ *  page's primary Button. */
+function RunAgainButton({ eventId, label }: { eventId: string; label: string }) {
+  return (
+    <form action={runAgentAction}>
+      <input type="hidden" name="eventId" value={eventId} />
+      <button type="submit" className="text-clay hover:underline">
+        {label}
+      </button>
+    </form>
+  );
+}
+
+function AgentStatusLine({
+  eventId,
+  agent,
+  now,
+}: {
+  eventId: string;
+  agent: AgentStatusView;
+  now: string;
+}) {
   if (agent.status === "running") {
     return (
       <>
@@ -51,14 +74,20 @@ function AgentStatusLine({ eventId, agent }: { eventId: string; agent: AgentStat
       <>
         <span aria-hidden className={cx(dotClass, "bg-amber")} />
         <span className="text-ink-soft">Last run didn&rsquo;t finish</span>
+        <RunAgainButton eventId={eventId} label="Try again" />
       </>
     );
   }
-  // Milestone 3 adds "ran 2h ago" from lastRunAt plus a Run again button.
   return (
     <>
       <span aria-hidden className={cx(dotClass, "bg-forest")} />
-      <span className="text-ink-soft">Idle</span>
+      <span className="text-ink-soft">
+        Idle
+        {/* `now` comes from the server render so this string is the same on
+            both sides of hydration. */}
+        {agent.lastRunAt ? ` · ran ${relativeTime(agent.lastRunAt, new Date(now))}` : ""}
+      </span>
+      <RunAgainButton eventId={eventId} label="Run again" />
     </>
   );
 }
@@ -66,9 +95,11 @@ function AgentStatusLine({ eventId, agent }: { eventId: string; agent: AgentStat
 export function EventSidebar({
   eventId,
   agent,
+  now,
 }: {
   eventId: string;
   agent: AgentStatusView;
+  now: string;
 }): React.JSX.Element {
   const pathname = usePathname();
   const base = `/events/${eventId}`;
@@ -96,8 +127,8 @@ export function EventSidebar({
         })}
       </div>
 
-      <div className="hidden items-center gap-2 border-t border-line pt-3 text-[13px] lg:mt-4 lg:flex">
-        <AgentStatusLine eventId={eventId} agent={agent} />
+      <div className="hidden flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-[13px] lg:mt-4 lg:flex">
+        <AgentStatusLine eventId={eventId} agent={agent} now={now} />
       </div>
     </nav>
   );
