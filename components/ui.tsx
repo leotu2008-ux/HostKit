@@ -155,19 +155,31 @@ export function Badge({
 // Forms
 // ---------------------------------------------------------------------------
 
+/**
+ * One labelled row of a form.
+ *
+ * `<label>` is right for a single input and wrong for a composite control: a
+ * label with no `for` targets its first labelable descendant and runs its
+ * activation behaviour, so clicking the word "Date" pressed the calendar's own
+ * "Previous month" — and, once a date was set, its "Clear". Pass `composite`
+ * for a control made of several buttons (components/calendar-picker.tsx,
+ * components/time-wheel.tsx) and the row becomes a named group instead.
+ */
 export function Field({
   label,
   hint,
   error,
   children,
+  composite = false,
 }: {
   label: string;
   hint?: string;
   error?: string;
   children: ReactNode;
+  composite?: boolean;
 }) {
-  return (
-    <label className="block">
+  const body = (
+    <>
       <span className="mb-1.5 block text-sm font-medium text-ink">{label}</span>
       {children}
       {error ? (
@@ -175,7 +187,14 @@ export function Field({
       ) : hint ? (
         <span className="mt-1.5 block text-sm text-ink-mute">{hint}</span>
       ) : null}
-    </label>
+    </>
+  );
+  return composite ? (
+    <div role="group" aria-label={label} className="block">
+      {body}
+    </div>
+  ) : (
+    <label className="block">{body}</label>
   );
 }
 
