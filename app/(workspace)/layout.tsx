@@ -10,6 +10,6 @@
  * column of its own — `app/(workspace)/events/[id]/layout.tsx` owns the
  * frame. The URLs are untouched: `(workspace)` is a group, not a segment.
  */
-export default function WorkspaceLayout({ children }: LayoutProps<"/"> ) {
+export default function WorkspaceLayout({ children }: LayoutProps<"/">) {
   return <div className="min-h-dvh">{children}</div>;
 }

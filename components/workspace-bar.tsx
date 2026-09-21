@@ -31,10 +31,12 @@ export function WorkspaceBar({
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface/90 px-6 backdrop-blur md:px-8">
       <div className="flex min-w-0 items-center gap-2">
-        <Link href="/events" className="hidden shrink-0 text-[13px] text-ink-mute hover:text-ink sm:block">
+        {/* Always visible, at every width: with the marketing chrome hidden
+            inside the workspace this breadcrumb is the way back out. */}
+        <Link href="/events" className="shrink-0 text-[13px] text-ink-mute hover:text-ink">
           My events
         </Link>
-        <span aria-hidden className="hidden shrink-0 text-[13px] text-ink-mute sm:block">
+        <span aria-hidden className="shrink-0 text-[13px] text-ink-mute">
           /
         </span>
         <span className="truncate text-[14px] font-medium text-ink">{event.title}</span>
