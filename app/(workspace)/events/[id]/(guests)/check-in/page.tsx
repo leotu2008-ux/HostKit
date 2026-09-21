@@ -45,7 +45,7 @@ export default async function CheckInPage({
         <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
           Door
         </p>
-        <h2 className="font-display mt-1 text-2xl text-ink">Check-in</h2>
+        <h2 className="mt-1 text-[20px] font-semibold text-ink">Check-in</h2>
         <p className="mt-1 text-sm text-ink-soft">
           <span className="tabular font-medium text-ink">{inCount}</span>{" "}
           checked in · {going} going

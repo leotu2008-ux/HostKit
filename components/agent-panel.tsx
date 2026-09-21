@@ -27,7 +27,9 @@ export function AgentPanel({
 }) {
   return (
     <aside aria-labelledby="agent-heading" className={className}>
-      <h2 id="agent-heading" className="font-display text-lg text-ink">Agent</h2>
+      <h2 id="agent-heading" className="text-[15px] font-semibold text-ink">
+        Agent
+      </h2>
       {briefing.headline ? (
         <p className="mt-0.5 text-[13px] text-ink-mute">{briefing.headline}</p>
       ) : null}

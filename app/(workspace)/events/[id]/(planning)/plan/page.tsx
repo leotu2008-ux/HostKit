@@ -75,7 +75,7 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
       <section className="grid gap-3">
         <Card className="p-4">
           <p className="text-sm text-ink-soft">Budget committed</p>
-          <p className="font-display tabular mt-1 text-2xl text-ink">
+          <p className="tabular mt-1 text-[20px] font-semibold text-ink">
             {formatCents(budget.committedCents)}
           </p>
           <p className="mt-1 text-sm text-ink-mute">
@@ -84,7 +84,7 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
         </Card>
         <Card className="p-4">
           <p className="text-sm text-ink-soft">Still needed</p>
-          <p className="font-display mt-1 text-2xl text-ink">
+          <p className="mt-1 text-[20px] font-semibold text-ink">
             {outstanding.length === 0
               ? "Covered"
               : `${outstanding.length} essential ${

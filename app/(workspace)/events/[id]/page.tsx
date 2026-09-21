@@ -69,13 +69,31 @@ export default async function EventOverviewPage({
     .filter((g) => g.rsvpStatus === "WAITLISTED")
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-  const stats = [
-    { label: "Going", value: going },
-    { label: "Checked in", value: checkedIn },
-    { label: "Capacity", value: event.guestCount === 0 ? "—" : event.guestCount },
+  // The four KPI tiles. Each number gets a line saying what it's a number
+  // *of* — a bare "0 / Checked in" told a host nothing they didn't know.
+  const stats: Array<{ label: string; value: number | string; sub?: string }> = [
+    {
+      label: "Going",
+      value: going,
+      sub: event.guestCount > 0 ? `of ${event.guestCount}` : undefined,
+    },
+    {
+      label: "Checked in",
+      value: checkedIn,
+      sub: going > 0 ? `${Math.round((checkedIn / going) * 100)}% of going` : undefined,
+    },
+    {
+      label: "Capacity",
+      value: event.guestCount === 0 ? "—" : event.guestCount,
+      sub: "planning figure",
+    },
     requests.length + waitlist.length > 0
-      ? { label: "Waiting", value: requests.length + waitlist.length }
-      : { label: "Awaiting reply", value: invited },
+      ? {
+          label: "Waiting",
+          value: requests.length + waitlist.length,
+          sub: "need a decision",
+        }
+      : { label: "Awaiting reply", value: invited, sub: "haven’t replied" },
   ];
 
   const base = `/events/${event.id}`;
@@ -90,9 +108,11 @@ export default async function EventOverviewPage({
       ) : null}
 
       {!briefIsComplete(event) ? (
-        <Card className="space-y-3 p-5">
+        // Tinted, because on a half-finished night this is the one thing
+        // worth doing — everything else on the page is waiting on it.
+        <Card className="space-y-3 border-brand/30 bg-brand-wash p-5">
           <div>
-            <h2 className="font-display text-lg text-ink">
+            <h2 className="text-[15px] font-semibold text-ink">
               The agent needs {describeMissing(missing)}
             </h2>
             <p className="mt-1 text-[13px] text-ink-mute">
@@ -109,10 +129,15 @@ export default async function EventOverviewPage({
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label} className="p-4">
-            <p className="tabular text-[26px] leading-none font-semibold text-ink">
+            <p className="text-[11px] font-medium tracking-wide text-ink-mute uppercase">
+              {stat.label}
+            </p>
+            <p className="tabular mt-1.5 text-[24px] leading-none font-semibold text-ink">
               {stat.value}
             </p>
-            <p className="mt-1.5 text-[13px] text-ink-mute">{stat.label}</p>
+            {/* Grid items stretch, so a tile with no sub-line is still
+                the same height as the ones that have one. */}
+            {stat.sub ? <p className="mt-1.5 text-[12px] text-ink-mute">{stat.sub}</p> : null}
           </Card>
         ))}
       </div>
@@ -122,6 +147,7 @@ export default async function EventOverviewPage({
         initial={activityRows.map(toFeedRow)}
         agent={agent}
         now={new Date().toISOString()}
+        frame="card"
       />
 
       {/* The agent runs itself when the brief completes; this is for the host
@@ -140,7 +166,7 @@ export default async function EventOverviewPage({
       {requests.length > 0 ? (
         <Card className="overflow-hidden">
           <div className="border-b border-line px-5 py-4">
-            <h2 className="font-display text-lg text-ink">Requests</h2>
+            <h2 className="text-[15px] font-semibold text-ink">Requests</h2>
             <p className="text-[13px] text-ink-mute">
               {requests.length} waiting for a yes. Approving into a full night puts them on the waitlist.
             </p>
@@ -174,7 +200,7 @@ export default async function EventOverviewPage({
       {waitlist.length > 0 ? (
         <Card className="overflow-hidden">
           <div className="border-b border-line px-5 py-4">
-            <h2 className="font-display text-lg text-ink">Waitlist</h2>
+            <h2 className="text-[15px] font-semibold text-ink">Waitlist</h2>
             <p className="text-[13px] text-ink-mute">
               {waitlist.length} in line, oldest first. They move up automatically when a spot opens.
             </p>

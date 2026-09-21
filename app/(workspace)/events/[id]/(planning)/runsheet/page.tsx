@@ -53,7 +53,7 @@ export default async function RunSheetPage({
     <div className="space-y-8">
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl text-ink">
+          <h2 className="text-[20px] font-semibold text-ink">
             {event.date.toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
@@ -87,7 +87,7 @@ export default async function RunSheetPage({
       {/* The print view: this is what gets handed to whoever is running the
           day, so it has to survive being on paper. */}
       <div className="hidden print:mb-6 print:block">
-        <h1 className="font-display text-2xl">{event.title} — run sheet</h1>
+        <h1 className="text-[20px] font-semibold">{event.title} — run sheet</h1>
         <p className="text-sm">
           {event.date.toLocaleDateString("en-US", {
             weekday: "long",
@@ -102,7 +102,7 @@ export default async function RunSheetPage({
       <Card className="divide-y divide-line print:border-0">
         {items.map((item) => (
           <div key={item.id} className="flex items-start gap-4 p-4">
-            <span className="tabular font-display w-20 shrink-0 text-ink">
+            <span className="tabular w-20 shrink-0 font-medium text-ink">
               {formatTime(item.startsAt)}
             </span>
             <div className="min-w-0 flex-1">

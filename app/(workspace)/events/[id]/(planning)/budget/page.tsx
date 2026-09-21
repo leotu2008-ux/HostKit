@@ -25,9 +25,9 @@ export default async function BudgetPage({ params }: PageProps<"/events/[id]">) 
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm text-ink-soft">Committed so far</p>
-            <p className="font-display tabular mt-1 text-3xl text-ink">
+            <p className="tabular mt-1 text-[28px] font-semibold text-ink">
               {formatCents(budget.committedCents)}
-              <span className="text-xl text-ink-mute">
+              <span className="text-[18px] font-medium text-ink-mute">
                 {" "}
                 / {formatCents(budget.allocatedCents)}
               </span>
@@ -37,7 +37,7 @@ export default async function BudgetPage({ params }: PageProps<"/events/[id]">) 
             <p className="text-sm text-ink-soft">
               {budget.overBudget ? "Over budget by" : "Still unspent"}
             </p>
-            <p className="font-display tabular mt-1 text-2xl text-ink">
+            <p className="tabular mt-1 text-[20px] font-semibold text-ink">
               {formatCents(Math.abs(budget.remainingCents))}
             </p>
           </div>
