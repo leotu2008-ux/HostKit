@@ -7,9 +7,10 @@ import {
 } from "@/lib/discover";
 import { templateFor } from "@/lib/templates";
 import { db } from "@/lib/db";
+import { isCity } from "@/lib/catalog";
 import { DiscoverFilters } from "@/components/discover-filters";
 import { ListingCard } from "@/components/listing-card";
-import { EmptyState } from "@/components/ui";
+import { ButtonLink, EmptyState } from "@/components/ui";
 
 export default async function DiscoverPage({
   params,
@@ -18,6 +19,19 @@ export default async function DiscoverPage({
   const { id } = await params;
   const query = await searchParams;
   const { event } = await requireEvent(id);
+
+  // Scouting needs a city to search in; a blank/incomplete brief has none yet.
+  if (!isCity(event.city)) {
+    return (
+      <EmptyState
+        title="Finish the brief first"
+        body="Tell the agent the city and it can scout vendors."
+        action={
+          <ButtonLink href={`/events/${event.id}/brief`}>Finish the brief</ButtonLink>
+        }
+      />
+    );
+  }
 
   const filters = parseFilters(query);
   const activeFilterCount =

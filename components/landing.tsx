@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CloudSky } from "@/components/cloud-sky";
+import { CreateEventButton } from "@/components/create-event-button";
 import { GlitchText } from "@/components/glitch-text";
 import { ButtonLink } from "@/components/ui";
 
@@ -153,9 +154,15 @@ export function Landing() {
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-2.5">
-            <ButtonLink href="/events/new" variant="brand" size="lg">
-              Plan an event <span aria-hidden>→</span>
-            </ButtonLink>
+            <CreateEventButton
+              label={
+                <>
+                  Plan an event <span aria-hidden>→</span>
+                </>
+              }
+              variant="brand"
+              size="lg"
+            />
             <ButtonLink href="/discover" variant="secondary" size="lg">
               See what&rsquo;s on
             </ButtonLink>
@@ -297,9 +304,15 @@ export function Landing() {
             You&rsquo;ll have a plan before you close the tab.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-            <ButtonLink href="/events/new" variant="brand" size="lg">
-              Plan an event <span aria-hidden>→</span>
-            </ButtonLink>
+            <CreateEventButton
+              label={
+                <>
+                  Plan an event <span aria-hidden>→</span>
+                </>
+              }
+              variant="brand"
+              size="lg"
+            />
             <ButtonLink href="/signup" variant="secondary" size="lg">
               Create an account
             </ButtonLink>

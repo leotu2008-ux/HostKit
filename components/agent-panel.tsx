@@ -17,14 +17,16 @@ export function AgentPanel({
   eventId,
   canSend,
   venueSearchEnabled,
+  className,
 }: {
   briefing: Briefing;
   eventId: string;
   canSend: boolean;
   venueSearchEnabled: boolean;
+  className?: string;
 }) {
   return (
-    <aside aria-labelledby="agent-heading">
+    <aside aria-labelledby="agent-heading" className={className}>
       <h2 id="agent-heading" className="font-display text-lg text-ink">Agent</h2>
       {briefing.headline ? (
         <p className="mt-0.5 text-[13px] text-ink-mute">{briefing.headline}</p>

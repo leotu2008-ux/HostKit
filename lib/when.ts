@@ -38,3 +38,26 @@ export function formatEventWhen(
   if (hasClock && time) return `${day} · ${time} · ${durationHours}h`;
   return `${day} · ${durationHours}h`;
 }
+
+/** Combines a `yyyy-mm-dd` date and an optional `HH:MM` time into one Date,
+ *  the way the intake form and the brief action both submit it. Null when
+ *  there's no date, or the pair doesn't parse. */
+export function parseStart(date: string, time: string): Date | null {
+  if (!date) return null;
+  const clock = time && /^\d{2}:\d{2}$/.test(time) ? time : "12:00";
+  const parsedDate = new Date(`${date}T${clock}:00`);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+  return parsedDate;
+}
+
+/** The inverse of `parseStart`: the `yyyy-mm-dd`/`HH:MM` strings an
+ *  `input[type=date]`/`input[type=time]` pair need to show a saved start
+ *  back to the host who set it. Both empty when there's no date yet. */
+export function splitStart(date: Date | null): { date: string; time: string } {
+  if (!date) return { date: "", time: "" };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  };
+}

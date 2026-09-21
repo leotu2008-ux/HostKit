@@ -5,7 +5,8 @@ import { readDraftClaims } from "@/lib/drafts";
 import { groupByDay } from "@/lib/day-groups";
 import { pastOnly, upcomingOnly } from "@/lib/upcoming";
 import { EventCard } from "@/components/event-card";
-import { ButtonLink, EmptyState, cx } from "@/components/ui";
+import { CreateEventButton } from "@/components/create-event-button";
+import { EmptyState, cx } from "@/components/ui";
 
 export const metadata = { title: "My events" };
 
@@ -17,6 +18,7 @@ export default async function EventsPage({
   searchParams,
 }: PageProps<"/events">) {
   const query = await searchParams;
+  const limited = query.limit === "1";
   const tab = query.tab === "past" ? "past" : "upcoming";
   const when = tab === "past" ? pastOnly() : upcomingOnly();
   const order =
@@ -72,11 +74,15 @@ export default async function EventsPage({
               </Link>
             ))}
           </div>
-          <ButtonLink href="/events/new" size="sm" className="md:hidden">
-            Create
-          </ButtonLink>
+          <CreateEventButton label="Create" size="sm" className="md:hidden" />
         </div>
       </div>
+
+      {limited ? (
+        <p className="mb-6 rounded-card bg-sunk px-4 py-3 text-sm text-ink-soft">
+          Too many drafts from this connection — try again in a while.
+        </p>
+      ) : null}
 
       {!user ? (
         <p className="mb-6 rounded-card bg-sunk px-4 py-3 text-sm text-ink-soft">
@@ -96,11 +102,7 @@ export default async function EventsPage({
               ? "Nights you've hosted will collect here."
               : "Name, time, place, tickets. You can save a night before you have an account."
           }
-          action={
-            tab === "past" ? undefined : (
-              <ButtonLink href="/events/new">Create event</ButtonLink>
-            )
-          }
+          action={tab === "past" ? undefined : <CreateEventButton />}
         />
       ) : (
         <ol className="relative space-y-8">

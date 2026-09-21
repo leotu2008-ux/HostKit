@@ -13,6 +13,7 @@ import { Avatar } from "@/components/avatar";
 import { CampusMixList, mixCampus } from "@/components/campus-mix";
 import { ClubUpdateForm } from "@/components/club-update-form";
 import { ClubUpdates } from "@/components/club-updates";
+import { CreateEventButton } from "@/components/create-event-button";
 import { EventCard, toEventCard } from "@/components/event-card";
 import { FollowButton } from "@/components/follow-button";
 import { Badge, ButtonLink, EmptyState } from "@/components/ui";
@@ -130,7 +131,7 @@ export default async function ClubPage({ params }: { params: Promise<{ handle: s
                       ? `Follow to hear when ${club.name} puts something on the school calendar.`
                       : "Follow to hear the moment they post one."
                 }
-                action={canManage ? <ButtonLink href="/events/new">Create an event</ButtonLink> : undefined}
+                action={canManage ? <CreateEventButton label="Create an event" /> : undefined}
               />
             ) : (
               <CampusMixList rows={upcoming} />

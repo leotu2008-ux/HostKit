@@ -14,6 +14,8 @@ import { publishEvent } from "@/lib/publish";
 import { canManageClub } from "@/lib/clubs";
 import { venueSearchProvider } from "@/lib/venues/search";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
+import { parseStart } from "@/lib/when";
+import { readyToPublish } from "@/lib/brief";
 
 export type EventFormState = { error?: string } | undefined;
 
@@ -49,14 +51,6 @@ function parseCoord(raw: string | undefined): number | null {
   if (!raw || raw.trim() === "") return null;
   const value = Number(raw);
   return Number.isFinite(value) ? value : null;
-}
-
-function parseStart(date: string, time: string): Date | null {
-  if (!date) return null;
-  const clock = time && /^\d{2}:\d{2}$/.test(time) ? time : "12:00";
-  const parsedDate = new Date(`${date}T${clock}:00`);
-  if (Number.isNaN(parsedDate.getTime())) return null;
-  return parsedDate;
 }
 
 export async function createEventAction(
@@ -152,6 +146,40 @@ export async function createEventAction(
   redirect(`/events/${event.id}`);
 }
 
+/**
+ * Create event, the new way: mint a blank row and land the host in its
+ * workspace — no intake form, no facts required up front. The brief action
+ * (Task 1b) fills the row in from there; this is deliberately the smallest
+ * possible write.
+ */
+export async function createBlankEventAction(): Promise<void> {
+  const user = await currentProfile();
+  const claimToken = user ? null : newClaimToken();
+  if (!user) {
+    // Unchanged from createEventAction: drafts without an account are cheap
+    // rows anyone can create, so a few an hour per address.
+    try {
+      await assertRateLimit(`draft:ip:${clientIp(await headers())}`, ...LIMITS.draft.perIp);
+    } catch (error) {
+      if (error instanceof RateLimitError) redirect("/events?limit=1");
+      throw error;
+    }
+  }
+  const event = await db.event.create({
+    data: {
+      ownerId: user?.id ?? null,
+      claimToken,
+      schoolDomain: user?.schoolDomain ?? null,
+      // Everything else rides the schema defaults: "Untitled event", MIXER,
+      // 0 guests, 0 budget, "" city. No plan is generated — there are no
+      // facts to plan from yet, which is the whole point of this change.
+    },
+  });
+  if (claimToken) await rememberDraftClaim({ id: event.id, token: claimToken });
+  // TODO(M2): record an "event_created" activity line here.
+  redirect(`/events/${event.id}`);
+}
+
 export async function publishEventAction(formData: FormData) {
   const eventId = String(formData.get("eventId") ?? "");
   const user = await getCurrentUser();
@@ -161,6 +189,12 @@ export async function publishEventAction(formData: FormData) {
     );
   }
   const { event } = await requireEvent(eventId);
+  // No error surface on this action (it's wired straight to a submit
+  // button), so an incomplete brief bounces back to the Overview page,
+  // which reads `?publish=incomplete` and renders the message.
+  if (!readyToPublish(event)) {
+    redirect(`/events/${eventId}?publish=incomplete`);
+  }
   const profile = await currentProfile();
   await publishEvent({
     eventId: event.id,

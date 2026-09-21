@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { SPLASH_STORAGE_KEY } from "@/lib/splash";
 
@@ -15,6 +16,25 @@ const FALLBACK_MS = 1400;
  */
 export function LaunchSplash() {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  // A redirect straight out of a Server Action (Create event, sign-in, …)
+  // can land here with `data-splash` missing rather than "done" — the
+  // bootstrap script that stamps it only ever runs on a real document
+  // parse, and this kind of redirect doesn't always give it one. Left
+  // alone, the overlay's base CSS (display: flex, pointer-events: auto)
+  // then blocks the whole page, on every render, forever. Re-assert "done"
+  // on every navigation the session has already earned it, so the flag
+  // can't get stuck missing.
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(SPLASH_STORAGE_KEY) === "1";
+    } catch {
+      // Private browsing can throw; nothing to reassert this visit.
+    }
+    if (seen) document.documentElement.dataset.splash = "done";
+  }, [pathname]);
 
   useEffect(() => {
     const root = document.documentElement;

@@ -1,7 +1,6 @@
-import { EventNav } from "@/components/event-nav";
 import { requireEvent } from "@/lib/session";
 import { daysUntil, describeCountdown } from "@/lib/plan";
-import { EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { briefKindLabel, missingBriefFields, readyToPublish } from "@/lib/brief";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { Badge, Button, ButtonLink } from "@/components/ui";
 import { EventCover } from "@/components/event-cover";
@@ -9,6 +8,7 @@ import { ImageUpload } from "@/components/image-upload";
 import { publishEventAction } from "@/lib/actions/events";
 import { removeCoverAction, setCoverAction } from "@/lib/actions/photos";
 import { AgentPanel } from "@/components/agent-panel";
+import { EventSidebar, type AgentStatusView } from "@/components/event-sidebar";
 import { loadBriefing } from "@/lib/agent/load";
 import { isVenueSearchConfigured } from "@/lib/venues/search";
 
@@ -26,6 +26,14 @@ export default async function EventLayout({
   const { event, user } = await requireEvent(id);
   const days = daysUntil(event.date);
   const briefing = await loadBriefing(event);
+  // A placeholder until Milestone 3 wires up a real AgentRun loader — the
+  // sidebar just needs to know what the brief is still missing.
+  const agent: AgentStatusView = {
+    status: "idle",
+    lastRunAt: null,
+    startedAt: null,
+    needs: missingBriefFields(event),
+  };
 
   return (
     <div className="px-4 py-4 md:py-2">
@@ -37,7 +45,8 @@ export default async function EventLayout({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-mute">
               <span>
-                {EVENT_TYPE_LABEL[event.type]} · {event.city}
+                {briefKindLabel(event)}
+                {event.city ? ` · ${event.city}` : ""}
               </span>
               <Badge tone={days !== null && days >= 0 && days <= 14 ? "amber" : "neutral"}>
                 {describeCountdown(days)}
@@ -65,7 +74,13 @@ export default async function EventLayout({
           <ButtonLink href={`/e/${event.id}`} variant="secondary" size="sm">
             Event page ↗
           </ButtonLink>
-          {event.published ? null : user ? (
+          {event.published ? null : !readyToPublish(event) ? (
+            // A blank or half-brief event has nothing worth signing in to
+            // publish yet — send the host to finish the brief first.
+            <ButtonLink href={`/events/${event.id}/brief`} size="sm">
+              Finish the brief
+            </ButtonLink>
+          ) : user ? (
             <form action={publishEventAction}>
               <input type="hidden" name="eventId" value={event.id} />
               <Button type="submit" size="sm">
@@ -83,21 +98,22 @@ export default async function EventLayout({
         </div>
       </header>
 
-      <div className="mb-6 border-b border-line">
-        <EventNav eventId={event.id} />
-      </div>
-
-      {/* The agent rides alongside the stage pages rather than living behind
+      {/* The workspace sidebar owns navigation now — a horizontal scroller
+          below lg, a left rail alongside the content from lg up. The agent
+          still rides alongside the stage pages rather than living behind
           its own tab, so it stays the thing watching the others rather than
-          another app the host has to remember to visit. Right rail on
-          lg+; below the content, full width, on narrower screens. */}
-      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-8">
+          another app the host has to remember to visit: a right rail once
+          the sidebar and content have room to share the row (xl+), and
+          otherwise full width below the content. */}
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[220px_minmax(0,1fr)_320px] xl:gap-8">
+        <EventSidebar eventId={event.id} agent={agent} />
         <div className="min-w-0">{children}</div>
         <AgentPanel
           briefing={briefing}
           eventId={event.id}
           canSend={Boolean(user?.email)}
           venueSearchEnabled={isVenueSearchConfigured()}
+          className="mt-8 lg:col-span-2 lg:mt-6 xl:col-span-1 xl:mt-0"
         />
       </div>
     </div>

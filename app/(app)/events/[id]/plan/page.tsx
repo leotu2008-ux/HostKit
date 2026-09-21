@@ -8,7 +8,8 @@ import { computeCoverage, outstandingRequired } from "@/lib/coverage";
 import { templateFor } from "@/lib/templates";
 import { formatCents } from "@/lib/money";
 import { CATEGORY_LABEL } from "@/lib/catalog";
-import { Badge, Card, SectionHeading, cx } from "@/components/ui";
+import { briefIsComplete } from "@/lib/brief";
+import { Badge, ButtonLink, Card, SectionHeading, cx } from "@/components/ui";
 
 /** Groups the timeline into the buckets a host actually thinks in. */
 function bucketFor(dueDate: Date | null, now: Date): string {
@@ -101,7 +102,18 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
               ? "Counted back from your event date. Tick things off as you go."
               : "Add a date to the event and these will get real due dates."
           }
-          action={<RedraftPlan eventId={event.id} />}
+          action={
+            briefIsComplete(event) ? (
+              <RedraftPlan eventId={event.id} />
+            ) : (
+              // Redrafting against a blank/half-finished brief would plant a
+              // MIXER/$0/no-date plan that then blocks the real one — see
+              // regeneratePlanAction's own guard in lib/actions/plan.ts.
+              <ButtonLink href={`/events/${event.id}/brief`} variant="secondary" size="sm">
+                Finish the brief first
+              </ButtonLink>
+            )
+          }
         />
         <p className="-mt-3 mb-4 text-xs text-ink-mute">
           Keeps anything you wrote or ticked off — only replaces what

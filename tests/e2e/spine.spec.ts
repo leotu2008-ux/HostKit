@@ -44,23 +44,31 @@ async function signUp(page: Page) {
 }
 
 // This night is deliberately planned from the dinner-party template, chosen
-// through the picker: catering is the one essential booking.
+// by typing a kind eventTypeForKind maps to DINNER_PARTY: catering is the
+// one essential booking.
 async function createNight(page: Page) {
-  await page.goto("/events/new");
-  await page.selectOption('select[name="type"]', "DINNER_PARTY");
+  await page.goto("/events");
+  await page.click('button:has-text("Create event")');
+  await page.waitForURL((url) => /\/events\/[a-z0-9]{8,}$/.test(url.pathname));
+  const event = page.url();
+
+  // The sidebar's own "Brief" tab, not the header's "Finish the brief" link.
+  await page.getByRole("link", { name: "Brief", exact: true }).click();
+  await page.fill('input[name="title"]', "Sam & Ali's supper");
+  await page.fill('input[name="kind"]', "dinner party");
   const date = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
   await page.fill('input[name="date"]', date);
-  await page.fill('input[name="title"]', "Sam & Ali's supper");
   await page.fill('input[name="time"]', "18:00");
   await page.fill('input[name="durationHours"]', "8");
-  // The venue step is optional; this host already has a place.
-  await page.click('button:has-text("I already have a venue")');
-  await page.fill('input[name="address"]', "200 Kent Ave, Brooklyn, NY");
+  await page.selectOption('select[name="city"]', "New York, NY");
   await page.fill('input[name="guestCount"]', "90");
   await page.fill('input[name="budget"]', "48,000");
-  await page.click('button:has-text("Save this night")');
-  await page.waitForURL((url) => /\/events\/[a-z0-9]{8,}$/.test(url.pathname));
-  return page.url();
+  // The venue step is optional; this host already has a place.
+  await page.click('summary:has-text("I already have a venue")');
+  await page.fill('input[name="address"]', "200 Kent Ave, Brooklyn, NY");
+  await page.click('button:has-text("Save the brief")');
+  await expect(page.getByText("Saved.")).toBeVisible();
+  return event;
 }
 
 test("a host can plan, scout, shortlist and book an event", async ({ page }) => {
