@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { describeMissing } from "@/lib/brief";
 import { relativeTime } from "@/lib/activity-format";
 import type { AgentStatusView } from "@/lib/activity";
-import { runAgentAction } from "@/lib/actions/agent";
 import { cx } from "@/components/ui";
 
 /**
@@ -27,12 +26,18 @@ const TABS: SidebarTab[] = [
 
 const dotClass = "h-1.5 w-1.5 shrink-0 rounded-full";
 
-/** The status line's own affordance, sized for 13px text rather than the
- *  page's primary Button. */
+/**
+ * The status line's own affordance, sized for 13px text rather than the
+ * page's primary Button.
+ *
+ * A POST to app/(app)/events/[id]/agent/run/route.ts rather than a Server
+ * Action, because this rail is rendered by the layout on all six tabs and a
+ * Server Action's timeout is the page's own maxDuration — see the handler for
+ * the whole story. A plain form post, so it works without hydration.
+ */
 function RunAgainButton({ eventId, label }: { eventId: string; label: string }) {
   return (
-    <form action={runAgentAction}>
-      <input type="hidden" name="eventId" value={eventId} />
+    <form method="post" action={`/events/${eventId}/agent/run`}>
       <button type="submit" className="text-clay hover:underline">
         {label}
       </button>
@@ -54,6 +59,17 @@ function AgentStatusLine({
       <>
         <span aria-hidden className={cx(dotClass, "bg-brand animate-pulse")} />
         <span className="text-ink-soft">Working on this now…</span>
+      </>
+    );
+  }
+  if (agent.status === "queued") {
+    // A run the rate limit parked: nothing went wrong and nothing is lost —
+    // the cron sweep picks QUEUED rows up — but without its own branch this
+    // read as "Idle", offering a "Run again" that would only queue again.
+    return (
+      <>
+        <span aria-hidden className={cx(dotClass, "bg-line-strong")} />
+        <span className="text-ink-soft">Queued &mdash; starting soon</span>
       </>
     );
   }

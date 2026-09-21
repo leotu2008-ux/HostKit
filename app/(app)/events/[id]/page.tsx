@@ -19,6 +19,10 @@ import { loadActivity, loadAgentStatus } from "@/lib/activity";
 import { toFeedRow } from "@/lib/activity-format";
 import { ActivityFeed } from "@/components/activity-feed";
 
+// "Run the agent" below is a Server Action, and an action's timeout is the
+// page's — runAgent budgets 45s inside after(), well past the default.
+export const maxDuration = 60;
+
 function initials(name: string) {
   return (
     name
