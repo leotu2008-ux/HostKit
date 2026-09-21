@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { relativeTime } from "@/lib/activity-format";
+import { EVENT_TYPE_LABEL, isCity } from "@/lib/catalog";
+import { isVenueSearchConfigured } from "@/lib/venues/search";
 import type { CollaboratorStatus } from "@/generated/prisma/enums";
 import { VenueFinder } from "@/components/venue-finder";
 import { ContactLinks } from "@/components/contact-links";
-import { Badge, Card, EmptyState, SectionHeading, type Tone } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, SectionHeading, type Tone } from "@/components/ui";
 
 export async function generateMetadata({ params }: PageProps<"/events/[id]/venue">) {
   const { id } = await params;
@@ -18,10 +20,16 @@ const STATUS: Record<CollaboratorStatus, { label: string; tone: Tone }> = {
   DECLINED: { label: "Declined", tone: "danger" },
 };
 
-/** Where the night happens: what's already lined up, and a way to find more. */
+/**
+ * Where the night happens: what's already lined up, and a way to find more.
+ *
+ * Nothing on this page costs money to render. The search and the ranking are
+ * a press, not a render (components/venue-finder.tsx) — the only thing
+ * decided here is whether there's any point offering the button at all.
+ */
 export default async function VenuePage({ params }: PageProps<"/events/[id]/venue">) {
   const { id } = await params;
-  const { event, user } = await requireEvent(id);
+  const { event } = await requireEvent(id);
 
   const venues = await db.eventCollaborator.findMany({
     where: { eventId: event.id, kind: "VENUE" },
@@ -29,6 +37,9 @@ export default async function VenuePage({ params }: PageProps<"/events/[id]/venu
   });
 
   const now = new Date();
+  // Both halves of "is there anything to search": a configured provider, and
+  // a city HostKit geocodes. Neither costs anything to ask.
+  const scoutable = isVenueSearchConfigured() && isCity(event.city);
 
   return (
     <div className="space-y-10">
@@ -64,7 +75,22 @@ export default async function VenuePage({ params }: PageProps<"/events/[id]/venu
 
       <section>
         <SectionHeading title="Find one" />
-        <VenueFinder event={event} hostName={user?.name || "the host"} />
+        {scoutable ? (
+          <VenueFinder
+            eventId={event.id}
+            summary={`${EVENT_TYPE_LABEL[event.type]} for ${event.guestCount} in ${event.city.split(",")[0]}.`}
+          />
+        ) : (
+          <EmptyState
+            title="Venue search isn't switched on here"
+            body="Add a venue by hand from Outreach instead."
+            action={
+              <ButtonLink href={`/events/${event.id}/outreach`} size="sm">
+                Go to Outreach
+              </ButtonLink>
+            }
+          />
+        )}
       </section>
     </div>
   );

@@ -32,9 +32,12 @@ const CATEGORY_VALUES = Object.values(ListingCategoryEnum) as [
 ];
 const categorySchema = z.enum(CATEGORY_VALUES);
 
+// Lengths, not just presence: applyDraftedPlan writes these straight into
+// Task rows, so a model that rambles reaches the database and the host's
+// plan list. Sized to what a task line and its note can actually be.
 const draftTaskSchema = z.object({
-  title: z.string().min(1),
-  notes: z.string().optional(),
+  title: z.string().min(1).max(200),
+  notes: z.string().max(1000).optional(),
   category: categorySchema.optional(),
   /** 1 = start of planning, 0 = the event itself, matching TaskTemplate. */
   at: z.number().min(0).max(1),

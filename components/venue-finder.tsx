@@ -1,129 +1,103 @@
-import { isVenueSearchConfigured, searchVenues } from "@/lib/venues/search";
-import { venueQueryFor } from "@/lib/venues/query";
-import { rankVenuesForEvent } from "@/lib/ai/venue-rank";
-import { composeInquiry, type OutreachEvent } from "@/lib/outreach";
-import { attachVenueAction } from "@/lib/actions/venues";
-import { CITY_CENTERS, EVENT_TYPE_LABEL, isCity } from "@/lib/catalog";
-import { db } from "@/lib/db";
+"use client";
+
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import {
+  attachVenueAction,
+  findVenuesAction,
+  type FindVenuesState,
+} from "@/lib/actions/venues";
 import { ContactLinks } from "@/components/contact-links";
-import { Button, ButtonLink, Card, EmptyState } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 
 /**
- * Apple Maps candidates for this event, ranked by fit — and, when a model is
- * configured, by judgement on top of that. Hidden, not broken, when there's
- * nothing real to show: search is unconfigured, the event's city isn't one
- * HostKit geocodes, Apple errors, or Apple simply has nothing — all four
- * render the same quiet empty state rather than a 500 or a dead end.
+ * Maps candidates for this event, ranked by fit — and, when a model is
+ * configured, by judgement on top of that.
  *
- * Extracted from the old app/(app)/events/[id]/agent/venues/page.tsx (now a
- * redirect to the Venue tab) so the Venue tab can mount it below "Your
- * venue" with no page-level concerns of its own.
+ * Behind an explicit press, not a render. Until Milestone 4 this searched
+ * during the Venue tab's render, which was affordable while the whole thing
+ * lived behind an agent card; as one of six primary tabs it meant a paid Maps
+ * request and a model call on every visit, refresh and back-navigation, for
+ * anyone holding a draft cookie. Nothing paid happens on a GET now: the tab
+ * renders this button, and the search runs inside findVenuesAction with a
+ * rate limit in front of it.
+ *
+ * The four ways there's nothing real to show — search unconfigured, a city
+ * HostKit doesn't geocode, the provider erroring, the provider simply having
+ * nothing — still all read as one quiet line rather than a 500 or a dead end.
+ * The first two the page can tell before rendering anything (they're
+ * server-rendered empty states); the last two only the action can.
  */
-export async function VenueFinder({
-  event,
-  hostName,
-}: {
-  event: OutreachEvent & { id: string; lat: number | null; lng: number | null };
-  hostName: string;
-}) {
-  const outreachHref = `/events/${event.id}/outreach`;
 
-  const notSwitchedOn = (title: string, body: string) => (
-    <EmptyState
-      title={title}
-      body={body}
-      action={
-        <ButtonLink href={outreachHref} size="sm">
-          Go to Outreach
-        </ButtonLink>
-      }
-    />
+function SearchButton({ hasResults }: { hasResults: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="sm" disabled={pending}>
+      {pending ? "Looking…" : hasResults ? "Search again" : "Find venues"}
+    </Button>
   );
+}
 
-  if (!isVenueSearchConfigured() || !isCity(event.city)) {
-    return notSwitchedOn(
-      "Venue search isn't switched on here",
-      "Add a venue by hand from Outreach instead.",
-    );
-  }
-
-  let candidates;
-  try {
-    candidates = await searchVenues(
-      venueQueryFor({ type: event.type, guestCount: event.guestCount, vibe: event.vibe }),
-      event.city,
-    );
-  } catch {
-    // Apple Maps is a third party HostKit doesn't control — a failed call
-    // must never surface as a 500, just as "nothing to show right now."
-    return notSwitchedOn(
-      "Venue search isn't switched on here",
-      "Add a venue by hand from Outreach instead.",
-    );
-  }
-
-  if (candidates.length === 0) {
-    return notSwitchedOn(
-      "No venues turned up nearby",
-      "Add one by hand from Outreach instead.",
-    );
-  }
-
-  const venueAllocation = await db.budgetCategory.findUnique({
-    where: { eventId_category: { eventId: event.id, category: "VENUE" } },
-  });
-
-  const centre = CITY_CENTERS[event.city];
-  const { venues, source } = await rankVenuesForEvent(candidates, {
-    type: event.type,
-    city: event.city,
-    guestCount: event.guestCount,
-    durationHours: event.durationHours,
-    date: event.date,
-    vibe: event.vibe,
-    lat: event.lat ?? centre.lat,
-    lng: event.lng ?? centre.lng,
-    venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
-  });
+export function VenueFinder({
+  eventId,
+  summary,
+}: {
+  eventId: string;
+  /** "Mixer for 40 in Boston." — the event line the results are ranked for,
+   *  built on the server so this component needs no event row of its own. */
+  summary: string;
+}): React.JSX.Element {
+  const [state, formAction] = useActionState(findVenuesAction, undefined as FindVenuesState);
+  const results = state && "venues" in state ? state : null;
 
   return (
     <div className="space-y-6">
-      <p className="text-[13px] text-ink-mute">
-        {EVENT_TYPE_LABEL[event.type]} for {event.guestCount} in {event.city.split(",")[0]}.
-      </p>
+      <form action={formAction} className="space-y-2">
+        <input type="hidden" name="eventId" value={eventId} />
+        <p className="text-[13px] text-ink-mute">{summary}</p>
+        <SearchButton hasResults={results !== null} />
+      </form>
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        {venues.map((venue) => {
-          const draft = composeInquiry(event, { name: venue.name, role: "VENUE" }, hostName);
+      {state && "message" in state ? (
+        <p className="text-[13px] text-ink-mute">{state.message}</p>
+      ) : null}
 
-          return (
-            <Card key={venue.id} className="p-4">
-              <p className="font-medium text-ink">{venue.name}</p>
-              {venue.address ? <p className="text-[13px] text-ink-soft">{venue.address}</p> : null}
-              <p className="mt-1 text-[13px] text-ink-mute">{venue.reason}</p>
-              <ContactLinks phone={venue.phone} website={venue.website} />
-              <p className="mt-2 text-[13px] text-ink-mute italic">Draft ready: “{draft.subject}”</p>
-              <form action={attachVenueAction} className="mt-3">
-                <input type="hidden" name="eventId" value={event.id} />
-                <input type="hidden" name="name" value={venue.name} />
-                <input type="hidden" name="address" value={venue.address} />
-                <input type="hidden" name="phone" value={venue.phone ?? ""} />
-                <input type="hidden" name="website" value={venue.website ?? ""} />
-                <input type="hidden" name="externalId" value={venue.id} />
-                <input type="hidden" name="lat" value={venue.lat} />
-                <input type="hidden" name="lng" value={venue.lng} />
-                <Button type="submit" size="sm">
-                  Add and draft a message
-                </Button>
-              </form>
-            </Card>
-          );
-        })}
-      </div>
+      {results ? (
+        <>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {results.venues.map((venue) => (
+              <Card key={venue.id} className="p-4">
+                <p className="font-medium text-ink">{venue.name}</p>
+                {venue.address ? (
+                  <p className="text-[13px] text-ink-soft">{venue.address}</p>
+                ) : null}
+                <p className="mt-1 text-[13px] text-ink-mute">{venue.reason}</p>
+                <ContactLinks phone={venue.phone} website={venue.website} />
+                <p className="mt-2 text-[13px] text-ink-mute italic">
+                  Draft ready: &ldquo;{venue.subject}&rdquo;
+                </p>
+                <form action={attachVenueAction} className="mt-3">
+                  <input type="hidden" name="eventId" value={eventId} />
+                  <input type="hidden" name="name" value={venue.name} />
+                  <input type="hidden" name="address" value={venue.address} />
+                  <input type="hidden" name="phone" value={venue.phone ?? ""} />
+                  <input type="hidden" name="website" value={venue.website ?? ""} />
+                  <input type="hidden" name="externalId" value={venue.id} />
+                  <input type="hidden" name="lat" value={venue.lat} />
+                  <input type="hidden" name="lng" value={venue.lng} />
+                  <Button type="submit" size="sm">
+                    Add and draft a message
+                  </Button>
+                </form>
+              </Card>
+            ))}
+          </div>
 
-      <p className="text-[13px] text-ink-mute">
-        {source === "model" ? "Ranked for this event." : "Ranked by what fits."}
-      </p>
+          <p className="text-[13px] text-ink-mute">
+            {results.source === "model" ? "Ranked for this event." : "Ranked by what fits."}
+          </p>
+        </>
+      ) : null}
     </div>
   );
 }

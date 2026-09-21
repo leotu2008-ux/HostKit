@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { siteOrigin } from "@/lib/site";
 import { requireEvent } from "@/lib/session";
+import { readyToPublish } from "@/lib/brief";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { schoolFor } from "@/lib/schools";
 import { qrSvg } from "@/lib/qr";
@@ -67,6 +68,14 @@ export default async function PromotePage({ params }: PageProps<"/events/[id]/pr
                   Unpublish
                 </Button>
               </form>
+            ) : !readyToPublish(event) ? (
+              // The same swap the workspace header makes: publishEventAction
+              // refuses a half-brief (and bounces back to Overview with
+              // ?publish=incomplete), so offering the button here only sends
+              // the host somewhere to be told no.
+              <ButtonLink href={`/events/${event.id}/brief`} size="sm">
+                Finish the brief
+              </ButtonLink>
             ) : user ? (
               <form action={publishEventAction}>
                 <input type="hidden" name="eventId" value={event.id} />
