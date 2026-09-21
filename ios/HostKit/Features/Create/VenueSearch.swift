@@ -1,8 +1,8 @@
 import MapKit
 
 /// Real venues near a city, straight from MapKit — no server, no key. The
-/// website does the same search through Apple's Maps Server API, so both
-/// find the same places.
+/// website searches Google Places (or Apple Maps Server API if that's what's
+/// configured). iOS stays on MapKit.
 nonisolated enum VenueSearch {
     static func search(_ query: String, city: String) async throws -> [VenuePick] {
         let request = MKLocalSearch.Request()

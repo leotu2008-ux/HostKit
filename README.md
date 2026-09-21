@@ -240,8 +240,9 @@ page and HostKit registers the account's email — that's the address blasts go
 to (`lib/registration.ts`).
 
 **Create** asks the essentials and, optionally, a venue: search real places
-near your city (Apple Maps on both apps) or skip it if you already have one.
-A picked venue becomes the event's address and the first row in Outreach.
+near your city (Google Places on the web, MapKit on iOS) or skip it if you
+already have one. A picked venue becomes the event's address and the first
+row in Outreach.
 
 **Manage event** (`/events/:id`, and the Manage screen in the iOS app) has four
 tabs:
@@ -257,7 +258,8 @@ Optional services, both off by default (see `.env.example`):
 
 | Variable | Enables |
 | --- | --- |
-| `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). The iOS app uses MapKit directly and needs nothing |
+| `GOOGLE_MAPS_API_KEY` | Venue search on the website (Google Places API (New) Text Search). Enable Places API (New) in Google Cloud Console, create a key, set it on Vercel and redeploy. Places SKUs have a monthly free usage cap. Preferred when both Google and Apple are set. The iOS app uses MapKit directly and needs nothing |
+| `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Fallback venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). Used only when `GOOGLE_MAPS_API_KEY` is unset |
 | `RESEND_API_KEY`, `RESEND_FROM` | Real email blasts (resend.com, after verifying a sending domain). Without them blasts are recorded and copied by hand |
 | `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob (Vercel → Storage → Blob). Without it photos are stored in Postgres |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes and SMS blasts. Without them the code is logged (and returned in development) and blasts are email-only |
@@ -289,7 +291,7 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `POST /api/v1/drafts/claim` | Attach a device's drafts to the signed-in host |
 | `GET /api/v1/events/:id/guests` | Guest list and door counts |
 | `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo |
-| `GET /api/v1/venues/search?q=&city=` | Venue search (Apple Maps); `{ venues: [], unavailable: true }` when keys are missing |
+| `GET /api/v1/venues/search?q=&city=` | Venue search (Google Places, or Apple Maps if Google isn't configured); `{ venues: [], unavailable: true }` when keys are missing |
 | `GET /api/v1/events/:id/outreach` · `POST` | Everyone to reach, with drafted messages · add a venue / speaker / cohost |
 | `PATCH /api/v1/events/:id/outreach/:rowId` · `DELETE` | Confirm / pending / declined · remove |
 | `GET /api/v1/events/:id/blasts` · `POST` | Segments with counts, past blasts, `canSend` · send one (returns recipients when it couldn't email) |

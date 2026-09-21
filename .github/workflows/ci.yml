@@ -39,7 +39,7 @@ jobs:
       # Never a real secret: this database and this runner live for one job.
       AUTH_SECRET: ci-only-not-a-real-secret-ci-only-not-real
       AUTH_TRUST_HOST: "true"
-      # Mail, blob storage, Twilio and Apple Maps are all optional by design.
+      # Mail, blob storage, Twilio and maps keys are all optional by design.
       # Leaving them unset is deliberate: CI exercises the no-provider paths.
 
     steps:

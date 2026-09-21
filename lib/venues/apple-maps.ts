@@ -1,32 +1,22 @@
 import { importPKCS8, SignJWT } from "jose";
 import { CITY_CENTERS, type City } from "@/lib/catalog";
+import type { VenueResult } from "@/lib/venues/types";
 
 /**
  * Venue search on the web, backed by the Apple Maps Server API — the same
- * data MapKit gives the iOS app, so both platforms find the same places.
+ * data MapKit gives the iOS app.
  *
  * Needs a Maps key from developer.apple.com (Keys → Maps): the team id, the
- * key id and the .p8 contents. Without them `isVenueSearchConfigured()` is
- * false and the UI falls back to typing an address by hand.
+ * key id and the .p8 contents. The search facade prefers Google Places when
+ * `GOOGLE_MAPS_API_KEY` is set; Apple is the fallback.
  */
 
-export type VenueResult = {
-  /** Provider id; Apple's isn't stable across searches, so it's the name +
-   *  coordinate hashed into something the picker can key on. */
-  id: string;
-  name: string;
-  address: string;
-  phone: string | null;
-  website: string | null;
-  lat: number;
-  lng: number;
-  category: string | null;
-};
+export type { VenueResult };
 
 const TOKEN_URL = "https://maps-api.apple.com/v1/token";
 const SEARCH_URL = "https://maps-api.apple.com/v1/search";
 
-export function isVenueSearchConfigured(): boolean {
+export function isAppleMapsConfigured(): boolean {
   return Boolean(
     process.env.APPLE_MAPS_TEAM_ID &&
       process.env.APPLE_MAPS_KEY_ID &&
@@ -93,7 +83,7 @@ export function normalizePlace(place: ApplePlace): VenueResult | null {
 }
 
 /** Places matching `query` around a city. */
-export async function searchVenues(query: string, city: City): Promise<VenueResult[]> {
+export async function searchAppleVenues(query: string, city: City): Promise<VenueResult[]> {
   const centre = CITY_CENTERS[city];
   const params = new URLSearchParams({
     q: query,
