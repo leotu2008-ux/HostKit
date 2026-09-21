@@ -31,7 +31,10 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
   ) as Record<Segment, number>;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+    // Stacked, not a page-width two-column grid — this tab shares a
+    // narrower workspace column with the sidebar and agent rail (see
+    // app/(app)/events/[id]/layout.tsx).
+    <div className="space-y-8">
       <section>
         <SectionHeading
           title="Send an update"
@@ -49,7 +52,7 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
         </Card>
       </section>
 
-      <aside>
+      <section>
         <SectionHeading title="Sent" />
         {blasts.length === 0 ? (
           <EmptyState title="Nothing sent yet" body="Your updates will be listed here." />
@@ -71,7 +74,7 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
             ))}
           </Card>
         )}
-      </aside>
+      </section>
     </div>
   );
 }

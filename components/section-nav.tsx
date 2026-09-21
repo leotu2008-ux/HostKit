@@ -22,7 +22,7 @@ export function SectionNav({
   const pathname = usePathname();
 
   return (
-    <nav aria-label={label} className="mb-6">
+    <nav aria-label={label} className="mb-6 max-w-full overflow-x-auto">
       <div className="inline-flex gap-1 rounded-full bg-sunk p-1">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);

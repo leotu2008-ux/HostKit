@@ -5,6 +5,7 @@ import { composeInquiry, type OutreachEvent } from "@/lib/outreach";
 import { attachVenueAction } from "@/lib/actions/venues";
 import { CITY_CENTERS, EVENT_TYPE_LABEL, isCity } from "@/lib/catalog";
 import { db } from "@/lib/db";
+import { ContactLinks } from "@/components/contact-links";
 import { Button, ButtonLink, Card, EmptyState } from "@/components/ui";
 
 /**
@@ -93,12 +94,6 @@ export async function VenueFinder({
 
       <div className="grid gap-3 lg:grid-cols-2">
         {venues.map((venue) => {
-          const contactBits = [
-            venue.phone ? { label: venue.phone, href: `tel:${venue.phone.replace(/[^\d+]/g, "")}` } : null,
-            venue.website
-              ? { label: venue.website.replace(/^https?:\/\//, ""), href: venue.website }
-              : null,
-          ].filter((bit): bit is { label: string; href: string } => bit !== null);
           const draft = composeInquiry(event, { name: venue.name, role: "VENUE" }, hostName);
 
           return (
@@ -106,21 +101,7 @@ export async function VenueFinder({
               <p className="font-medium text-ink">{venue.name}</p>
               {venue.address ? <p className="text-[13px] text-ink-soft">{venue.address}</p> : null}
               <p className="mt-1 text-[13px] text-ink-mute">{venue.reason}</p>
-              {contactBits.length > 0 ? (
-                <p className="mt-1 flex flex-wrap gap-x-3 text-[13px]">
-                  {contactBits.map((bit) => (
-                    <a
-                      key={bit.href}
-                      href={bit.href}
-                      className="text-clay hover:underline"
-                      target={bit.href.startsWith("http") ? "_blank" : undefined}
-                      rel="noreferrer"
-                    >
-                      {bit.label}
-                    </a>
-                  ))}
-                </p>
-              ) : null}
+              <ContactLinks phone={venue.phone} website={venue.website} />
               <p className="mt-2 text-[13px] text-ink-mute italic">Draft ready: “{draft.subject}”</p>
               <form action={attachVenueAction} className="mt-3">
                 <input type="hidden" name="eventId" value={event.id} />
