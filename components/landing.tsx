@@ -153,7 +153,7 @@ export function Landing() {
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-2.5">
-            <ButtonLink href="/events/new" size="lg">
+            <ButtonLink href="/events/new" variant="brand" size="lg">
               Plan an event <span aria-hidden>→</span>
             </ButtonLink>
             <ButtonLink href="/discover" variant="secondary" size="lg">
@@ -297,7 +297,7 @@ export function Landing() {
             You&rsquo;ll have a plan before you close the tab.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-            <ButtonLink href="/events/new" size="lg">
+            <ButtonLink href="/events/new" variant="brand" size="lg">
               Plan an event <span aria-hidden>→</span>
             </ButtonLink>
             <ButtonLink href="/signup" variant="secondary" size="lg">
