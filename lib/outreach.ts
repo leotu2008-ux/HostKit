@@ -168,10 +168,15 @@ export function composeInquiry(
     ? `${EVENT_TYPE_LABEL[event.type]} inquiry — ${formatDate(event.date)}, ${event.guestCount} guests`
     : `${EVENT_TYPE_LABEL[event.type]} inquiry — ${event.guestCount} guests`;
 
+  // City and headcount are both blank on a brand-new event — say something
+  // true rather than "in " or "around 0 guests" until the brief fills them in.
+  const where = event.city ? ` in ${event.city}` : "";
+  const guests = event.guestCount > 0 ? `around ${event.guestCount} guests` : "a small group";
+
   const body = [
     `Hello ${listing.name},`,
     "",
-    `I'm planning a ${eventLabel} in ${event.city} for around ${event.guestCount} guests, running about ${event.durationHours} hours. ${describeDate(event)}.`,
+    `I'm planning a ${eventLabel}${where} for ${guests}, running about ${event.durationHours} hours. ${describeDate(event)}.`,
     ...(event.vibe ? ["", `What we're going for: ${event.vibe}`] : []),
     "",
     "A few things it would help to know:",

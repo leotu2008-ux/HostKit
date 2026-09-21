@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
 import { Avatar } from "@/components/avatar";
+import { CreateEventButton } from "@/components/create-event-button";
 import { InstallPrompt } from "@/components/install-prompt";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
 import { signOutAction } from "@/lib/actions/auth";
@@ -58,12 +59,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
           </AccountMenu>
           <DesktopNav />
           <div className="ml-auto flex min-w-0 items-center gap-1.5">
-            <Link
-              href="/events/new"
-              className="hidden h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper hover:opacity-90 md:inline-flex"
-            >
-              Create event
-            </Link>
+            <CreateEventButton className="hidden h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper hover:opacity-90 md:inline-flex" />
             {user ? (
               <Link
                 href="/inbox"

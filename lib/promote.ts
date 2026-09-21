@@ -17,10 +17,12 @@ export function promoBlurb(event: {
   const when = event.date
     ? `${formatEventDate(event.date)} · ${formatEventTime(event.date)}`
     : "Date to be announced";
-  const where = event.address ?? event.city;
+  // A blank/half-brief event has neither yet; drop the location clause
+  // entirely rather than printing a trailing " · ".
+  const where = event.address || event.city || null;
   const lines = [
     event.title,
-    `${when} · ${where}`,
+    where ? `${when} · ${where}` : when,
     event.description ? "" : null,
     event.description ? event.description.split("\n")[0] : null,
     "",

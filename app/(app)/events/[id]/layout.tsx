@@ -1,7 +1,7 @@
 import { EventNav } from "@/components/event-nav";
 import { requireEvent } from "@/lib/session";
 import { daysUntil, describeCountdown } from "@/lib/plan";
-import { EVENT_TYPE_LABEL } from "@/lib/catalog";
+import { briefKindLabel, readyToPublish } from "@/lib/brief";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { Badge, Button, ButtonLink } from "@/components/ui";
 import { EventCover } from "@/components/event-cover";
@@ -37,7 +37,8 @@ export default async function EventLayout({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-mute">
               <span>
-                {EVENT_TYPE_LABEL[event.type]} · {event.city}
+                {briefKindLabel(event)}
+                {event.city ? ` · ${event.city}` : ""}
               </span>
               <Badge tone={days !== null && days >= 0 && days <= 14 ? "amber" : "neutral"}>
                 {describeCountdown(days)}
@@ -65,7 +66,13 @@ export default async function EventLayout({
           <ButtonLink href={`/e/${event.id}`} variant="secondary" size="sm">
             Event page ↗
           </ButtonLink>
-          {event.published ? null : user ? (
+          {event.published ? null : !readyToPublish(event) ? (
+            // A blank or half-brief event has nothing worth signing in to
+            // publish yet — send the host to finish the brief first.
+            <ButtonLink href={`/events/${event.id}/brief`} size="sm">
+              Finish the brief
+            </ButtonLink>
+          ) : user ? (
             <form action={publishEventAction}>
               <input type="hidden" name="eventId" value={event.id} />
               <Button type="submit" size="sm">

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
 import { serializeEvent } from "@/lib/api/serialize";
 import { publishEvent } from "@/lib/publish";
+import { readyToPublish } from "@/lib/brief";
 
 const schema = z.object({
   published: z.boolean(),
@@ -26,6 +27,13 @@ export async function POST(
 
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) return apiError("Say whether to publish.", 400);
+
+  if (parsed.data.published && !readyToPublish(event)) {
+    return apiError(
+      "Give this a name, a date, a city, a headcount and a budget before publishing.",
+      422,
+    );
+  }
 
   const { event: updated } = await publishEvent({
     eventId: event.id,

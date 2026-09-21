@@ -38,3 +38,14 @@ export function formatEventWhen(
   if (hasClock && time) return `${day} · ${time} · ${durationHours}h`;
   return `${day} · ${durationHours}h`;
 }
+
+/** Combines a `yyyy-mm-dd` date and an optional `HH:MM` time into one Date,
+ *  the way the intake form and the brief action both submit it. Null when
+ *  there's no date, or the pair doesn't parse. */
+export function parseStart(date: string, time: string): Date | null {
+  if (!date) return null;
+  const clock = time && /^\d{2}:\d{2}$/.test(time) ? time : "12:00";
+  const parsedDate = new Date(`${date}T${clock}:00`);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+  return parsedDate;
+}

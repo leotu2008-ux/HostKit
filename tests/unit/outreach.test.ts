@@ -111,6 +111,19 @@ describe("composeInquiry", () => {
     const { subject } = composeInquiry(event({ date: null }), listing, "Dana");
     expect(subject).toBe("Launch party inquiry — 90 guests");
   });
+
+  it("omits 'in <city>' when the brief has no city yet", () => {
+    const { body } = composeInquiry(event({ city: "" }), listing, "Dana");
+    expect(body).not.toContain(" in  for");
+    expect(body).not.toContain(" in ,");
+    expect(body).toContain("planning a launch party for");
+  });
+
+  it("says 'a small group' instead of 'around 0 guests' when the brief has no headcount yet", () => {
+    const { body } = composeInquiry(event({ guestCount: 0 }), listing, "Dana");
+    expect(body).toContain("a small group");
+    expect(body).not.toContain("around 0 guests");
+  });
 });
 
 describe("mailtoLink", () => {

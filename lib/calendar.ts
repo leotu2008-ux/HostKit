@@ -44,8 +44,14 @@ function fold(line: string): string {
   return out.join("\r\n");
 }
 
+// A blank/half-brief event can have neither an address nor a city yet;
+// null (rather than an empty string) means "leave the location out entirely".
+function placeFor(event: Pick<CalendarEvent, "address" | "city">): string | null {
+  return event.address || event.city || null;
+}
+
 export function icsFor(event: CalendarEvent, url: string, now = new Date()): string {
-  const place = event.address ?? event.city;
+  const place = placeFor(event);
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -58,7 +64,7 @@ export function icsFor(event: CalendarEvent, url: string, now = new Date()): str
     `DTSTART:${floating(event.date)}`,
     `DTEND:${floating(endOf(event))}`,
     `SUMMARY:${escapeIcs(event.title)}`,
-    `LOCATION:${escapeIcs(place)}`,
+    ...(place ? [`LOCATION:${escapeIcs(place)}`] : []),
     `DESCRIPTION:${escapeIcs([event.description ?? "", url].filter(Boolean).join("\n\n"))}`,
     `URL:${url}`,
     "END:VEVENT",
@@ -68,11 +74,12 @@ export function icsFor(event: CalendarEvent, url: string, now = new Date()): str
 }
 
 export function googleCalendarUrl(event: CalendarEvent, url: string): string {
+  const place = placeFor(event);
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: event.title,
     dates: `${floating(event.date)}/${floating(endOf(event))}`,
-    location: event.address ?? event.city,
+    ...(place ? { location: place } : {}),
     details: [event.description ?? "", url].filter(Boolean).join("\n\n"),
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;

@@ -8,6 +8,7 @@ import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
 import { clubCategoryLabel } from "@/lib/club-format";
 import { sourceByKey } from "@/lib/campus/sources";
+import { briefIsComplete } from "@/lib/brief";
 
 export type ApiSchool = { domain: string; name: string; short: string; city: string | null };
 
@@ -63,6 +64,8 @@ type EventRow = {
   id: string;
   title: string;
   type: EventType;
+  /** The host's own words for the kind of night; see lib/brief.ts. */
+  kind: string | null;
   description: string | null;
   vibe: string | null;
   city: string;
@@ -72,6 +75,7 @@ type EventRow = {
   date: Date | null;
   durationHours: number;
   guestCount: number;
+  budgetTotalCents: number;
   ticketType: TicketType;
   ticketPriceCents: number;
   visibility: EventVisibility;
@@ -175,6 +179,9 @@ export type ApiEvent = {
   title: string;
   type: EventType;
   typeLabel: string;
+  /** The host's own words for the kind of night ("silent disco fundraiser");
+   *  null on a blank/undecided event. `type` stays the planning key. */
+  kind: string | null;
   description: string | null;
   city: string;
   address: string | null;
@@ -212,6 +219,9 @@ export type ApiEvent = {
   club: ApiEventClub | null;
   /** A photo the host uploaded; null means draw the cover from the id. */
   coverUrl: string | null;
+  /** Whether lib/brief.ts considers this event's brief filled in — the same
+   *  check that gates publishing. */
+  briefComplete: boolean;
   webPath: string;
   /**
    * Set on events pulled from a school's official calendar (id starts with
@@ -248,6 +258,7 @@ export function serializeEvent(
     title: event.title,
     type: event.type,
     typeLabel: EVENT_TYPE_LABEL[event.type],
+    kind: event.kind,
     description: event.description ?? event.vibe ?? null,
     city: event.city,
     address: event.address,
@@ -272,6 +283,7 @@ export function serializeEvent(
       ? { handle: event.club.handle, name: event.club.name, imageUrl: event.club.imageUrl, webPath: `/c/${event.club.handle}` }
       : null,
     coverUrl: event.coverUrl ?? null,
+    briefComplete: briefIsComplete(event),
     webPath: `/e/${event.id}`,
     official: null,
   };

@@ -19,7 +19,7 @@ import {
 } from "@/components/date-tile";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
 import { decideRequestAction } from "@/lib/actions/waitlist";
-import { Badge, Button, ButtonLink, Card, EmptyState, type Tone } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, EmptyState, FormError, type Tone } from "@/components/ui";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 const GUEST_STATUS: Record<RsvpStatus, { label: string; tone: Tone }> = {
@@ -55,6 +55,7 @@ export default async function EventOverviewPage({
   const query = await searchParams;
   const rawQ = Array.isArray(query.q) ? query.q[0] : query.q;
   const q = (rawQ ?? "").trim();
+  const rawPublish = Array.isArray(query.publish) ? query.publish[0] : query.publish;
   const { event } = await requireEvent(id);
 
   // What else is on at the host's school that night. Null when the host has no
@@ -96,7 +97,7 @@ export default async function EventOverviewPage({
   const stats = [
     { label: "Going", value: going },
     { label: "Checked in", value: checkedIn },
-    { label: "Capacity", value: event.guestCount },
+    { label: "Capacity", value: event.guestCount === 0 ? "—" : event.guestCount },
     requests.length + waitlist.length > 0
       ? { label: "Waiting", value: requests.length + waitlist.length }
       : { label: "Awaiting reply", value: invited },
@@ -135,6 +136,12 @@ export default async function EventOverviewPage({
 
   return (
     <div className="space-y-6">
+      {rawPublish === "incomplete" ? (
+        <FormError>
+          Give this a name, a date, a city, a headcount and a budget before publishing.
+        </FormError>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label} className="p-4">

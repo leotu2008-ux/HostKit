@@ -17,6 +17,7 @@ import { SearchBox } from "@/components/search-box";
 import { eventSearch, searchTerm } from "@/lib/search";
 import { ClubCard } from "@/components/club-card";
 import { EventCard, toEventCard as toCard } from "@/components/event-card";
+import { CreateEventButton } from "@/components/create-event-button";
 import { ButtonLink, EmptyState, cx } from "@/components/ui";
 
 export const metadata = { title: "Discover" };
@@ -157,7 +158,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
                     ? "The official calendar syncs in the background — or host the first night yourself."
                     : "Host the first one — your events are tagged with your school automatically."
                 }
-                action={<ButtonLink href="/events/new">Create event</ButtonLink>}
+                action={<CreateEventButton />}
               />
             ) : (
               <CampusMixByDay rows={onCampus} />
@@ -205,7 +206,7 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
                       ? "Your own public events are on Home. Other hosts’ will show up here."
                       : "Be the first: create an event, make it public, and publish it."
                 }
-                action={<ButtonLink href="/events/new">Create an event</ButtonLink>}
+                action={<CreateEventButton label="Create an event" />}
               />
             </div>
           ) : (

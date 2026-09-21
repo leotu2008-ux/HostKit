@@ -94,8 +94,8 @@ export default async function RunSheetPage({
             month: "long",
             day: "numeric",
             year: "numeric",
-          })}{" "}
-          · {event.city}
+          })}
+          {event.city ? ` · ${event.city}` : ""}
         </p>
       </div>
 
