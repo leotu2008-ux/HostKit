@@ -122,7 +122,10 @@ export function isCity(value: string | null | undefined): value is City {
   return (CITIES as readonly string[]).includes(value ?? "");
 }
 
-function milesBetween(lat1: number, lng1: number, lat2: number, lng2: number) {
+/** Great-circle miles between two points. Exported so lib/cities.ts can reach
+ *  the same haversine over its much longer table rather than keep a second
+ *  copy of it. */
+export function milesBetween(lat1: number, lng1: number, lat2: number, lng2: number) {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);

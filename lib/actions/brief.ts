@@ -6,7 +6,6 @@ import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { CITIES } from "@/lib/catalog";
 import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
 import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
@@ -25,7 +24,10 @@ const schema = z.object({
   date: z.string().trim().optional(),
   time: z.string().trim().optional(),
   durationHours: z.coerce.number().int().min(1).max(24).optional(),
-  city: z.enum(CITIES as unknown as [string, ...string[]]).or(z.literal("")).optional(),
+  // Any city, not just the four HostKit scouts: components/city-field.tsx
+  // normalises to a suggestion's exact name when the host picks one, and free
+  // text is stored as typed. Scoutability stays isCity's question.
+  city: z.string().trim().max(80).optional(),
   guestCount: z.coerce.number().int().min(0).max(100_000).optional(),
   budget: z.string().trim().optional(),
   description: z.string().trim().max(2000).optional(),

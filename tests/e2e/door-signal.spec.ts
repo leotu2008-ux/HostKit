@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SPLASH_STORAGE_KEY } from "../../lib/splash";
+import { pickCity, pickDate, pickTime } from "./pickers";
 
 /**
  * The door must not rewrite the guest's answer.
@@ -52,11 +53,10 @@ async function createNight(page: Page) {
   await page.getByRole("link", { name: "Brief", exact: true }).click();
   await page.fill('input[name="title"]', "Door signal night");
   await page.fill('input[name="kind"]', "mixer");
-  const date = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
-  await page.fill('input[name="date"]', date);
-  await page.fill('input[name="time"]', "19:00");
+  await pickDate(page, new Date(Date.now() + 14 * 86_400_000));
+  await pickTime(page, 7, 0, "PM");
   await page.fill('input[name="durationHours"]', "4");
-  await page.selectOption('select[name="city"]', "New York, NY");
+  await pickCity(page, "New York, NY");
   await page.fill('input[name="guestCount"]', "40");
   await page.fill('input[name="budget"]', "2,000");
   await page.click('summary:has-text("I already have a venue")');

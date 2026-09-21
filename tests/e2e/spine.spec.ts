@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SPLASH_STORAGE_KEY } from "../../lib/splash";
+import { pickCity, pickDate, pickTime } from "./pickers";
 
 /**
  * The spine: everything HostKit claims to do, in the order a host does it.
@@ -56,11 +57,10 @@ async function createNight(page: Page) {
   await page.getByRole("link", { name: "Brief", exact: true }).click();
   await page.fill('input[name="title"]', "Sam & Ali's supper");
   await page.fill('input[name="kind"]', "dinner party");
-  const date = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
-  await page.fill('input[name="date"]', date);
-  await page.fill('input[name="time"]', "18:00");
+  await pickDate(page, new Date(Date.now() + 200 * 86_400_000));
+  await pickTime(page, 6, 0, "PM");
   await page.fill('input[name="durationHours"]', "8");
-  await page.selectOption('select[name="city"]', "New York, NY");
+  await pickCity(page, "New York, NY");
   await page.fill('input[name="guestCount"]', "90");
   await page.fill('input[name="budget"]', "48,000");
   // The venue step is optional; this host already has a place.
