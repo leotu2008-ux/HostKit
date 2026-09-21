@@ -23,7 +23,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * does not fix it, because the text still re-wraps inside that width. So the
  * real string stays in the box, merely invisible, and the scramble is painted
  * over it absolutely: the box is defined by text that never changes, and
- * nothing can move.
+ * nothing can move. The overlay clips only the extra width; it is taller than
+ * the line box so descenders (the g in "agent") are not cut off.
  */
 
 /** The set a rolling cell can land on — CORE's own alphabet, plus the
@@ -106,7 +107,10 @@ export function GlitchText({
           {children}
         </span>
         {display === null ? null : (
-          <span className="absolute inset-0 overflow-hidden whitespace-pre">
+          // Wider scramble glyphs must not wrap, so we clip horizontally. Do
+          // not use inset-0 + overflow-hidden: the heading's 1.04 line-height
+          // is shorter than a descender, and the g in "agent" gets cut off.
+          <span className="absolute top-0 right-0 left-0 overflow-hidden whitespace-pre pb-[0.3em]">
             {display}
           </span>
         )}
