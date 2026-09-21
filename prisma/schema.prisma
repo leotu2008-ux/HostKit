@@ -239,11 +239,13 @@ enum CollaboratorStatus {
   DECLINED
 }
 
-/// Where a collaborator came from: typed in by the host, picked from Apple
-/// Maps on Create, or a booked catalog listing.
+/// Where a collaborator came from: typed in by the host, picked from Google
+/// Places or Apple Maps on Create, or a booked catalog listing. iOS MapKit
+/// picks are stored as APPLE_MAPS.
 enum CollaboratorSource {
   MANUAL
   APPLE_MAPS
+  GOOGLE_MAPS
   CATALOG
 }
 

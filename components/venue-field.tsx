@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { VenueResult } from "@/lib/venues/apple-maps";
+import type { VenueResult } from "@/lib/venues/search";
 import { Button, cx } from "@/components/ui";
 
 const inputClass =
   "w-full min-h-11 rounded-lg border border-line bg-sunk px-3 text-[15px] text-ink placeholder:text-ink-mute focus:border-clay focus:outline-none";
 
 /**
- * Where the night happens. Search real venues around the city (Apple Maps)
- * and pick one — it fills the address and becomes a venue the host can
- * contact from the dashboard — or skip it and type an address.
+ * Where the night happens. Search real venues around the city (Google
+ * Places on the web, MapKit on iOS) and pick one — it fills the address
+ * and becomes a venue the host can contact from the dashboard — or skip
+ * it and type an address.
  */
 export function VenueField({ city }: { city: string }) {
   const [query, setQuery] = useState("");
