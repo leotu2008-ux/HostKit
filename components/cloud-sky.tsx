@@ -15,14 +15,15 @@ export function CloudSky({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute inset-x-0 top-0 -z-10 h-[40rem] overflow-hidden ${className}`}
+      className={`pointer-events-none absolute inset-0 -z-10 overflow-hidden ${className}`}
     >
-      {/* Sky: a touch deeper at the horizon line of the viewport top, paling downward. */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,#aecbec_0%,#cadff4_36%,#e6effa_70%,var(--color-paper)_100%)]" />
+      {/* Sky: a touch deeper at the top, paling downward. Fills whatever
+          relative parent mounts it, so the parent decides where the sky ends. */}
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,#cfdff2_0%,#d4e2f3_55%,#dce7f5_90%,var(--color-paper)_100%)]" />
 
       <svg
         className="absolute inset-0 h-full w-full"
-        viewBox="0 0 1600 640"
+        viewBox="0 0 1600 1000"
         preserveAspectRatio="xMidYMid slice"
         role="presentation"
       >
@@ -89,23 +90,23 @@ export function CloudSky({ className = "" }: { className?: string }) {
           {/* Fade every cloud layer out toward the bottom so they never crowd the content. */}
           <linearGradient id="cloud-fade" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#fff" stopOpacity="1" />
-            <stop offset="0.55" stopColor="#fff" stopOpacity="0.9" />
+            <stop offset="0.8" stopColor="#fff" stopOpacity="0.9" />
             <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
           <mask id="cloud-mask">
-            <rect width="1600" height="640" fill="url(#cloud-fade)" />
+            <rect width="1600" height="1000" fill="url(#cloud-fade)" />
           </mask>
         </defs>
 
         <g mask="url(#cloud-mask)">
-          <rect width="1600" height="640" fill="#fff" filter="url(#cloud-wisps)" opacity="0.4" />
-          <rect width="1600" height="640" filter="url(#cloud-shade)" opacity="0.7" />
-          <rect width="1600" height="640" fill="#fff" filter="url(#cloud-bank)" opacity="0.95" />
+          <rect width="1600" height="1000" fill="#fff" filter="url(#cloud-wisps)" opacity="0.35" />
+          <rect width="1600" height="1000" filter="url(#cloud-shade)" opacity="0.45" />
+          <rect width="1600" height="1000" fill="#fff" filter="url(#cloud-bank)" opacity="0.85" />
         </g>
       </svg>
 
       {/* Ground fade: the last stretch dissolves into the page's paper. */}
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,transparent,var(--color-paper))]" />
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,transparent,var(--color-paper))]" />
     </div>
   );
 }
