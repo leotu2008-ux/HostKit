@@ -9,7 +9,7 @@ import { startAgentRun } from "@/lib/agent/trigger";
  *
  * Why a Route Handler and not a Server Action: an action's timeout is the
  * *page's* maxDuration (the maxDuration route segment config docs say so),
- * and components/event-sidebar.tsx is rendered by the workspace layout on
+ * and components/workspace-sidebar.tsx is rendered by the workspace layout on
  * all six tabs. An action there would inherit whichever page the host was
  * on — at the platform default, on five of the six — while runAgent budgets
  * 45s inside `after()`, so the invocation would be killed mid-run and leave
