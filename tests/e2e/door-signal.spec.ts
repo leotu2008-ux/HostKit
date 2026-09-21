@@ -43,19 +43,27 @@ async function signUp(page: Page) {
 }
 
 async function createNight(page: Page) {
-  await page.goto("/events/new");
+  await page.goto("/events");
+  await page.click('button:has-text("Create event")');
+  await page.waitForURL((url) => /\/events\/[a-z0-9]{8,}$/.test(url.pathname));
+  const event = page.url();
+
+  // The sidebar's own "Brief" tab, not the header's "Finish the brief" link.
+  await page.getByRole("link", { name: "Brief", exact: true }).click();
+  await page.fill('input[name="title"]', "Door signal night");
+  await page.fill('input[name="kind"]', "mixer");
   const date = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
   await page.fill('input[name="date"]', date);
-  await page.fill('input[name="title"]', "Door signal night");
   await page.fill('input[name="time"]', "19:00");
   await page.fill('input[name="durationHours"]', "4");
-  await page.click('button:has-text("I already have a venue")');
-  await page.fill('input[name="address"]', "231 Forest St, Babson Park, MA");
+  await page.selectOption('select[name="city"]', "New York, NY");
   await page.fill('input[name="guestCount"]', "40");
   await page.fill('input[name="budget"]', "2,000");
-  await page.click('button:has-text("Save this night")');
-  await page.waitForURL(/\/events\/[a-z0-9]{8,}$/);
-  return page.url();
+  await page.click('summary:has-text("I already have a venue")');
+  await page.fill('input[name="address"]', "231 Forest St, Babson Park, MA");
+  await page.click('button:has-text("Save the brief")');
+  await expect(page.getByText("Saved.")).toBeVisible();
+  return event;
 }
 
 /** The status pill on a guest row. The same words appear in the status
