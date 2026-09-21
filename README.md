@@ -66,6 +66,7 @@ map: data, images, accounts, and which keys turn on what.
 | `npm run lint` | ESLint |
 | `npm run db:migrate` / `db:seed` / `db:reset` | Database. Seed is a no-op if the catalog already has rows. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL`. |
 | `npm run db:studio` | Prisma Studio |
+| `npm run import:campus-json -- path/to.json` | One-off CampusEvent upsert from a JSON dump. Refuses to run unless `DATABASE_URL` is set. |
 | `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
 
 ## Deploying to Vercel
