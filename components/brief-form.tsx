@@ -107,14 +107,14 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
         </Field>
       </div>
       {nightLine ? (
-        <p
+        <div
           id="night-note"
           role="status"
           aria-live="polite"
-          className="rounded-lg bg-amber-wash px-3 py-2 text-[13px] text-amber"
+          className="bg-amber-wash px-4 py-3 text-[13px] text-amber"
         >
           {nightLine}
-        </p>
+        </div>
       ) : null}
 
       <Field label="Hours">

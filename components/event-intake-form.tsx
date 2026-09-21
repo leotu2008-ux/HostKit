@@ -46,7 +46,10 @@ export function CapacityField({
         min={min}
         max={100000}
         required={required}
-        value={Number.isFinite(value) && value !== 0 ? value : ""}
+        // Empty rather than "0" only when 0 is actually the unset state
+        // (min={0}, the Brief tab's usage) — the intake form's min={1} never
+        // legitimately reaches 0, so this never fires there.
+        value={Number.isFinite(value) && !(value === 0 && min === 0) ? value : ""}
         onChange={(e) => setValue(e.target.value === "" ? NaN : Number(e.target.value))}
         onBlur={() => setValue((v) => clamp(Number.isFinite(v) ? v : defaultValue))}
         aria-label="Capacity"
