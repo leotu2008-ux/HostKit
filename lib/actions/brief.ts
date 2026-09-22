@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
+import { snapQuarterHours } from "@/lib/duration";
 import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
 import { clientIp } from "@/lib/rate-limit";
 import { runAgent } from "@/lib/agent/run";
@@ -84,7 +85,7 @@ export async function saveBriefAction(
   const durationHours =
     input.durationHours === undefined
       ? event.durationHours
-      : Math.round(input.durationHours * 4) / 4;
+      : snapQuarterHours(input.durationHours);
   const city = input.city ?? event.city;
   const guestCount = input.guestCount ?? event.guestCount;
   const address = input.address?.trim() || "";
