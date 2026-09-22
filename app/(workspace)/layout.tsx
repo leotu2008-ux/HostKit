@@ -14,5 +14,5 @@ import { requireMaya } from "@/lib/session";
  */
 export default async function WorkspaceLayout({ children }: LayoutProps<"/">) {
   await requireMaya();
-  return <div className="min-h-dvh">{children}</div>;
+  return <div className="theme-app min-h-dvh">{children}</div>;
 }
