@@ -49,10 +49,11 @@ Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 You can draft a night before you have an account. Publishing — listing it on
 Discover or sharing a live guest link — needs a sign-in. Access is closed,
-so only the seeded Maya Chen account signs in and new sign-ups join the
-waitlist. A confirmation link and password resets go out by email
-once Resend is configured (until then the links are logged, and returned to
-the client outside production) — see `docs/backend.md` for the whole backend
+so only the seeded Maya Chen account and the administrator (`ADMIN_EMAIL` in
+`lib/access.ts`) sign in, and new sign-ups join the waitlist. A
+confirmation link and password resets go out by email once Resend is
+configured (until then the links are logged, and returned to the client
+outside production) — see `docs/backend.md` for the whole backend
 map: data, images, accounts, and which keys turn on what.
 
 ### Scripts
@@ -89,14 +90,15 @@ repo each get their own production deploy and will all fail independently.
    | `AUTH_SECRET` | `openssl rand -base64 32` |
    | `AUTH_TRUST_HOST` | `true` |
    | `DIRECT_URL` | Optional. The provider's direct (non-pooled) URL, used by `prisma migrate` |
+   | `HOSTY_ADMIN_PASSWORD` | Optional. The administrator's password; the seed creates or rotates the admin account from it on every deploy |
 
 3. Redeploy the production branch.
 
 `vercel-build` then generates Prisma Client, applies migrations, seeds the
-catalog if it is empty, and runs `next build`. Later deploys skip the seed so
-they do not duplicate listings. To rebuild the catalog from scratch, wipe the
-`Listing` rows (or the database) and redeploy, or run `npm run db:reset`
-against that `DATABASE_URL` locally.
+catalog if it is empty, and runs `next build`. Later deploys skip the catalog
+seed so they do not duplicate listings. To rebuild the catalog from scratch,
+wipe the `Listing` rows (or the database) and redeploy, or run
+`npm run db:reset` against that `DATABASE_URL` locally.
 
 Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 

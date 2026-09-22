@@ -6,6 +6,7 @@ import type {
   ListingCategory,
   PriceUnit,
 } from "../generated/prisma/enums";
+import { ADMIN_EMAIL } from "../lib/access";
 import { generatePlan } from "../lib/plan";
 
 /**
@@ -126,6 +127,7 @@ async function main() {
   }
   await seedDemoNights();
   await seedCampusDemo();
+  await seedAdminAccount();
 }
 
 async function seedCatalog() {
@@ -213,6 +215,52 @@ async function confirmDemoAccount(email: string): Promise<void> {
     data: { emailVerifiedAt: new Date() },
   });
   if (count > 0) console.log(`Confirmed ${email} so it can sign in.`);
+}
+
+/**
+ * The Hosty administrator (lib/access.ts `ADMIN_EMAIL`).
+ *
+ * The repo is public, so the password is never written here — not even as a
+ * bcrypt hash, which a short password would not survive offline. It comes from
+ * HOSTY_ADMIN_PASSWORD in Vercel's environment and is hashed at seed time.
+ * Every deploy re-seeds. When the row is confirmed and the variable still
+ * matches its hash, nothing is written, so a routine deploy keeps the admin
+ * signed in. Otherwise (the variable changed, or someone signed up with the
+ * address and never confirmed it) one update writes the new hash, confirms
+ * the row and bumps sessionVersion, ending every session, API token and MCP
+ * grant signed in with the old password. The row is never confirmed without
+ * the admin password replacing whatever hash it held.
+ * With the variable unset (local, CI) the step does nothing.
+ */
+async function seedAdminAccount() {
+  const password = process.env.HOSTY_ADMIN_PASSWORD;
+  if (!password) {
+    console.log("HOSTY_ADMIN_PASSWORD not set; skipping the admin account.");
+    return;
+  }
+  const existing = await db.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (!existing) {
+    const passwordHash = await bcrypt.hash(password, 10);
+    await db.user.create({
+      data: { email: ADMIN_EMAIL, name: "Hosty", passwordHash, emailVerifiedAt: new Date() },
+    });
+    console.log(`Seeded the admin account ${ADMIN_EMAIL}.`);
+    return;
+  }
+  if (existing.emailVerifiedAt && (await bcrypt.compare(password, existing.passwordHash))) {
+    console.log(`Admin account ${ADMIN_EMAIL} already current; skipping.`);
+    return;
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db.user.update({
+    where: { id: existing.id },
+    data: {
+      passwordHash,
+      emailVerifiedAt: existing.emailVerifiedAt ?? new Date(),
+      sessionVersion: { increment: 1 },
+    },
+  });
+  console.log(`Rotated the admin password for ${ADMIN_EMAIL}; old sessions end.`);
 }
 
 async function seedDemoNights() {

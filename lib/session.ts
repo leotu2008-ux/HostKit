@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { claimMatches, readDraftClaims } from "@/lib/drafts";
 import { schoolFor } from "@/lib/schools";
-import { isMayaChen } from "@/lib/access";
+import { hasDashboardAccess } from "@/lib/access";
 
 /** The signed-in user, or null. */
 export async function getCurrentUser() {
@@ -50,7 +50,7 @@ export async function currentProfile() {
 export async function requireMaya() {
   const user = await getCurrentUser();
   if (!user) redirect("/signin");
-  if (!isMayaChen(user)) redirect("/");
+  if (!hasDashboardAccess(user)) redirect("/");
   return user;
 }
 
