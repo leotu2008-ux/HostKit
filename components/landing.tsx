@@ -340,6 +340,9 @@ export function Landing() {
               <Link href="/discover" className="hover:text-ink">
                 Discover
               </Link>
+              <Link href="/mcp" className="hover:text-ink">
+                Connect an agent
+              </Link>
               <Link href="/signin" className="hover:text-ink">
                 Sign in
               </Link>

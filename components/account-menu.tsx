@@ -21,6 +21,7 @@ const ROWS = [
   { href: "/events?tab=past", label: "Past events", hint: "Everything you've hosted" },
   { href: "/clubs", label: "Clubs", hint: "Yours, and the ones you follow" },
   { href: "/settings", label: "Settings", hint: "Phone number, account" },
+  { href: "/mcp", label: "Connect an agent", hint: "Cursor and Claude, read-only" },
 ];
 
 /**

@@ -2,7 +2,7 @@ import { signOutAction } from "@/lib/actions/auth";
 import { setGuestListVisibilityAction } from "@/lib/actions/profile";
 import { currentProfile } from "@/lib/session";
 import { PhoneForm } from "@/components/phone-form";
-import { Button, Card } from "@/components/ui";
+import { Button, ButtonLink, Card } from "@/components/ui";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "Settings" };
@@ -51,6 +51,16 @@ export default async function SettingsPage() {
           </button>
           <span className="text-sm font-medium text-ink">Show me on guest lists</span>
         </form>
+      </Card>
+
+      <Card className="mt-4 p-5">
+        <h2 className="font-display text-lg text-ink">Connect an agent</h2>
+        <p className="mt-1 mb-4 text-[15px] text-ink-soft">
+          Let Cursor or Claude read your events and guest lists. Read-only, and only this account.
+        </p>
+        <ButtonLink href="/mcp" variant="secondary">
+          Set it up
+        </ButtonLink>
       </Card>
 
       <Card className="mt-4 p-5">
