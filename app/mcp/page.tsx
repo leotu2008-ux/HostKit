@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { McpConnect } from "@/components/mcp-connect";
@@ -11,6 +12,14 @@ export const metadata = {
   title: "Connect an agent",
   description: "Read-only Hosty tools for Cursor and Claude, over a remote MCP URL.",
 };
+
+/** The assistants that can add Hosty's MCP server. Logos are the vendors'
+ *  marks from the MIT-licensed @lobehub/icons set, in public/llm/. */
+const LLMS = [
+  { name: "Claude", logo: "/llm/claude-color.svg", how: "Settings → Connectors → Add custom connector." },
+  { name: "ChatGPT", logo: "/llm/openai.svg", how: "Settings → Apps & Connectors, with developer mode on." },
+  { name: "Gemini", logo: "/llm/gemini-color.svg", how: "Gemini CLI: add the address under mcpServers." },
+];
 
 /**
  * How to point Cursor or Claude at Hosty without cloning the repo.
@@ -32,6 +41,24 @@ export default async function McpPage() {
       </p>
 
       <Card className="mt-8 p-5">
+        <h2 className="font-display text-lg text-ink">Add your preferred LLM</h2>
+        <p className="mt-1 text-[15px] text-ink-soft">
+          Hosty speaks MCP, so it plugs into the assistant you already use.
+        </p>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+          {LLMS.map((llm) => (
+            <li key={llm.name} className="flex items-start gap-3 rounded-xl border border-line p-4 sm:flex-col">
+              <Image src={llm.logo} alt="" width={32} height={32} unoptimized className="size-8 shrink-0" />
+              <div>
+                <p className="font-medium text-ink">{llm.name}</p>
+                <p className="mt-0.5 text-[13px] leading-snug text-ink-mute">{llm.how}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      <Card className="mt-4 p-5">
         <h2 className="font-display text-lg text-ink">The address</h2>
         <p className="mt-1 text-[15px] text-ink-soft">
           Paste this into Cursor or Claude as a remote MCP server. Streamable HTTP, JSON answers.
