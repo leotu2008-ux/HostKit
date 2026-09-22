@@ -20,5 +20,11 @@ export const ADMIN_EMAIL = "leowomc@gmail.com";
  *  admin match is the exact address — no name fallback, so nobody becomes an
  *  administrator by calling themselves "Hosty". */
 export function hasDashboardAccess(user: { email: string; name: string }): boolean {
-  return isMayaChen(user) || user.email.trim().toLowerCase() === ADMIN_EMAIL;
+  return isMayaChen(user) || isAdmin(user);
+}
+
+/** The administrator only — exact address, no name fallback. Gates the admin
+ *  page and actions that reach across other people's data. */
+export function isAdmin(user: { email: string }): boolean {
+  return user.email.trim().toLowerCase() === ADMIN_EMAIL;
 }
