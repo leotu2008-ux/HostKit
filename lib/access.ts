@@ -2,7 +2,7 @@
 export const MAYA_EMAIL = "maya@hostkit.demo";
 
 /**
- * The dashboard is open to Maya Chen only. The email is the seeded account;
+ * Whether this is Maya Chen. The email is the seeded account;
  * the name is checked too so a renamed row at that address still matches,
  * and so a different address that is actually her still matches.
  */
