@@ -1,6 +1,6 @@
-# HostKit for iOS
+# Hosty for iOS
 
-A native SwiftUI app for HostKit. It talks to the same backend as the website
+A native SwiftUI app for Hosty. It talks to the same backend as the website
 through `/api/v1`, so an event created on the phone shows up on the web and the
 other way round.
 
@@ -13,11 +13,11 @@ other way round.
 
 ## Run it
 
-1. Open `ios/HostKit.xcodeproj` in Xcode.
+1. Open `ios/Hosty.xcodeproj` in Xcode.
 2. Pick your team under **Signing & Capabilities** (only needed for a device).
-3. Run the **HostKit** scheme.
+3. Run the **Hosty** scheme.
 
-By default the app talks to `https://host-kit-one.vercel.app`. Until this
+By default the app talks to `https://tryhosty.app`. Until this
 branch is deployed there, the site has no `/api/v1`, so Discover shows built-in
 sample events and says so. To use real data:
 
@@ -35,7 +35,7 @@ with a website account, e.g. the seeded demo host `maya@hostkit.demo` /
 Build from the command line without signing:
 
 ```bash
-xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
+xcodebuild -project ios/Hosty.xcodeproj -scheme Hosty \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
@@ -47,10 +47,10 @@ xcodebuild -project ios/HostKit.xcodeproj -scheme HostKit \
 | **Discover** | Clubs at your school; "At [School]" mixing student-hosted nights with the school's official calendar (See all → the whole calendar by day, `Features/Discover/CampusView.swift`); the city feed grouped by day with the city picker; event page with who's going, the club, and a register bar that knows about approval and the waitlist. Official events show an "Official" pill and an Open button to the school's page instead of registration |
 | **Events** | Your events as a timeline (upcoming / past) and Manage — Overview (requests to approve, the waitlist, guest list, check-in, tap the cover to add a photo) · Outreach (drafted messages, call / email, confirm) · Blasts (email the guest list, also text verified phones) · Promote (publish, visibility, approve registrations, share link, QR code, promo copy) |
 | **Create** (a sheet, from the + on Discover and the "Create event" buttons on Home and Events) | The event form, with "Post as" a club you manage, an optional MapKit venue search and a cover photo |
-| **Profile** | Photo, name, bio, school (pick or change it — the campus feed and official calendar follow) with class year, company, and X / LinkedIn / Instagram links under Connect; past events; clubs (yours, the ones around you, search every club by name and browse by kind; a club page with Updates the admins post to followers, past events and a Follow button that also sits on every club-hosted event page; a page to start one, with a kind); settings (who's going, reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri); sign in / out. The same menu opens from the HostKit mark top-left on every tab |
+| **Profile** | Photo, name, bio, school (pick or change it — the campus feed and official calendar follow) with class year, company, and X / LinkedIn / Instagram links under Connect; past events; clubs (yours, the ones around you, search every club by name and browse by kind; a club page with Updates the admins post to followers, past events and a Follow button that also sits on every club-hosted event page; a page to start one, with a kind); settings (who's going, reminders and calendar toggles, phone number verified by text, server address, Apple Intelligence, Siri); sign in / out. The same menu opens from the Hosty mark top-left on every tab |
 
 Push notifications are wired but off: `App/PushRegistration.swift` only asks
-iOS for a device token when `Info.plist` has `HostKitPushEnabled = true`,
+iOS for a device token when `Info.plist` has `HostyPushEnabled = true`,
 which goes in together with the Push Notifications capability and the
 `aps-environment` entitlement on a paid developer team. Until then the
 Inbox (bell on Home) and local reminders do the job.
@@ -72,15 +72,15 @@ are bundled under `Resources/Fonts`).
   and explains why when the model isn't available. On Manage → Promote,
   *Rewrite with Apple Intelligence* turns the event into a short post for a
   story or group chat.
-- **App Intents** (`Intents/HostKitIntents.swift`):
-  - "What's my next event in HostKit" — answers with the time and headcount.
-  - "Check in a guest with HostKit" — asks for the guest and event, checks them in.
-  - "Open *event* in HostKit" — jumps to that event's Manage screen.
+- **App Intents** (`Intents/HostyIntents.swift`):
+  - "What's my next event in Hosty" — answers with the time and headcount.
+  - "Check in a guest with Hosty" — asks for the guest and event, checks them in.
+  - "Open *event* in Hosty" — jumps to that event's Manage screen.
 
 ## Layout
 
 ```
-HostKit/
+Hosty/
   App/            entry, tab root, router, app model, session + Keychain
   Networking/     API client, models (mirror lib/api/serialize.ts), sample data
   Design/         cover art (same algorithm as the website), date formatting, shared views
@@ -90,7 +90,7 @@ HostKit/
 ```
 
 The project uses Xcode's folder-synchronised groups: add a Swift file anywhere
-under `HostKit/` and it's part of the target, no project-file edits needed.
+under `Hosty/` and it's part of the target, no project-file edits needed.
 
 ## Notes
 

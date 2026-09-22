@@ -76,7 +76,7 @@ describe("promoBlurb", () => {
         ticketType: "FREE",
         description: "Five founders, three minutes each.\nMore later.",
       },
-      "https://host-kit-one.vercel.app/e/abc",
+      "https://tryhosty.app/e/abc",
     );
     expect(text.split("\n")).toEqual([
       "Pitch Night",
@@ -84,7 +84,7 @@ describe("promoBlurb", () => {
       "",
       "Five founders, three minutes each.",
       "",
-      "Free · register: https://host-kit-one.vercel.app/e/abc",
+      "Free · register: https://tryhosty.app/e/abc",
     ]);
   });
 });

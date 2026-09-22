@@ -41,7 +41,7 @@ const MAX_PAGES = 8;
 const FETCH_TIMEOUT_MS = 20_000;
 /** A feed bigger than this is a broken feed, not a calendar. */
 const MAX_FEED_BYTES = 8 * 1024 * 1024;
-const USER_AGENT = "Mozilla/5.0 (compatible; HostKit/1.0; +https://host-kit-one.vercel.app)";
+const USER_AGENT = "Mozilla/5.0 (compatible; Hosty/1.0; +https://tryhosty.app)";
 
 export type SyncResult = { sourceKey: string; ok: boolean; count: number; error?: string };
 

@@ -64,7 +64,7 @@ describe("falling back", () => {
   });
 });
 
-describe("HostKit's own events", () => {
+describe("Hosty's own events", () => {
   it("trusts the event type over the words", () => {
     // "Soccer Season Kickoff" would read as athletics from its title alone.
     expect(iconFor({ title: "Soccer Season Kickoff", type: "DINNER_PARTY" })).toBe("food");

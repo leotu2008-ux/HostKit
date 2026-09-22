@@ -189,7 +189,7 @@ export async function clubByHandle(handle: string) {
 /** Add an admin by the email of an existing account. */
 export async function addMember(clubId: string, email: string) {
   const user = await db.user.findUnique({ where: { email: email.trim().toLowerCase() }, select: { id: true } });
-  if (!user) throw new ClubError("No HostKit account with that email yet.", 404);
+  if (!user) throw new ClubError("No Hosty account with that email yet.", 404);
   await db.clubMember.upsert({
     where: { clubId_userId: { clubId, userId: user.id } },
     create: { clubId, userId: user.id, role: "ADMIN" },

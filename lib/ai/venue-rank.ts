@@ -52,7 +52,7 @@ export type VenueRankOptions = {
 
 function systemPrompt(): string {
   return [
-    "You rank venue candidates for a HostKit event from a fixed list the caller gives you.",
+    "You rank venue candidates for a Hosty event from a fixed list the caller gives you.",
     "Pick between 1 and 6 candidates, best first, using only the ids you are given — copy them exactly. Never invent a venue, a phone number, a website, a capacity or a price; everything about a candidate beyond its id and name may be wrong or missing, and that is fine to say.",
     "Give each pick one short reason, 3 to 140 characters, grounded only in what you were told.",
     "Return JSON only, matching the schema you are given.",

@@ -92,7 +92,7 @@ export function CoverArt({
 }: {
   id: string;
   title: string;
-  /** HostKit's own EventType, when the event has one. */
+  /** Hosty's own EventType, when the event has one. */
   type?: string | null;
   /** The club or department, which sometimes says more than the title. */
   host?: string | null;

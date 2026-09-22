@@ -217,7 +217,7 @@ export function WorkspaceSidebar({
             className="h-5 w-5 rounded-[6px] ring-1 ring-line"
           />
           <span className="font-event text-[15px] text-ink">
-            Host<span className="text-brand">Kit</span>
+            Host<span className="text-brand">y</span>
           </span>
         </Link>
 

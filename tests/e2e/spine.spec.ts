@@ -3,7 +3,7 @@ import { SPLASH_STORAGE_KEY } from "../../lib/splash";
 import { pickCity, pickDate, pickDuration, pickTime } from "./pickers";
 
 /**
- * The spine: everything HostKit claims to do, in the order a host does it.
+ * The spine: everything Hosty claims to do, in the order a host does it.
  *
  * This is deliberately one long test rather than several short ones. The
  * product's whole claim is that these steps are connected — that booking a
@@ -11,9 +11,6 @@ import { pickCity, pickDate, pickDuration, pickTime } from "./pickers";
  * by walking the connection end to end.
  */
 
-const PASSWORD = "correcthorse1";
-
-/** Skip the first-load splash so actionability checks aren't blocked by it. */
 async function skipLaunchSplash(page: Page) {
   await page.addInitScript((key: string) => {
     try {
@@ -24,24 +21,13 @@ async function skipLaunchSplash(page: Page) {
   }, SPLASH_STORAGE_KEY);
 }
 
-async function signUp(page: Page) {
+async function signInAsMaya(page: Page) {
   await skipLaunchSplash(page);
-  const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
-  await page.goto("/signup");
-  await page.fill('input[name="name"]', "Dana Hart");
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
+  await page.goto("/signin");
+  await page.fill('input[name="email"]', "maya@hostkit.demo");
+  await page.fill('input[name="password"]', "hostkit-demo");
   await page.click('button[type="submit"]');
-  // Sign-up waits for the confirmation link. Without an email service the
-  // dev server hands the link back; opening it lands on sign-in.
-  await page.getByText("Check your inbox").waitFor();
-  await page.click('a:has-text("open it")');
-  await page.waitForURL(/\/signin\?verified=1/);
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
-  await page.click('button[type="submit"]');
-  await page.waitForURL("**/events");
-  return email;
+  await page.waitForURL((url) => url.pathname === "/events");
 }
 
 // This night is deliberately planned from the dinner-party template, chosen
@@ -79,7 +65,7 @@ async function createNight(page: Page) {
 }
 
 test("a host can plan, scout, shortlist and book an event", async ({ page }) => {
-  await signUp(page);
+  await signInAsMaya(page);
   const event = await createNight(page);
 
   await test.step("the Overview's activity feed shows what just happened", async () => {

@@ -55,7 +55,7 @@ export function icsFor(event: CalendarEvent, url: string, now = new Date()): str
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//HostKit//Events//EN",
+    "PRODID:-//Hosty//Events//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

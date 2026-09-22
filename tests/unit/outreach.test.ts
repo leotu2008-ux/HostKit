@@ -168,7 +168,7 @@ describe("the email an inquiry becomes", () => {
     const email = inquiryEmail(args);
 
     expect(email.to).toBe("events@venue.com");
-    // The whole reply-handling design rests on this: HostKit cannot read a
+    // The whole reply-handling design rests on this: Hosty cannot read a
     // vendor's reply, so the reply must go straight to a human who can.
     expect(email.replyTo).toBe("sam@startup.com");
   });

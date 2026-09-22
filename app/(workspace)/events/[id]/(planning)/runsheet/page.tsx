@@ -38,7 +38,7 @@ export default async function RunSheetPage({
       <div className="space-y-6">
         <EmptyState
           title="No run sheet yet"
-          body="HostKit can draft one from your bookings — load-in times for every vendor you've booked, the setup steps people forget, and a running order for this kind of event. Every line is editable."
+          body="Hosty can draft one from your bookings — load-in times for every vendor you've booked, the setup steps people forget, and a running order for this kind of event. Every line is editable."
           action={<GenerateRunSheet eventId={event.id} />}
         />
         <Card className="p-5">
@@ -81,7 +81,7 @@ export default async function RunSheetPage({
       </div>
       <p className="no-print -mt-4 text-xs text-ink-mute">
         Redraft keeps anything you wrote yourself — it only replaces the lines
-        HostKit generated. Clear removes everything, including your own.
+        Hosty generated. Clear removes everything, including your own.
       </p>
 
       {/* The print view: this is what gets handed to whoever is running the

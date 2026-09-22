@@ -7,7 +7,7 @@ One remote endpoint, `POST /api/mcp`, accepts two credentials. They are not inte
 | API bearer from `POST /api/v1/auth/token` | Cursor, Claude Desktop with a header, `npm run mcp` | `list_events`, `get_event`, `list_guests`, `campus_events`, `discover_events` |
 | OAuth access token from `POST /api/oauth/token` | Claude and ChatGPT custom connectors | `list_events`, `get_event_brief`, `search_venues` |
 
-An OAuth access token is 43 characters of base64url. The server looks that shape up as an `McpGrant` first. Anything else, including the dotted API bearer, is the existing HostKit token check. A missing or rejected credential is HTTP 401. With `MCP_PUBLIC_ORIGIN` unset, OAuth is off and the bearer path is unchanged.
+An OAuth access token is 43 characters of base64url. The server looks that shape up as an `McpGrant` first. Anything else, including the dotted API bearer, is the existing Hosty token check. A missing or rejected credential is HTTP 401. With `MCP_PUBLIC_ORIGIN` unset, OAuth is off and the bearer path is unchanged.
 
 The install page is [/mcp](https://tryhosty.app/mcp). OAuth grants are listed and revoked at `/settings/connections`.
 
@@ -54,7 +54,7 @@ npm run mcp
     "hostkit": {
       "command": "npx",
       "args": ["tsx", "scripts/mcp-server.ts"],
-      "cwd": "/path/to/HostKit",
+      "cwd": "/path/to/Hosty",
       "env": {
         "HOSTKIT_URL": "https://tryhosty.app",
         "HOSTKIT_TOKEN": "..."

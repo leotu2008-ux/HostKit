@@ -1,3 +1,5 @@
+import { requireMaya } from "@/lib/session";
+
 /**
  * The workspace shell's outer wrapper.
  *
@@ -10,6 +12,7 @@
  * column of its own — `app/(workspace)/events/[id]/layout.tsx` owns the
  * frame. The URLs are untouched: `(workspace)` is a group, not a segment.
  */
-export default function WorkspaceLayout({ children }: LayoutProps<"/">) {
+export default async function WorkspaceLayout({ children }: LayoutProps<"/">) {
+  await requireMaya();
   return <div className="min-h-dvh">{children}</div>;
 }

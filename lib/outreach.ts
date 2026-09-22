@@ -11,7 +11,7 @@ import { formatDurationLong } from "@/lib/when";
 /**
  * Drafts the first message to a venue or vendor.
  *
- * With no supply side, this is what "booking" actually means in HostKit: the
+ * With no supply side, this is what "booking" actually means in Hosty: the
  * host still has to email a real business. Everything the recipient needs to
  * quote accurately is already in the message — date, headcount, duration,
  * city — because the most common reason a first inquiry bounces back is that
@@ -218,7 +218,7 @@ export function normalizeRecipient(raw: string | null | undefined): string | nul
  * to rewrite the message, and sending something other than what they approved
  * would make the approval meaningless.
  *
- * `replyTo` is the host, never HostKit. Nothing here can read an inbox, so a
+ * `replyTo` is the host, never Hosty. Nothing here can read an inbox, so a
  * reply that came back to the sending address would be lost — it has to reach
  * the person who can answer it.
  */

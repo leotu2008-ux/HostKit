@@ -25,5 +25,5 @@ export function formatPhone(e164: string): string {
 }
 
 export function codeMessage(code: string) {
-  return `Your HostKit code is ${code}. It expires in 10 minutes.`;
+  return `Your Hosty code is ${code}. It expires in 10 minutes.`;
 }

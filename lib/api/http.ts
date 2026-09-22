@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyToken } from "@/lib/api/token";
 import { requestOwnsDraft } from "@/lib/api/drafts";
+import { isMayaChen } from "@/lib/access";
 
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -36,6 +37,7 @@ export async function apiUser(request: Request) {
   });
   // A password reset bumps the version; tokens issued before it are out.
   if (!user || user.sessionVersion !== payload.v) return null;
+  if (!isMayaChen(user)) return null;
   return user;
 }
 

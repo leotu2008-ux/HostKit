@@ -4,7 +4,7 @@ import { verifyToken } from "@/lib/api/token";
 import { SCOPES, tryMcpConfig, type McpOAuthConfig } from "@/lib/mcp/oauth-config";
 import { authenticateMcp } from "@/lib/mcp/oauth";
 import { createOAuthMcpServer, type McpActor } from "@/lib/mcp/oauth-tools";
-import { createHostKitMcpServer } from "@/lib/mcp/register";
+import { createHostyMcpServer } from "@/lib/mcp/register";
 import type { ToolContext } from "@/lib/mcp/tools";
 import { RateLimitError, assertRateLimit } from "@/lib/rate-limit";
 
@@ -17,7 +17,7 @@ import { RateLimitError, assertRateLimit } from "@/lib/rate-limit";
  *   POST /api/oauth/token and stored only as a hash on McpGrant. When that
  *   grant is live, the request sees the OAuth tools (list_events,
  *   get_event_brief, search_venues).
- * - Every other bearer is the HostKit API token from POST /api/v1/auth/token.
+ * - Every other bearer is the Hosty API token from POST /api/v1/auth/token.
  *   Those contain a dot, so they are not looked up as grants. They see
  *   list_events, get_event, list_guests, campus_events, and discover_events,
  *   still by calling /api/v1 with that same token.
@@ -50,10 +50,10 @@ const OAUTH_TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const BODY_LIMIT = 65_536;
 
 const BEARER_ONLY =
-  "Sign in with a HostKit bearer token. Get one from POST /api/v1/auth/token, or from the Connect an agent page while signed in.";
+  "Sign in with a Hosty bearer token. Get one from POST /api/v1/auth/token, or from the Connect an agent page while signed in.";
 
 const BEARER_OR_OAUTH =
-  "Sign in with a HostKit bearer token. Get one from POST /api/v1/auth/token, or from the Connect an agent page while signed in. Claude and ChatGPT can also connect with OAuth; follow the resource metadata on this response.";
+  "Sign in with a Hosty bearer token. Get one from POST /api/v1/auth/token, or from the Connect an agent page while signed in. Claude and ChatGPT can also connect with OAuth; follow the resource metadata on this response.";
 
 export type McpSession = { token: string };
 
@@ -116,7 +116,7 @@ export async function handleMcpRequest(
     access = await resolveAccess(request, options.authenticate ?? authenticateMcpRequest, oauth);
   } catch (error) {
     console.error("hostkit mcp auth failed", error);
-    return mcpError(500, "HostKit could not check that token.", oauth);
+    return mcpError(500, "Hosty could not check that token.", oauth);
   }
 
   if (access.kind === "forbidden-origin") {
@@ -129,20 +129,20 @@ export async function handleMcpRequest(
   // No standing SSE stream. Clients that only POST (Cursor, Claude) treat
   // 405 as "this server has nothing to push" and keep going.
   if (request.method === "GET") {
-    return mcpError(405, "HostKit MCP accepts JSON-RPC on POST. It does not hold an SSE stream open.", oauth);
+    return mcpError(405, "Hosty MCP accepts JSON-RPC on POST. It does not hold an SSE stream open.", oauth);
   }
 
   if (request.method !== "POST" && request.method !== "DELETE") {
-    return mcpError(405, "HostKit MCP accepts POST and DELETE.", oauth);
+    return mcpError(405, "Hosty MCP accepts POST and DELETE.", oauth);
   }
 
   if (access.kind === "oauth") {
-    if (!oauth) return mcpError(500, "HostKit could not check that token.", null);
+    if (!oauth) return mcpError(500, "Hosty could not check that token.", null);
     return handleOAuthRequest(request, access.actor, oauth);
   }
 
   const baseUrl = (options.baseUrl ?? deploymentOrigin(request)).replace(/\/+$/, "");
-  const server = createHostKitMcpServer({
+  const server = createHostyMcpServer({
     baseUrl,
     token: access.token,
     fetchImpl: options.fetchImpl,
@@ -158,7 +158,7 @@ export async function handleMcpRequest(
     return withCors(response);
   } catch (error) {
     console.error("hostkit mcp request failed", error);
-    return mcpError(500, "HostKit MCP could not answer that request.", oauth);
+    return mcpError(500, "Hosty MCP could not answer that request.", oauth);
   } finally {
     await server.close().catch(() => undefined);
   }
@@ -216,7 +216,7 @@ async function handleOAuthRequest(
       return new Response("Too many requests", { status: 429, headers });
     }
     console.error("hostkit mcp rate limit failed", error);
-    return mcpError(500, "HostKit MCP could not answer that request.", oauth);
+    return mcpError(500, "Hosty MCP could not answer that request.", oauth);
   }
 
   const body = await readBoundedJson(request);
@@ -235,7 +235,7 @@ async function handleOAuthRequest(
     return withCors(response);
   } catch (error) {
     console.error("hostkit mcp request failed", error);
-    return mcpError(500, "HostKit MCP could not answer that request.", oauth);
+    return mcpError(500, "Hosty MCP could not answer that request.", oauth);
   } finally {
     await server.close().catch(() => undefined);
   }
@@ -278,9 +278,9 @@ function corsHeaders(): Headers {
 }
 
 function wwwAuthenticate(oauth: McpOAuthConfig | null): string {
-  if (!oauth) return 'Bearer realm="hostkit"';
+  if (!oauth) return 'Bearer realm="hosty"';
   const metadata = `${oauth.origin}/.well-known/oauth-protected-resource/api/mcp`;
-  return `Bearer realm="hostkit", resource_metadata="${metadata}", scope="${SCOPES.join(" ")}"`;
+  return `Bearer realm="hosty", resource_metadata="${metadata}", scope="${SCOPES.join(" ")}"`;
 }
 
 function mcpError(status: number, message: string, oauth: McpOAuthConfig | null): Response {

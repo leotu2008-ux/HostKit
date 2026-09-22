@@ -1,5 +1,5 @@
 /**
- * The one place HostKit sends a text from: Twilio's Messages endpoint, one
+ * The one place Hosty sends a text from: Twilio's Messages endpoint, one
  * plain fetch, no SDK. `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and
  * `TWILIO_FROM` (a number you own, E.164) turn it on. Without them
  * `isSmsConfigured()` is false and verification codes go to the log.

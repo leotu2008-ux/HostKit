@@ -22,7 +22,7 @@ export type StepContext = {
   hasVenue: boolean;
   /** lib/venues/search.ts's isVenueSearchConfigured(). */
   venueSearchConfigured: boolean;
-  /** isCity(event.city) — HostKit only geocodes the cities it lists. */
+  /** isCity(event.city) — Hosty only geocodes the cities it lists. */
   cityIsScoutable: boolean;
   /** Categories with a budget allocation above zero. */
   plannedCategories: ListingCategory[];
@@ -69,7 +69,7 @@ function venuesVerdict(brief: BriefFacts, context: StepContext): Verdict {
     : !context.venueSearchConfigured
       ? "venue search isn't switched on here"
       : !context.cityIsScoutable
-        ? "HostKit doesn't scout that city yet"
+        ? "Hosty doesn't scout that city yet"
         : brief.guestCount < 1
           ? "add a headcount first"
           : null;
@@ -79,7 +79,7 @@ function venuesVerdict(brief: BriefFacts, context: StepContext): Verdict {
 
 function vendorsVerdict(context: StepContext, planWillSeedCategories: boolean): Verdict {
   if (!context.cityIsScoutable) {
-    return { name: "vendors", run: false, why: "HostKit doesn't scout that city yet" };
+    return { name: "vendors", run: false, why: "Hosty doesn't scout that city yet" };
   }
   // A first plan writes the very categories this step shops for, so a run
   // about to draft one counts as having them: on a blank event the context

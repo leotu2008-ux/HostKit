@@ -21,7 +21,7 @@ The real problem was never that the templates are thin. It is that **the host ca
 
 ## Where this leads (context, not scope)
 
-The end-state is HostKit carrying a host end to end: choose the night → plan it → fill it → run it on the day → learn from it. This plan does the **choose and plan** half, on deterministic data HostKit already owns and nothing else has. That ordering is deliberate: a model that drafts plans is only as useful as the signal underneath it, and until Task 1 lands every plan it drafts is a dinner party.
+The end-state is Hosty carrying a host end to end: choose the night → plan it → fill it → run it on the day → learn from it. This plan does the **choose and plan** half, on deterministic data Hosty already owns and nothing else has. That ordering is deliberate: a model that drafts plans is only as useful as the signal underneath it, and until Task 1 lands every plan it drafts is a dinner party.
 
 The model layer (`lib/ai/client.ts` — validated, fallback-backed, off without a key) stays exactly where it is for this plan. Aiming it properly is a separate piece of work that deserves its own spec; see the closing note.
 
@@ -682,4 +682,4 @@ Checked against the three findings under **Spec**:
 
 - **Aiming the model.** `draftPlan` still has no caller. Once Task 1 lands, hosts will be choosing real types and the templates behind them get exercised for the first time — that is the evidence needed to decide whether a model adds anything to a plan, and where. Decide after, not before.
 - **The execution half.** The run sheet is the artifact a host actually holds on the night, and it is the natural home for an agent that helps *run* an event rather than plan one. Nothing in this plan touches it.
-- **A type picker on iOS.** `ios/HostKit/Networking/Models.swift` decodes `EventKind`; the app has the same gap the web form had. Out of scope here, worth its own task.
+- **A type picker on iOS.** `ios/Hosty/Networking/Models.swift` decodes `EventKind`; the app has the same gap the web form had. Out of scope here, worth its own task.

@@ -1,11 +1,11 @@
-# HostKit — competitive analysis
+# Hosty — competitive analysis
 
-Date: 2026-09-11. Scope: HostKit (web + native iOS, campus-first event hosting
+Date: 2026-09-11. Scope: Hosty (web + native iOS, campus-first event hosting
 and discovery) against Luma, Partiful and Eventbrite, with the campus
 incumbents (CampusGroups, Corq/Engage) and the no-app alternatives as
 indirect competition. Sources at the end.
 
-## Where HostKit stands today
+## Where Hosty stands today
 
 What's built (branch `worktree-ios-app-luma-ui`): create an event before
 signing in; `.edu` accounts with school-tagged events that surface first on
@@ -46,7 +46,7 @@ add-to-calendar; no guest ↔ host chat; no recurring events; no Android.
         "Token gating / API access on Plus"
       ],
       "strengths": [
-        "Best-in-class event page design and host UX; the look HostKit was inspired by",
+        "Best-in-class event page design and host UX; the look Hosty was inspired by",
         "Real discovery with density in tech hubs; recurring series work well",
         "Free tier is generous for occasional hosts"
       ],
@@ -162,35 +162,35 @@ add-to-calendar; no guest ↔ host chat; no recurring events; no Android.
       "strengths": ["Zero friction to post; the group chat is the campus's real event feed"],
       "weaknesses": ["No headcount, no capacity, no check-in, no reminder, events vanish in 24h; hosts rebuild the list every time"],
       "target_audience": "Every student host today",
-      "positioning": "The default HostKit actually has to beat"
+      "positioning": "The default Hosty actually has to beat"
     }
   ],
   "feature_matrix": {
-    "Free event pages, unlimited guests":        {"HostKit": true,  "Luma": true,  "Partiful": true,  "Eventbrite": true},
-    "Native iOS app for hosting":               {"HostKit": true,  "Luma": "companion only", "Partiful": true, "Eventbrite": "organizer app"},
-    "Android":                                   {"HostKit": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
-    "Create before signing in":                  {"HostKit": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
-    "Public discovery feed":                     {"HostKit": true,  "Luma": true,  "Partiful": false, "Eventbrite": true},
-    "Campus / .edu-tagged discovery":            {"HostKit": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
-    "City auto-detected from location":          {"HostKit": true,  "Luma": true,  "Partiful": false, "Eventbrite": true},
-    "Paid tickets with payments":                {"HostKit": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
-    "Email blasts to guests":                    {"HostKit": true,  "Luma": true,  "Partiful": false, "Eventbrite": "Pro"},
-    "SMS blasts":                                {"HostKit": false, "Luma": false, "Partiful": true,  "Eventbrite": false},
-    "Check-in at the door":                      {"HostKit": true,  "Luma": "QR", "Partiful": false, "Eventbrite": "QR scan"},
-    "QR code for the event":                     {"HostKit": true,  "Luma": true,  "Partiful": false, "Eventbrite": true},
-    "Venue search inside Create":                {"HostKit": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
-    "Vendor / speaker outreach with drafted messages": {"HostKit": true, "Luma": false, "Partiful": false, "Eventbrite": false},
-    "Budget, timeline, run sheet":               {"HostKit": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
-    "On-device AI copy (private)":               {"HostKit": true,  "Luma": false, "Partiful": false, "Eventbrite": "cloud AI"},
-    "Cohosts / collaborator roles":              {"HostKit": "basic", "Luma": true, "Partiful": "basic", "Eventbrite": true},
-    "Guest chat / social RSVP list":             {"HostKit": false, "Luma": true,  "Partiful": true,  "Eventbrite": false},
-    "Push notifications / reminders":            {"HostKit": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
-    "Add to calendar":                           {"HostKit": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
-    "Recurring events / series":                 {"HostKit": false, "Luma": true,  "Partiful": false, "Eventbrite": true},
-    "Approval-required registration":            {"HostKit": false, "Luma": true,  "Partiful": "approve guests", "Eventbrite": false},
-    "Photo covers":                              {"HostKit": true,  "Luma": true,  "Partiful": true,  "Eventbrite": true},
-    "Verified phone on account; hosts can reach registrants": {"HostKit": true, "Luma": false, "Partiful": "phone required to RSVP", "Eventbrite": false},
-    "Siri / Shortcuts":                          {"HostKit": true,  "Luma": false, "Partiful": false, "Eventbrite": false}
+    "Free event pages, unlimited guests":        {"Hosty": true,  "Luma": true,  "Partiful": true,  "Eventbrite": true},
+    "Native iOS app for hosting":               {"Hosty": true,  "Luma": "companion only", "Partiful": true, "Eventbrite": "organizer app"},
+    "Android":                                   {"Hosty": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
+    "Create before signing in":                  {"Hosty": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
+    "Public discovery feed":                     {"Hosty": true,  "Luma": true,  "Partiful": false, "Eventbrite": true},
+    "Campus / .edu-tagged discovery":            {"Hosty": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
+    "City auto-detected from location":          {"Hosty": true,  "Luma": true,  "Partiful": false, "Eventbrite": true},
+    "Paid tickets with payments":                {"Hosty": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
+    "Email blasts to guests":                    {"Hosty": true,  "Luma": true,  "Partiful": false, "Eventbrite": "Pro"},
+    "SMS blasts":                                {"Hosty": false, "Luma": false, "Partiful": true,  "Eventbrite": false},
+    "Check-in at the door":                      {"Hosty": true,  "Luma": "QR", "Partiful": false, "Eventbrite": "QR scan"},
+    "QR code for the event":                     {"Hosty": true,  "Luma": true,  "Partiful": false, "Eventbrite": true},
+    "Venue search inside Create":                {"Hosty": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
+    "Vendor / speaker outreach with drafted messages": {"Hosty": true, "Luma": false, "Partiful": false, "Eventbrite": false},
+    "Budget, timeline, run sheet":               {"Hosty": true,  "Luma": false, "Partiful": false, "Eventbrite": false},
+    "On-device AI copy (private)":               {"Hosty": true,  "Luma": false, "Partiful": false, "Eventbrite": "cloud AI"},
+    "Cohosts / collaborator roles":              {"Hosty": "basic", "Luma": true, "Partiful": "basic", "Eventbrite": true},
+    "Guest chat / social RSVP list":             {"Hosty": false, "Luma": true,  "Partiful": true,  "Eventbrite": false},
+    "Push notifications / reminders":            {"Hosty": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
+    "Add to calendar":                           {"Hosty": false, "Luma": true,  "Partiful": true,  "Eventbrite": true},
+    "Recurring events / series":                 {"Hosty": false, "Luma": true,  "Partiful": false, "Eventbrite": true},
+    "Approval-required registration":            {"Hosty": false, "Luma": true,  "Partiful": "approve guests", "Eventbrite": false},
+    "Photo covers":                              {"Hosty": true,  "Luma": true,  "Partiful": true,  "Eventbrite": true},
+    "Verified phone on account; hosts can reach registrants": {"Hosty": true, "Luma": false, "Partiful": "phone required to RSVP", "Eventbrite": false},
+    "Siri / Shortcuts":                          {"Hosty": true,  "Luma": false, "Partiful": false, "Eventbrite": false}
   },
   "feature_gaps": [
     "Nobody serves the student host: campus-scoped discovery + a hosting toolkit in one app. Luma/Partiful stop at the invite; Corq stops at the official calendar.",
@@ -212,12 +212,12 @@ add-to-calendar; no guest ↔ host chat; no recurring events; no Android.
   "differentiation_opportunities": [
     {
       "opportunity": "Own the campus: .edu-trusted, school-tagged events that surface to classmates first but stay open to the city",
-      "reasoning": "Luma, Partiful and Eventbrite have no concept of a school; the campus incumbents only carry official events and nobody enjoys them. HostKit already ships this — make it the headline, and go school by school (Babson → Boston).",
+      "reasoning": "Luma, Partiful and Eventbrite have no concept of a school; the campus incumbents only carry official events and nobody enjoys them. Hosty already ships this — make it the headline, and go school by school (Babson → Boston).",
       "potential_impact": "high"
     },
     {
       "opportunity": "Be the only invite tool that also produces the event (venue → outreach → budget → run sheet → door)",
-      "reasoning": "Every competitor ends at the RSVP. HostKit's planner and Manage dashboard are the moat once a host has run one event through it; the drafted outreach messages are a concrete 'wow' no one else has.",
+      "reasoning": "Every competitor ends at the RSVP. Hosty's planner and Manage dashboard are the moat once a host has run one event through it; the drafted outreach messages are a concrete 'wow' no one else has.",
       "potential_impact": "high"
     },
     {
@@ -232,7 +232,7 @@ add-to-calendar; no guest ↔ host chat; no recurring events; no Android.
     },
     {
       "opportunity": "Hosts can reach registrants (verified phone + email) instead of guests paying a phone toll to RSVP",
-      "reasoning": "Flip Partiful's model: the guest chooses to share a verified number; the host gets a real contact list. Add SMS blasts on top of email and HostKit matches Partiful's best host feature with consent built in.",
+      "reasoning": "Flip Partiful's model: the guest chooses to share a verified number; the host gets a real contact list. Add SMS blasts on top of email and Hosty matches Partiful's best host feature with consent built in.",
       "potential_impact": "medium"
     }
   ],
@@ -243,31 +243,31 @@ add-to-calendar; no guest ↔ host chat; no recurring events; no Android.
       {"name": "Luma",       "position": [5, 5]},
       {"name": "Eventbrite", "position": [8, 6]},
       {"name": "Corq/CampusGroups (to students)", "position": [1, 3]},
-      {"name": "HostKit",    "position": [1, 8]}
+      {"name": "Hosty",    "position": [1, 8]}
     ],
-    "opportunity_quadrant": "Low cost, high hosting depth — nobody is there; HostKit is, minus payments"
+    "opportunity_quadrant": "Low cost, high hosting depth — nobody is there; Hosty is, minus payments"
   },
-  "recommendation": "Position HostKit as 'the app student hosts run their events on' — campus-first discovery plus the toolkit to actually put the night on — not as a prettier Luma or a Partiful with a feed. Win one campus at a time (Babson first), where Partiful owns private parties and Corq owns official ones, and take the middle: the open student social, the pitch night, the club mixer. Before public launch close the three table-stakes gaps the matrix shows — paid tickets with Apple Pay/Stripe, push reminders, add-to-calendar — because every competitor has all three. Keep free events free with no caps; when payments land, charge a flat, published ~3% + $0.50 per paid ticket (below Luma's 5%, far below Eventbrite) and offer a 'Host Pro' at ~$9/mo for orgs (custom link, analytics, unlimited blasts) — the mid-tier the market lacks."
+  "recommendation": "Position Hosty as 'the app student hosts run their events on' — campus-first discovery plus the toolkit to actually put the night on — not as a prettier Luma or a Partiful with a feed. Win one campus at a time (Babson first), where Partiful owns private parties and Corq owns official ones, and take the middle: the open student social, the pitch night, the club mixer. Before public launch close the three table-stakes gaps the matrix shows — paid tickets with Apple Pay/Stripe, push reminders, add-to-calendar — because every competitor has all three. Keep free events free with no caps; when payments land, charge a flat, published ~3% + $0.50 per paid ticket (below Luma's 5%, far below Eventbrite) and offer a 'Host Pro' at ~$9/mo for orgs (custom link, analytics, unlimited blasts) — the mid-tier the market lacks."
 }
 ```
 
 ## Reading the matrix
 
-**Where HostKit already leads.** Campus-tagged discovery, create-before-login,
+**Where Hosty already leads.** Campus-tagged discovery, create-before-login,
 venue search, drafted outreach, budget/run sheet, on-device AI copy, Siri —
 none of the three big players has any of these, and the campus incumbents
 only carry official events. The Manage dashboard is a category no one else
 occupies: every competitor's product ends at the RSVP list.
 
-**Where HostKit is behind (table stakes).** Paid tickets with actual
+**Where Hosty is behind (table stakes).** Paid tickets with actual
 payments, push reminders, add-to-calendar, Android, guest chat. The first
 three are on every competitor and are the ones a host will notice on day one;
 they should land before an App Store launch. Android and chat can wait —
-HostKit's story is "made for iPhone", and the web app covers Android hosts.
+Hosty's story is "made for iPhone", and the web app covers Android hosts.
 
-**Who HostKit really competes with, by event type.**
+**Who Hosty really competes with, by event type.**
 
-| Event | Today's default | HostKit's angle |
+| Event | Today's default | Hosty's angle |
 | --- | --- | --- |
 | House party / birthday | Partiful | Not the target — Partiful's network effect is decisive here |
 | Club mixer, pitch night, open student social | GroupMe + Instagram story, Corq if required | The wedge: discoverable to classmates, plannable, checkable at the door |

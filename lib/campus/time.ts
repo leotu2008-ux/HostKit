@@ -1,5 +1,5 @@
 /**
- * Time helpers for campus feeds. HostKit stores every event start as the
+ * Time helpers for campus feeds. Hosty stores every event start as the
  * host's wall-clock time encoded as UTC (see Event.date), so feeds — which
  * speak real instants, or local times in the school's zone — are converted
  * to that convention here.

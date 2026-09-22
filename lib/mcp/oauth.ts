@@ -20,7 +20,7 @@ export function verifyPkce(verifier: string, challenge: string) {
  * An OAuth access token for `/api/mcp`.
  *
  * These are 43-character base64url strings stored only as a SHA-256 hash on
- * McpGrant. HostKit API bearers contain a dot, so they never match and are
+ * McpGrant. Hosty API bearers contain a dot, so they never match and are
  * left for the bearer path in lib/mcp/http.ts.
  */
 export async function authenticateMcp(request: Request) {

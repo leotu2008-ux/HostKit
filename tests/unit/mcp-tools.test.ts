@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  HostKitApiError,
+  HostyApiError,
   TOOLS,
   apiGet,
   query,
@@ -23,7 +23,7 @@ function stubApi(body: unknown, status = 200) {
 }
 
 function ctxWith(fetchImpl: typeof fetch): ToolContext {
-  return { baseUrl: "https://host-kit-one.vercel.app", token: "tok_test", fetchImpl };
+  return { baseUrl: "https://tryhosty.app", token: "tok_test", fetchImpl };
 }
 
 describe("the tool set", () => {
@@ -70,7 +70,7 @@ describe("talking to the API", () => {
   it("carries the status on any other failure", async () => {
     const { fetchImpl } = stubApi({ error: "boom" }, 500);
     await expect(apiGet(ctxWith(fetchImpl), "/api/v1/events")).rejects.toBeInstanceOf(
-      HostKitApiError,
+      HostyApiError,
     );
   });
 });
@@ -105,7 +105,7 @@ describe("each tool hits the route it says it does", () => {
   it("list_guests asks for that event's guests", async () => {
     const { calls, fetchImpl } = stubApi({ guests: [], summary: {} });
     await toolByName("list_guests")!.run(ctxWith(fetchImpl), { eventId: "evt_1" });
-    expect(calls[0].url).toBe("https://host-kit-one.vercel.app/api/v1/events/evt_1/guests");
+    expect(calls[0].url).toBe("https://tryhosty.app/api/v1/events/evt_1/guests");
   });
 
   it("campus_events passes a school through, and omits it when absent", async () => {
@@ -115,7 +115,7 @@ describe("each tool hits the route it says it does", () => {
 
     const without = stubApi({ events: [] });
     await toolByName("campus_events")!.run(ctxWith(without.fetchImpl), {});
-    expect(without.calls[0].url).toBe("https://host-kit-one.vercel.app/api/v1/campus");
+    expect(without.calls[0].url).toBe("https://tryhosty.app/api/v1/campus");
   });
 
   it("discover_events passes both filters", async () => {

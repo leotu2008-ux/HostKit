@@ -117,7 +117,7 @@ export default async function PlanPage({ params }: PageProps<"/events/[id]">) {
         />
         <p className="-mt-3 mb-4 text-xs text-ink-mute">
           Keeps anything you wrote or ticked off — only replaces what
-          HostKit generated and you haven&rsquo;t started.
+          Hosty generated and you haven&rsquo;t started.
         </p>
 
         {open.length === 0 ? (

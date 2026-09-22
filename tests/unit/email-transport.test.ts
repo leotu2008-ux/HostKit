@@ -31,12 +31,12 @@ function withSmtp() {
   process.env.SMTP_HOST = "smtp.gmail.com";
   process.env.SMTP_USER = "someone@gmail.com";
   process.env.SMTP_PASSWORD = "app-password";
-  process.env.SMTP_FROM = "HostKit <someone@gmail.com>";
+  process.env.SMTP_FROM = "Hosty <someone@gmail.com>";
 }
 
 function withResend() {
   process.env.RESEND_API_KEY = "re_test";
-  process.env.RESEND_FROM = "HostKit <events@example.com>";
+  process.env.RESEND_FROM = "Hosty <events@example.com>";
 }
 
 describe("choosing a transport", () => {

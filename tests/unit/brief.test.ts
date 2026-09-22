@@ -109,7 +109,7 @@ describe("missingBriefFields", () => {
     expect(missingBriefFields(complete({ city: "X" }))).toContain("city");
   });
 
-  it("treats a city HostKit doesn't scout as complete", () => {
+  it("treats a city Hosty doesn't scout as complete", () => {
     expect(missingBriefFields(complete({ city: "Paris, FR" }))).toEqual([]);
   });
 

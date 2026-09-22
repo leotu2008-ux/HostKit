@@ -10,7 +10,7 @@ const event = {
   address: "Olin Hall, Babson Park",
   description: "Five founders, three minutes each.",
 };
-const url = "https://host-kit-one.vercel.app/e/abc123";
+const url = "https://tryhosty.app/e/abc123";
 
 describe("floating", () => {
   it("keeps the wall-clock the host typed, no zone", () => {

@@ -1,7 +1,7 @@
 import { CITIES, isCity, milesBetween, nearestCity } from "@/lib/catalog";
 
 /**
- * Every US city a host can name, as opposed to the four HostKit scouts.
+ * Every US city a host can name, as opposed to the four Hosty scouts.
  *
  * lib/catalog.ts's CITIES is the short list with a seeded venue catalog and a
  * geocodable centre — venue search and vendor drafting still gate on it. This
@@ -286,7 +286,7 @@ function wordsOf(name: string): string[] {
  *
  * Three tiers, best first: the name starts with the query, a word in the name
  * starts with it, the name merely contains it. Whatever matched, the scouted
- * four jump to the front in CITIES order — those are the cities HostKit can
+ * four jump to the front in CITIES order — those are the cities Hosty can
  * actually scout a venue in, so they're the ones worth nudging towards.
  */
 export function suggestCities(query: string, limit = 6): UsCity[] {
@@ -348,7 +348,7 @@ export function detectCity(lat: number, lng: number): string | null {
   return nearestCity(lat, lng) ?? nearestUsCity(lat, lng)?.name ?? null;
 }
 
-/** Whether HostKit scouts venues and vendors in this city — the "Scouted"
+/** Whether Hosty scouts venues and vendors in this city — the "Scouted"
  *  badge on a suggestion, and nothing more. Completeness (lib/brief.ts) and
  *  the agent's plan step don't ask. */
 export function isScoutedCity(name: string): boolean {

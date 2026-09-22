@@ -137,7 +137,7 @@ export function serializeCampusEvent(row: CampusEventRow & { repeats?: Series | 
     // A valid type keeps older clients decoding; the label is what shows.
     type: "DINNER_PARTY",
     typeLabel: "Official event",
-    // Not a HostKit brief — the school's calendar is already the finished fact.
+    // Not a Hosty brief — the school's calendar is already the finished fact.
     kind: null,
     description: row.description,
     city: school?.city ?? "",

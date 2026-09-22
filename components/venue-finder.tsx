@@ -23,7 +23,7 @@ import { Button, Card } from "@/components/ui";
  * rate limit in front of it.
  *
  * The four ways there's nothing real to show — search unconfigured, a city
- * HostKit doesn't geocode, the provider erroring, the provider simply having
+ * Hosty doesn't geocode, the provider erroring, the provider simply having
  * nothing — still all read as one quiet line rather than a 500 or a dead end.
  * The first two the page can tell before rendering anything (they're
  * server-rendered empty states); the last two only the action can.

@@ -12,7 +12,7 @@ nonisolated struct DraftClaim: Codable, Hashable, Sendable {
 /// with no UI state, so App Intents running outside the app's views can use
 /// it too.
 nonisolated enum Session {
-    static let defaultServer = URL(string: "https://host-kit-one.vercel.app")!
+    static let defaultServer = URL(string: "https://tryhosty.app")!
 
     private static let serverKey = "hostkit.serverURL"
     private static let userKey = "hostkit.user"

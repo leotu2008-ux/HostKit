@@ -4,7 +4,7 @@ import { dedupeAcrossSources } from "@/lib/campus/feed";
 /**
  * What else is on that night.
  *
- * The single most useful thing HostKit knows and nobody else does. The synced
+ * The single most useful thing Hosty knows and nobody else does. The synced
  * calendar holds tens of thousands of real campus events, so "is Thursday a
  * bad night at Babson" is a query, not a guess — and it is answerable before
  * a single guest has RSVP'd, which is why this ships ahead of anything that

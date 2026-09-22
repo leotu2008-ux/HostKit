@@ -163,7 +163,7 @@ export async function sendCollaboratorAction(
   // requireEvent admits a signed-out visitor holding a draft-claim cookie
   // (lib/session.ts:67). This action, like sendInquiryAction, chooses both
   // recipient and body, so it refuses harder than requireEvent alone does:
-  // an anonymous send would leave from HostKit's own domain with no reply
+  // an anonymous send would leave from Hosty's own domain with no reply
   // address on it.
   if (!user?.email) {
     return { error: "Sign in before sending this." };
