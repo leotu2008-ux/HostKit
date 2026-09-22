@@ -15,7 +15,7 @@ import { Button } from "@/components/ui";
 export function CreateEventButton({
   label = "Create event",
   size = "md",
-  variant = "primary",
+  variant = "brand",
   className,
 }: {
   label?: React.ReactNode;

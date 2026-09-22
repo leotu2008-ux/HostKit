@@ -171,7 +171,7 @@ function EventSwitcher({ eventId, title, switcher }: { eventId: string; title: s
         })}
         {switcher.length > 0 ? <div className="my-1 h-px bg-line" /> : null}
         <div className="p-1">
-          <CreateEventButton size="sm" variant="secondary" className="w-full" />
+          <CreateEventButton size="sm" className="w-full" />
         </div>
         <Link
           href="/events"

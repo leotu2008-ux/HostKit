@@ -21,8 +21,9 @@ const BUTTON_VARIANT: Record<Variant, string> = {
     "bg-surface text-ink border border-line-strong hover:border-ink-mute hover:bg-sunk",
   ghost: "text-ink-soft hover:bg-sunk hover:text-ink",
   danger: "bg-danger-wash text-danger hover:bg-danger hover:text-white",
-  // Same orange as the "Kit" in the wordmark (`text-brand`).
-  brand: "bg-brand text-white hover:opacity-90",
+  // Brand blue, with a light glass edge so the page shows through.
+  brand:
+    "border border-white/40 bg-brand/75 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.45)] backdrop-blur-md backdrop-saturate-150 hover:bg-brand/85",
 };
 
 const BUTTON_SIZE = {

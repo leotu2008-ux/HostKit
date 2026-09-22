@@ -68,7 +68,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
             </AccountMenu>
             <DesktopNav />
             <div className="ml-auto flex min-w-0 items-center gap-1.5">
-              <CreateEventButton className="hidden h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper hover:opacity-90 md:inline-flex" />
+              <CreateEventButton className="hidden h-9 items-center rounded-full px-4 text-sm font-medium md:inline-flex" />
               {user ? (
                 <Link
                   href="/inbox"
