@@ -140,10 +140,12 @@ export function Landing() {
             An agent for the whole event
           </p>
 
-          <h1 className="font-display mt-7 text-[42px] leading-[1.04] tracking-[-0.03em] text-ink md:text-[68px]">
-            <GlitchText as="span">Plan the event.</GlitchText>
+          <h1 className="mt-7 text-[42px] leading-[1.08] text-ink md:text-[68px]">
+            <GlitchText as="span" className="font-hero text-[#182038]">
+              Plan the event.
+            </GlitchText>
             <br />
-            <GlitchText as="span" className="text-ink-mute">
+            <GlitchText as="span" className="font-display tracking-[-0.03em] text-black">
               Let the agent do the work.
             </GlitchText>
           </h1>

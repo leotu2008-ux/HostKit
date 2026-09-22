@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { EB_Garamond, Inter } from "next/font/google";
 import { AppFrame } from "@/components/app-frame";
 import { LaunchSplash } from "@/components/launch-splash";
 import { SPLASH_BOOTSTRAP } from "@/lib/splash";
@@ -9,6 +9,14 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+// The hero's first line. Trajan Pro is named first in the stack; this is the
+// classical serif from that lockup, which we can actually ship.
+const garamond = EB_Garamond({
+  variable: "--font-garamond",
+  subsets: ["latin"],
+  weight: "500",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: the splash bootstrap stamps data-splash on
     // <html> before React runs, once per session.
-    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${garamond.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full bg-paper">
         <script dangerouslySetInnerHTML={{ __html: SPLASH_BOOTSTRAP }} />
         {/* No scripts at all: nothing would ever mark the splash done. */}

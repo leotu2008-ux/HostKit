@@ -60,6 +60,7 @@
   --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-event: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-hero: "Trajan Pro", "Trajan Pro 3", var(--font-garamond), "Iowan Old Style", Palatino, "Palatino Linotype", serif;
 
   --radius-card: 1rem;
 }
@@ -89,6 +90,14 @@ body {
   font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: -0.025em;
+}
+
+/* Landing hero, first line. Trajan Pro when that face is installed. */
+.font-hero {
+  font-family: var(--font-hero);
+  font-weight: 500;
+  font-synthesis: none;
+  letter-spacing: -0.02em;
 }
 
 /* Event titles: Inter too, a touch heavier and tighter than body text. */
