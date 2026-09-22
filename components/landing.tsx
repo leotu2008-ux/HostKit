@@ -4,6 +4,8 @@ import { CloudSky } from "@/components/cloud-sky";
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 import { CreateEventButton } from "@/components/create-event-button";
 import { GlitchText } from "@/components/glitch-text";
+import { LandingPreview } from "@/components/landing-preview";
+import { Reveal } from "@/components/reveal";
 import { ButtonLink } from "@/components/ui";
 
 /**
@@ -68,32 +70,6 @@ const PRINCIPLES = [
   },
 ];
 
-/** The brief on the left of the preview, as a host would type it. */
-const BRIEF = [
-  ["Kind", "Mixer"],
-  ["When", "Thu 12 March, 8pm"],
-  ["Guests", "120"],
-  ["Budget", "$5,000"],
-];
-
-/** What comes back on the right. Representative of a real draft — the budget
- *  really is split by event kind, and the tasks really are counted back from
- *  the date — but written here rather than generated. */
-const DRAFT_TASKS = [
-  ["21 days out", "Lock the date, headcount and budget"],
-  ["18 days out", "Book the room"],
-  ["12 days out", "Confirm the guest cap with the venue"],
-  ["6 days out", "Send invitations"],
-  ["2 days out", "Confirm final headcount with the caterer"],
-];
-
-const DRAFT_BUDGET = [
-  ["Venue", "$2,000"],
-  ["Catering", "$1,500"],
-  ["Music / DJ", "$1,000"],
-  ["Decor", "$500"],
-];
-
 function Wordmark({ className }: { className?: string }) {
   return (
     <span className={className}>
@@ -109,6 +85,11 @@ function Eyebrow({ children }: { children: string }) {
       {children}
     </p>
   );
+}
+
+/** The hero's entrance order, as the `--i` custom property `.rise` reads. */
+function stagger(i: number): React.CSSProperties {
+  return { "--i": i } as React.CSSProperties;
 }
 
 /** Hairline rails down both sides of the column, so the page has structure
@@ -134,13 +115,21 @@ export function Landing() {
       <div className="relative isolate pt-16 md:pt-[4.25rem]">
       <CloudSky />
       <Rails>
+        {/* The hero rises line by line on load (`.rise` in globals.css);
+            `--i` is each line's place in the queue. */}
         <section className="pt-16 pb-20 text-center md:pt-24 md:pb-24">
-          <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink-soft">
+          <p
+            className="rise inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink-soft"
+            style={stagger(0)}
+          >
             <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
             An agent for the whole event
           </p>
 
-          <h1 className="font-display mt-7 text-[42px] leading-[1.04] tracking-[-0.03em] text-ink md:text-[68px]">
+          <h1
+            className="rise font-display mt-7 text-[42px] leading-[1.04] tracking-[-0.03em] text-ink md:text-[68px]"
+            style={stagger(1)}
+          >
             <GlitchText as="span">Plan the event.</GlitchText>
             <br />
             <GlitchText as="span" className="text-ink-mute">
@@ -148,13 +137,19 @@ export function Landing() {
             </GlitchText>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]">
+          <p
+            className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]"
+            style={stagger(2)}
+          >
             Brief it once and it drafts the plan, writes to the venues, chases
             the quotes, tracks who&rsquo;s coming, and hands you a run sheet for
             the day. You approve. It does the rest.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-2.5">
+          <div
+            className="rise mt-9 flex flex-wrap items-center justify-center gap-2.5"
+            style={stagger(3)}
+          >
             <CreateEventButton
               label={
                 <>
@@ -168,63 +163,16 @@ export function Landing() {
               See what&rsquo;s on
             </ButtonLink>
           </div>
-          <p className="mt-4 text-[13px] text-ink-mute">
+          <p className="rise mt-4 text-[13px] text-ink-mute" style={stagger(4)}>
             Free to start. No account needed until you publish.
           </p>
         </section>
 
         {/* The preview. The reference shows a request and its response; this
-            shows a brief and what the agent hands back for it. */}
-        <section className="pb-20 md:pb-24">
-          <div className="overflow-hidden rounded-card border border-line bg-surface">
-            <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
-              <Eyebrow>You brief it</Eyebrow>
-              <span className="text-[12px] text-ink-mute">Example</span>
-            </div>
-
-            <div className="grid gap-px bg-line md:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
-              <dl className="bg-surface p-5">
-                {BRIEF.map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-baseline justify-between gap-4 py-1.5"
-                  >
-                    <dt className="text-[13px] text-ink-mute">{label}</dt>
-                    <dd className="text-[14px] font-medium text-ink">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-
-              <div className="bg-surface p-5">
-                <Eyebrow>It hands back</Eyebrow>
-
-                <ul className="mt-3.5 space-y-1.5">
-                  {DRAFT_TASKS.map(([when, task]) => (
-                    <li key={task} className="flex gap-3 text-[14px]">
-                      <span className="w-[92px] shrink-0 tabular-nums text-ink-mute">
-                        {when}
-                      </span>
-                      <span className="text-ink">{task}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-5 flex flex-wrap gap-1.5 border-t border-line pt-4">
-                  {DRAFT_BUDGET.map(([category, amount]) => (
-                    <span
-                      key={category}
-                      className="rounded-full border border-line px-3 py-1 text-[13px] text-ink-soft"
-                    >
-                      {category}{" "}
-                      <span className="tabular-nums font-medium text-ink">
-                        {amount}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+            shows a brief and what the agent hands back for it — and plays
+            the exchange through once it scrolls into view. */}
+        <section className="rise pb-20 md:pb-24" style={stagger(5)}>
+          <LandingPreview />
         </section>
       </Rails>
       </div>
@@ -245,8 +193,8 @@ export function Landing() {
             </p>
 
             <ol className="mt-12 grid gap-10 md:grid-cols-2 md:gap-x-12">
-              {STAGES.map((stage) => (
-                <li key={stage.step} className="flex gap-5">
+              {STAGES.map((stage, i) => (
+                <Reveal as="li" index={i} key={stage.step} className="flex gap-5">
                   <span className="font-event shrink-0 pt-1 text-[12px] tabular-nums text-brand">
                     {stage.step}
                   </span>
@@ -264,7 +212,7 @@ export function Landing() {
                       {stage.body}
                     </p>
                   </div>
-                </li>
+                </Reveal>
               ))}
             </ol>
           </section>
@@ -274,15 +222,19 @@ export function Landing() {
       {/* After the four stages, still on the page ground so the section’s
           own surface cards stay as they are. */}
       <Rails>
-        <ConnectAgentSection />
+        <Reveal>
+          <ConnectAgentSection />
+        </Reveal>
       </Rails>
 
       <Rails>
         <section className="py-16 md:py-24">
           <Eyebrow>Why you can leave it alone</Eyebrow>
           <ul className="mt-6 grid gap-4 md:grid-cols-3">
-            {PRINCIPLES.map((item) => (
-              <li
+            {PRINCIPLES.map((item, i) => (
+              <Reveal
+                as="li"
+                index={i}
                 key={item.title}
                 className="rounded-card border border-line bg-surface p-6"
               >
@@ -295,12 +247,12 @@ export function Landing() {
                 <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
                   {item.body}
                 </p>
-              </li>
+              </Reveal>
             ))}
           </ul>
         </section>
 
-        <section className="pb-24 text-center md:pb-32">
+        <Reveal as="section" className="pb-24 text-center md:pb-32">
           <GlitchText
             as="h2"
             className="font-display block text-[30px] leading-tight text-ink md:text-[42px]"
@@ -324,7 +276,7 @@ export function Landing() {
               Create an account
             </ButtonLink>
           </div>
-        </section>
+        </Reveal>
       </Rails>
 
       <footer className="border-t border-line bg-surface">
