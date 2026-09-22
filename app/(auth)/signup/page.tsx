@@ -5,7 +5,7 @@ import { signUpAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/session";
 import { safeNextPath } from "@/lib/listing";
 
-export const metadata = { title: "Create an account" };
+export const metadata = { title: "Join the list" };
 
 export default async function SignUpPage({
   searchParams,
@@ -27,19 +27,11 @@ export default async function SignUpPage({
 
   return (
     <>
-      <h1 className="font-display text-2xl text-ink">Start planning</h1>
+      <h1 className="font-display text-2xl text-ink">Join the list</h1>
       <p className="mt-1 mb-6 text-sm text-ink-soft">
-        {publish
-          ? "Create an account to publish this night."
-          : "One account covers every event you host. Students: sign up with your school .edu email to see campus events first."}
+        The dashboard is open to Maya Chen. Leave your name and email and we’ll add you to the list.
       </p>
-      <AuthForm
-        action={signUpAction}
-        submitLabel="Create account"
-        includeName
-        next={next}
-        publish={publish}
-      />
+      <AuthForm action={signUpAction} submitLabel="Join the list" includeName includePassword={false} />
       <p className="mt-6 text-center text-sm text-ink-soft">
         Already have an account?{" "}
         <Link

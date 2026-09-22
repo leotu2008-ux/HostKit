@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cx } from "@/components/ui";
 
-/** Copies a guest's personal RSVP link. There is no email sending in HostKit,
+/** Copies a guest's personal RSVP link. There is no email sending in Hosty,
  *  so the host shares these themselves. */
 export function RsvpLink({ token }: { token: string }) {
   const [copied, setCopied] = useState(false);

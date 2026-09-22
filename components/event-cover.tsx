@@ -28,7 +28,7 @@ export function EventCover({
   id: string;
   title: string;
   coverUrl?: string | null;
-  /** HostKit's own EventType, when the caller has it. */
+  /** Hosty's own EventType, when the caller has it. */
   type?: string | null;
   /** The club or department, which sometimes says more than the title does. */
   host?: string | null;

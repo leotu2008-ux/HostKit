@@ -28,7 +28,7 @@ const schema = z.object({
   // is a real answer. Snapped below rather than rejected — a value between
   // steps can only come from something other than the wheel.
   durationHours: z.coerce.number().min(0.25).max(24).optional(),
-  // Any city, not just the four HostKit scouts: components/city-field.tsx
+  // Any city, not just the four Hosty scouts: components/city-field.tsx
   // normalises to a suggestion's exact name when the host picks one, and free
   // text is stored as typed. Scoutability stays isCity's question.
   city: z.string().trim().max(80).optional(),

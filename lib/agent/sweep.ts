@@ -90,7 +90,7 @@ export async function sweepAgentRuns(now = new Date()): Promise<SweepResult> {
       where: {
         status: "PLANNING",
         // The cheap half of briefIsComplete, as SQL. The rest of it (is this
-        // a city HostKit knows?) is checked below — it can't be expressed
+        // a city Hosty knows?) is checked below — it can't be expressed
         // here, and a prefilter this narrow leaves little to throw away.
         kind: { not: null },
         date: { not: null },

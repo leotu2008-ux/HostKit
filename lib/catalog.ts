@@ -82,7 +82,7 @@ export function categoryLabel(category: ListingCategory) {
   return CATEGORY_LABEL[category];
 }
 
-/** Cities HostKit knows. The first three have a seeded venue catalog; Boston
+/** Cities Hosty knows. The first three have a seeded venue catalog; Boston
  *  is here for the student side. Kept next to the catalog vocabulary so the
  *  intake form, the API and the seed script can never drift apart. */
 export const CITIES = [

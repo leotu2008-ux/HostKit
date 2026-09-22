@@ -49,7 +49,7 @@ const failure = (message: string) => ({
 });
 
 export function createOAuthMcpServer(actor: McpActor) {
-  const server = new McpServer({ name: "HostKit", version: "1.0.0" });
+  const server = new McpServer({ name: "Hosty", version: "1.0.0" });
   if (actor.scopes.includes("events:read")) {
     server.registerTool(
       "list_events",

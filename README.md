@@ -1,9 +1,9 @@
-# HostKit
+# Hosty
 
 Plan an event end to end: scout venues and vendors, build the budget and the
 timeline, track every booking, collect RSVPs, and print the run sheet.
 
-HostKit is **host-side only**. Venue and vendor owners never log in and never
+Hosty is **host-side only**. Venue and vendor owners never log in and never
 list anything — the catalog is seeded data, and every user is someone planning
 an event. The Airbnb comparison describes the *scouting* experience
 (photo-forward browsing, filters, saved shortlists), not a two-sided
@@ -11,9 +11,9 @@ marketplace.
 
 ## The idea
 
-Because HostKit knows your event — date, headcount, city, budget — it can
+Because Hosty knows your event — date, headcount, city, budget — it can
 price every listing *against that specific event*. A directory tells you a
-venue is "$640/hour". HostKit tells you it's **"$5,120 for your 8 hours, 33%
+venue is "$640/hour". Hosty tells you it's **"$5,120 for your 8 hours, 33%
 of your venue budget, and comfortable for 90 guests."**
 
 Then it keeps the pieces connected. Marking an inquiry **booked** writes a
@@ -101,7 +101,7 @@ Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 
 ## Students
 
-Sign up with a school `.edu` email and HostKit treats you as a student of that
+Sign up with a school `.edu` email and Hosty treats you as a student of that
 school (`lib/schools.ts` maps domains to names and home cities; the domain is
 trusted, not verified yet). Your events are tagged with your school
 automatically, Discover leads with **At [School]** above the city feed, and
@@ -118,14 +118,14 @@ school matters because of the next part.
 
 ### Official campus events
 
-Each school's public calendar is pulled into HostKit and shown next to
+Each school's public calendar is pulled into Hosty and shown next to
 student-hosted nights: under **At [School]** on Home and Discover, on
 `/campus` (the whole calendar by day, `?school=mit.edu` for another school),
 and in the app's Discover → See all. Official events open on the school's own
 page; nobody registers for them here.
 
 - `lib/campus/sources.ts` lists the feeds per school — the catalog covers
-  the Boston schools HostKit started with plus the U.S. News top 50, and
+  the Boston schools Hosty started with plus the U.S. News top 50, and
   53 of them have a verified feed: Localist JSON (MIT, BC, Northeastern,
   USC, UT Austin, Stanford, Yale, Cornell, WashU, UNC, UCSD, Purdue, UGA,
   Rochester, Wake Forest, FSU), iCalendar from LiveWhale (NYU, UChicago,
@@ -153,7 +153,7 @@ page; nobody registers for them here.
 
 ## Your account
 
-Both apps open on **Home**: the HostKit brand, **Your events** — what you
+Both apps open on **Home**: the Hosty brand, **Your events** — what you
 host and what you've registered for, soonest first (`lib/mine.ts`) — quick
 actions, and a taste of what's on nearby. **Discover** (`/discover`) is the
 full feed with the city picker. The logo (and your avatar) opens the account
@@ -211,7 +211,7 @@ the "Create event" buttons, not a tab).
     and **Localist** calendars, whose events carry a student group or a
     department. Official clubs carry an **Official** badge, nobody here runs
     them, their events come from the feed (`CampusEvent.hostRef`), and
-    following one puts those events under From clubs you follow. HostKit
+    following one puts those events under From clubs you follow. Hosty
     never invents a club: seeds create none, and the only other way a club
     exists is a person starting one.
 - **Approval and the waitlist** (`lib/registration.ts`, `lib/waitlist.ts`):
@@ -228,7 +228,7 @@ the "Create event" buttons, not a tab).
   by email for the ones worth an email when Resend is configured, and by
   **push** when `APNS_*` is set. Push needs a paid Apple developer team: add
   the Push Notifications capability and an `aps-environment` entitlement,
-  set `HostKitPushEnabled = true` in `ios/Config/Info.plist`, and the app
+  set `HostyPushEnabled = true` in `ios/Config/Info.plist`, and the app
   registers its token; until then nothing on the phone changes.
 - **SMS blasts**: with Twilio configured the composer offers "Also text N
   guests with a verified phone" (200 per blast).
@@ -236,7 +236,7 @@ the "Create event" buttons, not a tab).
 ## Hosting an event
 
 **Registering needs an account.** Guests sign in or create one on the event
-page and HostKit registers the account's email — that's the address blasts go
+page and Hosty registers the account's email — that's the address blasts go
 to (`lib/registration.ts`).
 
 **Create** asks the essentials and, optionally, a venue: search real places
@@ -271,7 +271,7 @@ Optional services, both off by default (see `.env.example`):
 `ios/` is a native SwiftUI app (iOS 26) on the same backend: Discover and
 register, a host timeline, publish, guest check-in, and create — with Apple
 Intelligence drafting event descriptions on-device and Siri shortcuts for the
-door. Open `ios/HostKit.xcodeproj`; see [`ios/README.md`](ios/README.md).
+door. Open `ios/Hosty.xcodeproj`; see [`ios/README.md`](ios/README.md).
 
 It talks to the website through a small JSON API under `/api/v1`:
 
@@ -307,7 +307,7 @@ It talks to the website through a small JSON API under `/api/v1`:
 | `PUT/DELETE /api/v1/me/push-token` | The iOS device token (answers `pushEnabled`) |
 
 Like the website's draft cookie, a signed-out device proves it made a draft
-by sending `X-HostKit-Drafts: id.token,id.token` (`lib/api/drafts.ts`).
+by sending `X-Hosty-Drafts: id.token,id.token` (`lib/api/drafts.ts`).
 
 Web and API share their rules: `lib/event-create.ts` builds an event and its
 plan, and `lib/registration.ts` decides who can register — an existing guest is
@@ -362,7 +362,7 @@ This is a working demo, not a production service. Specifically:
   names, prices and ratings chosen to exercise the scoring logic. None are real
   businesses. Listing artwork is generated locally from the listing id rather
   than photographed.
-- **Inquiries aren't sent.** HostKit drafts inquiry messages and per-guest RSVP
+- **Inquiries aren't sent.** Hosty drafts inquiry messages and per-guest RSVP
   links, but you copy and send those yourself. Account email (resets,
   verification), blasts and club posts do go out once Resend is configured.
 - **No payments.** Ticket price is shown to guests; you collect it yourself.

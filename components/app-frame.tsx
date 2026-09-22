@@ -62,7 +62,7 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
                   className="h-7 w-7 rounded-[8px] ring-1 ring-line"
                 />
                 <span>
-                  Host<span className="text-brand">Kit</span>
+                  Host<span className="text-brand">y</span>
                 </span>
               </span>
             </AccountMenu>

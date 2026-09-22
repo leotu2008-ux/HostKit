@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createHostKitMcpServer } from "../lib/mcp/register";
+import { createHostyMcpServer } from "../lib/mcp/register";
 import { TOOLS, type ToolContext } from "../lib/mcp/tools";
 
 /**
- * HostKit as an MCP server, over stdio.
+ * Hosty as an MCP server, over stdio.
  *
  * Runs beside the app rather than inside it, holding nothing but a base URL
  * and a bearer token. Everything it can see is what that token's owner can
@@ -36,7 +36,7 @@ if (!baseUrl || !token) {
 }
 
 const ctx: ToolContext = { baseUrl, token };
-const server = createHostKitMcpServer(ctx);
+const server = createHostyMcpServer(ctx);
 
 async function main(): Promise<void> {
   await server.connect(new StdioServerTransport());

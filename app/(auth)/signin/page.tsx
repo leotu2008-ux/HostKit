@@ -54,7 +54,7 @@ export default async function SignInPage({
           }
           className="font-medium text-clay hover:underline"
         >
-          Create an account
+          Join the list
         </Link>
       </p>
     </>

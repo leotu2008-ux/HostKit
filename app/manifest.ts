@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "HostKit",
-    short_name: "HostKit",
+    name: "Hosty",
+    short_name: "Hosty",
     description: "Plan a night, register, and get people through the door.",
     start_url: "/",
     display: "standalone",

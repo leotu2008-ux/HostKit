@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   HostKit design tokens.
+   Hosty design tokens.
 
    Clean and bright, the way the best event apps feel: near-white grounds,
    hairline borders, a sans UI, a monochrome accent (ink on light, white on
-   dark) for most actions, and the brand orange for the wordmark and the
+   dark) for most actions, and the brand blue for the wordmark and the
    landing "Plan an event" CTA. Event titles are the only serif on the page — they're the part that
    should feel like an invitation. Dark is a true night ground, not a grey
    invert, so covers glow on it.
@@ -34,16 +34,16 @@
   --color-clay-wash: #ececea;
   --color-on-clay: #ffffff;
 
-  /* Brand — the orange: the "Kit" in the wordmark, school chips, unread
+  /* Brand — the blue: the "y" in the wordmark, school chips, unread
      marks, a faint glow, and the landing "Plan an event" CTA. */
-  --color-brand: #c64a22;
-  --color-brand-wash: #fcede7;
+  --color-brand: #1d4ed8;
+  --color-brand-wash: #e8f0fe;
 
   /* The soft radial wash across the top of home, Discover and a club page.
      Its own token, not the accent, so a school can tint the page without
      repainting links and buttons. Defaults to the brand colour, which is
      what the wash has always been. */
-  --color-wash: #c64a22;
+  --color-wash: #1d4ed8;
 
   /* Forest — confirmed, booked, going. */
   --color-forest: #1f6f4f;

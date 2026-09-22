@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
  * How many will actually walk through the door.
  *
  * The number every organiser gets wrong, and the one nothing else can answer:
- * it needs both the RSVP and the scan, and HostKit is the only thing that
+ * it needs both the RSVP and the scan, and Hosty is the only thing that
  * sees both. Phase 1 stopped the door overwriting the first with the second,
  * so from here every finished event leaves a row worth learning from.
  *

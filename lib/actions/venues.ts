@@ -84,7 +84,7 @@ export async function findVenuesAction(
       event.city,
     );
   } catch {
-    // Apple Maps and Google Places are third parties HostKit doesn't control
+    // Apple Maps and Google Places are third parties Hosty doesn't control
     // — a failed call must never surface as a 500, just as "nothing to show
     // right now."
     return { message: "Venue search isn't answering right now." };

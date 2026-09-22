@@ -7,7 +7,7 @@ const READS = ["Events", "Guests", "Campus events", "Discover"] as const;
 /**
  * The first scroll section under the landing hero.
  *
- * This copy says Hosty. The rest of the page still says HostKit until that
+ * This copy says Hosty. The rest of the page still says Hosty until that
  * rebrand lands — don't rename those lines from here.
  */
 export function ConnectAgentSection() {

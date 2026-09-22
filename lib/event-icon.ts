@@ -33,7 +33,7 @@ export type EventIcon =
 /** The fallback, when nothing in the title gives anything away. */
 export const DEFAULT_ICON: EventIcon = "calendar";
 
-/** HostKit's own events carry a type, which beats guessing from words. */
+/** Hosty's own events carry a type, which beats guessing from words. */
 const BY_EVENT_TYPE: Record<string, EventIcon> = {
   BIRTHDAY: "celebration",
   LAUNCH_PARTY: "celebration",

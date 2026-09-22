@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { AuthFormState } from "@/lib/actions/auth";
 import Link from "next/link";
 import { Button, Field, FormError, Input } from "@/components/ui";
-import { DevLink, ResendVerificationForm } from "@/components/account-forms";
+import { ResendVerificationForm } from "@/components/account-forms";
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -60,6 +60,7 @@ export function AuthForm({
   action,
   submitLabel,
   includeName,
+  includePassword = true,
   next,
   publish,
   email,
@@ -70,32 +71,23 @@ export function AuthForm({
   ) => Promise<AuthFormState>;
   submitLabel: string;
   includeName?: boolean;
+  /** Signup for the email list does not ask for a password. */
+  includePassword?: boolean;
   next?: string;
   publish?: boolean;
   /** Prefilled after confirming an address or resetting a password. */
   email?: string;
 }) {
   const [state, formAction] = useActionState(action, undefined);
-  const signInHref = next ? `/signin?next=${encodeURIComponent(next)}${publish ? "&publish=1" : ""}` : "/signin";
 
-  // Signed up: the account waits for the link in their inbox.
-  if (state?.pending) {
+  // Joined the list. No account was created.
+  if (state?.listed) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-lg bg-forest-wash px-3 py-3 text-sm text-forest">
-          <p className="font-medium">Check your inbox</p>
-          <p className="mt-0.5">
-            We sent a confirmation link to <span className="font-medium">{state.pending.email}</span>. Open it to finish
-            creating your account, then sign in.
-          </p>
-        </div>
-        <DevLink link={state.pending.devLink} />
-        <ResendVerificationForm email={state.pending.email} />
-        <p className="text-center text-sm text-ink-soft">
-          Opened it?{" "}
-          <Link href={signInHref} className="font-medium text-clay hover:underline">
-            Sign in
-          </Link>
+      <div className="rounded-lg bg-forest-wash px-3 py-3 text-sm text-forest">
+        <p className="font-medium">You’re on the list</p>
+        <p className="mt-0.5">
+          We added <span className="font-medium">{state.listed.email}</span>. The dashboard stays limited to Maya
+          Chen until Hosty opens more widely.
         </p>
       </div>
     );
@@ -122,21 +114,23 @@ export function AuthForm({
           autoFocus={!includeName && !email}
         />
       </Field>
-      <PasswordField
-        label="Password"
-        hint={includeName ? "At least 8 characters." : undefined}
-        autoComplete={includeName ? "new-password" : "current-password"}
-        minLength={includeName ? 8 : undefined}
-        trailing={
-          includeName ? null : (
-            <p className="mt-1.5 text-right text-[13px]">
-              <Link href="/forgot-password" className="text-ink-soft hover:text-ink hover:underline">
-                Forgot your password?
-              </Link>
-            </p>
-          )
-        }
-      />
+      {includePassword ? (
+        <PasswordField
+          label="Password"
+          hint={includeName ? "At least 8 characters." : undefined}
+          autoComplete={includeName ? "new-password" : "current-password"}
+          minLength={includeName ? 8 : undefined}
+          trailing={
+            includeName ? null : (
+              <p className="mt-1.5 text-right text-[13px]">
+                <Link href="/forgot-password" className="text-ink-soft hover:text-ink hover:underline">
+                  Forgot your password?
+                </Link>
+              </p>
+            )
+          }
+        />
+      ) : null}
       <Submit label={submitLabel} />
     </form>
   );

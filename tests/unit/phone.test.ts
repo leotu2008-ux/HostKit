@@ -30,6 +30,6 @@ describe("formatPhone", () => {
 
 describe("codeMessage", () => {
   it("names the app and the expiry", () => {
-    expect(codeMessage("123456")).toBe("Your HostKit code is 123456. It expires in 10 minutes.");
+    expect(codeMessage("123456")).toBe("Your Hosty code is 123456. It expires in 10 minutes.");
   });
 });

@@ -43,7 +43,7 @@ const FIELD_LABEL: Record<BriefField, string> = {
  * The fields still missing from a brief, in `BRIEF_FIELDS` order. Time-free
  * on purpose — nothing here depends on "now", so it's safe to call anywhere.
  *
- * City asks only that one was named, not that HostKit scouts it: scoutability
+ * City asks only that one was named, not that Hosty scouts it: scoutability
  * is `isCity` (lib/catalog.ts), and it gates venue search and vendor drafting
  * inside the agent's steps. Completeness is the weaker claim that the host has
  * said where the night is, which is all the plan step needs — a Chicago mixer

@@ -5,7 +5,7 @@ import { formatDurationLong } from "@/lib/when";
 /**
  * Scoring a listing against ONE specific event.
  *
- * This is the difference between HostKit and a directory. A directory tells
+ * This is the difference between Hosty and a directory. A directory tells
  * you a venue is "$700/hour". A planner tells you it is "$4,200 for your six
  * hours, 27% of your venue budget, and it holds 90 people so you just fit".
  * Every card, filter and sort in discovery is built on the output of this

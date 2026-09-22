@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * What HostKit offers an agent.
+ * What Hosty offers an agent.
  *
  * Deliberately a client of the existing v1 API rather than of the database.
  * Every route already checks who is asking and what they may see, and a second
@@ -18,20 +18,20 @@ import { z } from "zod";
  */
 
 export type ToolContext = {
-  /** Where HostKit is, e.g. https://host-kit-one.vercel.app */
+  /** Where Hosty is, e.g. https://tryhosty.app */
   baseUrl: string;
   /** A bearer token from POST /api/v1/auth/token. */
   token: string;
   fetchImpl?: typeof fetch;
 };
 
-export class HostKitApiError extends Error {
+export class HostyApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
   ) {
     super(message);
-    this.name = "HostKitApiError";
+    this.name = "HostyApiError";
   }
 }
 
@@ -50,7 +50,7 @@ export async function apiGet<T>(ctx: ToolContext, path: string): Promise<T> {
       response.status === 401
         ? "The token was rejected. Tokens expire and a password reset invalidates them; get a new one from POST /api/v1/auth/token."
         : body.slice(0, 200);
-    throw new HostKitApiError(response.status, `HostKit answered ${response.status}. ${hint}`);
+    throw new HostyApiError(response.status, `Hosty answered ${response.status}. ${hint}`);
   }
   return (await response.json()) as T;
 }
@@ -147,7 +147,7 @@ export const TOOLS: ToolSpec[] = [
   {
     name: "discover_events",
     title: "Find public events",
-    description: "Public, upcoming events across HostKit, optionally filtered by city or search term.",
+    description: "Public, upcoming events across Hosty, optionally filtered by city or search term.",
     schema: discoverSchema,
     readOnly: true,
     run: (ctx, args) =>

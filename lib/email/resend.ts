@@ -4,7 +4,7 @@ import { EmailSendError } from "@/lib/email/failure";
  * Resend's batch endpoint, one message per recipient so nobody sees anyone
  * else's address.
  *
- * `RESEND_API_KEY` and `RESEND_FROM` (e.g. "HostKit <events@your.domain>",
+ * `RESEND_API_KEY` and `RESEND_FROM` (e.g. "Hosty <events@your.domain>",
  * a domain verified in Resend) turn it on. Resend authenticates a domain, so
  * it cannot send anywhere but the account owner's own inbox until one is
  * verified — see lib/email/smtp.ts for the path that needs no domain, and

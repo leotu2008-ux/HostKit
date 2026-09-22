@@ -1,7 +1,7 @@
 import type { ZodType } from "zod";
 
 /**
- * The one place HostKit talks to a model.
+ * The one place Hosty talks to a model.
  *
  * Deliberately narrow, because the surrounding plan only wants a model where
  * deterministic code genuinely cannot do the job. Turnout is arithmetic. What

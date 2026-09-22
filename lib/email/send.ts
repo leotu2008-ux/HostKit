@@ -2,7 +2,7 @@ import { isResendConfigured, sendViaResend, type OutgoingEmail } from "@/lib/ema
 import { isSmtpConfigured, sendViaSmtp } from "@/lib/email/smtp";
 
 /**
- * The one place HostKit sends email from, and the one place that decides how.
+ * The one place Hosty sends email from, and the one place that decides how.
  *
  * Two transports, because they authenticate different things:
  *

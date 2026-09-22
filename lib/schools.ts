@@ -1,7 +1,7 @@
 import type { City } from "@/lib/catalog";
 
 /**
- * Schools HostKit knows by email domain.
+ * Schools Hosty knows by email domain.
  *
  * A student is anyone who signed up with a `.edu` address; the domain is
  * trusted, not verified (yet). Known schools get a proper name and a home
@@ -31,7 +31,7 @@ const NYC: City = "New York, NY";
 const LA: City = "Los Angeles, CA";
 const ATX: City = "Austin, TX";
 
-/** The Boston schools HostKit started with, then the U.S. News top 50
+/** The Boston schools Hosty started with, then the U.S. News top 50
  *  national universities (2026, ties included) and a few more with feeds. */
 export const SCHOOLS: School[] = [
   { domain: "babson.edu", name: "Babson College", short: "Babson", city: BOS, color: "#006747" },

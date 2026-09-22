@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let HostKit send a vendor inquiry itself — the host approves each message, HostKit delivers it, records that it went, and afterwards says who has not replied.
+**Goal:** Let Hosty send a vendor inquiry itself — the host approves each message, Hosty delivers it, records that it went, and afterwards says who has not replied.
 
-**Architecture:** The vendor pipeline already exists end to end (`SavedListing` → `Inquiry` → `BudgetItem` → coverage) but is entirely manual: HostKit drafts a message, the host copies it into their own mail client, and hand-updates the status. This plan closes that loop using machinery already in the repo — `lib/email/send.ts` for delivery and the existing `InquiryStatus` state machine — plus one nullable column for a recipient address. Every rule lands in a pure `lib/` function with unit tests; the server action stays thin.
+**Architecture:** The vendor pipeline already exists end to end (`SavedListing` → `Inquiry` → `BudgetItem` → coverage) but is entirely manual: Hosty drafts a message, the host copies it into their own mail client, and hand-updates the status. This plan closes that loop using machinery already in the repo — `lib/email/send.ts` for delivery and the existing `InquiryStatus` state machine — plus one nullable column for a recipient address. Every rule lands in a pure `lib/` function with unit tests; the server action stays thin.
 
 **Tech Stack:** TypeScript, Next.js 16 (App Router, server actions), Prisma 7, Vitest, Zod, Resend/SMTP via the existing transport.
 
@@ -30,11 +30,11 @@ Do not rebuild any of this:
 
 `Listing` has **no contact email, phone or website** (`prisma/schema.prisma:473-502`). There is nowhere to send an inquiry, which is why `lib/outreach.ts:188` builds `mailto:?subject=…` with **no recipient** — the host types the address into their own mail client every time.
 
-So the recipient has to come from the host. That is honest: HostKit has no supply side, and this plan does not pretend otherwise. What it removes is the part that actually costs capacity — copying the message, remembering to send it, and hand-tracking who replied.
+So the recipient has to come from the host. That is honest: Hosty has no supply side, and this plan does not pretend otherwise. What it removes is the part that actually costs capacity — copying the message, remembering to send it, and hand-tracking who replied.
 
 ## Deliberately NOT in this plan
 
-- **Inbound email.** HostKit cannot see a vendor's reply without inbound-mail infrastructure (a Resend inbound webhook or an IMAP poller). Instead, `replyTo` is set to the **host's own address**, so replies land in the host's normal inbox. `REPLIED`, `QUOTED` and `BOOKED` stay manual, exactly as today. Automatic reply threading is a separate project.
+- **Inbound email.** Hosty cannot see a vendor's reply without inbound-mail infrastructure (a Resend inbound webhook or an IMAP poller). Instead, `replyTo` is set to the **host's own address**, so replies land in the host's normal inbox. `REPLIED`, `QUOTED` and `BOOKED` stay manual, exactly as today. Automatic reply threading is a separate project.
 - **A `SECURITY` vendor category.** `ListingCategory` has 14 values and `SECURITY` is not among them (`STAFFING` is the nearest). Speakers are already reachable through `CollaboratorKind`, which `composeInquiry` handles. Adding `SECURITY` is a small separate change and was not the chosen slice.
 - **Batch send, automatic chasing, or any send the host did not individually approve.** Decision 3 above.
 
@@ -169,7 +169,7 @@ Create `prisma/migrations/20260919130000_inquiry_recipient/migration.sql` contai
 
 ```sql
 -- Where an inquiry goes. Null until the host finds the address: Listing holds
--- no contact details, because HostKit has no supply side.
+-- no contact details, because Hosty has no supply side.
 ALTER TABLE "Inquiry" ADD COLUMN "toEmail" TEXT;
 ```
 
@@ -296,7 +296,7 @@ describe("the email an inquiry becomes", () => {
     const email = inquiryEmail(args);
 
     expect(email.to).toBe("events@venue.com");
-    // The whole reply-handling design rests on this: HostKit cannot read a
+    // The whole reply-handling design rests on this: Hosty cannot read a
     // vendor's reply, so the reply must go straight to a human who can.
     expect(email.replyTo).toBe("sam@startup.com");
   });
@@ -334,7 +334,7 @@ Append to `lib/outreach.ts`:
  * to rewrite the message, and sending something other than what they approved
  * would make the approval meaningless.
  *
- * `replyTo` is the host, never HostKit. Nothing here can read an inbox, so a
+ * `replyTo` is the host, never Hosty. Nothing here can read an inbox, so a
  * reply that came back to the sending address would be lost — it has to reach
  * the person who can answer it.
  */
@@ -387,7 +387,7 @@ export async function sendInquiryAction(
   // requireEvent admits a signed-out visitor holding a draft-claim cookie
   // (lib/session.ts:67). Every other outbound-email path refuses that — see
   // sendBlastAction — and this one chooses both recipient and body, so it
-  // refuses harder: an anonymous send would leave from HostKit's own domain
+  // refuses harder: an anonymous send would leave from Hosty's own domain
   // with no reply address on it.
   if (!user?.email) {
     return { error: "Sign in before sending this." };
@@ -586,7 +586,7 @@ Send the vendor inquiry from here, one click at a time
 
 The draft existed; sending it meant copying it into your own mail client
 and remembering to come back and set the status. Now the host presses send
-on each message and HostKit delivers it, with Reply-To pointing at them so
+on each message and Hosty delivers it, with Reply-To pointing at them so
 the answer reaches a person rather than an inbox nothing reads.
 
 Only a DRAFT can be sent, so a second click cannot mail a vendor twice.
@@ -600,7 +600,7 @@ EOF
 
 ### Task 3: Say who has gone quiet
 
-A host chasing eight vendors cannot hold in their head who they mailed nine days ago. This is pure arithmetic over rows HostKit already has.
+A host chasing eight vendors cannot hold in their head who they mailed nine days ago. This is pure arithmetic over rows Hosty already has.
 
 **Files:**
 - Create: `lib/chase.ts`
@@ -816,7 +816,7 @@ Task 2 changes `components/inquiry-panel.tsx`, which `tests/e2e/spine.spec.ts` r
 git push -u origin vendor-outreach-send
 ```
 
-The PR description should state plainly that vendor replies are **not** threaded back into HostKit — they arrive in the host's own inbox via Reply-To, and `REPLIED`/`QUOTED`/`BOOKED` remain manual. That is the single most likely thing for a reader to assume was built.
+The PR description should state plainly that vendor replies are **not** threaded back into Hosty — they arrive in the host's own inbox via Reply-To, and `REPLIED`/`QUOTED`/`BOOKED` remain manual. That is the single most likely thing for a reader to assume was built.
 
 ## Self-review notes
 

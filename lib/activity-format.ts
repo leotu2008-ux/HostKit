@@ -33,7 +33,7 @@ export function toFeedRow(row: ActivityRow): FeedRow {
 const ACTOR_LABEL: Record<ActivityActor, string> = {
   agent: "Agent",
   host: "You",
-  system: "HostKit",
+  system: "Hosty",
 };
 
 export function actorLabel(actor: ActivityActor): string {

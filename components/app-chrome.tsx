@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 /**
- * The event workspace is the one place in HostKit that is an *app* rather
+ * The event workspace is the one place in Hosty that is an *app* rather
  * than a page, and an app doesn't carry the marketing nav around inside the
  * product: once you're in a night's workspace the floating top bar and the
  * bottom tab bar are replaced by the workspace's own sidebar and app bar,

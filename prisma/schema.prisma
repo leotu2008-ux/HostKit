@@ -833,3 +833,12 @@ model McpGrant {
   @@index([userId])
   @@index([expiresAt])
 }
+
+/// Someone who asked for an account. Signup does not create a User —
+/// the dashboard stays limited to Maya Chen, and this is the list.
+model EmailListEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+}

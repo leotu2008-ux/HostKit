@@ -8,7 +8,7 @@ import { Badge, Input, cx } from "@/components/ui";
 /**
  * Where the night is: type it, pick it, or let the browser say it.
  *
- * The four-item Select this replaces made HostKit look like it only worked in
+ * The four-item Select this replaces made Hosty look like it only worked in
  * four cities. It only *scouts* four (lib/catalog.ts) — so this takes any
  * city, marks the scouted ones, and says plainly what the others miss out on.
  *
@@ -228,7 +228,7 @@ export function CityField({ name, defaultValue }: { name: string; defaultValue?:
       {hint ? <span className="mt-1.5 block text-sm text-ink-mute">{hint}</span> : null}
       {unscouted ? (
         <span className="mt-1.5 block text-sm text-ink-mute">
-          HostKit doesn&apos;t scout this city yet — the agent still drafts your plan.
+          Hosty doesn&apos;t scout this city yet — the agent still drafts your plan.
         </span>
       ) : null}
     </div>

@@ -129,7 +129,7 @@ describe("nearestUsCity", () => {
 describe("detectCity", () => {
   it("prefers the scouted metro over a nearer suburb inside it", () => {
     // Babson/Wellesley: Cambridge is 10.7 miles away and Boston 12.7, but
-    // Boston is the city HostKit can actually scout a venue in.
+    // Boston is the city Hosty can actually scout a venue in.
     expect(detectCity(42.2968, -71.2924)).toBe("Boston, MA");
   });
 
@@ -158,7 +158,7 @@ describe("isScoutedCity", () => {
     for (const city of CITIES) expect(isScoutedCity(city)).toBe(true);
   });
 
-  it("is false for a city HostKit only knows by name", () => {
+  it("is false for a city Hosty only knows by name", () => {
     expect(isScoutedCity("Chicago, IL")).toBe(false);
     expect(isScoutedCity("")).toBe(false);
   });

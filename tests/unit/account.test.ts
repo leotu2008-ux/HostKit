@@ -27,8 +27,8 @@ describe("account tokens", () => {
 
   it("builds links from the request's own origin", () => {
     expect(siteOrigin(new Headers({ host: "localhost:3000", "x-forwarded-proto": "http" }))).toBe("http://localhost:3000");
-    expect(siteOrigin(new Headers({ "x-forwarded-host": "host-kit-one.vercel.app", host: "internal" }))).toBe(
-      "https://host-kit-one.vercel.app",
+    expect(siteOrigin(new Headers({ "x-forwarded-host": "tryhosty.app", host: "internal" }))).toBe(
+      "https://tryhosty.app",
     );
   });
 });

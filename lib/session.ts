@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { claimMatches, readDraftClaims } from "@/lib/drafts";
 import { schoolFor } from "@/lib/schools";
+import { isMayaChen } from "@/lib/access";
 
 /** The signed-in user, or null. */
 export async function getCurrentUser() {
@@ -44,6 +45,13 @@ export async function currentProfile() {
   });
   if (!row) return null;
   return { ...row, school: schoolFor(row.schoolDomain) };
+}
+
+export async function requireMaya() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+  if (!isMayaChen(user)) redirect("/");
+  return user;
 }
 
 /** The signed-in user, or a redirect to sign-in. Use in any protected page. */

@@ -14,7 +14,7 @@ import type { EventType, ListingCategory } from "@/generated/prisma/enums";
  * a fundraiser booked 45 days out compresses sensibly instead of generating a
  * pile of tasks whose due dates are already in the past — see lib/plan.ts.
  *
- * HostKit is for student, professional and fun events, so there are no
+ * Hosty is for student, professional and fun events, so there are no
  * wedding or family-occasion templates here.
  */
 

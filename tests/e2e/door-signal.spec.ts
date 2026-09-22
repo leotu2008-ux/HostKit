@@ -14,8 +14,6 @@ import { pickCity, pickDate, pickDuration, pickTime } from "./pickers";
  * sites, not in a pure function.
  */
 
-const PASSWORD = "e2e-door-signal-1";
-
 async function skipLaunchSplash(page: Page) {
   await page.addInitScript((key: string) => {
     try {
@@ -26,21 +24,13 @@ async function skipLaunchSplash(page: Page) {
   }, SPLASH_STORAGE_KEY);
 }
 
-async function signUp(page: Page) {
+async function signInAsMaya(page: Page) {
   await skipLaunchSplash(page);
-  const email = `door-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
-  await page.goto("/signup");
-  await page.fill('input[name="name"]', "Robin Door");
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
+  await page.goto("/signin");
+  await page.fill('input[name="email"]', "maya@hostkit.demo");
+  await page.fill('input[name="password"]', "hostkit-demo");
   await page.click('button[type="submit"]');
-  await page.getByText("Check your inbox").waitFor();
-  await page.click('a:has-text("open it")');
-  await page.waitForURL(/\/signin\?verified=1/);
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
-  await page.click('button[type="submit"]');
-  await page.waitForURL("**/events");
+  await page.waitForURL((url) => url.pathname === "/events");
 }
 
 async function createNight(page: Page) {
@@ -73,7 +63,7 @@ function badge(page: Page, label: string) {
 }
 
 test("checking someone in never answers the RSVP for them", async ({ page }) => {
-  await signUp(page);
+  await signInAsMaya(page);
   const event = await createNight(page);
 
   // A guest the host added by hand, who has not replied.

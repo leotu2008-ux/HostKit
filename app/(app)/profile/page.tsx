@@ -83,7 +83,7 @@ export default async function ProfilePage() {
               Sign in
             </ButtonLink>
             <ButtonLink href="/signup" variant="secondary" size="lg">
-              Create an account
+              Join the list
             </ButtonLink>
           </div>
         </Card>

@@ -5,7 +5,8 @@ import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
 import { headers } from "next/headers";
 import { safeNextPath } from "@/lib/listing";
-import { AccountError, createAccountPendingVerification, siteOrigin, unverifiedMessage } from "@/lib/account";
+import { AccountError, unverifiedMessage } from "@/lib/account";
+import { joinEmailList } from "@/lib/email-list";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 export type AuthFormState =
@@ -13,15 +14,14 @@ export type AuthFormState =
       error?: string;
       /** Sign-in refused because the address isn’t confirmed: offer a resend. */
       unverifiedEmail?: string;
-      /** Sign-up done; the account waits for its link. `devLink` only without an email service, outside production. */
-      pending?: { email: string; devLink?: string };
+      /** Sign-up adds the address to the list. It does not create an account. */
+      listed?: { email: string };
     }
   | undefined;
 
 const signUpSchema = z.object({
-  name: z.string().trim().min(1, "Tell us your name."),
+  name: z.string().trim().min(1, "Tell us your name.").max(80),
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
-  password: z.string().min(8, "Use at least 8 characters.").max(128, "Use at most 128 characters."),
 });
 
 export async function signUpAction(
@@ -38,16 +38,12 @@ export async function signUpAction(
   }
 
   const h = await headers();
-  // The account exists but can’t sign in until the link in the email is
-  // opened. The form shows "check your inbox" with a resend. If that email
-  // can’t be sent, nothing is kept — see createAccountPendingVerification.
+  // No account is created. The dashboard stays limited to Maya Chen;
+  // everyone else is recorded on the email list.
   try {
     await assertRateLimit(`signup:ip:${clientIp(h)}`, ...LIMITS.signUp.perIp);
-    const { email, devLink } = await createAccountPendingVerification({
-      ...parsed.data,
-      origin: siteOrigin(h),
-    });
-    return { pending: { email, devLink } };
+    const { email } = await joinEmailList(parsed.data);
+    return { listed: { email } };
   } catch (error) {
     if (error instanceof RateLimitError) return { error: error.message };
     if (error instanceof AccountError) return { error: error.message };
@@ -100,6 +96,11 @@ async function attemptSignIn(
     // AuthError means the credentials were wrong.
     if (error instanceof CredentialsSignin && error.code === "unverified") {
       return { error: unverifiedMessage(email), unverifiedEmail: email };
+    }
+    if (error instanceof CredentialsSignin && error.code === "closed") {
+      return {
+        error: "The dashboard is only open to Maya Chen. If you joined the list, you’re on it.",
+      };
     }
     if (error instanceof AuthError) {
       return { error: "That email and password don't match." };

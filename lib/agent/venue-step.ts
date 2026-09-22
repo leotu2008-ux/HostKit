@@ -44,7 +44,7 @@ export async function attachTopVenues(
   // planSteps only reaches this step for a scoutable city; the check is here
   // so searchVenues gets a City rather than a string it can't geocode.
   if (!isCity(event.city)) {
-    throw new Error("HostKit doesn't scout that city yet");
+    throw new Error("Hosty doesn't scout that city yet");
   }
 
   const candidates = await searchVenues(

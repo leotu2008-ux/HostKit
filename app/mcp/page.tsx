@@ -9,11 +9,11 @@ import { PRODUCTION_MCP_URL, mcpUrl, originFromHeaders } from "@/lib/mcp/config"
 
 export const metadata = {
   title: "Connect an agent",
-  description: "Read-only HostKit tools for Cursor and Claude, over a remote MCP URL.",
+  description: "Read-only Hosty tools for Cursor and Claude, over a remote MCP URL.",
 };
 
 /**
- * How to point Cursor or Claude at HostKit without cloning the repo.
+ * How to point Cursor or Claude at Hosty without cloning the repo.
  * Public, so the address is readable before you sign in. The token button
  * is the only part that needs an account.
  */
@@ -122,7 +122,7 @@ export default async function McpPage() {
       <Card className="mt-4 p-5">
         <h2 className="font-display text-lg text-ink">Running it yourself</h2>
         <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
-          Contributors can still start the same tools over stdio, against any HostKit origin:
+          Contributors can still start the same tools over stdio, against any Hosty origin:
         </p>
         <pre className="mt-4 overflow-x-auto rounded-xl bg-sunk p-4 text-[13px] leading-relaxed text-ink">
           <code>{`HOSTKIT_URL=https://tryhosty.app HOSTKIT_TOKEN=... npm run mcp`}</code>

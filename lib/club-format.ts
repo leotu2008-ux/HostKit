@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 
 export const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
-export const RESERVED_HANDLES = new Set(["new", "edit", "api", "c", "clubs", "admin", "hostkit", "me"]);
+export const RESERVED_HANDLES = new Set(["new", "edit", "api", "c", "clubs", "admin", "hostkit", "hosty", "me"]);
 
 /** What kind of club, for browsing. Stored as the key. */
 export const CLUB_CATEGORIES = {

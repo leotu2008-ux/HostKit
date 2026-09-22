@@ -1,7 +1,7 @@
-# HostKit backend
+# Hosty backend
 
 What holds the data, images and accounts, what's live today, and what still
-needs a key from you. HostKit's backend is the Next.js app itself: every
+needs a key from you. Hosty's backend is the Next.js app itself: every
 `/api/v1` route and server action runs on Vercel functions against one
 Postgres database. There is no second service to deploy.
 

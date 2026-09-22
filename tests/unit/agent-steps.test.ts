@@ -75,12 +75,12 @@ describe("planSteps — the venue step", () => {
   });
 });
 
-describe("planSteps — a city HostKit doesn't scout", () => {
+describe("planSteps — a city Hosty doesn't scout", () => {
   it("runs neither venues nor vendors, and says why for both", () => {
     const context = { ...nothingDone, cityIsScoutable: false };
     expect(names(context)).toEqual(["plan"]);
-    expect(whyFor("venues", context)).toBe("HostKit doesn't scout that city yet");
-    expect(whyFor("vendors", context)).toBe("HostKit doesn't scout that city yet");
+    expect(whyFor("venues", context)).toBe("Hosty doesn't scout that city yet");
+    expect(whyFor("vendors", context)).toBe("Hosty doesn't scout that city yet");
   });
 });
 

@@ -148,7 +148,7 @@ describe("remote MCP tools", () => {
     );
     expect(response.status).toBe(200);
     const result = body?.result as { serverInfo: { name: string }; instructions: string };
-    expect(result.serverInfo.name).toBe("hostkit");
+    expect(result.serverInfo.name).toBe("hosty");
     expect(result.instructions).toMatch(/read-only/i);
   });
 

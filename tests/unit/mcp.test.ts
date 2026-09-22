@@ -293,7 +293,7 @@ describe("HTTP transport", () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.json()).toMatchObject({ result: { serverInfo: { name: "HostKit" } } });
+    expect(await response.json()).toMatchObject({ result: { serverInfo: { name: "Hosty" } } });
   });
 
   it("advertises the OAuth tools, not the bearer guest tools", async () => {

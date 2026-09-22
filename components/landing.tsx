@@ -97,7 +97,7 @@ const DRAFT_BUDGET = [
 function Wordmark({ className }: { className?: string }) {
   return (
     <span className={className}>
-      Host<span className="text-brand">Kit</span>
+      Host<span className="text-brand">y</span>
     </span>
   );
 }
@@ -321,7 +321,7 @@ export function Landing() {
               size="lg"
             />
             <ButtonLink href="/signup" variant="secondary" size="lg">
-              Create an account
+              Join the list
             </ButtonLink>
           </div>
         </section>

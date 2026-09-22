@@ -1,6 +1,6 @@
 import { Landing } from "@/components/landing";
 
-export const metadata = { title: "HostKit — an agent that plans your event" };
+export const metadata = { title: "Hosty — an agent that plans your event" };
 
 /**
  * "/" is the landing page for everyone, signed in or not.

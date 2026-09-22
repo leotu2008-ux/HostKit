@@ -154,11 +154,11 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
   return blindly("password reset", email, () =>
     deliver(
       email,
-      "Reset your HostKit password",
+      "Reset your Hosty password",
       [
         `Hi ${user.name.split(" ")[0]},`,
         "",
-        "Someone asked to reset the password on this HostKit account. If that was you, open this link within the hour:",
+        "Someone asked to reset the password on this Hosty account. If that was you, open this link within the hour:",
         link,
         "",
         "If it wasn't you, ignore this — your password hasn't changed.",
@@ -198,14 +198,14 @@ export async function sendVerification(
   const link = `${origin}/verify-email?token=${token}`;
   return deliver(
     user.email,
-    "Confirm your email for HostKit",
+    "Confirm your email for Hosty",
     [
       `Hi ${user.name.split(" ")[0]},`,
       "",
       "Tap this link to confirm this is your address and finish creating your account (it works for 24 hours):",
       link,
       "",
-      "Until you do, you can’t sign in. If you didn’t sign up for HostKit, ignore this.",
+      "Until you do, you can’t sign in. If you didn’t sign up for Hosty, ignore this.",
     ].join("\n"),
     link,
     true,

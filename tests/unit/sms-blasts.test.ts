@@ -32,7 +32,7 @@ describe("phoneRecipientsFor", () => {
 describe("smsText", () => {
   it("personalises and signs the message", () => {
     expect(smsText("Hi {name}, doors at 7.", "Ada Lovelace", "Sam")).toBe(
-      "Hi Ada, doors at 7.\n— Sam via HostKit. Reply STOP to opt out.",
+      "Hi Ada, doors at 7.\n— Sam via Hosty. Reply STOP to opt out.",
     );
   });
 });

@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { HostKitApiError, TOOLS, type ToolContext } from "./tools";
+import { HostyApiError, TOOLS, type ToolContext } from "./tools";
 
 const INSTRUCTIONS =
-  "Read-only access to the HostKit account that issued the bearer token. " +
+  "Read-only access to the Hosty account that issued the bearer token. " +
   "You can list and inspect events, guest lists, campus calendars and public discovery. " +
   "You cannot publish, message guests, check anyone in, or change an event.";
 
@@ -10,8 +10,8 @@ const INSTRUCTIONS =
  * The same five tools the stdio server exposes, bound to one account's token.
  * Both transports call this so a tool cannot exist on one and not the other.
  */
-export function createHostKitMcpServer(ctx: ToolContext): McpServer {
-  const server = new McpServer({ name: "hostkit", version: "0.1.0" }, { instructions: INSTRUCTIONS });
+export function createHostyMcpServer(ctx: ToolContext): McpServer {
+  const server = new McpServer({ name: "hosty", version: "0.1.0" }, { instructions: INSTRUCTIONS });
 
   for (const tool of TOOLS) {
     server.registerTool(
@@ -30,9 +30,9 @@ export function createHostKitMcpServer(ctx: ToolContext): McpServer {
           // Hand back the reason rather than throwing: a caller can act on
           // "your token expired" and can do nothing with a stack trace.
           const message =
-            error instanceof HostKitApiError
+            error instanceof HostyApiError
               ? error.message
-              : `Could not reach HostKit at ${ctx.baseUrl}. ${error instanceof Error ? error.message : String(error)}`;
+              : `Could not reach Hosty at ${ctx.baseUrl}. ${error instanceof Error ? error.message : String(error)}`;
           return { isError: true, content: [{ type: "text" as const, text: message }] };
         }
       },

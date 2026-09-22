@@ -4,7 +4,7 @@ import { CATEGORY_LABEL } from "@/lib/catalog";
 /**
  * The day-of run sheet: who arrives when, and what happens in what order.
  *
- * HostKit seeds a first draft rather than handing over an empty table,
+ * Hosty seeds a first draft rather than handing over an empty table,
  * because the hardest part of a run sheet is remembering the things nobody
  * thinks about until they go wrong — load-in access, the briefing, the fact
  * that the florist needs the room two hours before anyone sees it.

@@ -42,7 +42,7 @@ export default async function VenuePage({ params }: PageProps<"/events/[id]/venu
 
   const now = new Date();
   // Both halves of "is there anything to search": a configured provider, and
-  // a city HostKit geocodes. Neither costs anything to ask.
+  // a city Hosty geocodes. Neither costs anything to ask.
   const scoutable = isVenueSearchConfigured() && isCity(event.city);
 
   return (
