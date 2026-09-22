@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CloudSky } from "@/components/cloud-sky";
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 import { CreateEventButton } from "@/components/create-event-button";
+import { Eyebrow } from "@/components/eyebrow";
 import { GlitchText } from "@/components/glitch-text";
 import { LandingPreview } from "@/components/landing-preview";
 import { Reveal } from "@/components/reveal";
@@ -75,15 +76,6 @@ function Wordmark({ className }: { className?: string }) {
     <span className={className}>
       Host<span className="text-brand">y</span>
     </span>
-  );
-}
-
-/** Small-caps section label, the way the reference introduces each block. */
-function Eyebrow({ children }: { children: string }) {
-  return (
-    <p className="font-event text-[12px] tracking-[0.14em] text-ink-mute uppercase">
-      {children}
-    </p>
   );
 }
 

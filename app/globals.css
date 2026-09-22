@@ -139,11 +139,13 @@ body {
   pointer-events: auto;
 }
 
-html[data-splash="done"] .launch-splash {
+html[data-splash="done"] .launch-splash,
+html[data-splash="played"] .launch-splash {
   display: none;
 }
 
-html[data-splash="pending"] {
+html[data-splash="pending"],
+html[data-splash="played"] {
   /* One clock for overlay + logo so they fade out together. */
   --launch-splash-duration: 1s;
   --launch-splash-ease: cubic-bezier(0.2, 0.85, 0.22, 1);
@@ -245,14 +247,17 @@ html[data-splash="pending"] .launch-splash-logo {
 /* Hero entrance: each line rises in turn; `--i` is its place in the queue.
    Under the first-visit splash the whole queue waits for the overlay to
    start fading (55% of the splash clock, see launch-splash-overlay), so the
-   hero comes up through the black rather than sitting there behind it. */
+   hero comes up through the black rather than sitting there behind it. The
+   wait holds once the splash has `played`: a delay that changed mid-run
+   would retime every line still rising. */
 .rise {
   --rise-base: 0s;
   animation: rise 0.7s cubic-bezier(0.2, 0.85, 0.22, 1) both;
   animation-delay: calc(var(--rise-base) + var(--i, 0) * 90ms);
 }
 
-html[data-splash="pending"] .rise {
+html[data-splash="pending"] .rise,
+html[data-splash="played"] .rise {
   --rise-base: calc(var(--launch-splash-duration) * 0.55);
 }
 

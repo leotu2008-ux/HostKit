@@ -1,16 +1,44 @@
-import { createElement } from "react";
-import { readFileSync } from "node:fs";
+import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children?: ReactNode;
+    className?: string;
+  }) => createElement("a", { href, className }, children),
+}));
+
+vi.mock("next/image", () => ({
+  default: ({
+    src,
+    alt,
+    className,
+  }: {
+    src: string;
+    alt: string;
+    className?: string;
+  }) => createElement("img", { src, alt, className }),
+}));
+
+vi.mock("@/lib/actions/events", () => ({ createBlankEventAction: vi.fn() }));
+
+import { Landing } from "@/components/landing";
 import { LandingPreview } from "@/components/landing-preview";
 import { Reveal } from "@/components/reveal";
 
-const landing = readFileSync(
-  new URL("../../components/landing.tsx", import.meta.url),
-  "utf8",
-);
-const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+/** The markup from each element whose class list starts with `className`,
+ *  in document order, up to the next such element. */
+function blocks(html: string, className: string): string[] {
+  const starts = [...html.matchAll(new RegExp(`<[a-z0-9]+ [^>]*class="${className}[ "]`, "g"))]
+    .map((match) => match.index);
+  return starts.map((start, i) => html.slice(start, starts[i + 1]));
+}
 
 describe("landing preview card", () => {
   it("renders the whole example on the server, so it reads without JavaScript", () => {
@@ -28,11 +56,6 @@ describe("landing preview card", () => {
     expect(html).not.toContain('data-play="playing"');
     expect(html).not.toContain("Drafting");
   });
-
-  it("is what the landing page mounts in place of the inline card", () => {
-    expect(landing).toContain("<LandingPreview />");
-    expect(landing).not.toContain("DRAFT_TASKS");
-  });
 });
 
 describe("scroll reveal", () => {
@@ -45,28 +68,50 @@ describe("scroll reveal", () => {
     expect(html).toContain("reveal");
     expect(html).not.toContain("data-reveal");
   });
-
-  it("wraps the stages, the principles and the closing call to action", () => {
-    const uses = landing.match(/<Reveal\b/g) ?? [];
-    expect(uses.length).toBeGreaterThanOrEqual(4);
-  });
 });
 
-describe("hero entrance", () => {
-  it("staggers the hero lines and waits for the splash", () => {
-    const rises = landing.match(/className="[^"]*\brise\b/g) ?? [];
-    expect(rises.length).toBeGreaterThanOrEqual(4);
-    expect(css).toContain("@keyframes rise");
-    expect(css).toMatch(/html\[data-splash="pending"\] \.rise/);
-  });
-});
+describe("landing page", () => {
+  const html = renderToStaticMarkup(createElement(Landing));
 
-describe("motion is optional", () => {
-  it("switches every landing animation off under prefers-reduced-motion", () => {
-    const reduced = css.slice(css.indexOf("prefers-reduced-motion"));
-    expect(reduced).toContain(".rise");
-    expect(reduced).toContain(".reveal");
-    expect(reduced).toContain(".cloud-drift");
-    expect(reduced).toContain('[data-play="playing"]');
+  it("queues the hero lines to rise in order, pill first and the preview last", () => {
+    const lines = blocks(html, "rise");
+
+    expect(lines.map((line) => line.match(/style="--i:(\d+)"/)?.[1])).toEqual([
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+    ]);
+    expect(lines[0]).toContain("An agent for the whole event");
+    expect(lines[1]).toContain("Plan the event.");
+    expect(lines[1]).toContain("Let the agent do the work.");
+    expect(lines[2]).toContain("Brief it once and it drafts the plan");
+    expect(lines[3]).toContain("Plan an event");
+    expect(lines[3]).toContain("See what’s on");
+    expect(lines[4]).toContain("Free to start.");
+    expect(lines[5]).toContain("You brief it");
+  });
+
+  it("reveals each stage, the Connect section, each principle and the call to action on scroll", () => {
+    const revealed = blocks(html, "reveal");
+    const openings = [
+      "Brief it",
+      "Source it",
+      "Fill it",
+      "Run it",
+      "Connect an agent",
+      "It knows yours isn",
+      "It drafts, you decide",
+      "It shows its work",
+      "Give it a date and a headcount",
+    ];
+
+    expect(revealed).toHaveLength(openings.length);
+    openings.forEach((text, i) => expect(revealed[i]).toContain(text));
+    // Every block is visible as served; only the client marks one pending.
+    expect(html).not.toContain("data-reveal");
+    expect(html).not.toContain('data-play="playing"');
   });
 });

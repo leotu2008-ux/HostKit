@@ -12,7 +12,8 @@ const FALLBACK_MS = 1400;
  * briefly holds, then logo and overlay fade out together. Visibility is
  * driven by `data-splash` on `<html>` (set before paint); this component
  * only records that the session has seen it once the overlay animation
- * finishes.
+ * finishes, stamping `played`: hidden like `done`, but the hero entrance
+ * timed off `pending` keeps its delay (see `.rise` in app/globals.css).
  */
 export function LaunchSplash() {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -51,7 +52,7 @@ export function LaunchSplash() {
       } catch {
         // Private browsing can throw; the overlay still goes away this visit.
       }
-      root.dataset.splash = "done";
+      root.dataset.splash = "played";
     }
 
     function onEnd(event: AnimationEvent) {

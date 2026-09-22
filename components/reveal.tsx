@@ -51,7 +51,7 @@ export function Reveal({
   className,
   children,
 }: {
-  as?: "div" | "section" | "li" | "ol" | "ul";
+  as?: "div" | "section" | "li";
   index?: number;
   className?: string;
   children?: ReactNode;

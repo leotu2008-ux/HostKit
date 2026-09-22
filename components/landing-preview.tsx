@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { Eyebrow } from "@/components/eyebrow";
 
 /**
  * The landing page's preview panel: a brief on the left, what the agent
@@ -105,18 +106,19 @@ export function LandingPreview() {
   const playing = frame !== DONE;
 
   // Before first paint: reset the panel to empty and wait for the viewport.
-  // Rewinding can't flash even when the panel is already on screen, because
-  // the section it sits in enters through the hero's `.rise` (from opacity
-  // 0), and the lead-in below outlasts that rise. The reset has to be
-  // synchronous in a layout effect for exactly that reason — after paint
-  // would be too late — which is what the lint rule below guards against.
+  // Only while the section it sits in is still held at opacity 0 by the
+  // hero's `.rise` (the lead-in below outlasts that rise). Once the rise has
+  // begun showing the finished card, emptying it would flash, so the card
+  // is left as the server drew it. The reset has to be synchronous in a
+  // layout effect for the same reason — after paint would be too late.
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
     if (typeof IntersectionObserver === "undefined") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const entrance = element.closest(".rise")?.getAnimations()[0];
+    if (entrance?.effect?.getComputedTiming().progress !== 0) return;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFrame(START);
 
     let timer: number | undefined;
@@ -200,10 +202,7 @@ export function LandingPreview() {
         </dl>
 
         <div className="bg-surface p-5">
-          <p
-            className="font-event text-[12px] tracking-[0.14em] text-ink-mute uppercase"
-            aria-live="off"
-          >
+          <Eyebrow>
             {frame.thinking ? (
               <span className="preview-thinking">
                 Drafting
@@ -216,7 +215,7 @@ export function LandingPreview() {
             ) : (
               "It hands back"
             )}
-          </p>
+          </Eyebrow>
 
           <ul className="mt-3.5 space-y-1.5">
             {DRAFT_TASKS.map(([when, task], i) => (
@@ -248,15 +247,5 @@ export function LandingPreview() {
         </div>
       </div>
     </div>
-  );
-}
-
-/** The same small-caps label landing.tsx uses; copied rather than imported
- *  so this client component doesn't pull the server-side page in with it. */
-function Eyebrow({ children }: { children: string }) {
-  return (
-    <p className="font-event text-[12px] tracking-[0.14em] text-ink-mute uppercase">
-      {children}
-    </p>
   );
 }
