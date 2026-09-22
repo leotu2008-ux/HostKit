@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   // Keep the pg driver out of the serverless bundle so Prisma's adapter
   // loads the real package at runtime on Vercel.
   serverExternalPackages: ["pg"],
+  // Not currently set: `cacheComponents: true`. Enabling it breaks the
+  // `html:has(.theme-app)` marker; see its comment in app/globals.css.
   // `next dev` only serves its script chunks to the hostname it started on
   // (localhost). Opened as 127.0.0.1, or from a phone on the same Wi-Fi,
   // the page loads its HTML but never its JavaScript: nothing hydrates, the

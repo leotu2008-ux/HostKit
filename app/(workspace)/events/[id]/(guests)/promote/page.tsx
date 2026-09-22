@@ -107,7 +107,7 @@ export default async function PromotePage({ params }: PageProps<"/events/[id]/pr
                     className={cx(
                       "rounded-full border px-3 py-1.5 text-[13px] font-medium",
                       event.visibility === option.value
-                        ? "border-ink bg-ink text-paper"
+                        ? "border-clay bg-clay text-on-clay"
                         : "border-line bg-surface text-ink-soft hover:border-line-strong",
                     )}
                   >

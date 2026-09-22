@@ -93,7 +93,7 @@ export function BlastComposer({
               className={cx(
                 "rounded-full border px-3 py-1.5 text-[13px] font-medium",
                 segment === key
-                  ? "border-ink bg-ink text-paper"
+                  ? "border-clay bg-clay text-on-clay"
                   : "border-line bg-surface text-ink-soft hover:border-line-strong",
               )}
             >

@@ -239,11 +239,11 @@ export function WorkspaceSidebar({
                 className={cx(
                   "flex h-9 shrink-0 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px]",
                   active
-                    ? "bg-surface font-medium text-ink shadow-[0_1px_2px_rgb(0_0_0/0.05)] ring-1 ring-line"
+                    ? "bg-clay-wash font-medium text-clay-deep ring-1 ring-clay/20"
                     : "text-ink-soft hover:bg-surface/70 hover:text-ink",
                 )}
               >
-                <span className={active ? "text-ink" : "text-ink-mute"}>
+                <span className={active ? "text-clay" : "text-ink-mute"}>
                   <Icon />
                 </span>
                 {tab.label}
