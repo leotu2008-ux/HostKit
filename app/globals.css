@@ -139,11 +139,13 @@ body {
   pointer-events: auto;
 }
 
-html[data-splash="done"] .launch-splash {
+html[data-splash="done"] .launch-splash,
+html[data-splash="played"] .launch-splash {
   display: none;
 }
 
-html[data-splash="pending"] {
+html[data-splash="pending"],
+html[data-splash="played"] {
   /* One clock for overlay + logo so they fade out together. */
   --launch-splash-duration: 1s;
   --launch-splash-ease: cubic-bezier(0.2, 0.85, 0.22, 1);
@@ -236,11 +238,181 @@ html[data-splash="pending"] .launch-splash-logo {
   }
 }
 
+/* Landing motion. Every rule here decorates content that is complete in the
+   server HTML: turn the animations off and the page is exactly what it was.
+   components/reveal.tsx and components/landing-preview.tsx enter their play
+   states on the client only, after hydration and before first paint.
+--------------------------------------------------------------------------- */
+
+/* Hero entrance: each line rises in turn; `--i` is its place in the queue.
+   Under the first-visit splash the whole queue waits for the overlay to
+   start fading (55% of the splash clock, see launch-splash-overlay), so the
+   hero comes up through the black rather than sitting there behind it. The
+   wait holds once the splash has `played`: a delay that changed mid-run
+   would retime every line still rising. */
+.rise {
+  --rise-base: 0s;
+  animation: rise 0.7s cubic-bezier(0.2, 0.85, 0.22, 1) both;
+  animation-delay: calc(var(--rise-base) + var(--i, 0) * 90ms);
+}
+
+html[data-splash="pending"] .rise,
+html[data-splash="played"] .rise {
+  --rise-base: calc(var(--launch-splash-duration) * 0.55);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Scroll reveal: hidden only while the client has marked it pending, then
+   eased up on entry. Siblings stagger on `--i`. */
+.reveal[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.reveal[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s cubic-bezier(0.2, 0.85, 0.22, 1);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Drifting clouds. Each layer is its own SVG drawn 10% wider than the sky
+   and slid as a whole element, so the noise filters rasterise once and the
+   compositor does the moving; transforming a group *inside* the SVG would
+   re-run the filters every frame. The near bank travels further and faster
+   than the far wisps, which is what makes it read as depth. */
+.cloud-drift-far {
+  animation: cloud-drift-far 120s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.cloud-drift-near {
+  animation: cloud-drift-near 80s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes cloud-drift-far {
+  from {
+    transform: translate3d(-2%, 0, 0);
+  }
+  to {
+    transform: translate3d(2%, 0, 0);
+  }
+}
+
+@keyframes cloud-drift-near {
+  from {
+    transform: translate3d(3%, 0, 0);
+  }
+  to {
+    transform: translate3d(-3%, 0, 0);
+  }
+}
+
+/* Preview play-through: the right-hand lines wait just off to the left
+   until their frame lets them in; a caret blinks on the brief row being
+   typed; three dots breathe while the label says it's drafting. */
+[data-play="playing"] .preview-line {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 0.35s ease-out,
+    transform 0.35s ease-out;
+}
+
+[data-play="playing"] .preview-line[data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+.preview-caret {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: preview-caret 0.9s steps(2, start) infinite;
+}
+
+@keyframes preview-caret {
+  to {
+    visibility: hidden;
+  }
+}
+
+.preview-thinking {
+  display: inline-flex;
+  align-items: center;
+}
+
+.preview-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 5px;
+}
+
+.preview-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: preview-dot 1s ease-in-out infinite;
+}
+
+.preview-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.preview-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes preview-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-splash="pending"] .launch-splash,
   .launch-splash {
     display: none !important;
     animation: none !important;
+  }
+
+  /* Landing motion off: everything lands in its final place at once. */
+  .rise,
+  .cloud-drift-far,
+  .cloud-drift-near,
+  .preview-caret,
+  .preview-dots span {
+    animation: none !important;
+  }
+
+  .reveal[data-reveal="pending"],
+  [data-play="playing"] .preview-line {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
 
