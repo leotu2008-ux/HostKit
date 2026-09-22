@@ -3,6 +3,7 @@ import type { EventType } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { ALL_EVENT_TYPES, CITIES } from "@/lib/catalog";
 import { createEventWithPlan } from "@/lib/event-create";
+import { snapQuarterHours } from "@/lib/duration";
 import { claimMatches, newClaimToken } from "@/lib/drafts";
 import { requestDrafts } from "@/lib/api/drafts";
 import { apiError, apiUser, json, readJson } from "@/lib/api/http";
@@ -52,7 +53,9 @@ const createSchema = z.object({
   title: z.string().trim().min(1, "Name this night.").max(120),
   type: z.enum(ALL_EVENT_TYPES as [string, ...string[]]),
   startsAt: z.string().nullable().optional(),
-  durationHours: z.number().int().min(1).max(24),
+  // Fractional since the web got a quarter-hour wheel; iOS still sends whole
+  // hours, which this accepts unchanged.
+  durationHours: z.number().min(0.25).max(24),
   capacity: z.number().int().min(1).max(100_000),
   city: z.enum(CITIES as unknown as [string, ...string[]]),
   address: z.string().trim().max(200).nullable().optional(),
@@ -130,7 +133,9 @@ export async function POST(request: Request) {
     title: input.title,
     type: input.type as EventType,
     date,
-    durationHours: input.durationHours,
+    // The wheel's step can't reach a non-web client, so snap here instead: a
+    // device that sends 1.4 stores an hour and a half like everyone else.
+    durationHours: snapQuarterHours(input.durationHours),
     guestCount: input.capacity,
     city: input.city,
     address: input.address || null,

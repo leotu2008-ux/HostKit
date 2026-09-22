@@ -1,14 +1,14 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
- * Driving the Brief tab's three custom pickers.
+ * Driving the Brief tab's four custom pickers.
  *
- * `page.fill` used to be enough: date, start and city were a native date
- * input, a native time input and a Select. They're a month grid
- * (components/calendar-picker.tsx), three scroll drums
- * (components/time-wheel.tsx) and a typeahead (components/city-field.tsx)
- * now — the fields they submit are unchanged, which is exactly what these
- * helpers assert on the way past.
+ * `page.fill` used to be enough: date, start, duration and city were a native
+ * date input, a native time input, a number input and a Select. They're a
+ * month grid (components/calendar-picker.tsx), three scroll drums
+ * (components/time-wheel.tsx), two more (components/duration-wheel.tsx) and a
+ * typeahead (components/city-field.tsx) now — the fields they submit are
+ * unchanged, which is exactly what these helpers assert on the way past.
  *
  * Shared by both create helpers so the spine and the door-signal walk press
  * the same buttons; everything either spec does after the brief is untouched.
@@ -55,6 +55,18 @@ export async function pickTime(page: Page, hour: number, minute: number, meridie
 
   const h24 = meridiem === "PM" ? (hour === 12 ? 12 : hour + 12) : hour === 12 ? 0 : hour;
   await expect(page.locator('input[name="time"]')).toHaveValue(`${pad(h24)}:${pad(minute)}`);
+}
+
+/** Spins the two duration drums, and checks the fractional hours they submit
+ *  — 1h 30m is "1.5", the whole point of the wheel. */
+export async function pickDuration(page: Page, hours: number, minutes: number) {
+  const wheel = field(page, "durationHours");
+  await wheel.locator(`[data-duration-hour="${hours}"]`).click();
+  await wheel.locator(`[data-duration-minute="${minutes}"]`).click();
+
+  await expect(page.locator('input[name="durationHours"]')).toHaveValue(
+    String(hours + minutes / 60),
+  );
 }
 
 /** Types a city and closes the suggestion popover, leaving the typed text as

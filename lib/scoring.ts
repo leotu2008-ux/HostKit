@@ -1,5 +1,6 @@
 import type { PriceUnit } from "@/generated/prisma/enums";
 import { percentOf } from "@/lib/money";
+import { formatDurationLong } from "@/lib/when";
 
 /**
  * Scoring a listing against ONE specific event.
@@ -65,7 +66,7 @@ export function priceForEvent(
     case "HOUR":
       return {
         cents: listing.priceCents * event.durationHours,
-        basis: `${event.durationHours} hours`,
+        basis: formatDurationLong(event.durationHours),
       };
     case "PERSON":
       return {

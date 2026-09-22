@@ -3,7 +3,7 @@ import { requireEvent } from "@/lib/session";
 import { briefIsComplete, describeMissing, missingBriefFields } from "@/lib/brief";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { formatCents } from "@/lib/money";
-import { formatEventDate, formatEventTime } from "@/lib/when";
+import { formatDurationLong, formatEventDate, formatEventTime } from "@/lib/when";
 import { MapsLink } from "@/components/maps-link";
 import {
   DateTile,
@@ -232,8 +232,8 @@ export default async function EventOverviewPage({
           title={formatEventDate(event.date, true) ?? "Date to be announced"}
           detail={
             event.date
-              ? `${formatEventTime(event.date)} · ${event.durationHours} hours`
-              : `${event.durationHours} hours`
+              ? `${formatEventTime(event.date)} · ${formatDurationLong(event.durationHours)}`
+              : formatDurationLong(event.durationHours)
           }
         />
         <InfoRow

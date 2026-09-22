@@ -8,6 +8,7 @@ import {
 import { templateFor } from "@/lib/templates";
 import { db } from "@/lib/db";
 import { isCity } from "@/lib/catalog";
+import { formatDurationLong } from "@/lib/when";
 import { DiscoverFilters } from "@/components/discover-filters";
 import { ListingCard } from "@/components/listing-card";
 import { ButtonLink, EmptyState } from "@/components/ui";
@@ -118,7 +119,7 @@ export default async function DiscoverPage({
       <div>
         <p className="mb-5 text-sm text-ink-soft">
           {scored.length} of {totalInCity} in {event.city}, priced for{" "}
-          {scorable.guestCount} guests over {event.durationHours} hours
+          {scorable.guestCount} guests over {formatDurationLong(event.durationHours)}
           {scorable.headSource === "rsvp" ? " (from your RSVPs)" : ""}.
         </p>
 

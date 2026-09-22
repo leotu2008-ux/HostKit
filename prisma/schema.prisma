@@ -294,7 +294,9 @@ model Event {
   endDate          DateTime?
   datesFlexible    Boolean         @default(false)
   /// Planned duration, used to price hourly listings against this event.
-  durationHours    Int             @default(6)
+  /// Whole or fractional hours, in quarter-hour steps from the web; see
+  /// lib/when.ts formatDuration.
+  durationHours    Float           @default(6)
   guestCount       Int             @default(0)
   city             String          @default("")
   /// Place name and street address for device maps. `city` stays the scout area.

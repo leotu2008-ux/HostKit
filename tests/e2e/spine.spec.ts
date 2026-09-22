@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SPLASH_STORAGE_KEY } from "../../lib/splash";
-import { pickCity, pickDate, pickTime } from "./pickers";
+import { pickCity, pickDate, pickDuration, pickTime } from "./pickers";
 
 /**
  * The spine: everything HostKit claims to do, in the order a host does it.
@@ -59,7 +59,7 @@ async function createNight(page: Page) {
   await page.fill('input[name="kind"]', "dinner party");
   await pickDate(page, new Date(Date.now() + 200 * 86_400_000));
   await pickTime(page, 6, 0, "PM");
-  await page.fill('input[name="durationHours"]', "8");
+  await pickDuration(page, 8, 0);
   await pickCity(page, "New York, NY");
   await page.fill('input[name="guestCount"]', "90");
   await page.fill('input[name="budget"]', "48,000");

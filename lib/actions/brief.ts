@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
+import { snapQuarterHours } from "@/lib/duration";
 import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
 import { clientIp } from "@/lib/rate-limit";
 import { runAgent } from "@/lib/agent/run";
@@ -23,7 +24,10 @@ const schema = z.object({
   kind: z.string().trim().max(60).optional(),
   date: z.string().trim().optional(),
   time: z.string().trim().optional(),
-  durationHours: z.coerce.number().int().min(1).max(24).optional(),
+  // Fractional: components/duration-wheel.tsx submits quarter hours, so "1.5"
+  // is a real answer. Snapped below rather than rejected — a value between
+  // steps can only come from something other than the wheel.
+  durationHours: z.coerce.number().min(0.25).max(24).optional(),
   // Any city, not just the four HostKit scouts: components/city-field.tsx
   // normalises to a suggestion's exact name when the host picks one, and free
   // text is stored as typed. Scoutability stays isCity's question.
@@ -78,7 +82,10 @@ export async function saveBriefAction(
 
   const title = input.title?.trim() || UNTITLED;
   const description = input.description?.trim() || null;
-  const durationHours = input.durationHours ?? event.durationHours;
+  const durationHours =
+    input.durationHours === undefined
+      ? event.durationHours
+      : snapQuarterHours(input.durationHours);
   const city = input.city ?? event.city;
   const guestCount = input.guestCount ?? event.guestCount;
   const address = input.address?.trim() || "";
@@ -122,7 +129,7 @@ export async function saveBriefAction(
   if (title !== event.title) changedFields.push("Title");
   if ((kind ?? "") !== (event.kind ?? "")) changedFields.push("Kind");
   if ((date?.getTime() ?? null) !== (event.date?.getTime() ?? null)) changedFields.push("Date");
-  if (durationHours !== event.durationHours) changedFields.push("Hours");
+  if (durationHours !== event.durationHours) changedFields.push("Duration");
   if (city !== event.city) changedFields.push("City");
   if (guestCount !== event.guestCount) changedFields.push("Guests");
   if (budgetTotalCents !== event.budgetTotalCents) changedFields.push("Budget");
