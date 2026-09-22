@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { issueToken } from "@/lib/api/token";
 import { getCurrentUser } from "@/lib/session";
@@ -22,4 +24,17 @@ export async function issueMcpTokenAction(): Promise<McpTokenState> {
   });
   if (!row) return { error: "Sign in first." };
   return { token: issueToken(user.id, row.sessionVersion) };
+}
+
+/** Ends one OAuth grant. Access and refresh tokens for it stop working. */
+export async function revokeMcpGrantAction(form: FormData) {
+  const actor = await getCurrentUser();
+  if (!actor) redirect("/signin?next=%2Fsettings%2Fconnections");
+  const id = form.get("id");
+  if (typeof id !== "string" || !id) return;
+  await db.mcpGrant.updateMany({
+    where: { id, userId: actor.id },
+    data: { revokedAt: new Date(), codeHash: null, accessHash: null, refreshHash: null },
+  });
+  revalidatePath("/settings/connections");
 }
