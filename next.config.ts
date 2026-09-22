@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   // Keep the pg driver out of the serverless bundle so Prisma's adapter
   // loads the real package at runtime on Vercel.
   serverExternalPackages: ["pg"],
+  // Not currently set: `cacheComponents: true`. If that ever gets enabled,
+  // app/globals.css's `html:has(.theme-app)` block breaks — hidden routes
+  // stay mounted under `<Activity mode="hidden">` rather than unmounting,
+  // so the marker keeps matching underneath a visible public page. Swap it
+  // for a client effect that toggles an attribute on `<html>` instead. See
+  // node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md,
+  // "Global styles" / "The `:has` selector".
   // `next dev` only serves its script chunks to the hostname it started on
   // (localhost). Opened as 127.0.0.1, or from a phone on the same Wi-Fi,
   // the page loads its HTML but never its JavaScript: nothing hydrates, the

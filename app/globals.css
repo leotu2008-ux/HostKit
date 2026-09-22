@@ -77,14 +77,24 @@
    marker unmounts, so the landing, Discover and event pages keep the warm
    monochrome above. Cool slate neutrals so the blue sits in one family, and
    an ink-mute that clears WCAG AA — the warm one measured 3.3:1 on paper.
-   tests/unit/app-theme.test.ts holds every pair to 4.5:1. */
+   tests/unit/app-theme.test.ts holds every pair to 4.5:1.
+
+   This `:has()` marker only works because signed-in pages actually unmount
+   on navigation today. If Next's Cache Components ever gets turned on here,
+   hidden routes stay mounted under `<Activity mode="hidden">` instead of
+   unmounting, so `.theme-app` would still be in the document and this rule
+   would keep matching on a visible public page underneath it — see
+   node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md,
+   "Global styles" / "The `:has` selector". Enabling `cacheComponents` needs
+   this marker replaced with a client effect that toggles an attribute on
+   `<html>` only while the app is actually visible, not just mounted. */
 html:has(.theme-app) {
   --color-paper: #f5f8fc;
   --color-surface: #ffffff;
   --color-sunk: #edf2f8;
   --color-ink: #0f172a;
   --color-ink-soft: #44536a;
-  --color-ink-mute: #5f6f86;
+  --color-ink-mute: #5b6b82;
   --color-line: #e1e7ef;
   --color-line-strong: #c3cedc;
   --color-clay: #1d4ed8;

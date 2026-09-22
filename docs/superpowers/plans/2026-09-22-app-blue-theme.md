@@ -33,7 +33,7 @@ The palette comes from UI/UX Pro Max (`--domain color`, "Analytics Dashboard": b
 | `sunk` | `#f0efed` | `#edf2f8` | wells, hover fills |
 | `ink` | `#141414` | `#0f172a` | primary text |
 | `ink-soft` | `#5c5a57` | `#44536a` | secondary text |
-| `ink-mute` | `#8b8884` (**3.3–3.5:1, fails AA**) | `#5f6f86` (4.55–5.12:1) | hints, meta, timestamps |
+| `ink-mute` | `#8b8884` (**3.3–3.5:1, fails AA**) | `#5b6b82` (4.65–5.43:1) | hints, meta, timestamps |
 | `line` | `#e7e6e3` | `#e1e7ef` | hairlines |
 | `line-strong` | `#d5d3cf` | `#c3cedc` | input borders |
 | `clay` (accent) | `#141414` | `#1d4ed8` | primary buttons, active state, focus ring, selection |
@@ -42,7 +42,7 @@ The palette comes from UI/UX Pro Max (`--domain color`, "Analytics Dashboard": b
 | `brand-wash` | `#e8f0fe` | `#e6eefc` | brand badges |
 
 These are the clarity wins, in order of impact:
-1. `ink-mute` is used 149 times and currently fails WCAG AA. Moving it to `#5f6f86` makes every hint, timestamp and meta line readable.
+1. `ink-mute` is used 149 times and currently fails WCAG AA. Moving it to `#5b6b82` makes every hint, timestamp and meta line readable.
 2. Primary actions, the focus ring and text selection turn blue. They're currently the same near-black as body text, so blue separates "things you act on" from "things you read".
 3. The active workspace tab and section tab get a blue fill or underline instead of a white chip with a hairline ring, so you can tell at a glance where you are.
 4. The neutrals move from warm grey to cool slate, so the blue sits in a coherent family rather than clashing with beige.
@@ -197,7 +197,7 @@ html:has(.theme-app) {
   --color-sunk: #edf2f8;
   --color-ink: #0f172a;
   --color-ink-soft: #44536a;
-  --color-ink-mute: #5f6f86;
+  --color-ink-mute: #5b6b82;
   --color-line: #e1e7ef;
   --color-line-strong: #c3cedc;
   --color-clay: #1d4ed8;

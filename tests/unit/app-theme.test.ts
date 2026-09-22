@@ -60,6 +60,21 @@ describe("signed-in app theme", () => {
     }
   }
 
+  // The washes (clay-wash, brand-wash) are also text-bearing grounds — see
+  // app/(workspace)/events/[id]/page.tsx's brand-wash card — so ink,
+  // ink-soft and ink-mute must clear AA on them too, not just on surface,
+  // paper and sunk.
+  const washTexts = ["ink", "ink-soft", "ink-mute"] as const;
+  const washGrounds = ["clay-wash", "brand-wash"] as const;
+
+  for (const text of washTexts) {
+    for (const ground of washGrounds) {
+      it(`${text} on ${ground} reaches 4.5:1`, () => {
+        expect(contrast(app[text], app[ground])).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+
   it.each([
     ["on-clay", "clay"],
     ["on-clay", "clay-deep"],

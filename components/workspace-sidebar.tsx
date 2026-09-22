@@ -239,7 +239,7 @@ export function WorkspaceSidebar({
                 className={cx(
                   "flex h-9 shrink-0 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px]",
                   active
-                    ? "bg-clay-wash font-medium text-clay-deep"
+                    ? "bg-clay-wash font-medium text-clay-deep ring-1 ring-clay/20"
                     : "text-ink-soft hover:bg-surface/70 hover:text-ink",
                 )}
               >
