@@ -5,6 +5,7 @@ import { McpConnect } from "@/components/mcp-connect";
 import { CopyButton } from "@/components/copy-button";
 import { ButtonLink, Card } from "@/components/ui";
 import { currentProfile } from "@/lib/session";
+import { LLMS } from "@/lib/llms";
 import { TOOLS } from "@/lib/mcp/tools";
 import { PRODUCTION_MCP_URL, mcpUrl, originFromHeaders } from "@/lib/mcp/config";
 
@@ -12,14 +13,6 @@ export const metadata = {
   title: "Connect an agent",
   description: "Read-only Hosty tools for Cursor and Claude, over a remote MCP URL.",
 };
-
-/** The assistants that can add Hosty's MCP server. Logos are the vendors'
- *  marks from the MIT-licensed @lobehub/icons set, in public/llm/. */
-const LLMS = [
-  { name: "Claude", logo: "/llm/claude-color.svg", how: "Settings → Connectors → Add custom connector." },
-  { name: "ChatGPT", logo: "/llm/openai.svg", how: "Settings → Apps & Connectors, with developer mode on." },
-  { name: "Gemini", logo: "/llm/gemini-color.svg", how: "Gemini CLI: add the address under mcpServers." },
-];
 
 /**
  * How to point Cursor or Claude at Hosty without cloning the repo.

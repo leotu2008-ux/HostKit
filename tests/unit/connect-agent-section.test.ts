@@ -15,6 +15,11 @@ vi.mock("next/link", () => ({
   }) => createElement("a", { href, className }, children),
 }));
 
+vi.mock("next/image", () => ({
+  default: ({ src, alt, className }: { src: string; alt: string; className?: string }) =>
+    createElement("img", { src, alt, className }),
+}));
+
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 
 describe("Connect an agent landing section", () => {
@@ -32,6 +37,20 @@ describe("Connect an agent landing section", () => {
     expect(html).toContain('href="/mcp"');
     expect(html).toContain("Endpoint, token generation, and setup config");
     expect(html).not.toContain("HostKit");
+  });
+
+  it("invites you to add your preferred LLM, with the Claude, ChatGPT and Gemini marks", () => {
+    const html = renderToStaticMarkup(createElement(ConnectAgentSection));
+
+    expect(html).toContain("Add your preferred LLM");
+    for (const [name, logo] of [
+      ["Claude", "/llm/claude-color.svg"],
+      ["ChatGPT", "/llm/openai.svg"],
+      ["Gemini", "/llm/gemini-color.svg"],
+    ]) {
+      expect(html).toContain(name);
+      expect(html).toContain(`src="${logo}"`);
+    }
   });
 
   it("sits after the four stages", () => {

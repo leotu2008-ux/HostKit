@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { GlitchText } from "@/components/glitch-text";
+import { LLMS } from "@/lib/llms";
 import { ButtonLink } from "@/components/ui";
 
 /** What Cursor and Claude can read once they are connected. */
@@ -34,6 +36,19 @@ export function ConnectAgentSection() {
             className="rounded-card border border-line bg-surface px-4 py-4 text-[15px] font-medium text-ink"
           >
             {item}
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-8 text-[15px] font-medium text-ink">Add your preferred LLM</p>
+      <ul className="mt-3 flex flex-wrap gap-2.5">
+        {LLMS.map((llm) => (
+          <li
+            key={llm.name}
+            className="flex items-center gap-2.5 rounded-full border border-line bg-surface py-2 pr-4 pl-2.5 text-[15px] font-medium text-ink"
+          >
+            <Image src={llm.logo} alt="" width={24} height={24} unoptimized className="size-6" />
+            {llm.name}
           </li>
         ))}
       </ul>
