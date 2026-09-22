@@ -48,8 +48,9 @@ the launch splash.
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 You can draft a night before you have an account. Publishing — listing it on
-Discover or sharing a live guest link — needs a sign-in. Sign up with any
-email and password. A confirmation link and password resets go out by email
+Discover or sharing a live guest link — needs a sign-in. Access is closed,
+so only the seeded Maya Chen account signs in and new sign-ups join the
+waitlist. A confirmation link and password resets go out by email
 once Resend is configured (until then the links are logged, and returned to
 the client outside production) — see `docs/backend.md` for the whole backend
 map: data, images, accounts, and which keys turn on what.
