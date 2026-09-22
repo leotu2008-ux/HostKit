@@ -93,10 +93,10 @@ export function RegisterForm({
           Sign in to {mode === "register" ? "register" : mode === "request" ? "request a spot" : "join the waitlist"}
         </ButtonLink>
         <ButtonLink href={`/signup?next=${next}`} variant="secondary" size="lg" className="w-full">
-          Join the list
+          Join the waitlist
         </ButtonLink>
         <p className="pt-1 text-center text-[13px] text-ink-mute">
-          New accounts aren’t open yet. We’ll add your email to the list.
+          We’ll add your email to the waitlist and keep you posted.
         </p>
       </div>
     );

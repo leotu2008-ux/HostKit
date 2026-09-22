@@ -54,7 +54,7 @@ export default async function SignInPage({
           }
           className="font-medium text-clay hover:underline"
         >
-          Join the list
+          Join the waitlist
         </Link>
       </p>
     </>

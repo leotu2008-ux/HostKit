@@ -151,7 +151,7 @@ export function AccountMenu({
                   Sign in
                 </Link>
                 <Link role="menuitem" href="/signup" className="block rounded-xl px-3 py-2.5 text-[15px] font-medium text-ink hover:bg-sunk">
-                  Join the list
+                  Join the waitlist
                 </Link>
                 <Link role="menuitem" href="/events" className="block rounded-xl px-3 py-2.5 text-[15px] font-medium text-ink hover:bg-sunk">
                   Drafts on this device
