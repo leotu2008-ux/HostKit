@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   }
   if (!isMayaChen(user)) {
     return json(
-      { error: "The dashboard is only open to Maya Chen. If you joined the list, you’re on it." },
+      { error: "Join the waitlist." },
       403,
     );
   }
