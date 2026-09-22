@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CloudSky } from "@/components/cloud-sky";
+import { ConnectAgentSection } from "@/components/connect-agent-section";
 import { CreateEventButton } from "@/components/create-event-button";
 import { GlitchText } from "@/components/glitch-text";
 import { ButtonLink } from "@/components/ui";
@@ -227,6 +228,12 @@ export function Landing() {
         </section>
       </Rails>
       </div>
+
+      {/* After the hero (headline and the preview the sky is sized to). This
+          is the next thing on the page when you scroll. */}
+      <Rails>
+        <ConnectAgentSection />
+      </Rails>
 
       <div className="border-y border-line bg-surface">
         <Rails>
