@@ -83,7 +83,7 @@ export default async function ProfilePage() {
               Sign in
             </ButtonLink>
             <ButtonLink href="/signup" variant="secondary" size="lg">
-              Join the list
+              Join the waitlist
             </ButtonLink>
           </div>
         </Card>

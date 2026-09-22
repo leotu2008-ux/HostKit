@@ -83,12 +83,9 @@ export function AuthForm({
   // Joined the list. No account was created.
   if (state?.listed) {
     return (
-      <div className="rounded-lg bg-forest-wash px-3 py-3 text-sm text-forest">
-        <p className="font-medium">You’re on the list</p>
-        <p className="mt-0.5">
-          We added <span className="font-medium">{state.listed.email}</span>. The dashboard stays limited to Maya
-          Chen until Hosty opens more widely.
-        </p>
+      <div className="rounded-lg bg-forest-wash px-3 py-3 text-sm text-forest" role="status">
+        <p className="font-medium">Thanks for joining the waitlist!</p>
+        <p className="mt-0.5">We’ll keep you posted whenever updates happen.</p>
       </div>
     );
   }

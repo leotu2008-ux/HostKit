@@ -5,7 +5,7 @@ import { signUpAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/session";
 import { safeNextPath } from "@/lib/listing";
 
-export const metadata = { title: "Join the list" };
+export const metadata = { title: "Join the waitlist" };
 
 export default async function SignUpPage({
   searchParams,
@@ -27,11 +27,11 @@ export default async function SignUpPage({
 
   return (
     <>
-      <h1 className="font-display text-2xl text-ink">Join the list</h1>
+      <h1 className="font-display text-2xl text-ink">Join the waitlist</h1>
       <p className="mt-1 mb-6 text-sm text-ink-soft">
-        The dashboard is open to Maya Chen. Leave your name and email and we’ll add you to the list.
+        Leave your name and email. We’ll keep you posted whenever updates happen.
       </p>
-      <AuthForm action={signUpAction} submitLabel="Join the list" includeName includePassword={false} />
+      <AuthForm action={signUpAction} submitLabel="Join the waitlist" includeName includePassword={false} />
       <p className="mt-6 text-center text-sm text-ink-soft">
         Already have an account?{" "}
         <Link
