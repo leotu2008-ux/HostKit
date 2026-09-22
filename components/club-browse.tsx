@@ -41,7 +41,7 @@ export function ClubBrowse({ q, category }: { q: string; category: string | null
               aria-current={active ? "page" : undefined}
               className={cx(
                 "rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
-                active ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink",
+                active ? "border-clay bg-clay text-on-clay" : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink",
               )}
             >
               {key ? CLUB_CATEGORIES[key as keyof typeof CLUB_CATEGORIES] : "All"}

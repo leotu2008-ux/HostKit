@@ -21,7 +21,7 @@ import { Card, SectionHeading, EmptyState, cx } from "@/components/ui";
  */
 
 const ACTOR_DOT: Record<FeedRow["actor"], string> = {
-  agent: "bg-ink",
+  agent: "bg-clay",
   host: "bg-forest",
   system: "bg-line-strong",
 };

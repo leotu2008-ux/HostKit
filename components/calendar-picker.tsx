@@ -294,7 +294,7 @@ export function CalendarPicker({
                     className={cx(
                       "flex h-9 items-center justify-center rounded-lg text-[14px] tabular",
                       selected
-                        ? "bg-ink text-paper"
+                        ? "bg-clay text-on-clay"
                         : outside
                           ? "text-ink-mute/60 hover:bg-sunk"
                           : past

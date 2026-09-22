@@ -41,7 +41,7 @@ function SendButton({ dirty }: { dirty: boolean }) {
     <button
       type="submit"
       disabled={pending || dirty}
-      className="h-10 rounded-full bg-ink px-4 text-sm font-medium text-surface disabled:opacity-50"
+      className="h-10 rounded-full bg-clay px-4 text-sm font-medium text-on-clay hover:bg-clay-deep disabled:opacity-50"
     >
       {pending ? "Sending…" : dirty ? "Save your changes first" : "Send it"}
     </button>

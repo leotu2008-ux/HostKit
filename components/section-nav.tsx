@@ -38,7 +38,7 @@ export function SectionNav({
               className={cx(
                 "-mb-px shrink-0 border-b-2 pb-2.5 text-[13.5px]",
                 active
-                  ? "border-ink font-medium text-ink"
+                  ? "border-clay font-medium text-clay-deep"
                   : "border-transparent text-ink-soft hover:text-ink",
               )}
             >
