@@ -3,6 +3,20 @@
 Gives an agent read access to your events, guest lists and campus calendars,
 through the same v1 API the iOS client uses.
 
+## Remote (no clone)
+
+Signed-in users point Cursor or Claude at the hosted server. The install
+page is [/mcp](https://tryhosty.app/mcp).
+
+```
+POST https://tryhosty.app/api/mcp
+Authorization: Bearer <token from POST /api/v1/auth/token>
+```
+
+Streamable HTTP, stateless, JSON responses. A missing or rejected token is
+HTTP 401. The same five tools run, still read-only, still scoped to that
+token. `npm run mcp` below remains for contributors who want stdio.
+
 ## Why it is a client, not a second door
 
 The server holds nothing but a base URL and a bearer token. Every call goes

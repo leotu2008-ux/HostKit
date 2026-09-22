@@ -23,6 +23,7 @@ function tabActive(pathname: string, match: (typeof TABS)[number]["match"]) {
     return (
       pathname === "/profile" ||
       pathname === "/settings" ||
+      pathname === "/mcp" ||
       pathname === "/signin" ||
       pathname === "/signup"
     );

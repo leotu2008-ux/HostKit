@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { TOOLS, HostKitApiError, type ToolContext } from "../lib/mcp/tools";
+import { createHostKitMcpServer } from "../lib/mcp/register";
+import { TOOLS, type ToolContext } from "../lib/mcp/tools";
 
 /**
  * HostKit as an MCP server, over stdio.
@@ -10,7 +10,7 @@ import { TOOLS, HostKitApiError, type ToolContext } from "../lib/mcp/tools";
  * and a bearer token. Everything it can see is what that token's owner can
  * see, because every call goes through the same v1 routes the iOS client uses.
  *
- *   HOSTKIT_URL=https://host-kit-one.vercel.app \
+ *   HOSTKIT_URL=https://tryhosty.app \
  *   HOSTKIT_TOKEN=... \
  *   npx tsx scripts/mcp-server.ts
  *
@@ -18,6 +18,8 @@ import { TOOLS, HostKitApiError, type ToolContext } from "../lib/mcp/tools";
  *   curl -X POST "$HOSTKIT_URL/api/v1/auth/token" \
  *     -H 'content-type: application/json' \
  *     -d '{"email":"you@school.edu","password":"..."}'
+ *
+ * The hosted equivalent is POST /api/mcp on the same origin — see /mcp.
  */
 
 const baseUrl = process.env.HOSTKIT_URL?.trim();
@@ -34,34 +36,7 @@ if (!baseUrl || !token) {
 }
 
 const ctx: ToolContext = { baseUrl, token };
-
-const server = new McpServer({ name: "hostkit", version: "0.1.0" });
-
-for (const tool of TOOLS) {
-  server.registerTool(
-    tool.name,
-    {
-      title: tool.title,
-      description: tool.description,
-      inputSchema: (tool.schema as unknown as { shape: Record<string, never> }).shape,
-      annotations: { readOnlyHint: tool.readOnly, openWorldHint: true },
-    },
-    async (args: Record<string, unknown>) => {
-      try {
-        const result = await tool.run(ctx, args ?? {});
-        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
-      } catch (error) {
-        // Hand back the reason rather than throwing: a caller can act on
-        // "your token expired" and can do nothing with a stack trace.
-        const message =
-          error instanceof HostKitApiError
-            ? error.message
-            : `Could not reach HostKit at ${baseUrl}. ${error instanceof Error ? error.message : String(error)}`;
-        return { isError: true, content: [{ type: "text" as const, text: message }] };
-      }
-    },
-  );
-}
+const server = createHostKitMcpServer(ctx);
 
 async function main(): Promise<void> {
   await server.connect(new StdioServerTransport());
