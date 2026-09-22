@@ -86,6 +86,9 @@ export function AuthForm({
       <div className="rounded-lg bg-forest-wash px-3 py-3 text-sm text-forest" role="status">
         <p className="font-medium">Thanks for joining the waitlist!</p>
         <p className="mt-0.5">We’ll keep you posted whenever updates happen.</p>
+        <p className="mt-0.5">
+          A confirmation is on its way to <span className="font-medium">{state.listed.email}</span>.
+        </p>
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiError, json, readJson } from "@/lib/api/http";
+import { AccountError } from "@/lib/account";
 import { joinEmailList } from "@/lib/email-list";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
@@ -10,9 +11,9 @@ const schema = z.object({
 });
 
 /**
- * Joins the email list. It does not create an account — the dashboard is
- * limited to Maya Chen. A password, if an older client still sends one, is
- * ignored.
+ * Joins the email list and sends a confirmation. It does not create an
+ * account — the dashboard is limited to Maya Chen. A password, if an older
+ * client still sends one, is ignored.
  */
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await readJson(request));
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
     return json({ listed: true, email }, 200);
   } catch (error) {
     if (error instanceof RateLimitError) return apiError(error.message, 429);
+    if (error instanceof AccountError) return apiError(error.message, error.status);
     throw error;
   }
 }

@@ -39,7 +39,7 @@ export async function signUpAction(
 
   const h = await headers();
   // No account is created. The dashboard stays limited to Maya Chen;
-  // everyone else is recorded on the email list.
+  // everyone else is recorded on the email list and emailed a confirmation.
   try {
     await assertRateLimit(`signup:ip:${clientIp(h)}`, ...LIMITS.signUp.perIp);
     const { email } = await joinEmailList(parsed.data);
