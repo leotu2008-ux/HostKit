@@ -6,7 +6,7 @@ import { apiError, json, readJson } from "@/lib/api/http";
 import { serializeUser } from "@/lib/api/serialize";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 import { unverifiedMessage } from "@/lib/account";
-import { isMayaChen } from "@/lib/access";
+import { hasDashboardAccess } from "@/lib/access";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   if (!user.emailVerifiedAt) {
     return json({ error: unverifiedMessage(user.email), code: "email_unverified" }, 403);
   }
-  if (!isMayaChen(user)) {
+  if (!hasDashboardAccess(user)) {
     return json(
       { error: "Join the waitlist." },
       403,

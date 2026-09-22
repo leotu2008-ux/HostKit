@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { isMayaChen } from "@/lib/access";
+import { hasDashboardAccess } from "@/lib/access";
 
 /** Right password, unconfirmed address: sign-in says so, with a resend. */
 export class EmailUnverified extends CredentialsSignin {
@@ -50,7 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Only after the password matched, so this never confirms an address
         // to someone who doesn't know the password.
         if (!user.emailVerifiedAt) throw new EmailUnverified();
-        if (!isMayaChen(user)) throw new DashboardClosed();
+        if (!hasDashboardAccess(user)) throw new DashboardClosed();
 
         return { id: user.id, email: user.email, name: user.name, sessionVersion: user.sessionVersion };
       },

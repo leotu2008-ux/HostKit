@@ -6,6 +6,7 @@ import type {
   ListingCategory,
   PriceUnit,
 } from "../generated/prisma/enums";
+import { ADMIN_EMAIL } from "../lib/access";
 import { generatePlan } from "../lib/plan";
 
 /**
@@ -126,6 +127,7 @@ async function main() {
   }
   await seedDemoNights();
   await seedCampusDemo();
+  await seedAdminAccount();
 }
 
 async function seedCatalog() {
@@ -213,6 +215,31 @@ async function confirmDemoAccount(email: string): Promise<void> {
     data: { emailVerifiedAt: new Date() },
   });
   if (count > 0) console.log(`Confirmed ${email} so it can sign in.`);
+}
+
+/**
+ * The Hosty administrator (lib/access.ts `ADMIN_EMAIL`).
+ *
+ * The repo is public, so the password is never written here — not even as a
+ * bcrypt hash, which a short password would not survive offline. It comes from
+ * HOSTY_ADMIN_PASSWORD in Vercel's environment and is hashed at seed time.
+ * Every deploy re-seeds, so changing the variable rotates the password; with
+ * the variable unset (local, CI) the step does nothing.
+ */
+async function seedAdminAccount() {
+  const password = process.env.HOSTY_ADMIN_PASSWORD;
+  if (!password) {
+    console.log("HOSTY_ADMIN_PASSWORD not set; skipping the admin account.");
+    return;
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db.user.upsert({
+    where: { email: ADMIN_EMAIL },
+    create: { email: ADMIN_EMAIL, name: "Hosty", passwordHash, emailVerifiedAt: new Date() },
+    update: { passwordHash },
+  });
+  await confirmDemoAccount(ADMIN_EMAIL);
+  console.log(`Seeded the admin account ${ADMIN_EMAIL}.`);
 }
 
 async function seedDemoNights() {
