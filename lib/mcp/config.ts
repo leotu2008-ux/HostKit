@@ -2,7 +2,8 @@
  * Addresses and config snippets for the hosted MCP.
  *
  * Kept apart from the server so the install page can render them without
- * pulling the MCP SDK into the browser bundle.
+ * pulling the MCP SDK — or the OAuth config in lib/mcp/oauth-config.ts —
+ * into the browser bundle.
  */
 
 export const MCP_PATH = "/api/mcp";

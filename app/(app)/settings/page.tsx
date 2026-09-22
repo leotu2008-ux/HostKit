@@ -16,6 +16,16 @@ export default async function SettingsPage() {
       <h1 className="font-display text-[30px] leading-tight text-ink md:text-[36px]">Settings</h1>
 
       <Card className="mt-6 p-5">
+        <h2 className="font-display text-lg text-ink">AI connections</h2>
+        <p className="mt-2 mb-4 text-[15px] text-ink-soft">
+          Let Claude or ChatGPT read your Hosty events over OAuth, and disconnect them here.
+        </p>
+        <ButtonLink href="/settings/connections" variant="secondary">
+          Manage connections
+        </ButtonLink>
+      </Card>
+
+      <Card className="mt-4 p-5">
         <h2 className="font-display text-lg text-ink">Phone number</h2>
         <p className="mt-1 mb-4 text-[15px] text-ink-soft">
           Add your mobile so hosts can reach you about events you’re going to. Verified with a text.

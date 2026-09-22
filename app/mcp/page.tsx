@@ -27,7 +27,8 @@ export default async function McpPage() {
       <h1 className="font-display text-[34px] leading-[1.1] text-ink md:text-[46px]">Connect an agent</h1>
       <p className="mt-3 text-[16px] leading-relaxed text-ink-soft">
         Cursor and Claude can read the events you host, who is on the list, and what a school already has
-        on. They see only your account, and they cannot publish, message anyone, or change a guest.
+        on. They see only your account, and they cannot publish, message anyone, or change a guest. Claude
+        and ChatGPT can also connect with OAuth, which is a separate set of tools.
       </p>
 
       <Card className="mt-8 p-5">
@@ -70,8 +71,44 @@ export default async function McpPage() {
       </Card>
 
       <Card className="mt-4 p-5">
-        <h2 className="font-display text-lg text-ink">What it can do</h2>
-        <p className="mt-1 text-[15px] text-ink-soft">Five tools, all read-only.</p>
+        <h2 className="font-display text-lg text-ink">Claude and ChatGPT</h2>
+        <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
+          Those apps connect with OAuth instead of a pasted token. You approve them on a consent screen, and
+          you can disconnect them under Settings → AI connections. That path does not see guest lists. It can
+          list events you manage, read a brief, and search venues.
+        </p>
+        <ul className="mt-4 divide-y divide-line">
+          <li className="py-3">
+            <code className="text-[14px] font-semibold text-ink">list_events</code>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
+              Events you own or manage through a club. No guest names.
+            </p>
+          </li>
+          <li className="py-3">
+            <code className="text-[14px] font-semibold text-ink">get_event_brief</code>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
+              The planning brief for one of those events.
+            </p>
+          </li>
+          <li className="py-3">
+            <code className="text-[14px] font-semibold text-ink">search_venues</code>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
+              Venue candidates in that event’s city. It does not book anything.
+            </p>
+          </li>
+        </ul>
+        <p className="mt-4 text-[13px] text-ink-mute">
+          OAuth has to be turned on for the deployment (<code className="text-ink">MCP_PUBLIC_ORIGIN</code> and
+          a registered client). The bearer token above works either way.{" "}
+          <Link href="/settings/connections" className="font-medium text-ink hover:underline">
+            AI connections
+          </Link>
+        </p>
+      </Card>
+
+      <Card className="mt-4 p-5">
+        <h2 className="font-display text-lg text-ink">What the bearer token can do</h2>
+        <p className="mt-1 text-[15px] text-ink-soft">Five tools, all read-only. These are the ones Cursor gets.</p>
         <ul className="mt-4 divide-y divide-line">
           {TOOLS.map((tool) => (
             <li key={tool.name} className="py-3">

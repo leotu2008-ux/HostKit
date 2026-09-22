@@ -394,3 +394,12 @@ steps are connected, and that's only tested by walking the connection.
 npm test          # unit
 npm run test:e2e  # end to end (starts a dev server if one isn't running)
 ```
+
+## MCP
+
+Hosty exposes one remote MCP endpoint, `POST /api/mcp`, with two credentials.
+
+- **Bearer token.** Cursor, and any client that can send `Authorization: Bearer`. The token comes from `POST /api/v1/auth/token` or the Connect an agent page (`/mcp`). Tools: `list_events`, `get_event`, `list_guests`, `campus_events`, `discover_events`.
+- **OAuth.** Claude and ChatGPT custom connectors. Consent, refresh, and disconnect live under Settings → AI connections. Tools: `list_events`, `get_event_brief`, `search_venues`.
+
+An OAuth access token is checked first. Anything that is not a live grant falls through to the bearer token. See [docs/mcp.md](docs/mcp.md).

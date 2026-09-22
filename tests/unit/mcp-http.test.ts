@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { issueToken } from "@/lib/api/token";
 import { PRODUCTION_MCP_URL, cursorMcpConfig, originFromHeaders } from "@/lib/mcp/config";
 import {
@@ -225,6 +225,37 @@ describe("the install page's addresses", () => {
     expect(PRODUCTION_MCP_URL).toBe("https://tryhosty.app/api/mcp");
     expect(cursorMcpConfig(PRODUCTION_MCP_URL)).toContain("https://tryhosty.app/api/mcp");
     expect(cursorMcpConfig(PRODUCTION_MCP_URL)).toContain("Bearer YOUR_TOKEN");
+  });
+
+  it("keeps serving bearer tools when the OAuth connector is also configured", async () => {
+    vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hostkit.example");
+    vi.stubEnv(
+      "MCP_CLIENTS_JSON",
+      JSON.stringify([{ id: "claude", name: "Claude", redirectUris: ["https://client.example/callback"] }]),
+    );
+    const { response, body } = await post(rpc("tools/list", {}));
+    expect(response.status).toBe(200);
+    const tools = (body?.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name).sort();
+    expect(tools).toEqual(["campus_events", "discover_events", "get_event", "list_events", "list_guests"]);
+    expect(tools).not.toContain("search_venues");
+    vi.unstubAllEnvs();
+  });
+
+  it("serves bearer tools for an API token while OAuth is configured", async () => {
+    vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hostkit.example");
+    vi.stubEnv("MCP_CLIENTS_JSON", "[]");
+    process.env.AUTH_SECRET = "test-secret-for-mcp";
+    const token = issueToken("user_9", 3);
+    expect(token.includes(".")).toBe(true);
+    const { response, body } = await post(rpc("tools/list", {}, 1, { authorization: `Bearer ${token}` }), {
+      authenticate: async (request) =>
+        request.headers.get("authorization") === `Bearer ${token}` ? { token } : null,
+    });
+    expect(response.status).toBe(200);
+    const names = (body?.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+    expect(names).toContain("list_guests");
+    expect(names).not.toContain("search_venues");
+    vi.unstubAllEnvs();
   });
 
   it("uses http for localhost and https otherwise", () => {
