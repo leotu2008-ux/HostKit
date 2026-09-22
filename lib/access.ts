@@ -14,7 +14,7 @@ export function isMayaChen(user: { email: string; name: string }): boolean {
 
 /** The Hosty administrator. Seeded from HOSTY_ADMIN_PASSWORD (prisma/seed.ts);
  *  the password lives only in Vercel's environment, never in this repo. */
-export const ADMIN_EMAIL = "hosty@hosty.app";
+export const ADMIN_EMAIL = "leowomc@gmail.com";
 
 /** Who gets past the closed-access gate: Maya, and the administrator. The
  *  admin match is the exact address — no name fallback, so nobody becomes an

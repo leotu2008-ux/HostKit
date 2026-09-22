@@ -223,8 +223,11 @@ async function confirmDemoAccount(email: string): Promise<void> {
  * The repo is public, so the password is never written here — not even as a
  * bcrypt hash, which a short password would not survive offline. It comes from
  * HOSTY_ADMIN_PASSWORD in Vercel's environment and is hashed at seed time.
- * Every deploy re-seeds, so changing the variable rotates the password; with
- * the variable unset (local, CI) the step does nothing.
+ * Every deploy re-seeds: when the variable no longer matches the stored hash,
+ * the new password is written and sessionVersion is bumped, ending every
+ * session, API token and MCP grant signed in with the old one. When it still
+ * matches, nothing is written, so a routine deploy keeps the admin signed in.
+ * With the variable unset (local, CI) the step does nothing.
  */
 async function seedAdminAccount() {
   const password = process.env.HOSTY_ADMIN_PASSWORD;
@@ -232,14 +235,26 @@ async function seedAdminAccount() {
     console.log("HOSTY_ADMIN_PASSWORD not set; skipping the admin account.");
     return;
   }
-  const passwordHash = await bcrypt.hash(password, 10);
-  await db.user.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: { email: ADMIN_EMAIL, name: "Hosty", passwordHash, emailVerifiedAt: new Date() },
-    update: { passwordHash },
-  });
+  const existing = await db.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (!existing) {
+    const passwordHash = await bcrypt.hash(password, 10);
+    await db.user.create({
+      data: { email: ADMIN_EMAIL, name: "Hosty", passwordHash, emailVerifiedAt: new Date() },
+    });
+    console.log(`Seeded the admin account ${ADMIN_EMAIL}.`);
+    return;
+  }
   await confirmDemoAccount(ADMIN_EMAIL);
-  console.log(`Seeded the admin account ${ADMIN_EMAIL}.`);
+  if (await bcrypt.compare(password, existing.passwordHash)) {
+    console.log(`Admin account ${ADMIN_EMAIL} already current; skipping.`);
+    return;
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db.user.update({
+    where: { id: existing.id },
+    data: { passwordHash, sessionVersion: { increment: 1 } },
+  });
+  console.log(`Rotated the admin password for ${ADMIN_EMAIL}; old sessions end.`);
 }
 
 async function seedDemoNights() {
