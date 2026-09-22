@@ -50,7 +50,9 @@ Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 You can draft a night before you have an account. Publishing — listing it on
 Discover or sharing a live guest link — needs a sign-in. Access is closed,
 so only the seeded Maya Chen account and the administrator (`ADMIN_EMAIL` in
-`lib/access.ts`) sign in, and new sign-ups join the waitlist. A
+`lib/access.ts`) sign in, and new sign-ups join the waitlist. The
+administrator also gets an Admin row in the account menu: `/admin/events`
+lists every host's events and can remove any of them for good. A
 confirmation link and password resets go out by email once Resend is
 configured (until then the links are logged, and returned to the client
 outside production) — see `docs/backend.md` for the whole backend
