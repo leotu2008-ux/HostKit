@@ -28,8 +28,7 @@ export function CloudSky({ className = "" }: { className?: string }) {
           relative parent mounts it, so the parent decides where the sky ends. */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#cfdff2_0%,#d4e2f3_55%,#dce7f5_90%,var(--color-paper)_100%)]" />
 
-      {/* Far layer: the high, thin wisps and the blue shading that sits
-          under the bank. Further away, so it moves less. */}
+      {/* Far layer: the high, thin wisps. Further away, so it moves less. */}
       <svg
         className="cloud-drift-far absolute inset-y-0 -left-[5%] h-full w-[110%]"
         viewBox="0 0 1600 1000"
@@ -51,6 +50,24 @@ export function CloudSky({ className = "" }: { className?: string }) {
             <feGaussianBlur stdDeviation="4" />
           </filter>
 
+          <CloudFade id="far" />
+        </defs>
+
+        <g mask="url(#cloud-mask-far)">
+          <rect width="1600" height="1000" fill="#fff" filter="url(#cloud-wisps)" opacity="0.35" />
+        </g>
+      </svg>
+
+      {/* Near layer: the cloud bank and the blue shading under it, which is
+          the bank's own silhouette and so must travel with it. Closer, so it
+          travels further. */}
+      <svg
+        className="cloud-drift-near absolute inset-y-0 -left-[5%] h-full w-[110%]"
+        viewBox="0 0 1600 1000"
+        preserveAspectRatio="xMidYMid slice"
+        role="presentation"
+      >
+        <defs>
           {/* Faint blue shading on the underside of the clouds, offset downward. */}
           <filter id="cloud-shade" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
             <feTurbulence type="fractalNoise" baseFrequency="0.0022 0.0042" numOctaves="6" seed="11" result="noise" />
@@ -66,23 +83,6 @@ export function CloudSky({ className = "" }: { className?: string }) {
             <feOffset dy="22" />
           </filter>
 
-          <CloudFade id="far" />
-        </defs>
-
-        <g mask="url(#cloud-mask-far)">
-          <rect width="1600" height="1000" fill="#fff" filter="url(#cloud-wisps)" opacity="0.35" />
-          <rect width="1600" height="1000" filter="url(#cloud-shade)" opacity="0.45" />
-        </g>
-      </svg>
-
-      {/* Near layer: the cloud bank itself. Closer, so it travels further. */}
-      <svg
-        className="cloud-drift-near absolute inset-y-0 -left-[5%] h-full w-[110%]"
-        viewBox="0 0 1600 1000"
-        preserveAspectRatio="xMidYMid slice"
-        role="presentation"
-      >
-        <defs>
           {/* Big, slow shapes: the cloud bank itself. */}
           <filter id="cloud-bank" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
             <feTurbulence type="fractalNoise" baseFrequency="0.0022 0.0042" numOctaves="6" seed="11" result="noise" />
@@ -117,6 +117,7 @@ export function CloudSky({ className = "" }: { className?: string }) {
         </defs>
 
         <g mask="url(#cloud-mask-near)">
+          <rect width="1600" height="1000" filter="url(#cloud-shade)" opacity="0.45" />
           <rect width="1600" height="1000" fill="#fff" filter="url(#cloud-bank)" opacity="0.85" />
         </g>
       </svg>
