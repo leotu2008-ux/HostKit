@@ -31,7 +31,7 @@ describe("Connect an agent landing section", () => {
     expect(html).toContain("Discover");
     expect(html).toContain('href="/mcp"');
     expect(html).toContain("Endpoint, token generation, and setup config");
-    expect(html).not.toContain("Hosty");
+    expect(html).not.toContain("HostKit");
   });
 
   it("sits after the four stages", () => {
