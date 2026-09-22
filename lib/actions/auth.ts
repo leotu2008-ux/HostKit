@@ -99,7 +99,7 @@ async function attemptSignIn(
     }
     if (error instanceof CredentialsSignin && error.code === "closed") {
       return {
-        error: "The dashboard is only open to Maya Chen. If you joined the list, you’re on it.",
+        error: "Join the waitlist.",
       };
     }
     if (error instanceof AuthError) {
