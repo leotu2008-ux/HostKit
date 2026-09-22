@@ -34,17 +34,19 @@ describe("Connect an agent landing section", () => {
     expect(html).not.toContain("HostKit");
   });
 
-  it("sits after the hero and before the workflow", () => {
+  it("sits after the four stages", () => {
     const landing = readFileSync(
       new URL("../../components/landing.tsx", import.meta.url),
       "utf8",
     );
-    const hero = landing.indexOf("Plan the event.");
-    const section = landing.indexOf("<ConnectAgentSection");
     const workflow = landing.indexOf("The agent works every stage");
+    const stagesEnd = landing.indexOf("</ol>", workflow);
+    const section = landing.indexOf("<ConnectAgentSection");
+    const next = landing.indexOf("Why you can leave it alone");
 
-    expect(hero).toBeGreaterThan(-1);
-    expect(section).toBeGreaterThan(hero);
-    expect(workflow).toBeGreaterThan(section);
+    expect(workflow).toBeGreaterThan(-1);
+    expect(stagesEnd).toBeGreaterThan(workflow);
+    expect(section).toBeGreaterThan(stagesEnd);
+    expect(next).toBeGreaterThan(section);
   });
 });

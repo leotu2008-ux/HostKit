@@ -229,12 +229,6 @@ export function Landing() {
       </Rails>
       </div>
 
-      {/* After the hero (headline and the preview the sky is sized to). This
-          is the next thing on the page when you scroll. */}
-      <Rails>
-        <ConnectAgentSection />
-      </Rails>
-
       <div className="border-y border-line bg-surface">
         <Rails>
           <section className="py-16 md:py-24">
@@ -276,6 +270,12 @@ export function Landing() {
           </section>
         </Rails>
       </div>
+
+      {/* After the four stages, still on the page ground so the section’s
+          own surface cards stay as they are. */}
+      <Rails>
+        <ConnectAgentSection />
+      </Rails>
 
       <Rails>
         <section className="py-16 md:py-24">
