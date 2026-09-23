@@ -55,3 +55,6 @@ next-env.d.ts
 
 # Xcode per-user state
 xcuserdata/
+
+# Brainstorming companion mockups
+.superpowers/
