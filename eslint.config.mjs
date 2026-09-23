@@ -15,7 +15,23 @@ const eslintConfig = defineConfig([
     // Prisma's generated client, and local throwaway browser scripts.
     "generated/**",
     "tools/**",
+    // Agent worktrees are full checkouts of the repo; lint them from inside.
+    ".claude/**",
   ]),
+  {
+    rules: {
+      // A leading underscore marks a deliberately unused name.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
