@@ -94,7 +94,29 @@ function Rails({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Landing() {
+/** Invite-only: strangers join the waitlist; a host with access plans an event. */
+function PrimaryCta({ canCreate }: { canCreate: boolean }) {
+  if (canCreate) {
+    return (
+      <CreateEventButton
+        label={
+          <>
+            Plan an event <span aria-hidden>→</span>
+          </>
+        }
+        variant="brand"
+        size="lg"
+      />
+    );
+  }
+  return (
+    <ButtonLink href="/signup" variant="brand" size="lg">
+      Join the waitlist <span aria-hidden>→</span>
+    </ButtonLink>
+  );
+}
+
+export function Landing({ canCreate }: { canCreate: boolean }) {
   return (
     <main className="relative isolate -mt-16 flex-1 bg-paper md:-mt-[4.25rem]">
       {/* No header: the app shell already renders the nav and the brand. The
@@ -144,21 +166,15 @@ export function Landing() {
             className="rise mt-9 flex flex-wrap items-center justify-center gap-2.5"
             style={stagger(3)}
           >
-            <CreateEventButton
-              label={
-                <>
-                  Plan an event <span aria-hidden>→</span>
-                </>
-              }
-              variant="brand"
-              size="lg"
-            />
+            <PrimaryCta canCreate={canCreate} />
             <ButtonLink href="/discover" variant="secondary" size="lg">
               See what&rsquo;s on
             </ButtonLink>
           </div>
           <p className="rise mt-4 text-[13px] text-ink-mute" style={stagger(4)}>
-            Free to start. No account needed until you publish.
+            {canCreate
+              ? "Brief it once. The agent takes it from there."
+              : "Invite-only while we’re small. Join the waitlist and we’ll email you when you’re in."}
           </p>
         </section>
 
@@ -257,18 +273,12 @@ export function Landing() {
             You&rsquo;ll have a plan before you close the tab.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-            <CreateEventButton
-              label={
-                <>
-                  Plan an event <span aria-hidden>→</span>
-                </>
-              }
-              variant="brand"
-              size="lg"
-            />
-            <ButtonLink href="/signup" variant="secondary" size="lg">
-              Join the waitlist
-            </ButtonLink>
+            <PrimaryCta canCreate={canCreate} />
+            {canCreate ? null : (
+              <ButtonLink href="/signin" variant="secondary" size="lg">
+                Sign in
+              </ButtonLink>
+            )}
           </div>
         </Reveal>
       </Rails>

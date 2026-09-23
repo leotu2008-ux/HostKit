@@ -1,4 +1,6 @@
 import { Landing } from "@/components/landing";
+import { hasDashboardAccess } from "@/lib/access";
+import { currentProfile } from "@/lib/session";
 
 export const metadata = { title: "Hosty — an agent that plans your event" };
 
@@ -13,6 +15,7 @@ export const metadata = { title: "Hosty — an agent that plans your event" };
  * The dashboard it replaced is not lost: it is in git history, and whole on
  * the pre-ai-pivot branch.
  */
-export default function HomePage() {
-  return <Landing />;
+export default async function HomePage() {
+  const user = await currentProfile();
+  return <Landing canCreate={Boolean(user && hasDashboardAccess(user))} />;
 }

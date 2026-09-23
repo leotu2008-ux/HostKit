@@ -5,6 +5,7 @@ import { AppChrome } from "@/components/app-chrome";
 import { Avatar } from "@/components/avatar";
 import { CreateEventButton } from "@/components/create-event-button";
 import { InstallPrompt } from "@/components/install-prompt";
+import { ButtonLink } from "@/components/ui";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
 import { signOutAction } from "@/lib/actions/auth";
 import { currentProfile } from "@/lib/session";
@@ -68,7 +69,13 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
             </AccountMenu>
             <DesktopNav />
             <div className="ml-auto flex min-w-0 items-center gap-1.5">
-              <CreateEventButton className="hidden h-9 items-center rounded-full px-4 text-sm font-medium md:inline-flex" />
+              {user ? (
+                <CreateEventButton className="hidden h-9 items-center rounded-full px-4 text-sm font-medium md:inline-flex" />
+              ) : (
+                <ButtonLink href="/signup" variant="brand" size="sm" className="hidden h-9 px-4 md:inline-flex">
+                  Join the waitlist
+                </ButtonLink>
+              )}
               {user ? (
                 <Link
                   href="/inbox"
