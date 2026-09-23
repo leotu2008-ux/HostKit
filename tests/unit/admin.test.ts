@@ -15,6 +15,7 @@ vi.mock("@/lib/waitlist-approval", () => ({ approveWaitlistEntry: mocks.approve 
 vi.mock("next/headers", () => ({ headers: mocks.headers }));
 
 import { isAdmin } from "@/lib/access";
+import { AccountError } from "@/lib/account";
 import { approveWaitlistEntryAction, deleteEventAsAdminAction } from "@/lib/actions/admin";
 
 const ADMIN = { id: "u-admin", email: "leowomc@gmail.com", name: "Leo" };
@@ -82,20 +83,37 @@ describe("approveWaitlistEntryAction", () => {
 
   it("approves the entry when the administrator asks, linking back to this site", async () => {
     mocks.currentUser.mockResolvedValue(ADMIN);
-    await approveWaitlistEntryAction(entryForm("wl-1"));
+    const result = await approveWaitlistEntryAction(undefined, entryForm("wl-1"));
     expect(mocks.approve).toHaveBeenCalledWith("wl-1", "https://tryhosty.app");
     expect(mocks.refresh).toHaveBeenCalled();
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns the account error's message instead of crashing when the invite can't go out", async () => {
+    mocks.currentUser.mockResolvedValue(ADMIN);
+    mocks.approve.mockRejectedValue(new AccountError("Email isn't set up yet.", 503));
+    const result = await approveWaitlistEntryAction(undefined, entryForm("wl-1"));
+    expect(result).toEqual({ error: "Email isn't set up yet." });
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("hides raw provider text behind a generic retry message", async () => {
+    mocks.currentUser.mockResolvedValue(ADMIN);
+    mocks.approve.mockRejectedValue(new Error("resend: 422 invalid api key re_abc123"));
+    const result = await approveWaitlistEntryAction(undefined, entryForm("wl-1"));
+    expect(result).toEqual({ error: "Could not send the invite. Try again in a moment." });
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
   it("refuses anyone who is not the administrator", async () => {
     mocks.currentUser.mockResolvedValue(MAYA);
-    await expect(approveWaitlistEntryAction(entryForm("wl-1"))).rejects.toThrow();
+    await expect(approveWaitlistEntryAction(undefined, entryForm("wl-1"))).rejects.toThrow();
     expect(mocks.approve).not.toHaveBeenCalled();
   });
 
   it("refuses a request with no entry id", async () => {
     mocks.currentUser.mockResolvedValue(ADMIN);
-    await expect(approveWaitlistEntryAction(entryForm(""))).rejects.toThrow();
+    await expect(approveWaitlistEntryAction(undefined, entryForm(""))).rejects.toThrow();
     expect(mocks.approve).not.toHaveBeenCalled();
   });
 
@@ -104,7 +122,7 @@ describe("approveWaitlistEntryAction", () => {
     mocks.headers.mockResolvedValue(new Headers({ host: "preview-abc.vercel.app", "x-forwarded-proto": "https" }));
     try {
       mocks.currentUser.mockResolvedValue(ADMIN);
-      await approveWaitlistEntryAction(entryForm("wl-1"));
+      await approveWaitlistEntryAction(undefined, entryForm("wl-1"));
       expect(mocks.approve).toHaveBeenCalledWith("wl-1", "https://tryhosty.app");
     } finally {
       delete process.env.SITE_URL;

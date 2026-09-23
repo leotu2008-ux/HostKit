@@ -8,10 +8,12 @@ const mocks = vi.hoisted(() => ({
   userUpdate: vi.fn(),
   userDelete: vi.fn(),
   invite: vi.fn(),
+  transaction: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
+    $transaction: mocks.transaction,
     emailListEntry: { findUnique: mocks.entryFind, update: mocks.entryUpdate },
     user: { findUnique: mocks.userFind, create: mocks.userCreate, update: mocks.userUpdate, delete: mocks.userDelete },
   },
@@ -37,6 +39,7 @@ describe("approveWaitlistEntry", () => {
       ...data,
     }));
     mocks.userDelete.mockResolvedValue({});
+    mocks.transaction.mockImplementation(async (ops: Promise<unknown>[]) => Promise.all(ops));
   });
 
   it("creates the user from the entry's stored, normalized email, approves both rows and sends one invite", async () => {
@@ -60,6 +63,8 @@ describe("approveWaitlistEntry", () => {
       where: { id: "wl-1" },
       data: { approvedAt: expect.any(Date), userId: "u-new" },
     });
+    expect(mocks.transaction).toHaveBeenCalledTimes(1);
+    expect(mocks.transaction.mock.calls[0][0]).toHaveLength(2);
     expect(result).toEqual({ email: "sam@babson.edu", alreadyApproved: false });
   });
 
@@ -103,6 +108,7 @@ describe("approveWaitlistEntry", () => {
     expect(mocks.userCreate).toHaveBeenCalled();
     expect(mocks.userUpdate).not.toHaveBeenCalled();
     expect(mocks.entryUpdate).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
     // This call created the user, so the half-made row is rolled back —
     // nothing is left behind for a retry to mistake for a real signup.
     expect(mocks.userDelete).toHaveBeenCalledWith({ where: { id: "u-new" } });

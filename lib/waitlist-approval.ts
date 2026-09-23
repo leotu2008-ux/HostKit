@@ -50,7 +50,9 @@ export async function approveWaitlistEntry(
 
   // Only after the send succeeds.
   const now = new Date();
-  await db.user.update({ where: { id: user.id }, data: { approvedAt: now } });
-  await db.emailListEntry.update({ where: { id: entry.id }, data: { approvedAt: now, userId: user.id } });
+  await db.$transaction([
+    db.user.update({ where: { id: user.id }, data: { approvedAt: now } }),
+    db.emailListEntry.update({ where: { id: entry.id }, data: { approvedAt: now, userId: user.id } }),
+  ]);
   return { email: entry.email, alreadyApproved: false };
 }
