@@ -16,6 +16,14 @@ export type VendorBookEntry = {
  * A venue, speaker or cohost was confirmed: put them in the host's vendor book
  * (matching an existing entry of the same kind and name, any case) and link
  * the collaborator to it.
+ *
+ * Two confirmations of the same venue/speaker/cohost (a double-click, or two
+ * identical collaborators) can race between the find and the create, each
+ * missing the other's not-yet-committed row and both creating a duplicate
+ * entry. `pg_advisory_xact_lock(hashtext(ownerId))` serializes vendor-book
+ * writes per host for the length of the transaction, so the second racer
+ * waits for the lock, then sees the first racer's write on its re-read of the
+ * collaborator and simply returns instead of duplicating.
  */
 export async function rememberCollaborator(collaboratorId: string): Promise<void> {
   const collab = await db.eventCollaborator.findUnique({
@@ -34,24 +42,37 @@ export async function rememberCollaborator(collaboratorId: string): Promise<void
   const ownerId = collab?.event.ownerId;
   if (!collab || !ownerId || collab.vendorContactId) return;
 
-  const existing = await db.vendorContact.findFirst({
-    where: { ownerId, kind: collab.kind, name: { equals: collab.name, mode: "insensitive" } },
-    select: { id: true },
-  });
-  const entry =
-    existing ??
-    (await db.vendorContact.create({
-      data: {
-        ownerId,
-        kind: collab.kind,
-        name: collab.name,
-        email: collab.email,
-        phone: collab.phone,
-        website: collab.website,
-      },
+  await db.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${ownerId}))`;
+
+    // Another request may have linked this collaborator while we waited for
+    // the lock — re-read inside the transaction rather than trusting the
+    // pre-lock lookup above.
+    const current = await tx.eventCollaborator.findUnique({
+      where: { id: collab.id },
+      select: { vendorContactId: true },
+    });
+    if (current?.vendorContactId) return;
+
+    const existing = await tx.vendorContact.findFirst({
+      where: { ownerId, kind: collab.kind, name: { equals: collab.name, mode: "insensitive" } },
       select: { id: true },
-    }));
-  await db.eventCollaborator.update({ where: { id: collab.id }, data: { vendorContactId: entry.id } });
+    });
+    const entry =
+      existing ??
+      (await tx.vendorContact.create({
+        data: {
+          ownerId,
+          kind: collab.kind,
+          name: collab.name,
+          email: collab.email,
+          phone: collab.phone,
+          website: collab.website,
+        },
+        select: { id: true },
+      }));
+    await tx.eventCollaborator.update({ where: { id: collab.id }, data: { vendorContactId: entry.id } });
+  });
 }
 
 /** A catalog vendor was booked: one vendor-book entry per host and listing. */

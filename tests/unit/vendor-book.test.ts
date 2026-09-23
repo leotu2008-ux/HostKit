@@ -10,21 +10,34 @@ const mocks = vi.hoisted(() => ({
   vendorCreate: vi.fn(),
   vendorUpsert: vi.fn(),
   vendorFindMany: vi.fn(),
+  executeRaw: vi.fn(),
 }));
 
-vi.mock("@/lib/db", () => ({
-  db: {
-    eventCollaborator: { findUnique: mocks.collabFind, update: mocks.collabUpdate, create: mocks.collabCreate },
-    event: { findUnique: mocks.eventFind },
-    listing: { findUnique: mocks.listingFind },
-    vendorContact: {
-      findFirst: mocks.vendorFindFirst,
-      create: mocks.vendorCreate,
-      upsert: mocks.vendorUpsert,
-      findMany: mocks.vendorFindMany,
+vi.mock("@/lib/db", () => {
+  // The transaction client reuses the top-level mocks where that mirrors
+  // rememberCollaborator's real tx usage (eventCollaborator.findUnique/update,
+  // vendorContact.findFirst/create), plus its own $executeRaw for the
+  // per-host advisory lock.
+  const tx = {
+    $executeRaw: mocks.executeRaw,
+    eventCollaborator: { findUnique: mocks.collabFind, update: mocks.collabUpdate },
+    vendorContact: { findFirst: mocks.vendorFindFirst, create: mocks.vendorCreate },
+  };
+  return {
+    db: {
+      eventCollaborator: { findUnique: mocks.collabFind, update: mocks.collabUpdate, create: mocks.collabCreate },
+      event: { findUnique: mocks.eventFind },
+      listing: { findUnique: mocks.listingFind },
+      vendorContact: {
+        findFirst: mocks.vendorFindFirst,
+        create: mocks.vendorCreate,
+        upsert: mocks.vendorUpsert,
+        findMany: mocks.vendorFindMany,
+      },
+      $transaction: (fn: (tx: unknown) => unknown) => fn(tx),
     },
-  },
-}));
+  };
+});
 
 import { addVendorToEvent, rememberBookedListing, rememberCollaborator } from "@/lib/vendor-book";
 
@@ -74,6 +87,31 @@ describe("rememberCollaborator", () => {
   it("does nothing when the event has no owner", async () => {
     mocks.collabFind.mockResolvedValue({ ...COLLAB, event: { ownerId: null } });
     await rememberCollaborator("col-1");
+    expect(mocks.vendorCreate).not.toHaveBeenCalled();
+    expect(mocks.collabUpdate).not.toHaveBeenCalled();
+  });
+
+  it("takes the per-host lock before looking up the book", async () => {
+    mocks.collabFind.mockResolvedValue(COLLAB);
+    mocks.vendorFindFirst.mockResolvedValue(null);
+    mocks.vendorCreate.mockResolvedValue({ id: "v-1" });
+
+    await rememberCollaborator("col-1");
+
+    expect(mocks.executeRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.vendorFindFirst.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("does nothing if the collaborator was linked while waiting for the lock", async () => {
+    mocks.collabFind
+      .mockResolvedValueOnce(COLLAB) // pre-lock lookup: not linked yet
+      .mockResolvedValueOnce({ vendorContactId: "v-9" }); // in-tx re-read: someone else won the race
+
+    await rememberCollaborator("col-1");
+
+    expect(mocks.vendorFindFirst).not.toHaveBeenCalled();
     expect(mocks.vendorCreate).not.toHaveBeenCalled();
     expect(mocks.collabUpdate).not.toHaveBeenCalled();
   });
