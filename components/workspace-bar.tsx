@@ -86,9 +86,12 @@ export async function WorkspaceBar({
           {/* The wrapper carries the breakpoint, not the button: ButtonLink's
               own base class sets `inline-flex`, and two display utilities on
               one element are decided by stylesheet order, not class order. */}
-          <span className="hidden md:inline-flex">
+          <span className="hidden md:inline-flex md:gap-2">
             <ButtonLink href={`/e/${event.id}`} variant="secondary" size="sm">
               Event page ↗
+            </ButtonLink>
+            <ButtonLink href={`/events/${event.id}/run-again`} variant="secondary" size="sm">
+              Run it again
             </ButtonLink>
           </span>
           {event.published ? null : !readyToPublish(event) ? (
