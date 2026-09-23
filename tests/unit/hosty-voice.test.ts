@@ -70,22 +70,53 @@ describe("toChatMessage: Hosty's lines", () => {
       { kind: "inquiries_drafted", title: "No vendors to draft for" },
       "I couldn't find vendors in the catalog that fit this date yet.",
     ],
+    // Skip reasons exactly as lib/agent/steps.ts and lib/agent/run.ts save them.
     [
-      "skipped with a reason",
-      { kind: "step_skipped", title: "Didn't look for venues", body: "You already have a venue" },
+      "skipped: already has a venue",
+      { kind: "step_skipped", title: "Didn't look for venues", body: "you already have a venue" },
       "I didn't look for venues. You already have a venue.",
+    ],
+    [
+      "skipped: no budget",
+      { kind: "step_skipped", title: "Skipped the plan", body: "there's no budget to split yet" },
+      "I skipped the plan. There's no budget to split yet.",
+    ],
+    [
+      "skipped: a city Hosty doesn't scout",
+      { kind: "step_skipped", title: "Didn't draft vendor inquiries", body: "Hosty doesn't scout that city yet" },
+      "I didn't draft vendor inquiries. I don't scout that city yet.",
+    ],
+    [
+      "skipped: ran out of time",
+      { kind: "step_skipped", title: "Didn't look for venues", body: "Ran out of time — the agent will pick this up" },
+      "I didn't look for venues. Ran out of time — I'll pick this up.",
     ],
     ["skipped without a reason", { kind: "step_skipped", title: "Skipped the plan" }, "I skipped the plan."],
     [
       "failed",
       { kind: "step_failed", title: "Couldn't find venues", body: "timeout" },
-      "I couldn't find venues. I'll try again on the next run.",
+      "I couldn't find venues this time.",
     ],
-    ["finished", { kind: "run_finished", title: "The agent finished" }, "All done for now."],
+    ["finished with nothing to report", { kind: "run_finished", title: "The agent finished" }, "All done for now."],
     [
-      "finished with problems",
+      "finished",
+      { kind: "run_finished", title: "The agent finished", body: "Done: plan, venues, vendors" },
+      "All done for now. I finished the plan, venues and vendor inquiries.",
+    ],
+    [
+      "finished with one problem",
+      { kind: "run_finished", title: "The agent finished with problems", body: "Done: plan, venues · Left undone: vendors" },
+      "I finished the plan and venues, but couldn't finish vendor inquiries.",
+    ],
+    [
+      "finished with nothing done",
+      { kind: "run_finished", title: "The agent finished with problems", body: "Left undone: plan, venues" },
+      "I couldn't finish the plan and venues.",
+    ],
+    [
+      "finished with problems but no detail",
       { kind: "run_finished", title: "The agent finished with problems" },
-      "Done, but a couple of things didn't work.",
+      "Some of it didn't work this time.",
     ],
     ["already running", { kind: "run_finished", title: "The agent is already on it" }, "I'm already on it."],
     [

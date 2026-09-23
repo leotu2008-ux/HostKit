@@ -69,9 +69,9 @@ export function briefingIntro(briefing: Briefing, firstName: string | null): str
 | `venue_search_empty` | "No venues turned up nearby" | "I couldn't find venues nearby yet." |
 | `inquiries_drafted` (n>0) | "2 vendor inquiries drafted" / "Catering · AV" | "I drafted 2 vendor inquiries: catering and AV. They're waiting for you to send." |
 | `inquiries_drafted` (none) | "No vendors to draft for" | "I couldn't find vendors in the catalog that fit this date yet." |
-| `step_skipped` | e.g. "Didn't look for venues" / note | "I didn't look for venues." + note as a second sentence |
-| `step_failed` | e.g. "Couldn't find venues" / note | "I couldn't find venues. I'll try again on the next run." |
-| `run_finished` | "The agent finished" / "…with problems" / outcome line | "All done for now." / "Done, but a couple of things didn't work." / outcome line in first person |
+| `step_skipped` | e.g. "Didn't look for venues" / "you already have a venue" | "I didn't look for venues. You already have a venue." (the saved reason as a capitalised sentence in Hosty's own words: "Hosty doesn't…" → "I don't…", "the agent will…" → "I'll…") |
+| `step_failed` | e.g. "Couldn't find venues" / note | "I couldn't find venues this time." (no retry promise: the sweep stops after its max attempts) |
+| `run_finished` | "The agent finished" / "…with problems", body "Done: plan, venues · Left undone: vendors"; or a trigger outcome line | "All done for now. I finished the plan and venues." / "I finished the plan and venues, but couldn't finish vendor inquiries." / "Some of it didn't work this time." (no detail) / outcome lines in first person ("I'm already on it.") |
 | `event_created` (system) | "Event created" | note: "Event created" |
 | `brief_saved` (host) | "Brief updated" / "Title · Date · City" | you: "Updated the brief: title, date and city" |
 | `task_done` (host) | "Done: X" | you: "Done: X" (unchanged) |

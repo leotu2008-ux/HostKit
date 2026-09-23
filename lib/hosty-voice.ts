@@ -33,9 +33,9 @@ const ACTION_LABEL: Record<string, string> = {
   inquiries_drafted: "Review the drafts",
 };
 
-const RUN_FINISHED: Record<string, string> = {
-  "The agent finished": "All done for now.",
-  "The agent finished with problems": "Done, but a couple of things didn't work.",
+/** Titles of run_finished rows that aren't a finished run's summary — the
+ *  outcome lines lib/agent/trigger.ts records when a run never started. */
+const RUN_OUTCOME: Record<string, string> = {
   "The agent is already on it": "I'm already on it.",
   "Too many runs this hour — try again later": "I've run a lot this hour. Try me again a bit later.",
   "The agent couldn't start": "I couldn't get started. Try again in a moment.",
@@ -72,12 +72,55 @@ function sentence(text: string): string {
   return /[.!?…]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 
+/** A saved reason, spoken by Hosty himself: the agent steps write their
+ *  reasons as lowercase fragments and sometimes name Hosty or "the agent"
+ *  in the third person ("Hosty doesn't scout that city yet"). */
+function inHostysWords(reason: string): string {
+  const firstPerson = reason
+    .replace(/\bHosty doesn't\b/g, "I don't")
+    .replace(/\b[Tt]he agent will\b/g, "I'll");
+  const spoken = sentence(firstPerson);
+  return spoken.charAt(0).toUpperCase() + spoken.slice(1);
+}
+
+/** What run.ts calls each step in a run's summary ("Done: plan, venues"). */
+const STEP_NAME: Record<string, string> = {
+  plan: "the plan",
+  venues: "venues",
+  vendors: "vendor inquiries",
+};
+
+/** A finished run's summary — "Done: plan, venues · Left undone: vendors" —
+ *  as Hosty would say it. Only the steps the row names; never a count. */
+function runSummary(row: FeedRow): string {
+  const listed = (label: string) => {
+    const part = parts(row.body).find((p) => p.startsWith(`${label}: `));
+    if (!part) return [];
+    return part
+      .slice(label.length + 2)
+      .split(", ")
+      .map((step) => STEP_NAME[step.trim()] ?? step.trim());
+  };
+  const done = listed("Done");
+  const undone = listed("Left undone");
+  if (undone.length > 0) {
+    return done.length > 0
+      ? `I finished ${naturalList(done)}, but couldn't finish ${naturalList(undone)}.`
+      : `I couldn't finish ${naturalList(undone)}.`;
+  }
+  if (row.title === "The agent finished with problems") return "Some of it didn't work this time.";
+  return done.length > 0 ? `All done for now. I finished ${naturalList(done)}.` : "All done for now.";
+}
+
 function hostyText(row: FeedRow): string | null {
   switch (row.kind) {
     case "run_started":
       return "On it. Let me take a look.";
     case "run_finished":
-      return RUN_FINISHED[row.title] ?? null;
+      if (row.title === "The agent finished" || row.title === "The agent finished with problems") {
+        return runSummary(row);
+      }
+      return RUN_OUTCOME[row.title] ?? null;
     case "plan_drafted": {
       const all = parts(row.body);
       const source = all.find((part) => part in PLAN_SOURCE);
@@ -109,10 +152,12 @@ function hostyText(row: FeedRow): string | null {
     }
     case "step_skipped": {
       const lead = `I ${lowerFirst(sentence(row.title))}`;
-      return row.body ? `${lead} ${sentence(row.body)}` : lead;
+      return row.body ? `${lead} ${inHostysWords(row.body)}` : lead;
     }
     case "step_failed":
-      return `I ${lowerFirst(sentence(row.title))} I'll try again on the next run.`;
+      // No promise to retry: the sweep gives up after MAX_ATTEMPTS, so
+      // "I'll try again" would sometimes be untrue.
+      return `I ${lowerFirst(row.title.trim())} this time.`;
     default:
       return null;
   }
