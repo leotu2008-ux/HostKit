@@ -16,11 +16,10 @@ export function isMayaChen(user: { email: string; name: string }): boolean {
  *  the password lives only in Vercel's environment, never in this repo. */
 export const ADMIN_EMAIL = "leowomc@gmail.com";
 
-/** Who gets past the closed-access gate: Maya, and the administrator. The
- *  admin match is the exact address — no name fallback, so nobody becomes an
- *  administrator by calling themselves "Hosty". */
-export function hasDashboardAccess(user: { email: string; name: string }): boolean {
-  return isMayaChen(user) || isAdmin(user);
+/** Who gets past the closed-access gate: Maya, the administrator, and anyone
+ *  the administrator approved off the waitlist (lib/waitlist-approval.ts). */
+export function hasDashboardAccess(user: { email: string; name: string; approvedAt: Date | null }): boolean {
+  return isMayaChen(user) || isAdmin(user) || user.approvedAt !== null;
 }
 
 /** The administrator only — exact address, no name fallback. Gates the admin

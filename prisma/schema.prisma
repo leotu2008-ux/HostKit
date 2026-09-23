@@ -42,6 +42,8 @@ model User {
   showOnGuestLists Boolean   @default(true)
   /// Set once a link sent to the address was opened (lib/account.ts).
   emailVerifiedAt  DateTime?
+  /// Set when the administrator approves this person off the waitlist.
+  approvedAt       DateTime?
   createdAt        DateTime  @default(now())
 
   events             Event[]
@@ -54,6 +56,7 @@ model User {
   notifications      Notification[]
   pushTokens         PushToken[]
   mcpGrants          McpGrant[]
+  emailListEntry     EmailListEntry?
 }
 
 /// A club or org that hosts events: a page people follow, run by its admins.
@@ -834,11 +837,13 @@ model McpGrant {
   @@index([expiresAt])
 }
 
-/// Someone who asked for an account. Signup does not create a User —
-/// the dashboard stays limited to Maya Chen, and this is the list.
 model EmailListEntry {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String
+  createdAt  DateTime  @default(now())
+  /// Set when the administrator lets this person in.
+  approvedAt DateTime?
+  userId     String?   @unique
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
