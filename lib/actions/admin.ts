@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { isAdmin } from "@/lib/access";
 import { db } from "@/lib/db";
-import { originFromHeaders } from "@/lib/mcp/config";
+import { siteOrigin } from "@/lib/site";
 import { getCurrentUser } from "@/lib/session";
 import { approveWaitlistEntry } from "@/lib/waitlist-approval";
 
@@ -34,6 +34,6 @@ export async function approveWaitlistEntryAction(formData: FormData) {
   if (!user || !isAdmin(user)) throw new Error("Only the administrator can approve people.");
   const entryId = String(formData.get("entryId") ?? "");
   if (!entryId) throw new Error("No one to approve.");
-  await approveWaitlistEntry(entryId, originFromHeaders(await headers()));
+  await approveWaitlistEntry(entryId, siteOrigin(await headers()));
   refresh();
 }

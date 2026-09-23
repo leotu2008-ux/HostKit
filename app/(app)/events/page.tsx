@@ -100,7 +100,7 @@ export default async function EventsPage({
           body={
             tab === "past"
               ? "Nights you've hosted will collect here."
-              : "Name, time, place, tickets. You can save a night before you have an account."
+              : "Name, time, place, tickets."
           }
           action={tab === "past" ? undefined : <CreateEventButton />}
         />

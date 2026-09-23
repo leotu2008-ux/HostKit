@@ -6,13 +6,14 @@ const mocks = vi.hoisted(() => ({
   userFind: vi.fn(),
   userCreate: vi.fn(),
   userUpdate: vi.fn(),
+  userDelete: vi.fn(),
   invite: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
     emailListEntry: { findUnique: mocks.entryFind, update: mocks.entryUpdate },
-    user: { findUnique: mocks.userFind, create: mocks.userCreate, update: mocks.userUpdate },
+    user: { findUnique: mocks.userFind, create: mocks.userCreate, update: mocks.userUpdate, delete: mocks.userDelete },
   },
 }));
 vi.mock("@/lib/account", async () => {
@@ -35,6 +36,7 @@ describe("approveWaitlistEntry", () => {
       name: ENTRY.name,
       ...data,
     }));
+    mocks.userDelete.mockResolvedValue({});
   });
 
   it("creates the user from the entry's stored, normalized email, approves both rows and sends one invite", async () => {
@@ -101,5 +103,21 @@ describe("approveWaitlistEntry", () => {
     expect(mocks.userCreate).toHaveBeenCalled();
     expect(mocks.userUpdate).not.toHaveBeenCalled();
     expect(mocks.entryUpdate).not.toHaveBeenCalled();
+    // This call created the user, so the half-made row is rolled back —
+    // nothing is left behind for a retry to mistake for a real signup.
+    expect(mocks.userDelete).toHaveBeenCalledWith({ where: { id: "u-new" } });
+  });
+
+  it("never deletes a user that already existed when the invite fails", async () => {
+    mocks.entryFind.mockResolvedValue(ENTRY);
+    mocks.userFind.mockResolvedValue({ id: "u-old", email: ENTRY.email, name: ENTRY.name, approvedAt: null });
+    mocks.invite.mockRejectedValue(new Error("smtp down"));
+
+    await expect(approveWaitlistEntry("wl-1", "https://tryhosty.app")).rejects.toThrow("smtp down");
+
+    expect(mocks.userCreate).not.toHaveBeenCalled();
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.entryUpdate).not.toHaveBeenCalled();
+    expect(mocks.userDelete).not.toHaveBeenCalled();
   });
 });
