@@ -16,6 +16,9 @@ export function contactEmail(raw: string | null | undefined): string | null {
  * Links every guest of this event who has an email to the host's Contact for
  * that address, creating the Contact the first time. Idempotent: only guests
  * without a contact are touched. Events with no owner have no guest book.
+ *
+ * Batched to avoid an N+1: one createMany for the new contacts, one findMany
+ * to get their ids, then one updateMany per distinct email (not per guest).
  */
 export async function linkGuestsToContacts(eventId: string): Promise<number> {
   const event = await db.event.findUnique({ where: { id: eventId }, select: { ownerId: true } });
@@ -27,17 +30,36 @@ export async function linkGuestsToContacts(eventId: string): Promise<number> {
     select: { id: true, name: true, email: true },
   });
 
-  let linked = 0;
+  const byEmail = new Map<string, { name: string; guestIds: string[] }>();
   for (const guest of guests) {
     const email = contactEmail(guest.email);
     if (!email) continue;
-    const contact = await db.contact.upsert({
-      where: { ownerId_email: { ownerId, email } },
-      create: { ownerId, name: guest.name, email },
-      update: {},
+    const entry = byEmail.get(email);
+    if (entry) entry.guestIds.push(guest.id);
+    else byEmail.set(email, { name: guest.name, guestIds: [guest.id] });
+  }
+  if (byEmail.size === 0) return 0;
+
+  const emails = [...byEmail.keys()];
+  await db.contact.createMany({
+    data: emails.map((email) => ({ ownerId, name: byEmail.get(email)!.name, email })),
+    skipDuplicates: true,
+  });
+
+  const contacts = await db.contact.findMany({
+    where: { ownerId, email: { in: emails } },
+    select: { id: true, email: true },
+  });
+
+  let linked = 0;
+  for (const contact of contacts) {
+    const entry = contact.email ? byEmail.get(contact.email) : undefined;
+    if (!entry) continue;
+    const result = await db.guest.updateMany({
+      where: { eventId, contactId: null, id: { in: entry.guestIds } },
+      data: { contactId: contact.id },
     });
-    await db.guest.update({ where: { id: guest.id }, data: { contactId: contact.id } });
-    linked += 1;
+    linked += result.count;
   }
   return linked;
 }

@@ -9,7 +9,25 @@ import type { GuestBookEntry } from "@/lib/guest-book";
 export function GuestBookPicker({ eventId, entries }: { eventId: string; entries: GuestBookEntry[] }) {
   const [state, action, pending] = useActionState<GuestFormState, FormData>(inviteFromGuestBookAction, undefined);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const allPicked = picked.size === entries.length;
+
+  // A successful invite makes `refresh()` drop those people from `entries`,
+  // but `picked` is our own state and won't shrink on its own. Rather than
+  // clear it in an effect (which would cause an extra render), reset it
+  // during render the moment a new `state` comes in from the action — the
+  // pattern React's docs recommend for state that should reset when
+  // something external changes.
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (state?.added) setPicked(new Set());
+  }
+
+  // Belt and suspenders: `picked` can still momentarily hold ids that just
+  // dropped out of `entries` (e.g. this render hasn't reset it yet), so
+  // derive the counts from what's actually still visible.
+  const visible = new Set(entries.map((e) => e.id));
+  const pickedVisible = [...picked].filter((id) => visible.has(id));
+  const allPicked = pickedVisible.length === entries.length;
 
   function toggle(id: string) {
     setPicked((prev) => {
@@ -65,8 +83,8 @@ export function GuestBookPicker({ eventId, entries }: { eventId: string; entries
         </p>
       ) : null}
       {state?.added ? <p className="text-sm text-forest">Invited {state.added}.</p> : null}
-      <Button type="submit" size="sm" disabled={pending || picked.size === 0}>
-        {pending ? "Inviting…" : `Invite ${picked.size || ""}`.trim()}
+      <Button type="submit" size="sm" disabled={pending || pickedVisible.length === 0}>
+        {pending ? "Inviting…" : `Invite ${pickedVisible.length || ""}`.trim()}
       </Button>
     </form>
   );

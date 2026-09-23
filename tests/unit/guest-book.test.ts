@@ -3,17 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
   guestFindMany: vi.fn(),
-  guestUpdate: vi.fn(),
+  guestUpdateMany: vi.fn(),
   guestCreateMany: vi.fn(),
-  contactUpsert: vi.fn(),
+  contactCreateMany: vi.fn(),
   contactFindMany: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
     event: { findUnique: mocks.eventFind },
-    guest: { findMany: mocks.guestFindMany, update: mocks.guestUpdate, createMany: mocks.guestCreateMany },
-    contact: { upsert: mocks.contactUpsert, findMany: mocks.contactFindMany },
+    guest: { findMany: mocks.guestFindMany, updateMany: mocks.guestUpdateMany, createMany: mocks.guestCreateMany },
+    contact: { createMany: mocks.contactCreateMany, findMany: mocks.contactFindMany },
   },
 }));
 
@@ -36,22 +36,38 @@ describe("linkGuestsToContacts", () => {
       { id: "g1", name: "Sam", email: "Sam@X.com" },
       { id: "g2", name: "Sam O", email: "sam@x.com" },
     ]);
-    mocks.contactUpsert.mockResolvedValue({ id: "c1" });
+    mocks.contactCreateMany.mockResolvedValue({ count: 1 });
+    mocks.contactFindMany.mockResolvedValue([{ id: "c1", email: "sam@x.com" }]);
+    mocks.guestUpdateMany.mockResolvedValue({ count: 2 });
 
     const linked = await linkGuestsToContacts("evt-1");
 
     expect(linked).toBe(2);
-    for (const call of mocks.contactUpsert.mock.calls) {
-      expect(call[0].where).toEqual({ ownerId_email: { ownerId: "host-1", email: "sam@x.com" } });
-    }
-    expect(mocks.guestUpdate).toHaveBeenCalledWith({ where: { id: "g1" }, data: { contactId: "c1" } });
-    expect(mocks.guestUpdate).toHaveBeenCalledWith({ where: { id: "g2" }, data: { contactId: "c1" } });
+    expect(mocks.contactCreateMany).toHaveBeenCalledWith({
+      data: [{ ownerId: "host-1", name: "Sam", email: "sam@x.com" }],
+      skipDuplicates: true,
+    });
+    expect(mocks.guestUpdateMany).toHaveBeenCalledWith({
+      where: { eventId: "evt-1", contactId: null, id: { in: ["g1", "g2"] } },
+      data: { contactId: "c1" },
+    });
   });
 
   it("does nothing for an event with no owner", async () => {
     mocks.eventFind.mockResolvedValue({ ownerId: null });
     expect(await linkGuestsToContacts("evt-1")).toBe(0);
-    expect(mocks.contactUpsert).not.toHaveBeenCalled();
+    expect(mocks.contactCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("skips guests whose email is blank", async () => {
+    mocks.eventFind.mockResolvedValue({ ownerId: "host-1" });
+    mocks.guestFindMany.mockResolvedValue([{ id: "g1", name: "Sam", email: "   " }]);
+
+    const linked = await linkGuestsToContacts("evt-1");
+
+    expect(linked).toBe(0);
+    expect(mocks.contactCreateMany).not.toHaveBeenCalled();
+    expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
   });
 });
 
