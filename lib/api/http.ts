@@ -33,7 +33,7 @@ export async function apiUser(request: Request) {
   if (!payload) return null;
   const user = await db.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, company: true, xHandle: true, linkedinHandle: true, instagramHandle: true, imageUrl: true, phone: true, phoneVerifiedAt: true, emailVerifiedAt: true, sessionVersion: true },
+    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, company: true, xHandle: true, linkedinHandle: true, instagramHandle: true, imageUrl: true, phone: true, phoneVerifiedAt: true, emailVerifiedAt: true, approvedAt: true, sessionVersion: true },
   });
   // A password reset bumps the version; tokens issued before it are out.
   if (!user || user.sessionVersion !== payload.v) return null;

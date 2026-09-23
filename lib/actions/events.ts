@@ -1,13 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { currentProfile, getCurrentUser, requireEvent, requireUser } from "@/lib/session";
-import { newClaimToken, rememberDraftClaim } from "@/lib/drafts";
+import { hasDashboardAccess } from "@/lib/access";
+import { rememberDraftClaim } from "@/lib/drafts";
 import { publishEvent } from "@/lib/publish";
-import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 import { readyToPublish } from "@/lib/brief";
 import { record } from "@/lib/activity";
 
@@ -19,17 +18,10 @@ import { record } from "@/lib/activity";
  */
 export async function createBlankEventAction(): Promise<void> {
   const user = await currentProfile();
-  const claimToken = user ? null : newClaimToken();
-  if (!user) {
-    // Unchanged from createEventAction: drafts without an account are cheap
-    // rows anyone can create, so a few an hour per address.
-    try {
-      await assertRateLimit(`draft:ip:${clientIp(await headers())}`, ...LIMITS.draft.perIp);
-    } catch (error) {
-      if (error instanceof RateLimitError) redirect("/events?limit=1");
-      throw error;
-    }
-  }
+  // Hosty is invite-only: no anonymous drafts from the website, and no event
+  // for anyone the administrator hasn't let in. They go to the waitlist.
+  if (!user || !hasDashboardAccess(user)) redirect("/signup");
+  const claimToken = null;
   const event = await db.event.create({
     data: {
       ownerId: user?.id ?? null,

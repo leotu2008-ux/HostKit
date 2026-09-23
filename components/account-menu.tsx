@@ -25,8 +25,11 @@ const ROWS = [
   { href: "/mcp", label: "Connect an agent", hint: "Cursor and Claude, read-only" },
 ];
 
-/** Shown to the administrator only; the page itself 404s for anyone else. */
-const ADMIN_ROW = { href: "/admin/events", label: "Admin", hint: "Every event, remove any of them" };
+/** Shown to the administrator only; the pages themselves 404 for anyone else. */
+const ADMIN_ROWS = [
+  { href: "/admin/waitlist", label: "Waitlist", hint: "Let people in" },
+  { href: "/admin/events", label: "All events", hint: "Every event, remove any of them" },
+];
 
 /**
  * The menu behind the logo (and the avatar): who you are, your events, and
@@ -116,7 +119,7 @@ export function AccountMenu({
                   </div>
                 </div>
                 <div className="my-1 h-px bg-line" />
-                {(isAdmin(user) ? [...ROWS, ADMIN_ROW] : ROWS).map((row) => (
+                {(isAdmin(user) ? [...ROWS, ...ADMIN_ROWS] : ROWS).map((row) => (
                   <Link
                     key={row.href}
                     role="menuitem"

@@ -19,6 +19,8 @@ export class AccountError extends Error {
 
 export const RESET_TTL_MS = 60 * 60_000;
 export const VERIFY_TTL_MS = 24 * 60 * 60_000;
+/** An approval invite is a set-password link; a week to act on it. */
+export const INVITE_TTL_MS = 7 * 24 * 60 * 60_000;
 
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -168,6 +170,34 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
   );
 }
 
+/**
+ * The administrator let this person in. Their account exists with an unusable
+ * password; this link sets the real one. It rides the reset-token machinery,
+ * so /reset-password handles it and an expired invite is fixed by "Forgot
+ * password" like any other account.
+ */
+export async function sendApprovalInvite(
+  user: { id: string; email: string; name: string },
+  origin: string,
+): Promise<{ devLink?: string }> {
+  const token = await issue(user.id, "reset", INVITE_TTL_MS);
+  const link = `${origin}/reset-password?token=${token}`;
+  return deliver(
+    user.email,
+    "You're in — set your Hosty password",
+    [
+      `Hi ${user.name.split(" ")[0] || "there"},`,
+      "",
+      "You're off the Hosty waitlist. Set a password to start planning:",
+      link,
+      "",
+      "The link works for a week. After that, use \"Forgot password\" on the sign-in page.",
+    ].join("\n"),
+    link,
+    true,
+  );
+}
+
 /** Returns the account's email, so sign-in can be prefilled. */
 export async function resetPassword(token: string, newPassword: string): Promise<string> {
   if (newPassword.length < 8) throw new AccountError("Use at least 8 characters.", 400);
@@ -177,7 +207,12 @@ export async function resetPassword(token: string, newPassword: string): Promise
   // Every existing session and API token dies with the old password.
   const user = await db.user.update({
     where: { id: hit.userId },
-    data: { passwordHash: await bcrypt.hash(newPassword, 10), sessionVersion: { increment: 1 } },
+    data: {
+      passwordHash: await bcrypt.hash(newPassword, 10),
+      sessionVersion: { increment: 1 },
+      // Opening a link sent to the inbox proves the inbox.
+      emailVerifiedAt: new Date(),
+    },
     select: { email: true },
   });
   return user.email;

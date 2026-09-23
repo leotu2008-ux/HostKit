@@ -71,7 +71,7 @@ describe("scroll reveal", () => {
 });
 
 describe("landing page", () => {
-  const html = renderToStaticMarkup(createElement(Landing));
+  const html = renderToStaticMarkup(createElement(Landing, { canCreate: false }));
 
   it("queues the hero lines to rise in order, pill first and the preview last", () => {
     const lines = blocks(html, "rise");
@@ -88,9 +88,12 @@ describe("landing page", () => {
     expect(lines[1]).toContain("Plan the event.");
     expect(lines[1]).toContain("Let the agent do the work.");
     expect(lines[2]).toContain("Brief it once and it drafts the plan");
-    expect(lines[3]).toContain("Plan an event");
+    expect(lines[3]).toContain("Join the waitlist");
+    expect(lines[3]).toContain('href="/signup"');
     expect(lines[3]).toContain("See what’s on");
-    expect(lines[4]).toContain("Free to start.");
+    expect(lines[4]).toContain("Invite-only while we’re small.");
+    expect(html).not.toContain("Free to start");
+    expect(html).not.toContain("No account needed");
     expect(lines[5]).toContain("You brief it");
   });
 
@@ -113,5 +116,11 @@ describe("landing page", () => {
     // Every block is visible as served; only the client marks one pending.
     expect(html).not.toContain("data-reveal");
     expect(html).not.toContain('data-play="playing"');
+  });
+
+  it("offers a signed-in host with access the Plan an event button instead", () => {
+    const hostHtml = renderToStaticMarkup(createElement(Landing, { canCreate: true }));
+    expect(hostHtml).toContain("Plan an event");
+    expect(hostHtml).not.toContain("Invite-only");
   });
 });

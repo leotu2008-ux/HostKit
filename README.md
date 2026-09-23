@@ -47,10 +47,11 @@ the launch splash.
 
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
-You can draft a night before you have an account. Publishing — listing it on
-Discover or sharing a live guest link — needs a sign-in. Access is closed,
-so only the seeded Maya Chen account and the administrator (`ADMIN_EMAIL` in
-`lib/access.ts`) sign in, and new sign-ups join the waitlist. The
+Planning a night on the website needs a sign-in. Access is closed: the
+seeded Maya Chen account, the administrator (`ADMIN_EMAIL` in
+`lib/access.ts`), and people the administrator has let in can sign in. New
+sign-ups join the waitlist. The administrator lets people in from
+`/admin/waitlist`, and each one gets an email to set a password. The
 administrator also gets an Admin row in the account menu: `/admin/events`
 lists every host's events and can remove any of them for good. A
 confirmation link and password resets go out by email once Resend is

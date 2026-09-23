@@ -5,7 +5,9 @@ import { AppChrome } from "@/components/app-chrome";
 import { Avatar } from "@/components/avatar";
 import { CreateEventButton } from "@/components/create-event-button";
 import { InstallPrompt } from "@/components/install-prompt";
+import { ButtonLink } from "@/components/ui";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
+import { hasDashboardAccess } from "@/lib/access";
 import { signOutAction } from "@/lib/actions/auth";
 import { currentProfile } from "@/lib/session";
 import { unreadCount } from "@/lib/notify";
@@ -31,6 +33,7 @@ import { washCss, washPaletteFor } from "@/lib/school-wash";
  */
 export async function AppFrame({ children }: { children: React.ReactNode }) {
   const user = await currentProfile();
+  const canCreate = Boolean(user && hasDashboardAccess(user));
   const unread = user ? await unreadCount(user.id) : 0;
   const menuUser = user
     ? { name: user.name, email: user.email, imageUrl: user.imageUrl, school: user.school, classYear: user.classYear }
@@ -68,7 +71,13 @@ export async function AppFrame({ children }: { children: React.ReactNode }) {
             </AccountMenu>
             <DesktopNav />
             <div className="ml-auto flex min-w-0 items-center gap-1.5">
-              <CreateEventButton className="hidden h-9 items-center rounded-full px-4 text-sm font-medium md:inline-flex" />
+              {canCreate ? (
+                <CreateEventButton className="hidden h-9 items-center rounded-full px-4 text-sm font-medium md:inline-flex" />
+              ) : (
+                <ButtonLink href="/signup" variant="brand" size="sm" className="hidden h-9 px-4 md:inline-flex">
+                  Join the waitlist
+                </ButtonLink>
+              )}
               {user ? (
                 <Link
                   href="/inbox"
