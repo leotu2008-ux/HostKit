@@ -8,7 +8,9 @@ import { daysUntil } from "@/lib/plan";
 import { conflictCountFor } from "@/lib/campus/conflicts";
 import { updateGuestAction, removeGuestAction } from "@/lib/actions/guests";
 import { checkInGuestAction, undoCheckInAction } from "@/lib/actions/checkin";
+import { guestBookFor } from "@/lib/guest-book";
 import { AddGuestsForm } from "@/components/add-guests-form";
+import { GuestBookPicker } from "@/components/guest-book-picker";
 import { RsvpLink } from "@/components/rsvp-link";
 import { ProgressBar } from "@/components/progress-bar";
 import {
@@ -44,6 +46,7 @@ export default async function GuestsPage({
 }: PageProps<"/events/[id]/guests">) {
   const { id } = await params;
   const { event } = await requireEvent(id);
+  const guestBook = event.ownerId ? await guestBookFor(event.ownerId, event.id) : [];
 
   const guests = await db.guest.findMany({
     where: { eventId: event.id },
@@ -123,6 +126,12 @@ export default async function GuestsPage({
       <Card className="p-5">
         <AddGuestsForm eventId={event.id} />
       </Card>
+
+      {guestBook.length > 0 ? (
+        <Card className="p-5">
+          <GuestBookPicker eventId={event.id} entries={guestBook} />
+        </Card>
+      ) : null}
 
       <section>
         <SectionHeading

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { isPublicPageVisible } from "@/lib/listing";
 import { notify } from "@/lib/notify";
 import { newRsvpToken } from "@/lib/tokens";
+import { linkGuestsToContacts } from "@/lib/guest-book";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 /** Where an account stands with an event. Mirrors `RegistrationState` on iOS. */
@@ -166,6 +167,8 @@ export async function registerGuest(input: {
     }
     return { ok: true, state: decision as "going" | "pending" | "waitlisted", changed: true } as const;
   });
+
+  if (result.ok && result.changed) await linkGuestsToContacts(event.id);
 
   // A new request is the host's to answer — tell them and the club's admins.
   if (result.ok && result.state === "pending" && result.changed) {
