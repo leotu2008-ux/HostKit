@@ -29,6 +29,8 @@ const SOURCE: RerunSource = {
   type: "MIXER",
   kind: "pitch night",
   date: new Date("2026-10-01T19:00:00Z"),
+  endDate: new Date("2026-10-03T19:00:00Z"),
+  datesFlexible: true,
   durationHours: 3,
   guestCount: 60,
   city: "Boston, MA",
@@ -89,6 +91,11 @@ describe("planRerun", () => {
     expect(plan.event).not.toHaveProperty("claimToken");
   });
 
+  it("carries flexible dates over, shifting endDate by the same gap as date", () => {
+    expect(plan.event.datesFlexible).toBe(true);
+    expect(plan.event.endDate?.toISOString()).toBe("2026-11-07T19:00:00.000Z");
+  });
+
   it("copies the budget split and re-dates tasks from their offset", () => {
     expect(plan.budgetCategories).toEqual([
       { category: "CATERING", name: "Food", allocatedCents: 90_000, source: "GENERATED" },
@@ -108,9 +115,12 @@ describe("planRerun", () => {
   it("keeps run-sheet times of day when the source had no date", () => {
     const undated = planRerun({ ...SOURCE, date: null }, date);
     const startsAt = undated.runSheetItems[0].startsAt;
-    expect(startsAt.getUTCHours()).toBe(18);
-    expect(startsAt.getUTCMinutes()).toBe(30);
-    expect(startsAt.toISOString().slice(0, 10)).toBe("2026-11-05");
+    const source = SOURCE.runSheetItems[0].startsAt;
+    expect(startsAt.getHours()).toBe(source.getHours());
+    expect(startsAt.getMinutes()).toBe(source.getMinutes());
+    expect(startsAt.getFullYear()).toBe(date.getFullYear());
+    expect(startsAt.getMonth()).toBe(date.getMonth());
+    expect(startsAt.getDate()).toBe(date.getDate());
   });
 });
 

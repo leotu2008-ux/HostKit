@@ -42,7 +42,9 @@ describe("runAgainAction", () => {
 
   it("refuses an event with no host", async () => {
     mocks.requireEvent.mockResolvedValue({ event: { id: "evt-1", ownerId: null } });
-    await expect(runAgainAction(form("evt-1", "2026-11-05T19:00"))).rejects.toThrow();
+    await expect(runAgainAction(form("evt-1", "2026-11-05T19:00"))).rejects.toThrow(
+      "REDIRECT /events/evt-1/run-again?error=owner",
+    );
     expect(mocks.runEventAgain).not.toHaveBeenCalled();
   });
 });

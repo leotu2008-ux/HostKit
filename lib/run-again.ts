@@ -18,6 +18,8 @@ export type RerunSource = {
   type: EventType;
   kind: string | null;
   date: Date | null;
+  endDate: Date | null;
+  datesFlexible: boolean;
   durationHours: number;
   guestCount: number;
   city: string;
@@ -58,7 +60,7 @@ export type RerunPlan = ReturnType<typeof planRerun>;
 function shiftTime(at: Date, from: Date | null, to: Date): Date {
   if (from) return new Date(at.getTime() + (to.getTime() - from.getTime()));
   const moved = new Date(to);
-  moved.setUTCHours(at.getUTCHours(), at.getUTCMinutes(), 0, 0);
+  moved.setHours(at.getHours(), at.getMinutes(), 0, 0);
   return moved;
 }
 
@@ -76,6 +78,11 @@ export function planRerun(source: RerunSource, date: Date) {
       type: source.type,
       kind: source.kind,
       date,
+      endDate:
+        source.endDate && source.date
+          ? new Date(source.endDate.getTime() + (date.getTime() - source.date.getTime()))
+          : null,
+      datesFlexible: source.datesFlexible,
       durationHours: source.durationHours,
       guestCount: source.guestCount,
       city: source.city,
@@ -141,7 +148,12 @@ export async function runEventAgain(sourceId: string, date: Date): Promise<strin
   return db.$transaction(async (tx) => {
     const source = await tx.event.findUniqueOrThrow({
       where: { id: sourceId },
-      include: { budgetCategories: true, tasks: true, runSheetItems: true, collaborators: true },
+      include: {
+        budgetCategories: true,
+        tasks: { orderBy: { createdAt: "asc" } },
+        runSheetItems: { orderBy: { startsAt: "asc" } },
+        collaborators: true,
+      },
     });
     if (!source.ownerId) throw new Error("Only an event with a host can be run again.");
 
