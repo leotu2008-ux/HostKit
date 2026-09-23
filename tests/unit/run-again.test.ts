@@ -96,6 +96,16 @@ describe("planRerun", () => {
     expect(plan.event.endDate?.toISOString()).toBe("2026-11-07T19:00:00.000Z");
   });
 
+  it("drops endDate when the source had no date or no end", () => {
+    const noSourceDate = planRerun({ ...SOURCE, date: null }, date);
+    expect(noSourceDate.event.endDate).toBeNull();
+    expect(noSourceDate.event.datesFlexible).toBe(true);
+
+    const noEndDate = planRerun({ ...SOURCE, endDate: null }, date);
+    expect(noEndDate.event.endDate).toBeNull();
+    expect(noEndDate.event.datesFlexible).toBe(true);
+  });
+
   it("copies the budget split and re-dates tasks from their offset", () => {
     expect(plan.budgetCategories).toEqual([
       { category: "CATERING", name: "Food", allocatedCents: 90_000, source: "GENERATED" },
