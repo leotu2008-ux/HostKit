@@ -1,7 +1,9 @@
 import { requireEvent } from "@/lib/session";
 import { loadOutreach, type OutreachRow } from "@/lib/api/outreach";
+import { vendorBookFor } from "@/lib/vendor-book";
 import { OutreachCard } from "@/components/outreach-card";
 import { AddCollaboratorForm } from "@/components/add-collaborator-form";
+import { VendorBookCard } from "@/components/vendor-book-card";
 import { ButtonLink, Card, EmptyState, SectionHeading } from "@/components/ui";
 
 const SECTIONS: Array<{
@@ -39,6 +41,7 @@ const SECTIONS: Array<{
 export default async function OutreachPage({ params }: PageProps<"/events/[id]/outreach">) {
   const { id } = await params;
   const { event, user } = await requireEvent(id);
+  const vendorBook = event.ownerId ? await vendorBookFor(event.ownerId) : [];
   const rows = await loadOutreach(event, user?.name ?? "the host");
   const pending = rows.filter((r) => r.status === "PENDING").length;
 
@@ -57,6 +60,8 @@ export default async function OutreachPage({ params }: PageProps<"/events/[id]/o
           Scout vendors
         </ButtonLink>
       </div>
+
+      {vendorBook.length > 0 ? <VendorBookCard eventId={event.id} entries={vendorBook} /> : null}
 
       {SECTIONS.map((section) => {
         const group = rows.filter((r) => r.kind === section.kind);

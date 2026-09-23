@@ -12,6 +12,7 @@ import { EmailSendError } from "@/lib/email/failure";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
 import { draftInquiry } from "@/lib/inquiries";
 import { record } from "@/lib/activity";
+import { rememberBookedListing } from "@/lib/vendor-book";
 
 export type InquiryFormState = { error?: string } | undefined;
 
@@ -181,6 +182,10 @@ export async function updateInquiryAction(
       await tx.budgetItem.deleteMany({ where: { inquiryId: inquiry.id } });
     }
   });
+
+  if (status === "BOOKED" && inquiry.status !== "BOOKED") {
+    await rememberBookedListing(eventId, inquiry.listingId);
+  }
 
   // Only the move into BOOKED/DECLINED is worth a line — resaving an edited
   // message on an inquiry that's already in that status isn't new news.

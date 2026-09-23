@@ -10,6 +10,7 @@ import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { EmailSendError } from "@/lib/email/failure";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
 import { record } from "@/lib/activity";
+import { addVendorToEvent, rememberCollaborator } from "@/lib/vendor-book";
 
 const KINDS = ["VENUE", "SPEAKER", "COHOST"] as const;
 const STATUSES = ["PENDING", "CONFIRMED", "DECLINED"] as const;
@@ -89,6 +90,7 @@ export async function setCollaboratorStatusAction(formData: FormData) {
       kind: "collaborator_confirmed",
       title: `${KIND_LABEL[before.kind]} confirmed: ${before.name}`,
     });
+    await rememberCollaborator(collaboratorId);
   }
   refresh();
 }
@@ -253,4 +255,14 @@ export async function sendCollaboratorAction(
 
   refresh();
   return undefined;
+}
+
+/** Adds someone from the host's vendor book to this event. */
+export async function addVendorFromBookAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const vendorContactId = String(formData.get("vendorContactId") ?? "");
+  const { event } = await requireEvent(eventId);
+  if (!event.ownerId || !vendorContactId) return;
+  await addVendorToEvent(event.id, event.ownerId, vendorContactId);
+  refresh();
 }
