@@ -7,6 +7,7 @@ import { WorkspaceSidebar, type SwitcherEvent } from "@/components/workspace-sid
 import { loadBriefing } from "@/lib/agent/load";
 import { loadAgentStatus } from "@/lib/activity";
 import { isVenueSearchConfigured } from "@/lib/venues/search";
+import { firstNameOf } from "@/lib/hosty-voice";
 
 export async function generateMetadata({ params }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
@@ -74,6 +75,7 @@ export default async function EventLayout({
               eventId={event.id}
               canSend={Boolean(user?.email)}
               venueSearchEnabled={isVenueSearchConfigured()}
+              firstName={firstNameOf(user?.name)}
               className="mt-8 xl:mt-0"
             />
           </div>
