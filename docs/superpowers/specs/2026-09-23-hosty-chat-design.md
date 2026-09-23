@@ -69,8 +69,8 @@ export function briefingIntro(briefing: Briefing, firstName: string | null): str
 | `venue_search_empty` | "No venues turned up nearby" | "I couldn't find venues nearby yet." |
 | `inquiries_drafted` (n>0) | "2 vendor inquiries drafted" / "Catering · AV" | "I drafted 2 vendor inquiries: catering and AV. They're waiting for you to send." |
 | `inquiries_drafted` (none) | "No vendors to draft for" | "I couldn't find vendors in the catalog that fit this date yet." |
-| `step_skipped` | e.g. "Didn't look for venues" / note | "I didn't look for venues this time." + note as a second sentence |
-| `step_failed` | e.g. "Couldn't find venues" / note | "I got stuck finding venues. I'll try again on the next run." |
+| `step_skipped` | e.g. "Didn't look for venues" / note | "I didn't look for venues." + note as a second sentence |
+| `step_failed` | e.g. "Couldn't find venues" / note | "I couldn't find venues. I'll try again on the next run." |
 | `run_finished` | "The agent finished" / "…with problems" / outcome line | "All done for now." / "Done, but a couple of things didn't work." / outcome line in first person |
 | `event_created` (system) | "Event created" | note: "Event created" |
 | `brief_saved` (host) | "Brief updated" / "Title · Date · City" | you: "Updated the brief: title, date and city" |
