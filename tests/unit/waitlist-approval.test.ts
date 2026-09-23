@@ -46,14 +46,18 @@ describe("approveWaitlistEntry", () => {
     const created = mocks.userCreate.mock.calls[0][0].data;
     expect(created.email).toBe("sam@babson.edu");
     expect(created.name).toBe("Sam Okafor");
-    expect(created.approvedAt).toBeInstanceOf(Date);
+    expect(created.approvedAt).toBeUndefined();
     expect(typeof created.passwordHash).toBe("string");
+    expect(mocks.invite).toHaveBeenCalledTimes(1);
+    expect(mocks.invite.mock.calls[0][1]).toBe("https://tryhosty.app");
+    expect(mocks.userUpdate).toHaveBeenCalledWith({
+      where: { id: "u-new" },
+      data: { approvedAt: expect.any(Date) },
+    });
     expect(mocks.entryUpdate).toHaveBeenCalledWith({
       where: { id: "wl-1" },
       data: { approvedAt: expect.any(Date), userId: "u-new" },
     });
-    expect(mocks.invite).toHaveBeenCalledTimes(1);
-    expect(mocks.invite.mock.calls[0][1]).toBe("https://tryhosty.app");
     expect(result).toEqual({ email: "sam@babson.edu", alreadyApproved: false });
   });
 
@@ -85,5 +89,17 @@ describe("approveWaitlistEntry", () => {
     mocks.entryFind.mockResolvedValue(null);
     await expect(approveWaitlistEntry("nope", "https://tryhosty.app")).rejects.toThrow("not on the waitlist");
     expect(mocks.invite).not.toHaveBeenCalled();
+  });
+
+  it("leaves the entry pending when the invite fails, so Let in can retry", async () => {
+    mocks.entryFind.mockResolvedValue(ENTRY);
+    mocks.userFind.mockResolvedValue(null);
+    mocks.invite.mockRejectedValue(new Error("smtp down"));
+
+    await expect(approveWaitlistEntry("wl-1", "https://tryhosty.app")).rejects.toThrow("smtp down");
+
+    expect(mocks.userCreate).toHaveBeenCalled();
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.entryUpdate).not.toHaveBeenCalled();
   });
 });

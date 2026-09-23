@@ -8,8 +8,10 @@ import { db } from "@/lib/db";
  * (a "use server" export is a public endpoint): lib/actions/admin.ts wraps it
  * behind the admin check.
  *
- * Idempotent: an entry that's already approved sends nothing and changes
- * nothing, so a double click can't mail two invites.
+ * Ordered to be retryable: user is created without approvedAt, the invite is sent,
+ * and only after the send succeeds are user and entry marked approved. If the send
+ * fails, the entry stays pending and "Let in" can retry; the next attempt finds the
+ * user row created the first time and reuses it.
  */
 export async function approveWaitlistEntry(
   entryId: string,
@@ -19,21 +21,24 @@ export async function approveWaitlistEntry(
   if (!entry) throw new AccountError("That person is not on the waitlist.", 404);
   if (entry.approvedAt) return { email: entry.email, alreadyApproved: true };
 
-  const now = new Date();
   const existing = await db.user.findUnique({ where: { email: entry.email } });
   const user = existing
-    ? await db.user.update({ where: { id: existing.id }, data: { approvedAt: now } })
+    ? existing
     : await db.user.create({
         data: {
           email: entry.email,
           name: entry.name,
           // Unusable until the invite link sets a real one.
           passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 10),
-          approvedAt: now,
         },
       });
 
-  await db.emailListEntry.update({ where: { id: entry.id }, data: { approvedAt: now, userId: user.id } });
+  // If this throws, the entry stays pending and can be retried.
   await sendApprovalInvite({ id: user.id, email: user.email, name: user.name }, origin);
+
+  // Only after the send succeeds.
+  const now = new Date();
+  await db.user.update({ where: { id: user.id }, data: { approvedAt: now } });
+  await db.emailListEntry.update({ where: { id: entry.id }, data: { approvedAt: now, userId: user.id } });
   return { email: entry.email, alreadyApproved: false };
 }
