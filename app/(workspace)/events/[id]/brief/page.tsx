@@ -76,11 +76,11 @@ export default async function BriefPage({ params }: PageProps<"/events/[id]/brie
       />
 
       <Card className="p-5">
-        <h2 className="text-sm font-semibold text-ink">What the agent still needs</h2>
+        <h2 className="text-sm font-semibold text-ink">What Hosty still needs</h2>
         <p className="mt-1 text-[13px] text-ink-mute">
           {missing.length > 0
             ? `${missingText.charAt(0).toUpperCase()}${missingText.slice(1)}.`
-            : "Saving this sets the agent going."}
+            : "Saving this sets Hosty going."}
         </p>
       </Card>
     </div>
