@@ -2,11 +2,12 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { Eyebrow } from "@/components/eyebrow";
+import { HostyMark } from "@/components/hosty-mark";
 
 /**
  * The landing page's preview panel: a brief on the left, what the agent
  * hands back on the right. Once it scrolls into view it plays the exchange
- * through, once: the brief types itself in, the right-hand label thinks for
+ * through, once: the brief types itself in, Hosty types for
  * a beat, then the tasks and the budget arrive one line at a time.
  *
  * The server renders the finished panel. The play state is entered only on
@@ -202,20 +203,26 @@ export function LandingPreview() {
         </dl>
 
         <div className="bg-surface p-5">
-          <Eyebrow>
+          <div className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+            <HostyMark size={18} />
+            <span>Hosty</span>
             {frame.thinking ? (
-              <span className="preview-thinking">
-                Drafting
+              <span className="preview-thinking font-normal text-ink-mute">
+                is typing
                 <span className="preview-dots" aria-hidden>
                   <span />
                   <span />
                   <span />
                 </span>
               </span>
-            ) : (
-              "It hands back"
-            )}
-          </Eyebrow>
+            ) : null}
+          </div>
+          <p
+            className="preview-line mt-2 text-[14px] text-ink"
+            data-in={frame.tasks > 0 ? "" : undefined}
+          >
+            Here&rsquo;s your plan for Thursday&rsquo;s mixer:
+          </p>
 
           <ul className="mt-3.5 space-y-1.5">
             {DRAFT_TASKS.map(([when, task], i) => (

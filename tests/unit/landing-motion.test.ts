@@ -45,7 +45,8 @@ describe("landing preview card", () => {
     const html = renderToStaticMarkup(createElement(LandingPreview));
 
     expect(html).toContain("You brief it");
-    expect(html).toContain("It hands back");
+    expect(html).toContain(">Hosty<");
+    expect(html).toContain("Here’s your plan for Thursday’s mixer:");
     expect(html).toContain("Mixer");
     expect(html).toContain("Thu 12 March, 8pm");
     expect(html).toContain("Lock the date, headcount and budget");
@@ -54,7 +55,7 @@ describe("landing preview card", () => {
     expect(html).toContain("$1,500");
     // Nothing starts hidden: the play state is only ever entered client-side.
     expect(html).not.toContain('data-play="playing"');
-    expect(html).not.toContain("Drafting");
+    expect(html).not.toContain("is typing");
   });
 });
 
@@ -84,7 +85,8 @@ describe("landing page", () => {
       "4",
       "5",
     ]);
-    expect(lines[0]).toContain("An agent for the whole event");
+    expect(lines[0]).toContain("Meet Hosty, an agent for the whole event");
+    expect(lines[0]).toContain('viewBox="0 0 100 100"');
     expect(lines[1]).toContain("Plan the event.");
     expect(lines[1]).toContain("Let the agent do the work.");
     expect(lines[2]).toContain("Brief it once and it drafts the plan");
