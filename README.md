@@ -72,6 +72,7 @@ map: data, images, accounts, and which keys turn on what.
 | `npm run db:migrate` / `db:seed` / `db:reset` | Database. Seed is a no-op if the catalog already has rows. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL`. |
 | `npm run db:studio` | Prisma Studio |
 | `npm run import:campus-json -- path/to.json` | One-off CampusEvent upsert from a JSON dump. Refuses to run unless `DATABASE_URL` is set. |
+| `npm run relink:guest-book` | One-off, after the recurring-hosts migration reaches production: links guests added since its backfill to the host's guest book. Idempotent. |
 | `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
 
 ## Deploying to Vercel
@@ -259,6 +260,20 @@ tabs:
 | **Outreach** | Venue, speakers, vendors and cohosts in one list, each with a drafted first message (`lib/outreach.ts`), Copy / email / call, confirm or remove, add someone |
 | **Blasts** | Email everyone going, those who haven't replied, or all — `{name}` becomes their first name. Sends via Resend when configured, otherwise hands you the addresses and message to paste (`lib/blasts.ts`, `lib/blast-send.ts`) |
 | **Promote** | Publish and visibility, the share link, a QR code for posters and the door, paste-ready copy for a story or group chat (`lib/promote.ts`, `lib/qr.ts`) |
+
+**For recurring hosts:**
+
+- **Run it again** (`/events/:id/run-again`, owner only) copies the brief,
+  budget split, tasks, vendors and run sheet into a new draft on a new date.
+  Guests aren't copied (`lib/run-again.ts`).
+- **Series**: the first run-again puts both nights in a series named after
+  the event; `/series/:id` lists every night and how many came.
+- **Guest book** (`lib/guest-book.ts`): everyone with an email on your
+  events becomes a contact. The Guests tab offers the people who came before
+  so you can invite them again.
+- **Vendor book** (`lib/vendor-book.ts`): confirmed venues, speakers and
+  cohosts, and booked catalog vendors, are remembered. The Outreach tab adds
+  a remembered venue, speaker or cohost to a new event in one click.
 
 Optional services, both off by default (see `.env.example`):
 
