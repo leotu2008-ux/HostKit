@@ -65,7 +65,7 @@ export default async function EventLayout({
         now={new Date().toISOString()}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <WorkspaceBar event={event} days={days} signedIn={Boolean(user)} />
+        <WorkspaceBar event={event} days={days} signedIn={Boolean(user)} isOwner={user?.id === event.ownerId} />
         <div className="flex-1 px-6 py-6 md:px-8">
           <div className="mx-auto max-w-[1180px] xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8">
             <div className="min-w-0">{children}</div>

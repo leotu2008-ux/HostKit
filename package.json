@@ -21,6 +21,7 @@
     "db:reset": "node scripts/guard-local-db.mjs npx prisma migrate reset --force",
     "db:studio": "prisma studio",
     "import:campus-json": "tsx scripts/import-campus-json.ts",
+    "relink:guest-book": "tsx scripts/relink-guest-book.ts",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && prisma migrate deploy && npm run db:seed && next build"
   },

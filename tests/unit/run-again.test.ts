@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoisted = vi.hoisted(() => {
   const tx = {
+    $queryRaw: vi.fn(),
     event: { findUniqueOrThrow: vi.fn(), create: vi.fn(), update: vi.fn() },
     series: { create: vi.fn() },
     budgetCategory: { createMany: vi.fn() },
@@ -146,6 +147,18 @@ describe("runEventAgain", () => {
     expect(id).toBe("evt-new");
     expect(tx.series.create).not.toHaveBeenCalled();
     expect(tx.event.create.mock.calls[0][0].data.seriesId).toBe("series-1");
+  });
+
+  it("locks the source row before reading it, so a double-submit can't race", async () => {
+    tx.event.findUniqueOrThrow.mockResolvedValue({ ...SOURCE, seriesId: "series-1" });
+    tx.event.create.mockResolvedValue({ id: "evt-new" });
+
+    await runEventAgain("evt-1", new Date("2026-11-05T19:00:00Z"));
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.event.findUniqueOrThrow.mock.invocationCallOrder[0],
+    );
   });
 
   it("starts a series named after the event the first time", async () => {

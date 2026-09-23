@@ -184,7 +184,13 @@ export async function updateInquiryAction(
   });
 
   if (status === "BOOKED" && inquiry.status !== "BOOKED") {
-    await rememberBookedListing(eventId, inquiry.listingId);
+    // Best-effort: the vendor book is a convenience, not the record of
+    // truth, and must never fail a booking that already committed.
+    try {
+      await rememberBookedListing(eventId, inquiry.listingId);
+    } catch (error) {
+      console.error("rememberBookedListing failed", error);
+    }
   }
 
   // Only the move into BOOKED/DECLINED is worth a line — resaving an edited

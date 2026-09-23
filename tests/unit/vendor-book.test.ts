@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   collabFind: vi.fn(),
+  collabFindFirst: vi.fn(),
   collabUpdate: vi.fn(),
   collabCreate: vi.fn(),
   eventFind: vi.fn(),
@@ -25,7 +26,12 @@ vi.mock("@/lib/db", () => {
   };
   return {
     db: {
-      eventCollaborator: { findUnique: mocks.collabFind, update: mocks.collabUpdate, create: mocks.collabCreate },
+      eventCollaborator: {
+        findUnique: mocks.collabFind,
+        findFirst: mocks.collabFindFirst,
+        update: mocks.collabUpdate,
+        create: mocks.collabCreate,
+      },
       event: { findUnique: mocks.eventFind },
       listing: { findUnique: mocks.listingFind },
       vendorContact: {
@@ -143,6 +149,7 @@ describe("addVendorToEvent", () => {
       website: null,
       listingId: null,
     });
+    mocks.collabFindFirst.mockResolvedValue(null);
 
     expect(await addVendorToEvent("evt-2", "host-1", "v-1")).toBe(true);
     expect(mocks.vendorFindFirst.mock.calls[0][0].where).toEqual({ id: "v-1", ownerId: "host-1" });
@@ -161,6 +168,23 @@ describe("addVendorToEvent", () => {
     expect(await addVendorToEvent("evt-2", "host-1", "v-foreign")).toBe(false);
     mocks.vendorFindFirst.mockResolvedValue({ id: "v-2", kind: null, name: "Sol", listingId: "lst-1" });
     expect(await addVendorToEvent("evt-2", "host-1", "v-2")).toBe(false);
+    expect(mocks.collabCreate).not.toHaveBeenCalled();
+  });
+
+  it("skips, and returns false, when the event already has this vendor as a collaborator", async () => {
+    mocks.vendorFindFirst.mockResolvedValue({
+      id: "v-1",
+      kind: "SPEAKER",
+      name: "Dr. Lee",
+      email: "lee@x.com",
+      phone: null,
+      website: null,
+      listingId: null,
+    });
+    mocks.collabFindFirst.mockResolvedValue({ id: "col-existing" });
+
+    expect(await addVendorToEvent("evt-2", "host-1", "v-1")).toBe(false);
+    expect(mocks.collabFindFirst.mock.calls[0][0].where).toEqual({ eventId: "evt-2", vendorContactId: "v-1" });
     expect(mocks.collabCreate).not.toHaveBeenCalled();
   });
 });

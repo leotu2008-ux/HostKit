@@ -7,7 +7,16 @@ import type { VendorBookEntry } from "@/lib/vendor-book";
 const KIND_LABEL = { VENUE: "Venue", SPEAKER: "Speaker", COHOST: "Cohost" } as const;
 
 /** Vendors and venues this host has worked with, one click from this event. */
-export function VendorBookCard({ eventId, entries }: { eventId: string; entries: VendorBookEntry[] }) {
+export function VendorBookCard({
+  eventId,
+  entries,
+  onEventVendorContactIds,
+}: {
+  eventId: string;
+  entries: VendorBookEntry[];
+  /** Vendor-book ids already linked to a collaborator on this event — "Add to this event" hides for these. */
+  onEventVendorContactIds: Set<string>;
+}) {
   return (
     <Card className="p-5">
       <h2 className="text-[15px] font-semibold text-ink">Your vendor book</h2>
@@ -23,15 +32,20 @@ export function VendorBookCard({ eventId, entries }: { eventId: string; entries:
               </p>
             </div>
             {entry.kind ? (
-              <form action={addVendorFromBookAction}>
-                <input type="hidden" name="eventId" value={eventId} />
-                <input type="hidden" name="vendorContactId" value={entry.id} />
-                <Button type="submit" variant="secondary" size="sm">
-                  Add to this event
-                </Button>
-              </form>
+              onEventVendorContactIds.has(entry.id) ? null : (
+                <form action={addVendorFromBookAction}>
+                  <input type="hidden" name="eventId" value={eventId} />
+                  <input type="hidden" name="vendorContactId" value={entry.id} />
+                  <Button type="submit" variant="secondary" size="sm">
+                    Add to this event
+                  </Button>
+                </form>
+              )
             ) : entry.listingId ? (
-              <Link href={`/listings/${entry.listingId}`} className="text-sm font-medium text-clay hover:underline">
+              <Link
+                href={`/listings/${entry.listingId}?event=${eventId}`}
+                className="text-sm font-medium text-clay hover:underline"
+              >
                 Ask again
               </Link>
             ) : null}

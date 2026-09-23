@@ -1,6 +1,7 @@
 import { runAgainAction } from "@/lib/actions/run-again";
 import { requireEvent } from "@/lib/session";
-import { Button, Card, Field, Input } from "@/components/ui";
+import { RunAgainSubmit } from "@/components/run-again-submit";
+import { Card, Field, Input } from "@/components/ui";
 
 export const metadata = { title: "Run it again" };
 
@@ -22,7 +23,8 @@ export default async function RunAgainPage({
 }: PageProps<"/events/[id]/run-again">) {
   const { id } = await params;
   const { error } = await searchParams;
-  const { event } = await requireEvent(id);
+  const { event, user } = await requireEvent(id);
+  const isOwner = user?.id === event.ownerId;
   const suggested = new Date((event.date ?? new Date()).getTime() + 7 * DAY_MS);
 
   const errorCode = typeof error === "string" ? error : undefined;
@@ -30,9 +32,9 @@ export default async function RunAgainPage({
   return (
     <div className="mx-auto max-w-xl space-y-4 py-2">
       <h1 className="font-display text-[26px] text-ink">Run “{event.title}” again</h1>
-      {!event.ownerId || errorCode === "owner" ? (
+      {!isOwner || errorCode === "owner" ? (
         <p className="text-[15px] text-ink-soft">
-          Claim this event by signing in before you run it again.
+          Only the host can run this event again.
         </p>
       ) : (
         <>
@@ -49,7 +51,7 @@ export default async function RunAgainPage({
               >
                 <Input type="datetime-local" name="date" required defaultValue={inputValue(suggested)} />
               </Field>
-              <Button type="submit">Create the new draft</Button>
+              <RunAgainSubmit />
             </form>
           </Card>
         </>

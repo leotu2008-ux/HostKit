@@ -1,3 +1,4 @@
+import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { loadOutreach, type OutreachRow } from "@/lib/api/outreach";
 import { vendorBookFor } from "@/lib/vendor-book";
@@ -41,8 +42,16 @@ const SECTIONS: Array<{
 export default async function OutreachPage({ params }: PageProps<"/events/[id]/outreach">) {
   const { id } = await params;
   const { event, user } = await requireEvent(id);
-  const vendorBook = event.ownerId ? await vendorBookFor(event.ownerId) : [];
-  const rows = await loadOutreach(event, user?.name ?? "the host");
+  const isOwner = user?.id === event.ownerId;
+  const [vendorBook, onEvent, rows] = await Promise.all([
+    isOwner && event.ownerId ? vendorBookFor(event.ownerId) : Promise.resolve([]),
+    db.eventCollaborator.findMany({
+      where: { eventId: event.id, vendorContactId: { not: null } },
+      select: { vendorContactId: true },
+    }),
+    loadOutreach(event, user?.name ?? "the host"),
+  ]);
+  const onEventVendorContactIds = new Set(onEvent.map((c) => c.vendorContactId as string));
   const pending = rows.filter((r) => r.status === "PENDING").length;
 
   return (
@@ -61,7 +70,9 @@ export default async function OutreachPage({ params }: PageProps<"/events/[id]/o
         </ButtonLink>
       </div>
 
-      {vendorBook.length > 0 ? <VendorBookCard eventId={event.id} entries={vendorBook} /> : null}
+      {isOwner && vendorBook.length > 0 ? (
+        <VendorBookCard eventId={event.id} entries={vendorBook} onEventVendorContactIds={onEventVendorContactIds} />
+      ) : null}
 
       {SECTIONS.map((section) => {
         const group = rows.filter((r) => r.kind === section.kind);

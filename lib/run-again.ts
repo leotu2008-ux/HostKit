@@ -146,6 +146,12 @@ export function planRerun(source: RerunSource, date: Date) {
  */
 export async function runEventAgain(sourceId: string, date: Date): Promise<string> {
   return db.$transaction(async (tx) => {
+    // A double-click (or two tabs) can both start this transaction before
+    // either commits. Locking the source row first serializes them: the
+    // second waits here, then reads whatever the first already wrote (e.g.
+    // its new seriesId) instead of racing to create a second series.
+    await tx.$queryRaw`SELECT 1 FROM "Event" WHERE "id" = ${sourceId} FOR UPDATE`;
+
     const source = await tx.event.findUniqueOrThrow({
       where: { id: sourceId },
       include: {

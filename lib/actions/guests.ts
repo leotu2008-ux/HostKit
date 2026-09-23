@@ -165,8 +165,8 @@ export async function inviteFromGuestBookAction(
   formData: FormData,
 ): Promise<GuestFormState> {
   const eventId = String(formData.get("eventId") ?? "");
-  const { event } = await requireEvent(eventId);
-  if (!event.ownerId) return { error: "This event has no host yet." };
+  const { event, user } = await requireEvent(eventId);
+  if (!event.ownerId || user?.id !== event.ownerId) return { error: "Only the host can do that." };
   const contactIds = formData.getAll("contactId").map(String).filter(Boolean);
   if (contactIds.length === 0) return { error: "Pick at least one person." };
   const added = await inviteFromGuestBook(event.id, event.ownerId, contactIds);

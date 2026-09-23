@@ -25,7 +25,7 @@ describe("runAgainAction", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("checks access, runs the event again and opens the copy", async () => {
-    mocks.requireEvent.mockResolvedValue({ event: { id: "evt-1", ownerId: "host-1" } });
+    mocks.requireEvent.mockResolvedValue({ user: { id: "host-1" }, event: { id: "evt-1", ownerId: "host-1" } });
     mocks.runEventAgain.mockResolvedValue("evt-2");
 
     await expect(runAgainAction(form("evt-1", "2026-11-05T19:00"))).rejects.toThrow("REDIRECT /events/evt-2");
@@ -35,13 +35,33 @@ describe("runAgainAction", () => {
   });
 
   it("refuses a missing or unreadable date", async () => {
-    mocks.requireEvent.mockResolvedValue({ event: { id: "evt-1", ownerId: "host-1" } });
+    mocks.requireEvent.mockResolvedValue({ user: { id: "host-1" }, event: { id: "evt-1", ownerId: "host-1" } });
     await expect(runAgainAction(form("evt-1", "not-a-date"))).rejects.toThrow("REDIRECT /events/evt-1/run-again?error=date");
     expect(mocks.runEventAgain).not.toHaveBeenCalled();
   });
 
+  it("refuses a date more than 5 years out, or before 2000", async () => {
+    mocks.requireEvent.mockResolvedValue({ user: { id: "host-1" }, event: { id: "evt-1", ownerId: "host-1" } });
+
+    await expect(runAgainAction(form("evt-1", "2099-01-01T19:00"))).rejects.toThrow(
+      "REDIRECT /events/evt-1/run-again?error=date",
+    );
+    await expect(runAgainAction(form("evt-1", "1999-01-01T19:00"))).rejects.toThrow(
+      "REDIRECT /events/evt-1/run-again?error=date",
+    );
+    expect(mocks.runEventAgain).not.toHaveBeenCalled();
+  });
+
   it("refuses an event with no host", async () => {
-    mocks.requireEvent.mockResolvedValue({ event: { id: "evt-1", ownerId: null } });
+    mocks.requireEvent.mockResolvedValue({ user: null, event: { id: "evt-1", ownerId: null } });
+    await expect(runAgainAction(form("evt-1", "2026-11-05T19:00"))).rejects.toThrow(
+      "REDIRECT /events/evt-1/run-again?error=owner",
+    );
+    expect(mocks.runEventAgain).not.toHaveBeenCalled();
+  });
+
+  it("refuses someone who isn't the host", async () => {
+    mocks.requireEvent.mockResolvedValue({ user: { id: "other" }, event: { id: "evt-1", ownerId: "host-1" } });
     await expect(runAgainAction(form("evt-1", "2026-11-05T19:00"))).rejects.toThrow(
       "REDIRECT /events/evt-1/run-again?error=owner",
     );

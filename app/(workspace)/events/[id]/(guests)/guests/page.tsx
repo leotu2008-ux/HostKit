@@ -45,8 +45,9 @@ export default async function GuestsPage({
   params,
 }: PageProps<"/events/[id]/guests">) {
   const { id } = await params;
-  const { event } = await requireEvent(id);
-  const guestBook = event.ownerId ? await guestBookFor(event.ownerId, event.id) : [];
+  const { event, user } = await requireEvent(id);
+  const isOwner = user?.id === event.ownerId;
+  const guestBook = isOwner && event.ownerId ? await guestBookFor(event.ownerId, event.id) : [];
 
   const guests = await db.guest.findMany({
     where: { eventId: event.id },
@@ -127,7 +128,7 @@ export default async function GuestsPage({
         <AddGuestsForm eventId={event.id} />
       </Card>
 
-      {guestBook.length > 0 ? (
+      {isOwner && guestBook.length > 0 ? (
         <Card className="p-5">
           <GuestBookPicker eventId={event.id} entries={guestBook} />
         </Card>

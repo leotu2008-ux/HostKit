@@ -103,11 +103,18 @@ export async function vendorBookFor(ownerId: string): Promise<VendorBookEntry[]>
 /**
  * Adds a hand-entered vendor-book entry to an event as a PENDING collaborator.
  * Only the owner's own entries, and only venue/speaker/cohost ones. Catalog
- * vendors go through their listing's inquiry flow instead.
+ * vendors go through their listing's inquiry flow instead. Skips (and
+ * returns false) when this event already has a collaborator linked to that
+ * vendor-book entry, so re-clicking "Add to this event" can't duplicate it.
  */
 export async function addVendorToEvent(eventId: string, ownerId: string, vendorContactId: string): Promise<boolean> {
   const entry = await db.vendorContact.findFirst({ where: { id: vendorContactId, ownerId } });
   if (!entry || !entry.kind) return false;
+  const already = await db.eventCollaborator.findFirst({
+    where: { eventId, vendorContactId: entry.id },
+    select: { id: true },
+  });
+  if (already) return false;
   await db.eventCollaborator.create({
     data: {
       eventId,
