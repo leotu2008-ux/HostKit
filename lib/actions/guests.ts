@@ -8,6 +8,7 @@ import { parseGuestList } from "@/lib/guests";
 import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
 import { newRsvpToken } from "@/lib/tokens";
 import { record } from "@/lib/activity";
+import { inviteFromGuestBook, linkGuestsToContacts } from "@/lib/guest-book";
 
 export type GuestFormState = { error?: string; added?: number } | undefined;
 
@@ -48,6 +49,7 @@ export async function addGuestsAction(
       email: guest.email,
     })),
   });
+  await linkGuestsToContacts(eventId);
 
   refresh();
   return { added: fresh.length };
@@ -155,4 +157,20 @@ export async function submitRsvpAction(
 
   refresh();
   return undefined;
+}
+
+/** Invites people from the host's guest book. The owner's contacts only. */
+export async function inviteFromGuestBookAction(
+  _prev: GuestFormState,
+  formData: FormData,
+): Promise<GuestFormState> {
+  const eventId = String(formData.get("eventId") ?? "");
+  const { event, user } = await requireEvent(eventId);
+  if (!event.ownerId || user?.id !== event.ownerId) return { error: "Only the host can do that." };
+  const contactIds = formData.getAll("contactId").map(String).filter(Boolean);
+  if (contactIds.length === 0) return { error: "Pick at least one person." };
+  const added = await inviteFromGuestBook(event.id, event.ownerId, contactIds);
+  if (added === 0) return { error: "Everyone you picked is already on the list." };
+  refresh();
+  return { added };
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { briefIsComplete, describeMissing, missingBriefFields } from "@/lib/brief";
@@ -48,7 +49,12 @@ export default async function EventOverviewPage({
   const { id } = await params;
   const query = await searchParams;
   const rawPublish = Array.isArray(query.publish) ? query.publish[0] : query.publish;
-  const { event } = await requireEvent(id);
+  const { event, user } = await requireEvent(id);
+  const isOwner = user?.id === event.ownerId;
+  const base = `/events/${event.id}`;
+  const series = event.seriesId
+    ? await db.series.findUnique({ where: { id: event.seriesId }, select: { id: true, name: true } })
+    : null;
 
   const [guests, activityRows, agent] = await Promise.all([
     db.guest.findMany({
@@ -96,11 +102,28 @@ export default async function EventOverviewPage({
       : { label: "Awaiting reply", value: invited, sub: "haven’t replied" },
   ];
 
-  const base = `/events/${event.id}`;
   const missing = missingBriefFields(event);
 
   return (
     <div className="space-y-6">
+      {isOwner ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {series ? (
+            <p className="text-[13px] text-ink-mute">
+              Part of{" "}
+              <Link href={`/series/${series.id}`} className="font-medium text-clay hover:underline">
+                {series.name}
+              </Link>
+            </p>
+          ) : (
+            <span />
+          )}
+          <ButtonLink href={`${base}/run-again`} variant="secondary" size="sm">
+            Run it again
+          </ButtonLink>
+        </div>
+      ) : null}
+
       {rawPublish === "incomplete" ? (
         <FormError>
           Give this a name, a date, a city, a headcount and a budget before publishing.

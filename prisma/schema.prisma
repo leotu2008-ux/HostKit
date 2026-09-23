@@ -57,6 +57,9 @@ model User {
   pushTokens         PushToken[]
   mcpGrants          McpGrant[]
   emailListEntry     EmailListEntry?
+  series             Series[]
+  contacts           Contact[]
+  vendorContacts     VendorContact[]
 }
 
 /// A club or org that hosts events: a page people follow, run by its admins.
@@ -324,6 +327,8 @@ model Event {
   coverUrl         String?
   /// "Posted as" a club the owner manages. The owner stays the person.
   clubId           String?
+  seriesId         String?
+  copiedFromId     String?
   /// Registrations wait for the host's approval instead of going straight in.
   requiresApproval Boolean         @default(false)
   createdAt        DateTime        @default(now())
@@ -331,6 +336,9 @@ model Event {
 
   owner            User?               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   club             Club?               @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  series           Series?             @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  copiedFrom       Event?              @relation("EventCopies", fields: [copiedFromId], references: [id], onDelete: SetNull)
+  copies           Event[]             @relation("EventCopies")
   savedListings    SavedListing[]
   inquiries        Inquiry[]
   budgetCategories BudgetCategory[]
@@ -348,38 +356,41 @@ model Event {
   @@index([clubId])
   @@index([published, visibility, date])
   @@index([schoolDomain, published, date])
+  @@index([seriesId])
 }
 
 /// People and places the host is lining up, separate from catalog scouting.
 model EventCollaborator {
-  id         String             @id @default(cuid())
-  eventId    String
-  kind       CollaboratorKind
-  name       String
-  email      String?
-  phone      String?
-  website    String?
-  detail     String?
-  status     CollaboratorStatus @default(PENDING)
-  source     CollaboratorSource @default(MANUAL)
+  id              String             @id @default(cuid())
+  eventId         String
+  kind            CollaboratorKind
+  name            String
+  email           String?
+  phone           String?
+  website         String?
+  detail          String?
+  status          CollaboratorStatus @default(PENDING)
+  source          CollaboratorSource @default(MANUAL)
   /// The provider's id (an Apple Maps place id, or a catalog listing id).
-  externalId String?
-  lat        Float?
-  lng        Float?
-  createdAt  DateTime           @default(now())
+  externalId      String?
+  lat             Float?
+  lng             Float?
+  createdAt       DateTime           @default(now())
   /// When the host sent the drafted message. Null means never sent —
   /// deliberately no ASKED status value; "asked" is status === PENDING with
   /// sentAt set (see lib/chase.ts's quietContacts).
-  sentAt      DateTime?
+  sentAt          DateTime?
   /// When the collaborator answered. Only ever set by hand today; nothing
   /// reads a mailbox. Present so quietContacts stops chasing someone who did
   /// reply.
-  respondedAt DateTime?
+  respondedAt     DateTime?
   /// The host's edited outreach message, if they changed it from the
   /// composeInquiry draft. Null means "send the draft as computed".
-  message     String?
+  message         String?
+  vendorContactId String?
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  vendorContact VendorContact? @relation(fields: [vendorContactId], references: [id], onDelete: SetNull)
 
   @@index([eventId, kind])
 }
@@ -519,9 +530,10 @@ model Listing {
   reviewCount  Int             @default(0)
   createdAt    DateTime        @default(now())
 
-  savedBy     SavedListing[]
-  inquiries   Inquiry[]
-  budgetItems BudgetItem[]
+  savedBy        SavedListing[]
+  inquiries      Inquiry[]
+  budgetItems    BudgetItem[]
+  vendorContacts VendorContact[]
 
   @@index([city, category])
   @@index([category])
@@ -701,12 +713,15 @@ model Guest {
   /// edited afterwards and the whole point is to keep the two apart.
   arrivedWithoutRsvp Boolean    @default(false)
   createdAt          DateTime   @default(now())
+  contactId          String?
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
   @@index([eventId])
   @@index([userId])
+  @@index([contactId])
 }
 
 // ---------------------------------------------------------------------------
@@ -846,4 +861,55 @@ model EmailListEntry {
   approvedAt DateTime?
   userId     String?   @unique
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+/// A named run of repeat events owned by one host ("Thursday Pitch Night").
+model Series {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  createdAt DateTime @default(now())
+
+  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  events Event[]
+
+  @@index([ownerId])
+}
+
+/// A person in one host's guest book. Email is stored lowercased and trimmed.
+model Contact {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  guests Guest[]
+
+  @@unique([ownerId, email])
+  @@index([ownerId])
+}
+
+/// A vendor or venue in one host's vendor book: either a hand-entered
+/// venue/speaker/cohost (kind set) or a catalog business (listingId + category set).
+model VendorContact {
+  id        String            @id @default(cuid())
+  ownerId   String
+  kind      CollaboratorKind?
+  category  ListingCategory?
+  name      String
+  email     String?
+  phone     String?
+  website   String?
+  listingId String?
+  createdAt DateTime          @default(now())
+
+  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  listing       Listing?            @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  collaborators EventCollaborator[]
+
+  @@unique([ownerId, listingId])
+  @@index([ownerId])
 }

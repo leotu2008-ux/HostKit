@@ -34,11 +34,14 @@ export async function WorkspaceBar({
   event,
   days,
   signedIn,
+  isOwner,
 }: {
   /** The whole brief, because readyToPublish reads all of it. */
   event: BriefFacts & { id: string; published: boolean; visibility: EventVisibility };
   days: number | null;
   signedIn: boolean;
+  /** Whether the viewer is this event's host. WorkspaceBar itself doesn't have ownerId to check — the caller works it out and passes it, the same way it passes signedIn. */
+  isOwner: boolean;
 }) {
   const user = await currentProfile();
   const unread = user ? await unreadCount(user.id) : 0;
@@ -86,10 +89,15 @@ export async function WorkspaceBar({
           {/* The wrapper carries the breakpoint, not the button: ButtonLink's
               own base class sets `inline-flex`, and two display utilities on
               one element are decided by stylesheet order, not class order. */}
-          <span className="hidden md:inline-flex">
+          <span className="hidden md:inline-flex md:gap-2">
             <ButtonLink href={`/e/${event.id}`} variant="secondary" size="sm">
               Event page ↗
             </ButtonLink>
+            {isOwner ? (
+              <ButtonLink href={`/events/${event.id}/run-again`} variant="secondary" size="sm">
+                Run it again
+              </ButtonLink>
+            ) : null}
           </span>
           {event.published ? null : !readyToPublish(event) ? (
             // A blank or half-brief event has nothing worth signing in to

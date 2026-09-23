@@ -84,25 +84,34 @@ model Contact {
 }
 // Guest gains: contactId String? (onDelete: SetNull)
 
-/// A vendor or venue in one host's vendor book.
+/// A vendor or venue in one host's vendor book: either a hand-entered
+/// venue/speaker/cohost (kind set) or a catalog business (listingId + category set).
 model VendorContact {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   ownerId   String
-  kind      CollaboratorKind
+  kind      CollaboratorKind?
+  category  ListingCategory?
   name      String
   email     String?
   phone     String?
   website   String?
-  listingId String?  // set when the vendor came from Hosty's catalog
-  createdAt DateTime @default(now())
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  listingId String?
+  createdAt DateTime          @default(now())
+  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  listing   Listing?          @relation(fields: [listingId], references: [id], onDelete: SetNull)
   collaborators EventCollaborator[]
-  @@index([ownerId, kind])
+  @@unique([ownerId, listingId])
+  @@index([ownerId])
 }
 // EventCollaborator gains: vendorContactId String? (onDelete: SetNull)
 ```
 
-Guests and collaborators stay per-event. The book entries are the host-level identity they link to, filled in automatically as events happen.
+Guests and collaborators stay per-event. The book entries are the host-level identity they link to, filled in automatically as events happen:
+
+- **Guest book:** a guest with an email is linked to the host's Contact for that address (lowercased) when added or when they register. Existing guests are backfilled by the migration.
+- **Vendor book:** a venue, speaker or cohost enters it when marked CONFIRMED. A catalog vendor enters it when its inquiry is marked BOOKED. Nothing is backfilled.
+
+Amended 2026-09-23: `VendorContact` now covers catalog vendors (`category`, `listingId`), because `CollaboratorKind` has no vendor kinds. It is unique per host and listing.
 
 ### Additions for access (plan 1)
 
