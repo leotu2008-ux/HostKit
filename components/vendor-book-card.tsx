@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { addVendorFromBookAction } from "@/lib/actions/collaborators";
 import { CATEGORY_LABEL } from "@/lib/catalog";
-import { Button, Card } from "@/components/ui";
+import { AddVendorSubmit } from "@/components/add-vendor-submit";
+import { Card } from "@/components/ui";
 import type { VendorBookEntry } from "@/lib/vendor-book";
 
 const KIND_LABEL = { VENUE: "Venue", SPEAKER: "Speaker", COHOST: "Cohost" } as const;
@@ -36,9 +37,7 @@ export function VendorBookCard({
                 <form action={addVendorFromBookAction}>
                   <input type="hidden" name="eventId" value={eventId} />
                   <input type="hidden" name="vendorContactId" value={entry.id} />
-                  <Button type="submit" variant="secondary" size="sm">
-                    Add to this event
-                  </Button>
+                  <AddVendorSubmit />
                 </form>
               )
             ) : entry.listingId ? (

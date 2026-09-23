@@ -12,16 +12,24 @@ const mocks = vi.hoisted(() => ({
   vendorUpsert: vi.fn(),
   vendorFindMany: vi.fn(),
   executeRaw: vi.fn(),
+  queryRaw: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => {
   // The transaction client reuses the top-level mocks where that mirrors
-  // rememberCollaborator's real tx usage (eventCollaborator.findUnique/update,
-  // vendorContact.findFirst/create), plus its own $executeRaw for the
-  // per-host advisory lock.
+  // the real tx usage (rememberCollaborator's eventCollaborator.findUnique/
+  // update and vendorContact.findFirst/create, addVendorToEvent's
+  // eventCollaborator.findFirst/create), plus $executeRaw for the per-host
+  // advisory lock and $queryRaw for the event row lock.
   const tx = {
     $executeRaw: mocks.executeRaw,
-    eventCollaborator: { findUnique: mocks.collabFind, update: mocks.collabUpdate },
+    $queryRaw: mocks.queryRaw,
+    eventCollaborator: {
+      findUnique: mocks.collabFind,
+      findFirst: mocks.collabFindFirst,
+      update: mocks.collabUpdate,
+      create: mocks.collabCreate,
+    },
     vendorContact: { findFirst: mocks.vendorFindFirst, create: mocks.vendorCreate },
   };
   return {
@@ -186,5 +194,29 @@ describe("addVendorToEvent", () => {
     expect(await addVendorToEvent("evt-2", "host-1", "v-1")).toBe(false);
     expect(mocks.collabFindFirst.mock.calls[0][0].where).toEqual({ eventId: "evt-2", vendorContactId: "v-1" });
     expect(mocks.collabCreate).not.toHaveBeenCalled();
+  });
+
+  it("locks the event row before checking for an existing collaborator", async () => {
+    mocks.vendorFindFirst.mockResolvedValue({
+      id: "v-1",
+      kind: "SPEAKER",
+      name: "Dr. Lee",
+      email: null,
+      phone: null,
+      website: null,
+      listingId: null,
+    });
+    mocks.collabFindFirst.mockResolvedValue(null);
+
+    expect(await addVendorToEvent("evt-2", "host-1", "v-1")).toBe(true);
+
+    expect(mocks.queryRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.queryRaw.mock.calls[0].slice(1)).toEqual(["evt-2"]);
+    expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.collabFindFirst.mock.invocationCallOrder[0],
+    );
+    expect(mocks.collabFindFirst.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.collabCreate.mock.invocationCallOrder[0],
+    );
   });
 });

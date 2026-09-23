@@ -40,7 +40,9 @@ function initials(name: string) {
  * whatever's waiting on a decision. The guest list and the day-of quick
  * links used to live here too — they now have their own tabs (Guests,
  * Planning) on the sidebar, so Overview stays a status page rather than
- * growing into a second copy of the whole app.
+ * growing into a second copy of the whole app. The owner's "Run it again"
+ * button here is the mobile entry point — the workspace bar's copy of it is
+ * hidden on phones.
  */
 export default async function EventOverviewPage({
   params,
@@ -107,7 +109,7 @@ export default async function EventOverviewPage({
   return (
     <div className="space-y-6">
       {isOwner ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {series ? (
             <p className="text-[13px] text-ink-mute">
               Part of{" "}
@@ -115,10 +117,8 @@ export default async function EventOverviewPage({
                 {series.name}
               </Link>
             </p>
-          ) : (
-            <span />
-          )}
-          <ButtonLink href={`${base}/run-again`} variant="secondary" size="sm">
+          ) : null}
+          <ButtonLink href={`${base}/run-again`} variant="secondary" size="sm" className="ml-auto">
             Run it again
           </ButtonLink>
         </div>

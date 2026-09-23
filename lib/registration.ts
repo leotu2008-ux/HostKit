@@ -168,7 +168,13 @@ export async function registerGuest(input: {
     return { ok: true, state: decision as "going" | "pending" | "waitlisted", changed: true } as const;
   });
 
-  if (result.ok && result.changed) await linkGuestsToContacts(event.id);
+  if (result.ok && result.changed) {
+    try {
+      await linkGuestsToContacts(event.id);
+    } catch (error) {
+      console.error("linkGuestsToContacts failed", error);
+    }
+  }
 
   // A new request is the host's to answer — tell them and the club's admins.
   if (result.ok && result.state === "pending" && result.changed) {

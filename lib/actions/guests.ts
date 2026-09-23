@@ -49,7 +49,11 @@ export async function addGuestsAction(
       email: guest.email,
     })),
   });
-  await linkGuestsToContacts(eventId);
+  try {
+    await linkGuestsToContacts(eventId);
+  } catch (error) {
+    console.error("linkGuestsToContacts failed", error);
+  }
 
   refresh();
   return { added: fresh.length };

@@ -106,27 +106,33 @@ export async function vendorBookFor(ownerId: string): Promise<VendorBookEntry[]>
  * vendors go through their listing's inquiry flow instead. Skips (and
  * returns false) when this event already has a collaborator linked to that
  * vendor-book entry, so re-clicking "Add to this event" can't duplicate it.
+ * The check and create run under a lock on the event row, so two concurrent
+ * clicks serialize and the second one sees the first one's collaborator.
  */
 export async function addVendorToEvent(eventId: string, ownerId: string, vendorContactId: string): Promise<boolean> {
   const entry = await db.vendorContact.findFirst({ where: { id: vendorContactId, ownerId } });
   if (!entry || !entry.kind) return false;
-  const already = await db.eventCollaborator.findFirst({
-    where: { eventId, vendorContactId: entry.id },
-    select: { id: true },
+  const kind = entry.kind;
+  return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "Event" WHERE "id" = ${eventId} FOR UPDATE`;
+    const already = await tx.eventCollaborator.findFirst({
+      where: { eventId, vendorContactId: entry.id },
+      select: { id: true },
+    });
+    if (already) return false;
+    await tx.eventCollaborator.create({
+      data: {
+        eventId,
+        kind,
+        name: entry.name,
+        email: entry.email,
+        phone: entry.phone,
+        website: entry.website,
+        status: "PENDING",
+        source: "MANUAL",
+        vendorContactId: entry.id,
+      },
+    });
+    return true;
   });
-  if (already) return false;
-  await db.eventCollaborator.create({
-    data: {
-      eventId,
-      kind: entry.kind,
-      name: entry.name,
-      email: entry.email,
-      phone: entry.phone,
-      website: entry.website,
-      status: "PENDING",
-      source: "MANUAL",
-      vendorContactId: entry.id,
-    },
-  });
-  return true;
 }
