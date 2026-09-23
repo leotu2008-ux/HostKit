@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { briefIsComplete, describeMissing, missingBriefFields } from "@/lib/brief";
@@ -39,7 +40,9 @@ function initials(name: string) {
  * whatever's waiting on a decision. The guest list and the day-of quick
  * links used to live here too — they now have their own tabs (Guests,
  * Planning) on the sidebar, so Overview stays a status page rather than
- * growing into a second copy of the whole app.
+ * growing into a second copy of the whole app. The owner's "Run it again"
+ * button here is the mobile entry point — the workspace bar's copy of it is
+ * hidden on phones.
  */
 export default async function EventOverviewPage({
   params,
@@ -48,7 +51,12 @@ export default async function EventOverviewPage({
   const { id } = await params;
   const query = await searchParams;
   const rawPublish = Array.isArray(query.publish) ? query.publish[0] : query.publish;
-  const { event } = await requireEvent(id);
+  const { event, user } = await requireEvent(id);
+  const isOwner = user?.id === event.ownerId;
+  const base = `/events/${event.id}`;
+  const series = event.seriesId
+    ? await db.series.findUnique({ where: { id: event.seriesId }, select: { id: true, name: true } })
+    : null;
 
   const [guests, activityRows, agent] = await Promise.all([
     db.guest.findMany({
@@ -96,11 +104,26 @@ export default async function EventOverviewPage({
       : { label: "Awaiting reply", value: invited, sub: "haven’t replied" },
   ];
 
-  const base = `/events/${event.id}`;
   const missing = missingBriefFields(event);
 
   return (
     <div className="space-y-6">
+      {isOwner ? (
+        <div className="flex flex-wrap items-center gap-3">
+          {series ? (
+            <p className="text-[13px] text-ink-mute">
+              Part of{" "}
+              <Link href={`/series/${series.id}`} className="font-medium text-clay hover:underline">
+                {series.name}
+              </Link>
+            </p>
+          ) : null}
+          <ButtonLink href={`${base}/run-again`} variant="secondary" size="sm" className="ml-auto">
+            Run it again
+          </ButtonLink>
+        </div>
+      ) : null}
+
       {rawPublish === "incomplete" ? (
         <FormError>
           Give this a name, a date, a city, a headcount and a budget before publishing.
