@@ -89,7 +89,7 @@ describe("toChatMessage: Hosty's lines", () => {
     [
       "skipped: ran out of time",
       { kind: "step_skipped", title: "Didn't look for venues", body: "Ran out of time — the agent will pick this up" },
-      "I didn't look for venues. Ran out of time — I'll pick this up.",
+      "I didn't look for venues. I ran out of time before getting to it.",
     ],
     ["skipped without a reason", { kind: "step_skipped", title: "Skipped the plan" }, "I skipped the plan."],
     [

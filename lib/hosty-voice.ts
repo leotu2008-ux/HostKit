@@ -73,13 +73,13 @@ function sentence(text: string): string {
 }
 
 /** A saved reason, spoken by Hosty himself: the agent steps write their
- *  reasons as lowercase fragments and sometimes name Hosty or "the agent"
- *  in the third person ("Hosty doesn't scout that city yet"). */
+ *  reasons as lowercase fragments and sometimes name Hosty in the third
+ *  person ("Hosty doesn't scout that city yet"). run.ts's out-of-time note
+ *  promises a pickup the sweep stops making after its last attempt, so
+ *  Hosty only says what happened. */
 function inHostysWords(reason: string): string {
-  const firstPerson = reason
-    .replace(/\bHosty doesn't\b/g, "I don't")
-    .replace(/\b[Tt]he agent will\b/g, "I'll");
-  const spoken = sentence(firstPerson);
+  if (/^ran out of time\b/i.test(reason.trim())) return "I ran out of time before getting to it.";
+  const spoken = sentence(reason.replace(/\bHosty doesn't\b/g, "I don't"));
   return spoken.charAt(0).toUpperCase() + spoken.slice(1);
 }
 
