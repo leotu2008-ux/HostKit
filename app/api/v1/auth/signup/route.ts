@@ -12,7 +12,8 @@ const schema = z.object({
 
 /**
  * Joins the email list and sends a confirmation. It does not create an
- * account — the dashboard is limited to Maya Chen. A password, if an older
+ * account — the administrator lets people in from /admin/waitlist
+ * (lib/waitlist-approval.ts). A password, if an older
  * client still sends one, is ignored.
  */
 export async function POST(request: Request) {
