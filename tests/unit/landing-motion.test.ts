@@ -94,7 +94,8 @@ describe("landing page", () => {
     expect(lines[1]).toContain("hosty-pop");
     expect(lines[1]).toContain('viewBox="0 0 100 100"');
     expect(lines[1]).toContain('fill="#fff"');
-    expect(lines[2]).toContain("Brief it once and it drafts the plan");
+    // The subtitle waves word by word, so read its text rather than its markup.
+    expect(lines[2].replace(/<[^>]+>/g, "")).toContain("Brief it once and it drafts the plan");
     expect(lines[3]).toContain("Join the waitlist");
     expect(lines[3]).toContain('href="/signup"');
     // Hosty is B2B: no consumer "what's on" anywhere on the page.

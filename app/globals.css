@@ -468,7 +468,8 @@ html[data-splash="played"] .rise {
 }
 
 /* Headline wave (components/wave-text.tsx): hovering a line lifts its
-   letters one after another, then lets them settle. Words stay whole. */
+   letters (or, on subtitles, its words) one after another, then lets them
+   settle. Words stay whole. */
 .wave-word {
   display: inline-block;
   white-space: nowrap;
@@ -477,11 +478,24 @@ html[data-splash="played"] .rise {
 .wave-ch {
   display: inline-block;
   transition: translate 0.55s var(--landing-ease);
-  transition-delay: calc(var(--n, 0) * 28ms);
+  transition-delay: calc(var(--n, 0) * var(--wave-step, 28ms));
 }
 
 .wave-line:hover .wave-ch {
   translate: 0 -0.12em;
+}
+
+/* Subtitle words stay inline, so find-in-page still matches a phrase across
+   them. translate does nothing to an inline box, so they lift by top. */
+.wave-wd {
+  display: inline;
+  position: relative;
+  top: 0;
+  transition-property: top;
+}
+
+.wave-line:hover .wave-wd {
+  top: -0.12em;
 }
 
 /* Hosty in characters (components/hosty-glyphs.tsx): the outline and the
@@ -525,6 +539,10 @@ html[data-splash="played"] .rise {
 
   .wave-line:hover .wave-ch {
     translate: none !important;
+  }
+
+  .wave-line:hover .wave-wd {
+    top: 0 !important;
   }
 
   .hosty-glyphs[data-active] .hosty-glyphs-canvas {

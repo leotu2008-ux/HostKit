@@ -151,9 +151,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]"
             style={stagger(2)}
           >
-            Brief it once and it drafts the plan, writes to the venues, chases
-            the quotes, tracks who&rsquo;s coming, and hands you a run sheet for
-            the day. You approve. It does the rest.
+            <WaveText by="word" text="Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day. You approve. It does the rest." />
           </p>
 
           <div
@@ -186,8 +184,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
               <WaveText text="The agent works every stage" />
             </h2>
             <p className="mt-3 max-w-lg text-[16px] leading-relaxed text-ink-soft">
-              Not a chatbot bolted onto a form. It carries one event from the
-              first idea to the last person through the door.
+              <WaveText by="word" text="Not a chatbot bolted onto a form. It carries one event from the first idea to the last person through the door." />
             </p>
 
             <ol className="mt-12 grid gap-10 md:grid-cols-2 md:gap-x-12">
@@ -201,7 +198,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
                       <WaveText text={stage.title} />
                     </h3>
                     <p className="mt-1 text-[14px] font-medium text-brand">
-                      {stage.agent}
+                      <WaveText by="word" text={stage.agent} />
                     </p>
                     <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
                       {stage.body}
@@ -237,7 +234,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
                   <WaveText text={item.title} />
                 </h2>
                 <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
-                  {item.body}
+                  <WaveText by="word" text={item.body} />
                 </p>
               </Reveal>
             ))}
@@ -249,7 +246,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             <WaveText text="Give it a date and a headcount" />
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[16px] leading-relaxed text-ink-soft">
-            You&rsquo;ll have a plan before you close the tab.
+            <WaveText by="word" text="You’ll have a plan before you close the tab." />
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
             <PrimaryCta canCreate={canCreate} />

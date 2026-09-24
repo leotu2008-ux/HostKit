@@ -28,7 +28,8 @@ describe("Connect an agent landing section", () => {
 
     expect(html).toContain("Connect an agent");
     expect(html).toContain("Claude, ChatGPT and Cursor");
-    expect(html).toContain(
+    // The intro waves word by word, so read its text rather than its markup.
+    expect(html.replace(/<[^>]+>/g, "")).toContain(
       "Claude and ChatGPT can read your events and briefs and search venues. Cursor can read your events and guest lists.",
     );
     const tiles = ["Events", "Briefs", "Guests", "Venues"].map((tile) => html.indexOf(`>${tile}</li>`));

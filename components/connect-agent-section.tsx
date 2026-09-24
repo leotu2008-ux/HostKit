@@ -21,8 +21,7 @@ export function ConnectAgentSection() {
         <WaveText text="Connect an agent" />
       </h2>
       <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">
-        Claude and ChatGPT can read your events and briefs and search venues.
-        Cursor can read your events and guest lists.
+        <WaveText by="word" text="Claude and ChatGPT can read your events and briefs and search venues. Cursor can read your events and guest lists." />
       </p>
 
       <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
