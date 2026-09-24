@@ -1,110 +1,263 @@
+"use client";
+
+import { useLayoutEffect, useRef, useState } from "react";
 import { Eyebrow } from "@/components/eyebrow";
 import { WaveText } from "@/components/wave-text";
-import { NYC_LABELS, NYC_LAND, NYC_SEARCH, NYC_VIEW } from "@/lib/nyc-borough-map";
+import {
+  discoveryCamera,
+  discoveryPhase,
+  scanBand,
+  venueVisibility,
+  type DiscoveryPhase,
+} from "@/lib/venue-discovery-camera";
+import {
+  AVENUES,
+  BLOCKS,
+  BRIDGES,
+  BROADWAY_PATH,
+  BROOKLYN_PATH,
+  CROSS_STREETS,
+  ISLAND_PATH,
+  MAP_FOCUS,
+  MAP_VIEW,
+  NEIGHBORHOOD_LABELS,
+  PARKS,
+  STREET_LABELS,
+  VENUES,
+  WATER_LABELS,
+} from "@/lib/venue-discovery-geometry";
 
 /**
- * The landing's place to start: an illustrated New York, all five boroughs,
- * and the brief the agent searches from. The drawing is a picture of the
- * city — geography, not a live location — with one search point in lower
- * Manhattan.
+ * Scroll-driven venue search on the landing page.
+ *
+ * The drawing is downtown Manhattan only — Houston Street to the Brooklyn
+ * Bridge, Hudson to the East River — so the widest frame is already a
+ * neighborhood, not the five boroughs. Scrolling starts on the blocks and
+ * zooms out until the neighborhood is in frame. That widest frame still
+ * shows the streets. It then holds, scans, and marks example rooms.
+ *
+ * The server (and reduced motion) renders the neighborhood frame with the
+ * rooms marked. The client only scrubs when motion is allowed.
  */
 
-const STEPS = [
-  { n: "01", label: "Start with New York" },
-  { n: "02", label: "Set your search point" },
-  { n: "03", label: "Explore nearby spaces" },
-  { n: "04", label: "Find your kind of place" },
-] as const;
+const PHASE_LABEL: Record<DiscoveryPhase, string> = {
+  zoom: "Opening to the neighborhood",
+  lock: "Neighborhood in view",
+  scan: "Scanning the blocks",
+  venues: "Marking rooms that fit",
+  release: "SoHo, Lower Manhattan",
+};
+
+/** Released frame: rooms marked, camera still inside the neighborhood. */
+const SETTLED = 1;
 
 export function VenueDiscovery() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [progress, setProgress] = useState(SETTLED);
+  const [motion, setMotion] = useState(false);
+
+  useLayoutEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const section = sectionRef.current;
+    if (!section) return;
+
+    // The tall track is what gives the zoom room. Set it before measuring.
+    // Otherwise the section is only as tall as the frame, progress stays on
+    // the finished neighborhood shot, and the block view never appears.
+    section.setAttribute("data-motion", "on");
+    setMotion(true);
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const total = section.offsetHeight - window.innerHeight;
+      const top = section.getBoundingClientRect().top;
+      const next = total <= 0 ? 0 : Math.min(1, Math.max(0, -top / total));
+      setProgress(next);
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  const camera = discoveryCamera(progress);
+  const phase = discoveryPhase(progress);
+  const scan = scanBand(progress);
+  const cameraTransform = `translate(${camera.x} ${camera.y}) scale(${camera.scale}) translate(${-camera.x} ${-camera.y})`;
+
   return (
     <section
+      ref={sectionRef}
       id="venue-discovery"
       className="venue-discovery"
+      data-motion={motion ? "on" : undefined}
+      data-phase={phase}
+      data-scale={camera.scale.toFixed(2)}
       aria-labelledby="venue-discovery-title"
     >
-      <div className="mx-auto w-full max-w-6xl border-x border-line px-5 py-16 md:px-10 md:py-24">
-        <div className="max-w-2xl">
-          <div className="flex items-start justify-between gap-6">
-            <Eyebrow>A place for your people</Eyebrow>
-            <a
-              href="#connect-agent"
-              className="shrink-0 text-[14px] text-ink underline decoration-ink/30 underline-offset-[5px]"
-            >
-              Skip the map <span aria-hidden="true">↘</span>
-            </a>
-          </div>
+      <div className="venue-discovery-pin mx-auto flex w-full max-w-6xl flex-col border-x border-line px-5 py-8 md:px-10 md:py-12">
+        <Eyebrow>Venues</Eyebrow>
+        <h2
+          id="venue-discovery-title"
+          className="font-display mt-3 block max-w-2xl text-[28px] leading-tight text-ink md:text-[40px]"
+        >
+          <WaveText text="It searches the neighborhood" />
+        </h2>
+        <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">
+          <WaveText
+            by="word"
+            text="From Houston Street to the Brooklyn Bridge, it locks onto the blocks and marks rooms that fit."
+          />
+        </p>
 
-          <h2
-            id="venue-discovery-title"
-            className="font-display mt-5 text-[40px] leading-[1.05] tracking-[-0.03em] text-ink md:text-[52px]"
+        <div className="venue-discovery-map relative mt-6 overflow-hidden rounded-card border border-line bg-sunk">
+          <svg
+            viewBox={`0 0 ${MAP_VIEW.width} ${MAP_VIEW.height}`}
+            className="venue-map h-full w-full"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label="Illustrated map of downtown Manhattan. SoHo, Tribeca, and Chinatown between the Hudson River and the East River, with Broadway, Houston Street, Canal Street, and the Brooklyn, Manhattan, and Williamsburg bridges."
           >
-            <span className="sr-only">Your next event starts nearby.</span>
-            <span aria-hidden="true">
-              <WaveText text="Your next event" />
-              <br />
-              <WaveText text="starts nearby." />
-            </span>
-          </h2>
-          <p className="mt-4 max-w-md text-[16px] leading-relaxed text-ink-soft">
-            <WaveText
-              by="word"
-              text="An area, a headcount, a feel. Give your agent a starting point, then explore spaces that could fit your brief."
-            />
-          </p>
+            <title>Downtown Manhattan, SoHo to the Brooklyn Bridge</title>
+            <defs>
+              <clipPath id="venue-island">
+                <path d={ISLAND_PATH} />
+              </clipPath>
+              <linearGradient id="venue-scan" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#141414" stopOpacity="0" />
+                <stop offset="0.45" stopColor="#141414" stopOpacity="0.16" />
+                <stop offset="1" stopColor="#141414" stopOpacity="0" />
+              </linearGradient>
+            </defs>
 
-          <div className="mt-8 overflow-hidden rounded-[1.25rem] border border-line bg-[#fafafa]">
-            <div className="flex items-center gap-2.5 px-5 pt-5 md:px-6">
-              <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-ink" aria-hidden="true" />
-              <p className="text-[11px] font-medium tracking-[0.16em] text-ink uppercase">
-                New York City · All five boroughs
-              </p>
-            </div>
+            <rect width={MAP_VIEW.width} height={MAP_VIEW.height} fill="#f0efed" />
+            <g transform={cameraTransform}>
+              <path d={BROOKLYN_PATH} fill="#f8f8f7" />
+              <path d={ISLAND_PATH} fill="#f8f8f7" />
 
-            <svg
-              viewBox={`0 0 ${NYC_VIEW.width} ${NYC_VIEW.height}`}
-              className="venue-map mt-1 block w-full"
-              role="img"
-              aria-label="Illustrated map of New York City, all five boroughs, with a search point in lower Manhattan"
-            >
-              <defs>
-                <pattern
-                  id="nyc-hatch"
-                  width="7"
-                  height="7"
-                  patternUnits="userSpaceOnUse"
-                  patternTransform="rotate(45)"
-                >
-                  <rect width="7" height="7" fill="#d7d7d7" />
-                  <path d="M0 0 V7" stroke="#e4e4e4" strokeWidth="1.45" />
-                </pattern>
-                <clipPath id="nyc-land">
-                  {NYC_LAND.map((land) => (
-                    <path key={land.name} d={land.d} />
-                  ))}
-                </clipPath>
-              </defs>
-              <rect width={NYC_VIEW.width} height={NYC_VIEW.height} fill="#fafafa" />
-              <rect
-                width={NYC_VIEW.width}
-                height={NYC_VIEW.height}
-                fill="url(#nyc-hatch)"
-                clipPath="url(#nyc-land)"
-              />
-              {NYC_LAND.map((land) => (
+              <g clipPath="url(#venue-island)">
+                {BLOCKS.map((block) => (
+                  <rect
+                    key={`${block.x}-${block.y}`}
+                    x={block.x}
+                    y={block.y}
+                    width={block.w}
+                    height={block.h}
+                    fill="#ffffff"
+                  />
+                ))}
+                {PARKS.map((park) => (
+                  <rect
+                    key={park.name}
+                    x={park.x}
+                    y={park.y}
+                    width={park.w}
+                    height={park.h}
+                    fill="#f0efed"
+                  >
+                    <title>{park.name}</title>
+                  </rect>
+                ))}
+                {CROSS_STREETS.map((street) => (
+                  <line
+                    key={street.name}
+                    x1={0}
+                    y1={street.y}
+                    x2={MAP_VIEW.width}
+                    y2={street.y}
+                    stroke="#141414"
+                    strokeOpacity={street.major ? 0.82 : 0.62}
+                    strokeWidth={street.major ? 1.75 : 1.4}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+                {AVENUES.map((avenue) => (
+                  <line
+                    key={avenue.name}
+                    x1={avenue.x}
+                    y1={0}
+                    x2={avenue.x}
+                    y2={MAP_VIEW.height}
+                    stroke="#141414"
+                    strokeOpacity={avenue.major ? 0.82 : 0.62}
+                    strokeWidth={avenue.major ? 1.75 : 1.4}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
                 <path
-                  key={land.name}
-                  d={land.d}
+                  d={BROADWAY_PATH}
                   fill="none"
-                  stroke="#fafafa"
-                  strokeWidth="8"
-                  strokeLinejoin="round"
+                  stroke="#141414"
+                  strokeOpacity="0.9"
+                  strokeWidth="2"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
                 />
+                <rect
+                  x={0}
+                  y={scan.y}
+                  width={MAP_VIEW.width}
+                  height={42}
+                  fill="url(#venue-scan)"
+                  opacity={scan.opacity}
+                />
+              </g>
+
+              <path
+                d={ISLAND_PATH}
+                fill="none"
+                stroke="#141414"
+                strokeOpacity="0.7"
+                strokeWidth="1.5"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path
+                d={BROOKLYN_PATH}
+                fill="none"
+                stroke="#141414"
+                strokeOpacity="0.5"
+                strokeWidth="1.4"
+                vectorEffect="non-scaling-stroke"
+              />
+
+              {BRIDGES.map((bridge) => (
+                <g key={bridge.name}>
+                  <title>{bridge.name}</title>
+                  <line
+                    x1={bridge.x1}
+                    y1={bridge.y1}
+                    x2={bridge.x2}
+                    y2={bridge.y2}
+                    stroke="#141414"
+                    strokeOpacity="0.75"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <text
+                    className="venue-bridge"
+                    x={(bridge.x1 + bridge.x2) / 2}
+                    y={(bridge.y1 + bridge.y2) / 2 - 8}
+                    textAnchor="middle"
+                  >
+                    {bridge.name}
+                  </text>
+                </g>
               ))}
-              {NYC_LABELS.map((label) => (
+
+              {WATER_LABELS.map((label) => (
                 <text
                   key={label.text}
+                  className="venue-water"
                   x={label.x}
                   y={label.y}
                   textAnchor="middle"
@@ -113,41 +266,78 @@ export function VenueDiscovery() {
                   {label.text}
                 </text>
               ))}
-              <g aria-hidden="true">
-                <circle
-                  cx={NYC_SEARCH.x}
-                  cy={NYC_SEARCH.y}
-                  r="9"
-                  fill="none"
-                  stroke="#141414"
-                  strokeWidth="1.6"
-                />
-                <circle cx={NYC_SEARCH.x} cy={NYC_SEARCH.y} r="2.8" fill="#141414" />
+
+              {STREET_LABELS.map((label) => (
+                <text key={label.text} className="venue-street" x={label.x} y={label.y}>
+                  {label.text}
+                </text>
+              ))}
+              {camera.scale < 3.2
+                ? NEIGHBORHOOD_LABELS.map((label) => (
+                    <text key={label.text} className="venue-area" x={label.x} y={label.y}>
+                      {label.text}
+                    </text>
+                  ))
+                : null}
+
+              <g transform={`translate(${MAP_FOCUS.x} ${MAP_FOCUS.y})`}>
+                <circle r="28" fill="none" stroke="#1d4ed8" strokeOpacity="0.28" strokeWidth="1.4" />
+                <g className="venue-ring">
+                  <circle
+                    r="28"
+                    fill="none"
+                    stroke="#1d4ed8"
+                    strokeWidth="1.8"
+                    strokeDasharray="22 120"
+                    strokeLinecap="round"
+                  />
+                </g>
+                <circle r="5.5" fill="#1d4ed8" />
+                <circle r="2.2" fill="#ffffff" />
               </g>
-            </svg>
 
-            <div className="border-t border-line px-5 py-4 md:px-6">
-              <p className="text-[11px] font-medium tracking-[0.16em] text-ink-mute uppercase">
-                The brief
-              </p>
-              <p className="mt-1.5 text-[18px] font-medium text-ink">40 people. Room to mingle.</p>
-            </div>
-          </div>
-
-          <p className="mt-4 text-[13px] text-ink-mute">
-            NYC geography · Illustrative venues · No live location tracking
-          </p>
-
-          <ol className="mt-8 grid grid-cols-2 gap-x-8 gap-y-4 text-[15px]">
-            {STEPS.map((step, index) => (
-              <li key={step.n} className={index === 0 ? "font-medium text-ink" : "text-ink-mute"}>
-                <span className="tabular-nums">{step.n}</span> {step.label}
-              </li>
-            ))}
-          </ol>
-
-          <p className="mt-12 text-center text-[13px] text-ink-mute">Scroll to explore</p>
+              {VENUES.map((venue, index) => {
+                const shown = venueVisibility(progress, index);
+                if (shown <= 0) return null;
+                return (
+                  <g
+                    key={venue.id}
+                    opacity={shown}
+                    transform={`translate(${venue.x} ${venue.y}) scale(${0.72 + shown * 0.28})`}
+                  >
+                    <circle r="9" fill="#1d4ed8" />
+                    <circle r="3.2" fill="#ffffff" />
+                    <text className="venue-pin-name" x={14} y={4}>
+                      {venue.name}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          </svg>
         </div>
+
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <p className="text-[13px] font-medium tracking-wide text-ink-soft uppercase" aria-live="polite">
+            {PHASE_LABEL[phase]}
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {VENUES.map((venue, index) => {
+              const shown = venueVisibility(progress, index);
+              return (
+                <li
+                  key={venue.id}
+                  className="rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] text-ink"
+                  style={{ opacity: 0.35 + shown * 0.65 }}
+                >
+                  <span className="font-medium">{venue.name}</span>
+                  <span className="text-ink-mute"> · {venue.detail}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <p className="mt-3 text-[12px] text-ink-mute">Illustrated downtown. The rooms are examples.</p>
       </div>
     </section>
   );
