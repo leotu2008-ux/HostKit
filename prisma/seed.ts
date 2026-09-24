@@ -273,25 +273,36 @@ async function demoPasswordHash(): Promise<string> {
 }
 
 /**
- * A demo account seeded before hosted builds stopped using the public
- * password still has it, and the repo is public. Replace it, and bump the
- * session version so anyone already signed in with it is signed out — the
- * same move as seedAdminAccount's rotation.
+ * Keep an existing demo account's password in step with demoPassword. When
+ * DEMO_PASSWORD is set, the account gets it (so setting or changing it later
+ * still reaches an account seeded before). Without it, a hosted build only
+ * replaces a still-public password, since the repo is public; a random one
+ * stays put. Either way the session version is bumped so old sessions end —
+ * the same move as seedAdminAccount's rotation.
  */
-async function lockPublicDemoLogin(email: string): Promise<void> {
-  if (demoPassword(process.env) === PUBLIC_DEMO_PASSWORD) return;
+async function applyDemoPassword(email: string): Promise<void> {
+  const password = demoPassword(process.env);
+  if (password === PUBLIC_DEMO_PASSWORD) return;
   const user = await db.user.findUnique({ where: { email }, select: { id: true, passwordHash: true } });
-  if (!user?.passwordHash || !(await bcrypt.compare(PUBLIC_DEMO_PASSWORD, user.passwordHash))) return;
+  if (!user?.passwordHash) return;
+  const stale = password
+    ? !(await bcrypt.compare(password, user.passwordHash))
+    : await bcrypt.compare(PUBLIC_DEMO_PASSWORD, user.passwordHash);
+  if (!stale) return;
   await db.user.update({
     where: { id: user.id },
     data: { passwordHash: await demoPasswordHash(), sessionVersion: { increment: 1 } },
   });
-  console.log(`Locked the public demo password on ${email}; its sessions end.`);
+  console.log(
+    password
+      ? `Set ${email}'s password from DEMO_PASSWORD; its sessions end.`
+      : `Locked the public demo password on ${email}; its sessions end.`,
+  );
 }
 
 async function seedDemoNights() {
   await confirmDemoAccount(DEMO_EMAIL);
-  await lockPublicDemoLogin(DEMO_EMAIL);
+  await applyDemoPassword(DEMO_EMAIL);
   const existing = await db.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (existing) {
     const nights = await db.event.count({ where: { ownerId: existing.id } });
@@ -405,7 +416,7 @@ const STUDENT_EMAIL = "sam@babson.edu";
  *  of Discover has something to show. Same password as the demo host. */
 async function seedCampusDemo() {
   await confirmDemoAccount(STUDENT_EMAIL);
-  await lockPublicDemoLogin(STUDENT_EMAIL);
+  await applyDemoPassword(STUDENT_EMAIL);
   const existing = await db.user.findUnique({ where: { email: STUDENT_EMAIL } });
   if (existing) {
     const nights = await db.event.count({ where: { ownerId: existing.id } });
