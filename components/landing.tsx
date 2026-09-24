@@ -4,7 +4,7 @@ import { CloudSky } from "@/components/cloud-sky";
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 import { CreateEventButton } from "@/components/create-event-button";
 import { Eyebrow } from "@/components/eyebrow";
-import { GlitchText } from "@/components/glitch-text";
+import { WaveText } from "@/components/wave-text";
 import { LandingPreview } from "@/components/landing-preview";
 import { HostyMark } from "@/components/hosty-mark";
 import { HeroHeadline } from "@/components/hero-headline";
@@ -182,12 +182,9 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
         <Rails>
           <section className="py-16 md:py-24">
             <Eyebrow>The workflow</Eyebrow>
-            <GlitchText
-              as="h2"
-              className="font-display mt-3 block max-w-2xl text-[28px] leading-tight text-ink md:text-[40px]"
-            >
-              The agent works every stage
-            </GlitchText>
+            <h2 className="font-display mt-3 block max-w-2xl text-[28px] leading-tight text-ink md:text-[40px]">
+              <WaveText text="The agent works every stage" />
+            </h2>
             <p className="mt-3 max-w-lg text-[16px] leading-relaxed text-ink-soft">
               Not a chatbot bolted onto a form. It carries one event from the
               first idea to the last person through the door.
@@ -200,12 +197,9 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
                     {stage.step}
                   </span>
                   <div>
-                    <GlitchText
-                      as="h3"
-                      className="font-display block text-[20px] text-ink"
-                    >
-                      {stage.title}
-                    </GlitchText>
+                    <h3 className="font-display block text-[20px] text-ink">
+                      <WaveText text={stage.title} />
+                    </h3>
                     <p className="mt-1 text-[14px] font-medium text-brand">
                       {stage.agent}
                     </p>
@@ -239,12 +233,9 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
                 key={item.title}
                 className="rounded-card border border-line bg-surface p-6"
               >
-                <GlitchText
-                  as="h2"
-                  className="font-display block text-[18px] leading-snug text-ink"
-                >
-                  {item.title}
-                </GlitchText>
+                <h2 className="font-display block text-[18px] leading-snug text-ink">
+                  <WaveText text={item.title} />
+                </h2>
                 <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">
                   {item.body}
                 </p>
@@ -254,12 +245,9 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
         </section>
 
         <Reveal as="section" className="pb-24 text-center md:pb-32">
-          <GlitchText
-            as="h2"
-            className="font-display block text-[30px] leading-tight text-ink md:text-[42px]"
-          >
-            Give it a date and a headcount
-          </GlitchText>
+          <h2 className="font-display block text-[30px] leading-tight text-ink md:text-[42px]">
+            <WaveText text="Give it a date and a headcount" />
+          </h2>
           <p className="mx-auto mt-3 max-w-md text-[16px] leading-relaxed text-ink-soft">
             You&rsquo;ll have a plan before you close the tab.
           </p>

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { GlitchText } from "@/components/glitch-text";
+import { WaveText } from "@/components/wave-text";
 import { LLMS } from "@/lib/llms";
 import { ButtonLink } from "@/components/ui";
 
@@ -17,12 +17,9 @@ export function ConnectAgentSection() {
       <p className="font-event text-[12px] tracking-[0.14em] text-ink-mute uppercase">
         Claude, ChatGPT and Cursor
       </p>
-      <GlitchText
-        as="h2"
-        className="font-display mt-3 block max-w-2xl text-[28px] leading-tight text-ink md:text-[40px]"
-      >
-        Connect an agent
-      </GlitchText>
+      <h2 className="font-display mt-3 block max-w-2xl text-[28px] leading-tight text-ink md:text-[40px]">
+        <WaveText text="Connect an agent" />
+      </h2>
       <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">
         Claude and ChatGPT can read your events and briefs and search venues.
         Cursor can read your events and guest lists.
