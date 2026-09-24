@@ -36,6 +36,28 @@ describe("icsFor", () => {
   });
 });
 
+// A date saved without a start time is stored as noon (see `parseStart`).
+const dateOnly = { ...event, date: new Date("2026-10-23T12:00:00.000Z") };
+
+describe("a date with no start time", () => {
+  it("is an all-day entry in the calendar file, not noon", () => {
+    const ics = icsFor(dateOnly, url, new Date("2026-09-11T12:00:00Z"));
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261023\r\n");
+    expect(ics).toContain("DTEND;VALUE=DATE:20261024\r\n");
+    expect(ics).not.toMatch(/DT(START|END):\d{8}T/);
+  });
+
+  it("is an all-day entry in the Google link, not noon", () => {
+    const link = new URL(googleCalendarUrl(dateOnly, url));
+    expect(link.searchParams.get("dates")).toBe("20261023/20261024");
+  });
+
+  it("still ends on the next day at the end of a month", () => {
+    const ics = icsFor({ ...dateOnly, date: new Date("2026-10-31T12:00:00.000Z") }, url);
+    expect(ics).toContain("DTEND;VALUE=DATE:20261101\r\n");
+  });
+});
+
 describe("googleCalendarUrl", () => {
   it("builds a template link with floating dates", () => {
     const link = new URL(googleCalendarUrl(event, url));
