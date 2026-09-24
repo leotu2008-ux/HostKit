@@ -111,11 +111,16 @@ export function effectiveHeadcount(
  * Parses a pasted list into guests. Accepts "Name <email>", "Name, email",
  * "Name email" or a bare name per line — hosts paste from wherever the list
  * already lives, and rejecting their format is a good way to lose them.
+ *
+ * Emails come back lowercased (registration and the guest book match on the
+ * lowercased form), and an email repeated within one paste keeps its first
+ * line only. Names without an email are never merged: two Sams are two people.
  */
 export function parseGuestList(
   input: string,
 ): Array<{ name: string; email: string | null }> {
   const EMAIL = /[^\s,<>]+@[^\s,<>]+\.[^\s,<>]+/;
+  const seen = new Set<string>();
 
   return input
     .split(/\r?\n/)
@@ -123,12 +128,18 @@ export function parseGuestList(
     .filter(Boolean)
     .map((line) => {
       const match = line.match(EMAIL);
-      const email = match ? match[0] : null;
-      const name = (email ? line.replace(email, "") : line)
+      const typed = match ? match[0] : null;
+      const name = (typed ? line.replace(typed, "") : line)
         .replace(/[<>]/g, "")
         .replace(/[,;]+/g, " ")
         .trim();
-      return { name: name || (email ?? "Guest"), email };
+      return { name: name || (typed ?? "Guest"), email: typed?.toLowerCase() ?? null };
     })
-    .filter((guest) => guest.name.length > 0);
+    .filter((guest) => {
+      if (guest.name.length === 0) return false;
+      if (!guest.email) return true;
+      if (seen.has(guest.email)) return false;
+      seen.add(guest.email);
+      return true;
+    });
 }

@@ -143,4 +143,20 @@ describe("parseGuestList", () => {
   it("ignores blank lines and stray whitespace", () => {
     expect(parseGuestList("\n\n   \n")).toEqual([]);
   });
+
+  it("lowercases emails, so registering later matches the typed-in guest", () => {
+    expect(parseGuestList("Ada Lovelace <Ada@Example.COM>")).toEqual([
+      { name: "Ada Lovelace", email: "ada@example.com" },
+    ]);
+  });
+
+  it("keeps the first line when one paste repeats an email", () => {
+    expect(
+      parseGuestList("Ada Lovelace <ada@example.com>\nADA@example.com\nAda L, ada@example.com"),
+    ).toEqual([{ name: "Ada Lovelace", email: "ada@example.com" }]);
+  });
+
+  it("keeps two people who share a name but have no email", () => {
+    expect(parseGuestList("Sam\nSam")).toHaveLength(2);
+  });
 });
