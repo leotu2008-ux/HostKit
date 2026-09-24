@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CloudSky } from "@/components/cloud-sky";
+import { VenueDiscovery } from "@/components/venue-discovery";
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 import { CreateEventButton } from "@/components/create-event-button";
 import { Eyebrow } from "@/components/eyebrow";
@@ -210,6 +211,10 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
           </section>
         </Rails>
       </div>
+
+      <Rails>
+        <VenueDiscovery />
+      </Rails>
 
       {/* After the four stages, still on the page ground so the section’s
           own surface cards stay as they are. */}
