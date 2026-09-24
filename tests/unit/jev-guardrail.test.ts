@@ -86,9 +86,9 @@ describe("the values code can check", () => {
     expect(valuesMatchRecord("You may want to finish 2 things", [2], [])).toEqual({ checkable: true, grounded: true });
   });
 
-  it("grounds figures written in the phrases the writer was handed", () => {
-    expect(valuesMatchRecord("Suits a 2h 30m evening", [40, 2.5], ["2h 30m"]).grounded).toBe(true);
-    expect(valuesMatchRecord("Suits a 2h 45m evening", [40, 2.5], ["2h 30m"]).grounded).toBe(false);
+  it("never takes a figure in a phrase as a number the record holds", () => {
+    expect(valuesMatchRecord("Five things need you today", [2, 1], ["No reply in 5 days", "today"]).grounded).toBe(false);
+    expect(valuesMatchRecord("5 things need you today", [2, 1], ["No reply in 5 days", "today"]).grounded).toBe(false);
   });
 
   it("says when there's no value it can read at all", () => {
@@ -219,6 +219,50 @@ describe("the digest line", () => {
     expect(source).toBe("model");
     expect(notice.body).toBe("Keep it under about five grand.");
   });
+
+  describe("a count the record doesn't hold", () => {
+    const FOLLOW_UPS: Briefing = {
+      eventId: "evt-1",
+      items: [
+        { ...BRIEFING.items[0], id: "task_due:t2", title: "Confirm attendance" },
+        { ...BRIEFING.items[0], id: "outreach:o1", urgency: "soon", title: "Chase the caterer", detail: "No reply in 5 days" },
+      ],
+      counts: { now: 1, soon: 1, total: 2 },
+      headline: "1 thing needs you today",
+    };
+    const statesValues = jev(() => ({ budget: 0.05, values: 0.95 }));
+    const says = (line: string) => JSON.stringify({ headline: "Fall Mixer is close", line });
+
+    it("fails a number word found only inside a word of a task", async () => {
+      const { notice, source } = await phraseBriefing(FOLLOW_UPS, "Fall Mixer", {
+        ...opts,
+        fetchImpl: claudeSays(says("Ten things need you today.")),
+        jev: { fetch: statesValues, env: JEV_ON },
+      });
+      expect(source).toBe("fallback");
+      expect(notice).toEqual(digestNotice(FOLLOW_UPS, "Fall Mixer"));
+    });
+
+    it("fails a number word whose figure appears only in an item's detail", async () => {
+      const { notice, source } = await phraseBriefing(FOLLOW_UPS, "Fall Mixer", {
+        ...opts,
+        fetchImpl: claudeSays(says("Five things need you today.")),
+        jev: { fetch: statesValues, env: JEV_ON },
+      });
+      expect(source).toBe("fallback");
+      expect(notice).toEqual(digestNotice(FOLLOW_UPS, "Fall Mixer"));
+    });
+
+    it("passes a count the record holds", async () => {
+      const { notice, source } = await phraseBriefing(FOLLOW_UPS, "Fall Mixer", {
+        ...opts,
+        fetchImpl: claudeSays(says("One thing needs you today.")),
+        jev: { fetch: statesValues, env: JEV_ON },
+      });
+      expect(source).toBe("model");
+      expect(notice.body).toBe("One thing needs you today.");
+    });
+  });
 });
 
 describe("venue reasons", () => {
@@ -281,7 +325,7 @@ describe("venue reasons", () => {
           picks: [
             { id: "a", reason: "Studio 54 at 250 Harbor Rd suits 2h 30m" },
             { id: "b", reason: "Holds 90 people" },
-            { id: "c", reason: "Bar with a back room" },
+            { id: "c", reason: "Suits a 2h 30m evening" },
           ],
         }),
       ),
@@ -292,7 +336,7 @@ describe("venue reasons", () => {
     expect(venues.map((v) => [v.id, v.reason])).toEqual([
       ["a", "Studio 54 at 250 Harbor Rd suits 2h 30m"],
       ["b", "Has a phone number and a site"],
-      ["c", "Bar with a back room"],
+      ["c", "Suits a 2h 30m evening"],
     ]);
   });
 });

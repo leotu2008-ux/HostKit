@@ -206,7 +206,9 @@ async function guardReasons(
   const modelWrote = new Set(answer.picks.map((pick) => pick.id));
   const plain = new Map(rankVenues(candidates, rankEvent, candidates.length).map((v) => [v.id, v.reason]));
   const days = daysUntil(event.date, now);
+  const duration = formatDuration(event.durationHours);
   const allowedNumbers = [event.guestCount, event.durationHours, ...(days === null ? [] : [days])];
+  const digitsIn = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
 
   return Promise.all(
     picked.map(async (venue) => {
@@ -214,8 +216,8 @@ async function guardReasons(
       const check = await checkDraft(venue.reason, {
         eventId: opts.eventId,
         subject: `venue reason: ${venue.name}`,
-        allowedNumbers,
-        allowedPhrases: [describeCountdown(days), formatDuration(event.durationHours), venue.name, venue.address],
+        allowedNumbers: [...allowedNumbers, ...digitsIn(`${duration} ${venue.name} ${venue.address}`)],
+        allowedPhrases: [describeCountdown(days), duration, venue.name, venue.address],
         fetch: opts.jev?.fetch,
         env: opts.jev?.env,
       });

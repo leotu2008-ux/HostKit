@@ -53,7 +53,7 @@ export type DraftContext = {
   subject: string;
   /** Every number the line may state, computed by code. */
   allowedNumbers: number[];
-  /** Words and figures the line may use, as handed to the writer ("tomorrow", "2h 30m"). */
+  /** Words for a value the line may use, as handed to the writer ("tomorrow"). */
   allowedPhrases?: string[];
   budgetMs?: number;
   fetch?: typeof fetch;
@@ -91,7 +91,6 @@ export function valuesMatchRecord(
   const words = lower.match(/[a-z]+/g) ?? [];
   const phrases = allowedPhrases.join(" ").toLowerCase();
   const phraseWords = new Set(phrases.match(/[a-z]+/g) ?? []);
-  const numbers = [...allowedNumbers, ...(phrases.match(/\d+/g) ?? []).map(Number)];
 
   const digitRuns = text.match(/\d+/g) ?? [];
   const numberWords = words.filter((word) => word in NUMBER_WORDS);
@@ -99,8 +98,8 @@ export function valuesMatchRecord(
 
   const checkable = digitRuns.length + numberWords.length + dayWords.length > 0;
   const grounded =
-    numbersAreGrounded(text, numbers) &&
-    numberWords.every((word) => numbers.includes(NUMBER_WORDS[word]) || phraseWords.has(word)) &&
+    numbersAreGrounded(text, allowedNumbers) &&
+    numberWords.every((word) => allowedNumbers.includes(NUMBER_WORDS[word]) || phraseWords.has(word)) &&
     dayWords.every((word) => phraseWords.has(word));
   return { checkable, grounded };
 }
