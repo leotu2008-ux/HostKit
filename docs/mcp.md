@@ -134,7 +134,7 @@ See [ChatGPT custom MCP apps](https://help.openai.com/en/articles/12584461-devel
 | `GET /oauth/authorize` | Login and consent |
 | `POST /api/oauth/token` | Code exchange and refresh, form encoded |
 | `/settings/connections` | User-controlled disconnect |
-| `/mcp` | Install page: bearer setup for Cursor, plus where to add Hosty in Claude, ChatGPT and Gemini CLI |
+| `/mcp` | Install page: bearer setup for Cursor, plus where to add Hosty in Claude and ChatGPT |
 
 `events:read` permits event listing and brief reads. `venues:search` permits searching in a managed event's city. Authorization requires `resource` equal to the configured MCP URL. Token requests may omit `resource` because the grant is already bound to one resource; if supplied it must match exactly. The token endpoint supports public clients, `client_secret_post`, and `client_secret_basic`.
 

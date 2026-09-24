@@ -17,8 +17,7 @@ import { HostyMark } from "@/components/hosty-mark";
  *
  * The example is representative of a real draft — the budget really is
  * split by event kind, and the tasks really are counted back from the date
- * — but written here rather than generated. components/landing.tsx says
- * more about which of the landing copy is ahead of the code.
+ * — but written here rather than generated.
  */
 
 /** The brief on the left, as a host would type it. */

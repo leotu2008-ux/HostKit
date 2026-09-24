@@ -65,7 +65,7 @@ export default async function ProfilePage() {
             />
             <p className="mt-3 text-[13px] text-ink-mute">
               {user.school
-                ? `Your events are tagged ${user.school.short}, and Discover leads with what's on there.`
+                ? `Your events are tagged ${user.school.short}.`
                 : "Pick your school to see your campus first — official events included."}
             </p>
           </Card>

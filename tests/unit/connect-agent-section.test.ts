@@ -40,21 +40,24 @@ describe("Connect an agent landing section", () => {
     expect(html).not.toContain("Discover");
     expect(html).toContain('href="/mcp"');
     expect(html).toContain("Endpoint, token generation, and setup config");
+    expect(html).toContain("Agent access is read-only.");
     expect(html).not.toContain("HostKit");
+    expect(html).not.toContain("Gemini");
   });
 
-  it("invites you to add your preferred LLM, with the Claude, ChatGPT and Gemini marks", () => {
+  it("invites you to add Claude or ChatGPT, and does not offer Gemini", () => {
     const html = renderToStaticMarkup(createElement(ConnectAgentSection));
 
     expect(html).toContain("Add your preferred LLM");
     for (const [name, logo] of [
       ["Claude", "/llm/claude-color.svg"],
       ["ChatGPT", "/llm/openai.svg"],
-      ["Gemini", "/llm/gemini-color.svg"],
     ]) {
       expect(html).toContain(name);
       expect(html).toContain(`src="${logo}"`);
     }
+    expect(html).not.toContain("Gemini");
+    expect(html).not.toContain("gemini-color.svg");
   });
 
   it("sits after the four stages", () => {

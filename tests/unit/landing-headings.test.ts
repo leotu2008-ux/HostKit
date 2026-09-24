@@ -55,7 +55,7 @@ describe("landing subtitles", () => {
   };
 
   const subtitles = [
-    "Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day. You approve. It does the rest.",
+    "Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day.",
     "Not a chatbot bolted onto a form. It carries one event from the first idea to the last person through the door.",
     "The agent drafts the plan",
     "Nothing is sent, published or spent without you pressing the button. Every message is yours to edit first.",
@@ -81,6 +81,17 @@ describe("landing subtitles", () => {
   it("leaves the stage descriptions still, so the page doesn't feel busy", () => {
     expect(paragraph("Tell it what you").includes("wave-line")).toBe(false);
   });
+
+  it("does not claim the agent writes to venues or that a door scans people in", () => {
+    const page = text(html);
+    expect(page).not.toContain("writes to the venues");
+    expect(page).not.toContain("chases the quotes");
+    expect(page).not.toContain("scans people in");
+    expect(page).toContain("You send those.");
+    expect(page).toContain("You send it.");
+    expect(page).toContain("printed door list");
+    expect(page).toContain("The QR code opens the event page.");
+  });
 });
 
 describe("WaveText timing", () => {
@@ -93,7 +104,7 @@ describe("WaveText timing", () => {
       words: text.split(" ").length,
     };
   };
-  const long = "Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day.";
+  const long = "Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day.";
 
   it("keeps the 28ms letter stagger for headline-length text", () => {
     expect(step("Connect an agent").ms).toBe(28);
