@@ -85,6 +85,20 @@ describe("rankVenuesForEvent — a good model answer", () => {
     expect(source).toBe("model");
     expect(venues.map((v) => v.id)).toEqual(["c", "a", "b"]);
   });
+
+  it("tells the model its answer goes under picks, each with an id and a reason", async () => {
+    let system = "";
+    const capture = (async (url: string, init: RequestInit) => {
+      system = JSON.parse(String(init.body)).system;
+      return modelSays(JSON.stringify({ picks: [{ id: "a", reason: "Central" }] }))(url, init);
+    }) as unknown as typeof fetch;
+
+    await rankVenuesForEvent(CANDIDATES, EVENT, { fetchImpl: capture });
+
+    expect(system).toContain('"picks"');
+    expect(system).toContain('"id"');
+    expect(system).toContain('"reason"');
+  });
 });
 
 describe("rankVenuesForEvent — reconciling against the real candidates", () => {
