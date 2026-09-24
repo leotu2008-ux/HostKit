@@ -10,6 +10,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
 import nextConfig from "@/next.config";
 import { DesktopNav, TabBar } from "@/components/tab-bar";
+import AuthLayout from "@/app/(auth)/layout";
 
 describe("the consumer web pages are gone", () => {
   it("sends Discover, campus and club URLs home, temporarily so they can come back", async () => {
@@ -38,5 +39,13 @@ describe("the consumer web pages are gone", () => {
     const columns = Number(html.match(/grid-template-columns:repeat\((\d+), minmax\(0, 1fr\)\)/)?.[1]);
     expect(columns).toBe(html.match(/<li/g)?.length);
     expect(columns).toBe(3);
+  });
+
+  it("sends signed-out visitors on the auth pages back home, not to Discover", () => {
+    const html = renderToStaticMarkup(
+      AuthLayout({ children: null } as Parameters<typeof AuthLayout>[0]),
+    );
+    expect(html).toContain('href="/"');
+    expect(html).not.toContain("Discover");
   });
 });
