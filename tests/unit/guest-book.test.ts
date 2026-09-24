@@ -18,9 +18,36 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { contactEmail, guestBookFor, inviteFromGuestBook, linkGuestsToContacts } from "@/lib/guest-book";
+import {
+  cameAndNew,
+  contactEmail,
+  guestBookFor,
+  inviteFromGuestBook,
+  linkGuestsToContacts,
+  nightlyTurnout,
+} from "@/lib/guest-book";
 
 beforeEach(() => vi.clearAllMocks());
+
+type NightRow = { id: string; date: Date | null; endDate: Date | null; schoolDomain: string | null };
+
+// 19:00Z on Sep 24 is 3 PM in New York. Event dates are wall-clock times
+// stored as UTC, so a 6 PM night that evening is stored as 18:00Z: before
+// `now` in UTC terms, but hours ahead on the clock at the school.
+const NOW = new Date("2026-09-24T19:00:00Z");
+const night = (id: string, date: string, endDate: string | null = null): NightRow => ({
+  id,
+  date: new Date(date),
+  endDate: endDate ? new Date(endDate) : null,
+  schoolDomain: null,
+});
+
+/** The door-events query asks for events with a check-in; the other lists the host's nights. */
+function hostEvents(doorIds: string[], nights: NightRow[]) {
+  mocks.eventFindMany.mockImplementation(async ({ where }) =>
+    where.guests ? doorIds.map((id) => ({ id })) : nights,
+  );
+}
 
 describe("contactEmail", () => {
   it("lowercases and trims, and treats blank as none", () => {
@@ -84,7 +111,7 @@ describe("guestBookFor", () => {
     const book = await guestBookFor("host-1", "evt-1");
 
     expect(book.map((e) => e.id)).toEqual(["c2", "c1"]);
-    expect(book[0]).toEqual({ id: "c2", name: "Bo", email: "bo@x.com", came: 3 });
+    expect(book[0]).toEqual({ id: "c2", name: "Bo", email: "bo@x.com", came: 3, missedOut: false });
     const where = mocks.contactFindMany.mock.calls[0][0].where;
     expect(where.ownerId).toBe("host-1");
     expect(where.id).toEqual({ notIn: ["c-already"] });
@@ -92,44 +119,107 @@ describe("guestBookFor", () => {
 
   it("counts only check-ins at events where the host ran the door, so a no-show isn't 'came'", async () => {
     mocks.guestFindMany.mockResolvedValue([]);
-    mocks.eventFindMany.mockResolvedValue([{ id: "door-night" }]);
+    hostEvents(["door-night"], [night("door-night", "2026-09-01T19:00:00Z"), night("yes-night", "2026-09-08T19:00:00Z")]);
     mocks.contactFindMany.mockResolvedValue([]);
 
-    await guestBookFor("host-1", "evt-1");
+    await guestBookFor("host-1", "evt-1", NOW);
 
-    expect(mocks.eventFindMany.mock.calls[0][0].where).toEqual({
-      ownerId: "host-1",
-      guests: { some: { checkedInAt: { not: null } } },
+    expect(mocks.eventFindMany).toHaveBeenCalledWith({
+      where: { ownerId: "host-1", guests: { some: { checkedInAt: { not: null } } } },
+      select: { id: true },
     });
     const { where, select } = mocks.contactFindMany.mock.calls[0][0];
     const came = {
-      OR: [
-        { checkedInAt: { not: null } },
-        { rsvpStatus: "ATTENDING", eventId: { notIn: ["door-night"] }, event: expect.anything() },
-      ],
+      OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING", eventId: { in: ["yes-night"] } }],
     };
     expect(where.guests).toEqual({ some: { eventId: { not: "evt-1" }, ...came } });
     expect(select._count).toEqual({ select: { guests: { where: came } } });
   });
 
-  it("doesn't count a yes to a night that hasn't happened yet, or was cancelled, as 'came'", async () => {
+  it("doesn't count a yes to a night that hasn't started on the school's clock, or was cancelled, as 'came'", async () => {
     mocks.guestFindMany.mockResolvedValue([]);
-    mocks.eventFindMany.mockResolvedValue([]);
+    hostEvents(
+      [],
+      [
+        night("last-week", "2026-09-17T19:00:00Z"),
+        night("tonight", "2026-09-24T18:00:00Z"),
+        // Flexible dates: not over until the last acceptable day.
+        night("flexible", "2026-09-20T12:00:00Z", "2026-09-27T12:00:00Z"),
+      ],
+    );
     mocks.contactFindMany.mockResolvedValue([]);
-    const now = new Date("2026-09-24T12:00:00Z");
+
+    await guestBookFor("host-1", "evt-1", NOW);
+
+    expect(mocks.eventFindMany).toHaveBeenCalledWith({
+      where: { ownerId: "host-1", status: { not: "CANCELLED" } },
+      select: { id: true, date: true, endDate: true, schoolDomain: true },
+    });
+    const { where } = mocks.contactFindMany.mock.calls[0][0];
+    expect(where.guests.some.OR[1]).toEqual({ rsvpStatus: "ATTENDING", eventId: { in: ["last-week"] } });
+  });
+});
+
+describe("guestBookFor: missed out last time", () => {
+  const now = NOW;
+
+  it("puts people waitlisted at the host's last night first, even if they never came", async () => {
+    mocks.guestFindMany
+      .mockResolvedValueOnce([]) // on this event
+      .mockResolvedValueOnce([{ contactId: "c-missed" }]); // waitlisted last time
+    hostEvents([], [night("last-night", "2026-09-17T19:00:00Z")]);
+    mocks.contactFindMany.mockResolvedValue([
+      { id: "c-regular", name: "Ana", email: "ana@x.com", _count: { guests: 4 } },
+      { id: "c-missed", name: "Zed", email: "zed@x.com", _count: { guests: 0 } },
+    ]);
+
+    const book = await guestBookFor("host-1", "evt-1", now);
+
+    expect(book).toEqual([
+      { id: "c-missed", name: "Zed", email: "zed@x.com", came: 0, missedOut: true },
+      { id: "c-regular", name: "Ana", email: "ana@x.com", came: 4, missedOut: false },
+    ]);
+    const where = mocks.contactFindMany.mock.calls[0][0].where;
+    expect(where.OR).toEqual([{ guests: expect.anything() }, { id: { in: ["c-missed"] } }]);
+  });
+
+  it("looks at the host's most recent other night that happened, and only its waitlist nobody checked in from", async () => {
+    mocks.guestFindMany.mockResolvedValue([]);
+    hostEvents(
+      [],
+      [
+        night("older-night", "2026-09-10T19:00:00Z"),
+        night("last-night", "2026-09-17T19:00:00Z"),
+        night("evt-1", "2026-09-20T19:00:00Z"),
+        // Hasn't started at the school yet, so its waitlist is still live.
+        night("tonight", "2026-09-24T18:00:00Z"),
+      ],
+    );
+    mocks.contactFindMany.mockResolvedValue([]);
 
     await guestBookFor("host-1", "evt-1", now);
 
-    const { where, select } = mocks.contactFindMany.mock.calls[0][0];
-    const happened = {
-      status: { not: "CANCELLED" },
-      OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
-    };
-    const came = {
-      OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING", eventId: { notIn: [] }, event: happened }],
-    };
-    expect(where.guests).toEqual({ some: { eventId: { not: "evt-1" }, ...came } });
-    expect(select._count).toEqual({ select: { guests: { where: came } } });
+    expect(mocks.guestFindMany).toHaveBeenCalledTimes(2);
+    expect(mocks.guestFindMany.mock.calls[1][0].where).toEqual({
+      eventId: "last-night",
+      rsvpStatus: "WAITLISTED",
+      checkedInAt: null,
+      contactId: { not: null },
+    });
+  });
+
+  it("doesn't flag anyone already on this event", async () => {
+    mocks.guestFindMany
+      .mockResolvedValueOnce([{ contactId: "c-missed" }])
+      .mockResolvedValueOnce([{ contactId: "c-missed" }]);
+    hostEvents([], [night("last-night", "2026-09-17T19:00:00Z")]);
+    mocks.contactFindMany.mockResolvedValue([]);
+
+    await guestBookFor("host-1", "evt-1", now);
+
+    const where = mocks.contactFindMany.mock.calls[0][0].where;
+    expect(where.id).toEqual({ notIn: ["c-missed"] });
+    expect(where.OR).toBeUndefined();
   });
 });
 
@@ -161,5 +251,54 @@ describe("inviteFromGuestBook", () => {
     expect(await inviteFromGuestBook("evt-1", "host-1", ["someone-elses"])).toBe(0);
     expect(mocks.contactFindMany.mock.calls[0][0].where).toEqual({ id: { in: ["someone-elses"] }, ownerId: "host-1" });
     expect(mocks.guestCreateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("cameAndNew", () => {
+  const yes = (contactId: string | null) => ({ contactId, rsvpStatus: "ATTENDING" as const, checkedInAt: null });
+  const inAt = (contactId: string | null) => ({ contactId, rsvpStatus: "INVITED" as const, checkedInAt: new Date("2026-09-01T20:00:00Z") });
+
+  it("counts who came each night and how many of them came to none of the earlier nights", () => {
+    const result = cameAndNew([
+      { id: "n2", date: new Date("2026-09-08"), endDate: null, guests: [yes("a"), yes("c"), yes(null)] },
+      { id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [yes("a"), yes("b")] },
+    ]);
+    expect(result.get("n1")).toEqual({ came: 2, fresh: 2 });
+    // a came before; c is new; a guest with no contact came but can't be called new.
+    expect(result.get("n2")).toEqual({ came: 3, fresh: 1 });
+  });
+
+  it("uses check-ins where the door was run, so a yes who never walked in didn't come", () => {
+    const result = cameAndNew([
+      { id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [yes("a"), inAt("b")] },
+      { id: "n2", date: new Date("2026-09-08"), endDate: null, guests: [yes("a")] },
+    ]);
+    expect(result.get("n1")).toEqual({ came: 1, fresh: 1 });
+    // a never came to n1, so a is new at n2.
+    expect(result.get("n2")).toEqual({ came: 1, fresh: 1 });
+  });
+
+  it("counts a contact on the list twice in one night once as new", () => {
+    const result = cameAndNew([{ id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [yes("a"), yes("a")] }]);
+    expect(result.get("n1")).toEqual({ came: 2, fresh: 1 });
+  });
+});
+
+describe("nightlyTurnout", () => {
+  it("loads the host's nights that happened, with only the guests who might have come", async () => {
+    const yes = { contactId: "a", rsvpStatus: "ATTENDING", checkedInAt: null };
+    mocks.eventFindMany.mockResolvedValue([
+      { ...night("n1", "2026-09-01T19:00:00Z"), guests: [yes] },
+      // 6 PM tonight at the school, still ahead at 3 PM: no "came" yet.
+      { ...night("tonight", "2026-09-24T18:00:00Z"), guests: [yes, yes] },
+    ]);
+    const result = await nightlyTurnout("host-1", NOW);
+    expect(result.get("n1")).toEqual({ came: 1, fresh: 1 });
+    expect(result.has("tonight")).toBe(false);
+    const where = mocks.eventFindMany.mock.calls[0][0].where;
+    expect(where).toEqual({ ownerId: "host-1", status: { not: "CANCELLED" } });
+    expect(mocks.eventFindMany.mock.calls[0][0].select.guests.where).toEqual({
+      OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING" }],
+    });
   });
 });

@@ -30,6 +30,7 @@ export function BlastComposer({
   phoneCounts,
   canSend,
   canText,
+  draft,
 }: {
   eventId: string;
   eventTitle: string;
@@ -39,11 +40,13 @@ export function BlastComposer({
   phoneCounts?: Record<Segment, number>;
   canSend: boolean;
   canText?: boolean;
+  /** A drafted message to start from (lib/blasts.ts blastDraft). */
+  draft?: { segment: Segment; subject: string; body: string };
 }) {
   const [state, formAction] = useActionState<BlastFormState, FormData>(sendBlastAction, undefined);
-  const [segment, setSegment] = useState<Segment>("going");
-  const [subject, setSubject] = useState(`${eventTitle}: an update`);
-  const [body, setBody] = useState("Hi {name},\n\n");
+  const [segment, setSegment] = useState<Segment>(draft?.segment ?? "going");
+  const [subject, setSubject] = useState(draft?.subject ?? `${eventTitle}: an update`);
+  const [body, setBody] = useState(draft?.body ?? "Hi {name},\n\n");
   const phones = phoneCounts?.[segment] ?? 0;
 
   if (state?.sent) {

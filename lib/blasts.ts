@@ -1,4 +1,5 @@
 import type { EventStatus, RsvpStatus } from "@/generated/prisma/enums";
+import { formatEventDate, formatEventTime, hasClock } from "@/lib/when";
 
 /**
  * Who a blast goes to. Segments are by RSVP status (and, for "came", a
@@ -104,4 +105,40 @@ export function recipientsFor(
 /** Fills `{name}` in a body so each guest gets their own greeting. */
 export function personalize(body: string, name: string): string {
   return body.replaceAll("{name}", name.split(/\s+/)[0] || name);
+}
+
+/** The two before-the-night drafts the briefing offers (lib/agent/briefing.ts). */
+export type BlastDraftKind = "nudge" | "reminder";
+
+export function isBlastDraftKind(value: unknown): value is BlastDraftKind {
+  return value === "nudge" || value === "reminder";
+}
+
+/**
+ * A starting message the host edits and sends themselves — built only from
+ * the night's saved title and start, never anything Hosty would have to guess.
+ * The nudge goes to the unreplied about a week out; the reminder to the
+ * guests going the day before (never the waitlist).
+ */
+export function blastDraft(
+  kind: BlastDraftKind,
+  event: { title: string; date: Date | null },
+): { segment: Segment; subject: string; body: string } {
+  const time = event.date && hasClock(event.date) ? formatEventTime(event.date) : null;
+  if (kind === "reminder") {
+    return {
+      segment: "going",
+      subject: `See you tomorrow: ${event.title}`,
+      body: `Hi {name},\n\nA reminder that ${event.title} is tomorrow${time ? ` at ${time}` : ""}. See you there.\n\n`,
+    };
+  }
+  const day = formatEventDate(event.date);
+  const ask = day
+    ? `${event.title} is ${day}${time ? ` at ${time}` : ""}. Can you make it?`
+    : `Can you make it to ${event.title}?`;
+  return {
+    segment: "pending",
+    subject: `${event.title}: can you make it?`,
+    body: `Hi {name},\n\n${ask} Let me know either way.\n\n`,
+  };
 }

@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { daysUntil } from "@/lib/plan";
 import { AgentPanel } from "@/components/agent-panel";
 import { WorkspaceBar } from "@/components/workspace-bar";
 import { WorkspaceSidebar, type SwitcherEvent } from "@/components/workspace-sidebar";
+import { nightIn } from "@/lib/agent/briefing";
 import { loadBriefing } from "@/lib/agent/load";
 import { loadAgentStatus } from "@/lib/activity";
 import { isVenueSearchConfigured } from "@/lib/venues/search";
@@ -37,7 +37,7 @@ export default async function EventLayout({
 }: LayoutProps<"/events/[id]">) {
   const { id } = await params;
   const { event, user } = await requireEvent(id);
-  const days = daysUntil(event.date);
+  const days = nightIn(event, new Date());
 
   const [briefing, agent, switcher] = await Promise.all([
     loadBriefing(event),
@@ -76,7 +76,7 @@ export default async function EventLayout({
               canSend={Boolean(user?.email)}
               venueSearchEnabled={isVenueSearchConfigured()}
               firstName={firstNameOf(user?.name)}
-              className="mt-8 xl:mt-0"
+              className="no-print mt-8 xl:mt-0"
             />
           </div>
         </div>
