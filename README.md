@@ -126,8 +126,10 @@ npm run dev                 # http://localhost:3000
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 Open the dev server as `localhost`, `127.0.0.1` or your machine's Wi-Fi
-address from a phone (`192.168.x.x:3000`). Those origins are listed in
-`allowedDevOrigins` in `next.config.ts`; `next dev` refuses to serve its
+address from a phone (`192.168.x.x:3000`). `localhost` works because it's
+the host `next dev` starts on; `127.0.0.1`, `*.local` and private-network
+addresses (`192.168.*.*`, `10.*.*.*`, `172.*.*.*`) are listed in
+`allowedDevOrigins` in `next.config.ts`. `next dev` refuses to serve its
 scripts to any other hostname.
 
 **Demo login, local and CI only:** `maya@hostkit.demo` / `hostkit-demo`.
