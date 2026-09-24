@@ -5,7 +5,12 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import type { CollaboratorKind, CollaboratorStatus } from "@/generated/prisma/enums";
-import { composeInquiry, inquiryEmail, normalizeRecipient } from "@/lib/outreach";
+import {
+  COLLABORATOR_KIND_LABEL,
+  composeInquiry,
+  inquiryEmail,
+  normalizeRecipient,
+} from "@/lib/outreach";
 import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { EmailSendError } from "@/lib/email/failure";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
@@ -14,14 +19,6 @@ import { addVendorToEvent, rememberCollaborator } from "@/lib/vendor-book";
 
 const KINDS = ["VENUE", "SPEAKER", "COHOST"] as const;
 const STATUSES = ["PENDING", "CONFIRMED", "DECLINED"] as const;
-
-/** Readable labels for the outreach kinds, matching the section titles on
- *  the Outreach page (app/(app)/events/[id]/(outreach)/outreach/page.tsx). */
-const KIND_LABEL: Record<(typeof KINDS)[number], string> = {
-  VENUE: "Venue",
-  SPEAKER: "Speaker",
-  COHOST: "Cohost",
-};
 
 const addSchema = z.object({
   eventId: z.string().min(1),
@@ -88,7 +85,7 @@ export async function setCollaboratorStatusAction(formData: FormData) {
     await record(eventId, {
       actor: "host",
       kind: "collaborator_confirmed",
-      title: `${KIND_LABEL[before.kind]} confirmed: ${before.name}`,
+      title: `${COLLABORATOR_KIND_LABEL[before.kind]} confirmed: ${before.name}`,
     });
     // Best-effort: the vendor book is a convenience, not the record of
     // truth, and must never fail a status change that already committed.

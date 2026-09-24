@@ -21,6 +21,14 @@ import { formatDurationLong } from "@/lib/when";
  * to spend is how it becomes what you spend.
  */
 
+/** Readable labels for the outreach kinds, matching the section titles on
+ *  the Outreach page (app/(workspace)/events/[id]/(outreach)/outreach/page.tsx). */
+export const COLLABORATOR_KIND_LABEL: Record<CollaboratorKind, string> = {
+  VENUE: "Venue",
+  SPEAKER: "Speaker",
+  COHOST: "Cohost",
+};
+
 export type OutreachEvent = {
   title: string;
   type: EventType;
