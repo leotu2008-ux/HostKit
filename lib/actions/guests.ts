@@ -8,6 +8,7 @@ import { parseGuestList } from "@/lib/guests";
 import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
 import { newRsvpToken } from "@/lib/tokens";
 import { record } from "@/lib/activity";
+import { hasFinished } from "@/lib/outcomes";
 import { inviteFromGuestBook, linkGuestsToContacts } from "@/lib/guest-book";
 
 export type GuestFormState = { error?: string; added?: number } | undefined;
@@ -129,8 +130,16 @@ export async function submitRsvpAction(
     return { error: "Pick whether you can make it." };
   }
 
-  const guest = await db.guest.findUnique({ where: { rsvpToken: token } });
+  const guest = await db.guest.findUnique({
+    where: { rsvpToken: token },
+    include: { event: { select: { date: true, endDate: true, durationHours: true, status: true } } },
+  });
   if (!guest) return { error: "This invitation link is no longer valid." };
+  // After the night the list is history: a late "yes" would count as came in
+  // the host's guest book, and a late "no" would erase someone who did.
+  if (guest.event.status === "COMPLETED" || hasFinished(guest.event)) {
+    return { error: "This night has already happened." };
+  }
 
   const waiting = guest.rsvpStatus === "PENDING" || guest.rsvpStatus === "WAITLISTED";
   if (waiting && parsed.data.rsvpStatus !== "DECLINED") {
