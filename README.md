@@ -95,6 +95,7 @@ repo each get their own production deploy and will all fail independently.
    | `AUTH_TRUST_HOST` | `true` |
    | `DIRECT_URL` | Optional. The provider's direct (non-pooled) URL, used by `prisma migrate` |
    | `HOSTY_ADMIN_PASSWORD` | Optional. The administrator's password; the seed creates or rotates the admin account from it on every deploy |
+   | `DEMO_PASSWORD` | Optional, 8+ characters. The password for the demo accounts (`maya@hostkit.demo`, `sam@babson.edu`); the seed applies it on every deploy. Without it, hosted deploys give them a random password, so no demo login works |
 
 3. Redeploy the production branch.
 
@@ -114,7 +115,9 @@ trusted, not verified yet). Your events are tagged with your school
 automatically, Discover leads with **At [School]** above the city feed, and
 both apps detect your city once from your location (nearest known city, no
 geocoding service). Tagging only surfaces events — anyone nearby can register.
-Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
+Demo student: `sam@babson.edu` / `hostkit-demo` on a local or CI seed only;
+hosted deployments (preview and production share the production database)
+use `DEMO_PASSWORD` if set, otherwise there is no usable demo login. Design notes in
 `docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
 
 You can also **pick or change your school** on your Profile (web and iOS),

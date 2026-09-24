@@ -30,7 +30,9 @@ You can create events without an account. They're saved as drafts on the
 phone (a claim token per draft, in UserDefaults) and show on the Events tab.
 Publishing asks you to sign in, then hands the draft to that account. Sign in
 with a website account, e.g. the seeded demo host `maya@hostkit.demo` /
-`hostkit-demo`.
+`hostkit-demo` — on a local or CI seed only. Hosted deployments (preview and
+production share the production database) use `DEMO_PASSWORD` if set, otherwise
+there is no usable demo login.
 
 Build from the command line without signing:
 
