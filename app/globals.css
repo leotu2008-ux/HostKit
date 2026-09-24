@@ -520,6 +520,83 @@ html[data-splash="played"] .rise {
   opacity: 0;
 }
 
+/* Venue discovery map (components/venue-discovery.tsx). The tall track and
+   the sticky frame exist only while scroll is driving the camera. Reduced
+   motion, and the server render, keep the neighborhood frame in normal flow. */
+.venue-discovery-map {
+  aspect-ratio: 1240 / 780;
+  min-height: 280px;
+}
+
+.venue-discovery[data-motion="on"] {
+  height: 280vh;
+}
+
+.venue-discovery[data-motion="on"] .venue-discovery-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.venue-discovery[data-motion="on"] .venue-discovery-map {
+  aspect-ratio: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (min-width: 768px) {
+  .venue-discovery[data-motion="on"] {
+    height: 320vh;
+  }
+}
+
+.venue-map text {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  fill: #3c3a36;
+  stroke: #f6f5f2;
+  stroke-width: 5px;
+  paint-order: stroke;
+}
+
+.venue-map .venue-area {
+  font-size: 22px;
+  letter-spacing: 0.16em;
+  fill: #141414;
+}
+
+.venue-map .venue-street,
+.venue-map .venue-bridge {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+}
+
+.venue-map .venue-water {
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  fill: #4a4742;
+  stroke: #b7b3aa;
+}
+
+.venue-map .venue-pin-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  fill: #141414;
+}
+
+.venue-ring {
+  transform-origin: 0 0;
+  animation: venue-ring 6s linear infinite;
+}
+
+@keyframes venue-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-splash="pending"] .launch-splash,
   .launch-splash {
@@ -563,6 +640,10 @@ html[data-splash="played"] .rise {
   .example-pop:hover {
     translate: none !important;
     scale: none !important;
+  }
+
+  .venue-ring {
+    animation: none !important;
   }
 }
 
