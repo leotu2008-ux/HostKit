@@ -8,8 +8,8 @@ import type { BriefingItem } from "@/lib/agent/briefing";
  * one button, and the switch below is exhaustive: a new BriefingAction
  * variant fails to compile here until this file knows how to render it.
  *
- * The detail line lives in the row's tooltip and in screen-reader text, so
- * the message stays short without losing it.
+ * The detail sits under the title as one short muted line, visible to
+ * everyone and read once by screen readers.
  */
 export function AgentCard({
   item,
@@ -23,13 +23,13 @@ export function AgentCard({
   venueSearchEnabled: boolean;
 }) {
   return (
-    <li className="flex items-center justify-between gap-3 py-2" title={item.detail}>
+    <li className="flex items-center justify-between gap-3 py-2">
       <div className="min-w-0">
         <p className="text-[13px] font-medium text-ink">{item.title}</p>
+        <p className="text-[12px] text-ink-soft">{item.detail}</p>
         <p className={cx("text-[12px]", item.urgency === "now" ? "text-amber" : "text-ink-mute")}>
           {item.urgency === "now" ? "Needs you today" : "Coming up"}
         </p>
-        <span className="sr-only">{item.detail}</span>
       </div>
       <div className="shrink-0">
         <AgentCardAction
