@@ -50,7 +50,9 @@ const BUTTON_VARIANT: Record<Variant, string> = {
 };
 
 // Phones keep a 44px tap target at every size; on wider screens "small" is
-// really small, so a row's button doesn't crowd the row.
+// really small, so a row's button doesn't crowd the row. A caller that needs
+// its own height passes it with `!` (e.g. `min-h-12!`): a plain `min-h-*`
+// would lose to the `md:` minimum here from md up.
 const BUTTON_SIZE = {
   sm: "min-h-11 px-3.5 text-[13px] md:min-h-[34px]",
   md: "min-h-11 px-[18px] text-sm md:min-h-[42px]",
