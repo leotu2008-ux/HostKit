@@ -554,33 +554,26 @@ html[data-splash="played"] .rise {
 .venue-map text {
   font-family: var(--font-sans);
   font-weight: 600;
-  fill: #3c3a36;
-  stroke: #f6f5f2;
-  stroke-width: 5px;
-  paint-order: stroke;
-}
-
-.venue-map .venue-area {
-  font-size: 22px;
-  letter-spacing: 0.16em;
-  fill: #141414;
-}
-
-.venue-map .venue-street,
-.venue-map .venue-bridge {
-  font-size: 13px;
+  fill: #8b8884;
   letter-spacing: 0.14em;
 }
 
+.venue-map .venue-area {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  fill: #5c5a57;
+}
+
+.venue-map .venue-street,
+.venue-map .venue-bridge,
 .venue-map .venue-water {
-  font-size: 14px;
-  letter-spacing: 0.2em;
-  fill: #4a4742;
-  stroke: #b7b3aa;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  fill: #8b8884;
 }
 
 .venue-map .venue-pin-name {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
   fill: #141414;

@@ -118,7 +118,7 @@ export function VenueDiscovery() {
           />
         </p>
 
-        <div className="venue-discovery-map relative mt-6 overflow-hidden rounded-card border border-line bg-[#b7b3aa]">
+        <div className="venue-discovery-map relative mt-6 overflow-hidden rounded-card border border-line bg-sunk">
           <svg
             viewBox={`0 0 ${MAP_VIEW.width} ${MAP_VIEW.height}`}
             className="venue-map h-full w-full"
@@ -138,10 +138,10 @@ export function VenueDiscovery() {
               </linearGradient>
             </defs>
 
-            <rect width={MAP_VIEW.width} height={MAP_VIEW.height} fill="#b7b3aa" />
+            <rect width={MAP_VIEW.width} height={MAP_VIEW.height} fill="#f0efed" />
             <g transform={cameraTransform}>
-              <path d={BROOKLYN_PATH} fill="#e7e4dc" />
-              <path d={ISLAND_PATH} fill="#d9d5cc" />
+              <path d={BROOKLYN_PATH} fill="#f8f8f7" />
+              <path d={ISLAND_PATH} fill="#f8f8f7" />
 
               <g clipPath="url(#venue-island)">
                 {BLOCKS.map((block) => (
@@ -151,7 +151,7 @@ export function VenueDiscovery() {
                     y={block.y}
                     width={block.w}
                     height={block.h}
-                    fill="#f6f5f2"
+                    fill="#ffffff"
                   />
                 ))}
                 {PARKS.map((park) => (
@@ -161,19 +161,11 @@ export function VenueDiscovery() {
                     y={park.y}
                     width={park.w}
                     height={park.h}
-                    fill="#cfc6b8"
+                    fill="#f0efed"
                   >
                     <title>{park.name}</title>
                   </rect>
                 ))}
-                <path
-                  d={BROADWAY_PATH}
-                  fill="none"
-                  stroke="#d9d5cc"
-                  strokeWidth="20"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
                 {CROSS_STREETS.map((street) => (
                   <line
                     key={street.name}
@@ -182,8 +174,9 @@ export function VenueDiscovery() {
                     x2={MAP_VIEW.width}
                     y2={street.y}
                     stroke="#141414"
-                    strokeOpacity={street.major ? 0.78 : 0.45}
-                    strokeWidth={street.major ? 10 : 6}
+                    strokeOpacity={street.major ? 0.55 : 0.28}
+                    strokeWidth={street.major ? 1.6 : 1.15}
+                    vectorEffect="non-scaling-stroke"
                   />
                 ))}
                 {AVENUES.map((avenue) => (
@@ -194,18 +187,20 @@ export function VenueDiscovery() {
                     x2={avenue.x}
                     y2={MAP_VIEW.height}
                     stroke="#141414"
-                    strokeOpacity={avenue.major ? 0.78 : 0.45}
-                    strokeWidth={avenue.major ? 10 : 6}
+                    strokeOpacity={avenue.major ? 0.55 : 0.28}
+                    strokeWidth={avenue.major ? 1.6 : 1.15}
+                    vectorEffect="non-scaling-stroke"
                   />
                 ))}
                 <path
                   d={BROADWAY_PATH}
                   fill="none"
                   stroke="#141414"
-                  strokeOpacity="0.8"
-                  strokeWidth="7"
+                  strokeOpacity="0.7"
+                  strokeWidth="1.75"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
                 />
                 <rect
                   x={0}
@@ -217,63 +212,41 @@ export function VenueDiscovery() {
                 />
               </g>
 
-              <path d={ISLAND_PATH} fill="none" stroke="#141414" strokeOpacity="0.72" strokeWidth="2" />
-              <path d={BROOKLYN_PATH} fill="none" stroke="#141414" strokeOpacity="0.45" strokeWidth="1.6" />
+              <path
+                d={ISLAND_PATH}
+                fill="none"
+                stroke="#141414"
+                strokeOpacity="0.45"
+                strokeWidth="1.25"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path
+                d={BROOKLYN_PATH}
+                fill="none"
+                stroke="#141414"
+                strokeOpacity="0.28"
+                strokeWidth="1.25"
+                vectorEffect="non-scaling-stroke"
+              />
 
               {BRIDGES.map((bridge) => (
                 <g key={bridge.name}>
+                  <title>{bridge.name}</title>
                   <line
                     x1={bridge.x1}
                     y1={bridge.y1}
                     x2={bridge.x2}
                     y2={bridge.y2}
-                    stroke="#eceae3"
-                    strokeWidth="11"
+                    stroke="#141414"
+                    strokeOpacity="0.55"
+                    strokeWidth="1.5"
                     strokeLinecap="round"
-                  />
-                  <line
-                    x1={bridge.x1}
-                    y1={bridge.y1 - 3.4}
-                    x2={bridge.x2}
-                    y2={bridge.y2 - 3.4}
-                    stroke="#141414"
-                    strokeWidth="1.35"
-                  />
-                  <line
-                    x1={bridge.x1}
-                    y1={bridge.y1 + 3.4}
-                    x2={bridge.x2}
-                    y2={bridge.y2 + 3.4}
-                    stroke="#141414"
-                    strokeWidth="1.35"
-                  />
-                  <line
-                    x1={bridge.x1 + 14}
-                    y1={bridge.y1 - 20}
-                    x2={bridge.x1 + 14}
-                    y2={bridge.y1 + 20}
-                    stroke="#141414"
-                    strokeWidth="3.4"
-                  />
-                  <line
-                    x1={bridge.x2 - 14}
-                    y1={bridge.y2 - 20}
-                    x2={bridge.x2 - 14}
-                    y2={bridge.y2 + 20}
-                    stroke="#141414"
-                    strokeWidth="3.4"
-                  />
-                  <path
-                    d={`M ${bridge.x1 + 14} ${bridge.y1 - 16} Q ${(bridge.x1 + bridge.x2) / 2} ${(bridge.y1 + bridge.y2) / 2 + 26} ${bridge.x2 - 14} ${bridge.y2 - 16}`}
-                    fill="none"
-                    stroke="#141414"
-                    strokeOpacity="0.75"
-                    strokeWidth="1.15"
+                    vectorEffect="non-scaling-stroke"
                   />
                   <text
                     className="venue-bridge"
                     x={(bridge.x1 + bridge.x2) / 2}
-                    y={(bridge.y1 + bridge.y2) / 2 - 16}
+                    y={(bridge.y1 + bridge.y2) / 2 - 8}
                     textAnchor="middle"
                   >
                     {bridge.name}
@@ -334,7 +307,7 @@ export function VenueDiscovery() {
                   >
                     <circle r="9" fill="#1d4ed8" />
                     <circle r="3.2" fill="#ffffff" />
-                    <text className="venue-pin-name" x={14} y={4} stroke="#f7f6f3" strokeWidth="5" paintOrder="stroke">
+                    <text className="venue-pin-name" x={14} y={4}>
                       {venue.name}
                     </text>
                   </g>
