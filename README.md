@@ -115,7 +115,7 @@ Requires Node 20.19+ and PostgreSQL 16.
 ```bash
 npm install
 
-createdb hosty            # any Postgres will do
+createdb hosty              # any Postgres will do
 cp .env.example .env        # then set DATABASE_URL and AUTH_SECRET
 npm run db:migrate          # apply migrations
 npm run db:seed             # the catalog, demo events and demo accounts
