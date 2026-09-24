@@ -103,7 +103,7 @@ Hosty speaks MCP, so Claude, ChatGPT and Cursor can read your events.
 - **Bearer token**, for Cursor and anything else that can send
   `Authorization: Bearer`. Get one from the Connect an agent page (`/mcp`) or
   `POST /api/v1/auth/token`. Tools: `list_events`, `get_event`,
-  `list_guests`, `campus_events`, `discover_events`.
+  `list_guests`.
 
 An OAuth token is checked first; anything that isn't a live grant falls
 through to the bearer token. See [docs/mcp.md](docs/mcp.md).

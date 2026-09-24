@@ -108,21 +108,10 @@ describe("each tool hits the route it says it does", () => {
     expect(calls[0].url).toBe("https://tryhosty.app/api/v1/events/evt_1/guests");
   });
 
-  it("campus_events passes a school through, and omits it when absent", async () => {
-    const withSchool = stubApi({ events: [] });
-    await toolByName("campus_events")!.run(ctxWith(withSchool.fetchImpl), { school: "babson.edu" });
-    expect(withSchool.calls[0].url).toContain("school=babson.edu");
-
-    const without = stubApi({ events: [] });
-    await toolByName("campus_events")!.run(ctxWith(without.fetchImpl), {});
-    expect(without.calls[0].url).toBe("https://tryhosty.app/api/v1/campus");
-  });
-
-  it("discover_events passes both filters", async () => {
-    const { calls, fetchImpl } = stubApi({ events: [] });
-    await toolByName("discover_events")!.run(ctxWith(fetchImpl), { city: "Boston, MA", q: "pitch" });
-    expect(calls[0].url).toContain("city=Boston%2C%20MA");
-    expect(calls[0].url).toContain("q=pitch");
+  it("offers the host's own events and guests, and no consumer browsing", () => {
+    expect(TOOLS.map((t) => t.name)).toEqual(["list_events", "get_event", "list_guests"]);
+    expect(toolByName("campus_events")).toBeUndefined();
+    expect(toolByName("discover_events")).toBeUndefined();
   });
 });
 
@@ -132,7 +121,7 @@ describe("argument schemas", () => {
     expect(toolByName("get_event")!.schema.safeParse({ eventId: "evt_1" }).success).toBe(true);
   });
 
-  it("lets the campus tool run with nothing at all", () => {
-    expect(toolByName("campus_events")!.schema.safeParse({}).success).toBe(true);
+  it("lets list_events run with nothing at all", () => {
+    expect(toolByName("list_events")!.schema.safeParse({}).success).toBe(true);
   });
 });

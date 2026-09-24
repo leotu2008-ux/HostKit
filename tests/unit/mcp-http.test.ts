@@ -183,7 +183,7 @@ describe("remote MCP tools", () => {
     expect(body?.error).toBeUndefined();
   });
 
-  it("calls discover_events with the filters it was given", async () => {
+  it("does not serve the consumer tools, and never calls their routes", async () => {
     const calls: string[] = [];
     const fetchImpl = (async (url: string) => {
       calls.push(url);
@@ -193,14 +193,12 @@ describe("remote MCP tools", () => {
       });
     }) as unknown as typeof fetch;
 
-    const { body } = await post(
-      rpc("tools/call", { name: "discover_events", arguments: { city: "Boston, MA", q: "mixer" } }),
-      { fetchImpl },
-    );
-    expect(calls[0]).toContain("/api/v1/discover?");
-    expect(calls[0]).toContain("city=Boston%2C%20MA");
-    expect(calls[0]).toContain("q=mixer");
-    expect((body?.result as { isError?: boolean }).isError).toBeUndefined();
+    for (const name of ["discover_events", "campus_events"]) {
+      const { body } = await post(rpc("tools/call", { name, arguments: {} }), { fetchImpl });
+      const refused = body?.error !== undefined || (body?.result as { isError?: boolean }).isError === true;
+      expect(refused).toBe(true);
+    }
+    expect(calls).toEqual([]);
   });
 
   it("reports a rejected token as a tool error, not a stack trace", async () => {
@@ -236,7 +234,7 @@ describe("the install page's addresses", () => {
     const { response, body } = await post(rpc("tools/list", {}));
     expect(response.status).toBe(200);
     const tools = (body?.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name).sort();
-    expect(tools).toEqual(["campus_events", "discover_events", "get_event", "list_events", "list_guests"]);
+    expect(tools).toEqual(["get_event", "list_events", "list_guests"]);
     expect(tools).not.toContain("search_venues");
     vi.unstubAllEnvs();
   });
