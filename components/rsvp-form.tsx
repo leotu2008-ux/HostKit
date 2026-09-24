@@ -34,12 +34,15 @@ export function RsvpForm({
   plusOnes,
   dietary,
   allowPlusOnes,
+  started = false,
 }: {
   token: string;
   current: RsvpStatus;
   plusOnes: number;
   dietary: string | null;
   allowPlusOnes: boolean;
+  /** The night has begun: the line no longer moves by itself. */
+  started?: boolean;
 }) {
   const [state, formAction] = useActionState<GuestFormState, FormData>(
     submitRsvpAction,
@@ -71,7 +74,9 @@ export function RsvpForm({
           <p className="mb-3 text-[13px] text-ink-mute">
             {current === "PENDING"
               ? "They'll confirm your spot. Changed your mind?"
-              : "You'll be let in automatically when a spot opens. Changed your mind?"}
+              : started
+                ? "The host can let you in if a spot opens. Changed your mind?"
+                : "You'll be let in automatically when a spot opens. Changed your mind?"}
           </p>
         ) : null}
         <div className="space-y-2">

@@ -155,6 +155,7 @@ export function predictTurnout(input: TurnoutInput): TurnoutBand {
     unlisted * showRate;
 
   // Nobody gets in past the capacity the host set.
+  const capped = Math.round(raw) > input.capacity;
   const expected = Math.min(input.capacity, Math.round(raw));
   const confidence = confidenceFor(input);
   const width = WIDTH[confidence];
@@ -185,9 +186,9 @@ export function predictTurnout(input: TurnoutInput): TurnoutBand {
     basis.push(`${input.noReplyHeads} have not replied.`);
   }
   if (multiplier < 1) {
-    basis.push(`It is a busy night on campus, which usually costs a little turnout.`);
+    basis.push(`It is a busy night nearby, which usually costs a little turnout.`);
   }
-  if (expected >= input.capacity) {
+  if (capped) {
     basis.push(`Capped at your capacity of ${input.capacity}.`);
   }
 

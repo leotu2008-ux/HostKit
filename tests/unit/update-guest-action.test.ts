@@ -55,4 +55,23 @@ describe("updateGuestAction", () => {
     expect(mocks.updateMany.mock.calls[0][0].data.dietary).toBe("nut allergy");
     expect(mocks.updateMany.mock.calls[1][0].data.dietary).toBeNull();
   });
+
+  // Capacity counts plus-ones, so fewer of them is room for the waitlist.
+  it("lets the waitlist in when a going guest brings fewer people", async () => {
+    mocks.findFirst.mockResolvedValue({ rsvpStatus: "ATTENDING", plusOnes: 2 });
+    await updateGuestAction(form({ rsvpStatus: "ATTENDING", plusOnes: "0" }));
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+  });
+
+  it("moves the line when the host takes a waiting party off it", async () => {
+    mocks.findFirst.mockResolvedValue({ rsvpStatus: "WAITLISTED", plusOnes: 2 });
+    await updateGuestAction(form({ rsvpStatus: "DECLINED", plusOnes: "2" }));
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+  });
+
+  it("doesn't touch the waitlist when a going guest brings more", async () => {
+    mocks.findFirst.mockResolvedValue({ rsvpStatus: "ATTENDING", plusOnes: 0 });
+    await updateGuestAction(form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
+    expect(mocks.promoteWaitlist).not.toHaveBeenCalled();
+  });
 });

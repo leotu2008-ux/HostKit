@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
+import { sourcesFor } from "@/lib/campus/sources";
+import { wallClock } from "@/lib/campus/time";
 
 /**
  * Freezing what actually happened.
@@ -66,6 +68,20 @@ export function hasFinished(
   if (!event.date) return false;
   const end = event.endDate ?? new Date(event.date.getTime() + event.durationHours * 3_600_000);
   return now.getTime() > end.getTime() + GRACE_MS;
+}
+
+/**
+ * When the night's start has passed. `date` is the host's wall-clock time
+ * encoded as UTC, so it's weighed against the clock at the event's school
+ * rather than against the real instant.
+ */
+export function hasStarted(
+  event: { date: Date | null; schoolDomain: string | null },
+  now = new Date(),
+): boolean {
+  if (!event.date) return false;
+  const zone = sourcesFor(event.schoolDomain)[0]?.timeZone ?? "America/New_York";
+  return event.date.getTime() <= wallClock(now, zone).getTime();
 }
 
 /** How many other things were on at that school that day. Null when unknown. */

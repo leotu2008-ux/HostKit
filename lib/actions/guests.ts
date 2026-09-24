@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseGuestList } from "@/lib/guests";
-import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
+import { attendingHeads, promoteWaitlist, releasesSeat, seatFree } from "@/lib/waitlist";
 import { newRsvpToken } from "@/lib/tokens";
 import { record } from "@/lib/activity";
 import { hasFinished } from "@/lib/outcomes";
@@ -78,7 +78,10 @@ export async function updateGuestAction(formData: FormData) {
   });
   if (!parsed.success) return;
 
-  const before = await db.guest.findFirst({ where: { id: guestId, eventId }, select: { rsvpStatus: true } });
+  const before = await db.guest.findFirst({
+    where: { id: guestId, eventId },
+    select: { rsvpStatus: true, plusOnes: true },
+  });
   if (!before) return;
 
   await db.guest.updateMany({
@@ -92,7 +95,8 @@ export async function updateGuestAction(formData: FormData) {
       respondedAt: parsed.data.rsvpStatus === "INVITED" ? null : new Date(),
     },
   });
-  if (releasesSeat(before.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(eventId);
+  const plusOnes = { from: before.plusOnes, to: parsed.data.plusOnes };
+  if (releasesSeat(before.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) await promoteWaitlist(eventId);
   refresh();
 }
 
@@ -114,6 +118,8 @@ export async function removeGuestAction(formData: FormData) {
  *
  * Someone waiting on the host (a request, or the waitlist) can bow out from
  * here, but can't let themselves in — that's the host's call, or the line's.
+ * Nor can a guest who declined jump the line by changing their mind, or
+ * bring more people than there's room for.
  */
 export async function submitRsvpAction(
   _prev: GuestFormState,
@@ -132,7 +138,9 @@ export async function submitRsvpAction(
 
   const guest = await db.guest.findUnique({
     where: { rsvpToken: token },
-    include: { event: { select: { date: true, endDate: true, durationHours: true, status: true } } },
+    include: {
+      event: { select: { date: true, endDate: true, durationHours: true, status: true, guestCount: true } },
+    },
   });
   if (!guest) return { error: "This invitation link is no longer valid." };
   // After the night the list is history: a late "yes" would count as came in
@@ -149,24 +157,79 @@ export async function submitRsvpAction(
     return { error: "Pick whether you can make it." };
   }
 
-  await db.guest.update({
-    where: { id: guest.id },
-    data: {
-      rsvpStatus: parsed.data.rsvpStatus,
-      // Only an attending guest brings anyone with them.
-      plusOnes:
-        parsed.data.rsvpStatus === "ATTENDING" ? parsed.data.plusOnes : 0,
-      dietary: parsed.data.dietary?.trim() || null,
-      respondedAt: new Date(),
-    },
-  });
-  if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(guest.eventId);
+  const outcome = await db.$transaction(async (tx) => {
+    // The same event-row lock registration and the waitlist take, so the room
+    // counted here is still the room when the reply is written.
+    await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${guest.eventId} FOR UPDATE`;
 
-  // Only the move into ATTENDING is a new "yes" worth a line — PENDING and
-  // WAITLISTED are unreachable from here (guarded above; those only ever
-  // come from registerForEventAction), and re-affirming an existing ATTENDING
-  // (e.g. editing dietary notes) isn't a new decision.
-  if (parsed.data.rsvpStatus === "ATTENDING" && guest.rsvpStatus !== "ATTENDING") {
+    // A guest who said no and changes their mind while people are waiting
+    // joins the back of the line unless there's a seat nobody waiting fits:
+    // they gave their seat up, and the waitlist was there first. An invite
+    // (or a maybe) keeps its seat — the invite is the seat. A party too big
+    // for the whole night isn't a line anyone waits behind.
+    const rejoining =
+      guest.rsvpStatus === "DECLINED" &&
+      parsed.data.rsvpStatus === "ATTENDING" &&
+      (await tx.guest.count({
+        where: {
+          eventId: guest.eventId,
+          rsvpStatus: "WAITLISTED",
+          plusOnes: { lte: guest.event.guestCount - 1 },
+        },
+      })) > 0 &&
+      !(await seatFree(tx, guest.eventId, guest.event.guestCount, 1 + parsed.data.plusOnes));
+
+    // Their own seat is theirs, but the people they bring need room — capacity
+    // is people in the room. Plus-ones they already have stay once it fills.
+    // Someone joining the line waits for room, but their party still has to
+    // fit the night one day.
+    const kept = guest.rsvpStatus === "ATTENDING" ? guest.plusOnes : 0;
+    if (parsed.data.rsvpStatus === "ATTENDING" && parsed.data.plusOnes > kept) {
+      const others = rejoining ? 0 : await attendingHeads(tx, guest.eventId, guest.id);
+      const allowed = Math.max(kept, guest.event.guestCount - 1 - others);
+      if (parsed.data.plusOnes > allowed) {
+        return {
+          error:
+            allowed > 0
+              ? `There’s only room for you and ${allowed} more.`
+              : "The night is full, so there’s only room for you.",
+        };
+      }
+    }
+
+    await tx.guest.update({
+      where: { id: guest.id },
+      data: {
+        rsvpStatus: rejoining ? "WAITLISTED" : parsed.data.rsvpStatus,
+        // The line is ordered by createdAt, so rejoining it now puts them last.
+        ...(rejoining ? { createdAt: new Date() } : {}),
+        // Only an attending guest brings anyone with them.
+        plusOnes:
+          parsed.data.rsvpStatus === "ATTENDING" ? parsed.data.plusOnes : 0,
+        dietary: parsed.data.dietary?.trim() || null,
+        respondedAt: new Date(),
+      },
+    });
+    return { rejoining };
+  });
+  if ("error" in outcome) return { error: outcome.error };
+  const { rejoining } = outcome;
+  const plusOnes = { from: guest.plusOnes, to: parsed.data.plusOnes };
+  if (rejoining || releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) {
+    await promoteWaitlist(guest.eventId);
+  }
+
+  // Only the move into ATTENDING (or back into line) is a new "yes" worth a
+  // line — a guest can't pick PENDING or WAITLISTED themselves (guarded
+  // above), and re-affirming an existing ATTENDING (e.g. editing dietary
+  // notes) isn't a new decision.
+  if (rejoining) {
+    await record(guest.eventId, {
+      actor: "system",
+      kind: "guest_rsvp",
+      title: `${guest.name} changed their mind and joined the waitlist`,
+    });
+  } else if (parsed.data.rsvpStatus === "ATTENDING" && guest.rsvpStatus !== "ATTENDING") {
     await record(guest.eventId, { actor: "system", kind: "guest_rsvp", title: `${guest.name} is going` });
   }
 

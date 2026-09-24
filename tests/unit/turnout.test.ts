@@ -137,6 +137,19 @@ describe("predicting the door", () => {
     const band = predictTurnout({ ...base, attendingHeads: 500, capacity: 60 });
     expect(band.basis.join(" ")).toContain("Capped at your capacity");
   });
+
+  it("doesn't claim a cap when the estimate lands exactly on capacity", () => {
+    // 160 maybes at a quarter each is 40, the capacity, with nothing cut off.
+    const band = predictTurnout({ ...base, attendingHeads: 0, maybeHeads: 160 });
+    expect(band.expected).toBe(40);
+    expect(band.basis.join(" ")).not.toContain("Capped");
+  });
+
+  it("says a busy night is nearby, not on campus", () => {
+    const band = predictTurnout({ ...base, conflicts: 40 });
+    expect(band.basis.join(" ")).toContain("a busy night nearby");
+    expect(band.basis.join(" ")).not.toContain("campus");
+  });
 });
 
 describe("how sure it is", () => {
