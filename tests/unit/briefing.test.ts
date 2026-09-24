@@ -4,6 +4,7 @@ import {
   MAX_ITEMS,
   briefingFor,
   digestNotice,
+  nightIn,
   numbersAreGrounded,
   worthNotifying,
   type BriefingCollaborator,
@@ -11,6 +12,7 @@ import {
   type BriefingTask,
 } from "@/lib/agent/briefing";
 import { CHASE_AFTER_DAYS } from "@/lib/chase";
+import { describeCountdown } from "@/lib/plan";
 
 const NOW = new Date("2026-01-15T09:30:00");
 const inDays = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
@@ -490,6 +492,15 @@ describe("briefingFor — before-the-night reminders", () => {
     const fridayEvening = on(new Date("2026-01-24T02:00:00Z"));
     expect(soon(fridayEvening)).toBe("Tomorrow");
     expect(fridayEvening.items.some((i) => i.kind === "guests_remind")).toBe(true);
+  });
+
+  it("the workspace bar's countdown reads the same day as the rail on a US evening", () => {
+    for (const now of [new Date("2026-01-23T02:00:00Z"), new Date("2026-01-24T02:00:00Z")]) {
+      const bar = describeCountdown(nightIn({ ...EVENT, date: NIGHT }, now));
+      expect(bar).toBe(on(now).items.find((i) => i.kind === "event_soon")?.detail);
+    }
+    expect(describeCountdown(nightIn({ ...EVENT, date: NIGHT }, new Date("2026-01-24T02:00:00Z")))).toBe("Tomorrow");
+    expect(nightIn({ ...EVENT, date: null }, new Date("2026-01-24T02:00:00Z"))).toBeNull();
   });
 
   it("says nothing when no one can be emailed, and nothing for a cancelled night", () => {

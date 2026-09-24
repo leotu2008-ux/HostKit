@@ -287,7 +287,7 @@ function eventSoonItem(event: BriefingEvent, now: Date): BriefingItem | null {
  * Calendar days from `at` to the night. `date` is the host's wall-clock time
  * encoded as UTC, so the day is read off the clock at the event's school.
  */
-function nightIn(event: BriefingEvent, at: Date): number | null {
+export function nightIn(event: BriefingEvent, at: Date): number | null {
   if (!event.date) return null;
   const today = wallClock(at, schoolTimeZone(event.schoolDomain));
   return Math.floor(event.date.getTime() / DAY_MS) - Math.floor(today.getTime() / DAY_MS);
