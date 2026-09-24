@@ -215,7 +215,7 @@ async function guardReasons(
         eventId: opts.eventId,
         subject: `venue reason: ${venue.name}`,
         allowedNumbers,
-        allowedPhrases: [describeCountdown(days), formatDuration(event.durationHours), venue.name],
+        allowedPhrases: [describeCountdown(days), formatDuration(event.durationHours), venue.name, venue.address],
         fetch: opts.jev?.fetch,
         env: opts.jev?.env,
       });

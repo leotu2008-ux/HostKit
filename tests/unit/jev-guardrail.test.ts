@@ -75,6 +75,22 @@ describe("the values code can check", () => {
     expect(valuesMatchRecord("three tasks left", [3], []).grounded).toBe(true);
   });
 
+  it("grounds a word only on a whole word of the record, not on part of one", () => {
+    expect(valuesMatchRecord("Ten things need you today", [2], ["Confirm attendance", "today"]).grounded).toBe(false);
+    expect(valuesMatchRecord("One call left", [2], ["Phone the caterer"]).grounded).toBe(false);
+    expect(valuesMatchRecord("It's on Saturday", [2], ["Saturdays Bar"]).grounded).toBe(false);
+    expect(valuesMatchRecord("One thing: the caterer", [2], ["Call the one caterer"]).grounded).toBe(true);
+  });
+
+  it("reads \"may\" as a word, not a month", () => {
+    expect(valuesMatchRecord("You may want to finish 2 things", [2], [])).toEqual({ checkable: true, grounded: true });
+  });
+
+  it("grounds figures written in the phrases the writer was handed", () => {
+    expect(valuesMatchRecord("Suits a 2h 30m evening", [40, 2.5], ["2h 30m"]).grounded).toBe(true);
+    expect(valuesMatchRecord("Suits a 2h 45m evening", [40, 2.5], ["2h 30m"]).grounded).toBe(false);
+  });
+
   it("says when there's no value it can read at all", () => {
     expect(valuesMatchRecord("we can go a few hundred higher", [], []).checkable).toBe(false);
   });
@@ -250,6 +266,32 @@ describe("venue reasons", () => {
     expect(venues.map((v) => [v.id, v.reason])).toEqual([
       ["b", "Has a phone number and a site"],
       ["a", "Big room for 40 people"],
+      ["c", "Bar with a back room"],
+    ]);
+  });
+
+  it("keeps a reason that repeats the duration or the venue's own name and address", async () => {
+    const own = { ...venue("a", "Studio 54"), address: "250 Harbor Rd" };
+    const { venues, source } = await rankVenuesForEvent([own, venue("b", "Beta"), venue("c", "Gamma")], {
+      ...EVENT,
+      durationHours: 2.5,
+    }, {
+      fetchImpl: claudeSays(
+        JSON.stringify({
+          picks: [
+            { id: "a", reason: "Studio 54 at 250 Harbor Rd suits 2h 30m" },
+            { id: "b", reason: "Holds 90 people" },
+            { id: "c", reason: "Bar with a back room" },
+          ],
+        }),
+      ),
+      eventId: "evt-1",
+      jev: { fetch: jev((message) => ({ budget: 0.05, values: /\d/.test(message) ? 0.9 : 0.05 })), env: JEV_ON },
+    });
+    expect(source).toBe("model");
+    expect(venues.map((v) => [v.id, v.reason])).toEqual([
+      ["a", "Studio 54 at 250 Harbor Rd suits 2h 30m"],
+      ["b", "Has a phone number and a site"],
       ["c", "Bar with a back room"],
     ]);
   });
