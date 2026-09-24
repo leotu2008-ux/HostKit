@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { EventType } from "@/generated/prisma/enums";
 import { askOr } from "@/lib/ai/client";
 import { checkDraft } from "@/lib/ai/guardrail";
+import { judgeVenues } from "@/lib/ai/venue-judge";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { daysUntil, describeCountdown } from "@/lib/plan";
 import { rankVenues, type RankableEvent, type RankedVenue } from "@/lib/venues/rank";
@@ -139,7 +140,12 @@ export async function rankVenuesForEvent(
   candidates: VenueResult[],
   event: VenueRankEvent,
   opts: VenueRankOptions = {},
-): Promise<{ venues: RankedVenue[]; source: "model" | "fallback" }> {
+): Promise<{
+  venues: RankedVenue[];
+  source: "jev" | "model" | "fallback";
+  /** Ids Jev wasn't sure about (source "jev" only): kept, and worth a look. */
+  worthALook?: Set<string>;
+}> {
   const now = opts.now ?? new Date();
   const rankEvent: RankableEvent = {
     type: event.type,
@@ -152,6 +158,15 @@ export async function rankVenuesForEvent(
   if (candidates.length === 0) {
     return { venues: [], source: "fallback" };
   }
+
+  // Jev decides fit when that point is on (lib/ai/venue-judge.ts); with it
+  // off or silent, everything below runs exactly as it did before.
+  const judged = await judgeVenues(candidates, event, {
+    eventId: opts.eventId,
+    fetch: opts.jev?.fetch,
+    env: opts.jev?.env,
+  });
+  if (judged) return { venues: judged.venues, source: "jev", worthALook: judged.worthALook };
 
   const { value, source } = await askOr(
     {

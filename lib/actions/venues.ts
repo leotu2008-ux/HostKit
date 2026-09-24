@@ -31,7 +31,7 @@ export type FoundVenue = {
 };
 
 export type FindVenuesState =
-  | { venues: FoundVenue[]; source: "model" | "fallback" }
+  | { venues: FoundVenue[]; source: "jev" | "model" | "fallback" }
   /** A quiet inline line instead of results — never an error page. */
   | { message: string }
   | undefined;

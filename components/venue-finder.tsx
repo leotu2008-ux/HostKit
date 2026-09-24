@@ -94,7 +94,7 @@ export function VenueFinder({
           </div>
 
           <p className="text-[13px] text-ink-mute">
-            {results.source === "model" ? "Ranked for this event." : "Ranked by what fits."}
+            {results.source === "fallback" ? "Ranked by what fits." : "Ranked for this event."}
           </p>
         </>
       ) : null}

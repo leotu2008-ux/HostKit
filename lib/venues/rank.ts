@@ -58,7 +58,7 @@ function categoryMatches(category: string | null, type: EventType): boolean {
 
 /** Great-circle distance in kilometers, mirroring catalog.ts's milesBetween
  *  but in the unit the distance penalty is specified in. */
-function kmBetween(lat1: number, lng1: number, lat2: number, lng2: number): number {
+export function kmBetween(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
