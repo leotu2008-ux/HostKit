@@ -239,6 +239,14 @@ describe("the install page's addresses", () => {
     vi.unstubAllEnvs();
   });
 
+  it("tells the agent list_events comes back oldest first, undated last", async () => {
+    const { body } = await post(rpc("tools/list", {}));
+    const tools = (body?.result as { tools: Array<{ name: string; description: string }> }).tools;
+    const listEvents = tools.find((tool) => tool.name === "list_events")!;
+    expect(listEvents.description).toContain("oldest first, undated last");
+    expect(listEvents.description).not.toContain("soonest");
+  });
+
   it("serves bearer tools for an API token while OAuth is configured", async () => {
     vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hosty.example");
     vi.stubEnv("MCP_CLIENTS_JSON", "[]");

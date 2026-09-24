@@ -234,14 +234,29 @@ describe("draftPlan — how long it waits for the model", () => {
     expect(source).toBe("model");
   });
 
-  it("gives up at 30s and falls back to the template", async () => {
+  it("gives up at 30s and falls back to the template, even with more budget left", async () => {
     vi.useFakeTimers({ now: NOW });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const pending = draftPlan(input, {
       now: NOW,
+      budgetMs: 45_000,
       fetchImpl: answersAfter(31_000, JSON.stringify(goodDraft)),
     });
     await vi.advanceTimersByTimeAsync(30_000);
+    const { plan, source } = await pending;
+    expect(source).toBe("fallback");
+    expect(plan).toEqual(generatePlan(input, NOW));
+  });
+
+  it("gives up when the caller's budget runs out, before 30s", async () => {
+    vi.useFakeTimers({ now: NOW });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const pending = draftPlan(input, {
+      now: NOW,
+      budgetMs: 8_000,
+      fetchImpl: answersAfter(9_000, JSON.stringify(goodDraft)),
+    });
+    await vi.advanceTimersByTimeAsync(8_000);
     const { plan, source } = await pending;
     expect(source).toBe("fallback");
     expect(plan).toEqual(generatePlan(input, NOW));

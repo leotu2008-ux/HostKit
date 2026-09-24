@@ -13,7 +13,7 @@ import { eventInclude, serializeEvent } from "@/lib/api/serialize";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
 
 /**
- * The nights this request can manage, soonest first: everything the
+ * The nights this request can manage, oldest first, undated last: everything the
  * signed-in host owns, plus any unclaimed drafts the device holds tokens for.
  */
 export async function GET(request: Request) {

@@ -98,7 +98,9 @@ function userPrompt(input: DraftPlanInput, horizonDays: number): string {
 
 /** Longer than askOr's 12s default: a full plan takes longer than that to
  *  write, and an answer cut off early is a fallback. The plan runs in the
- *  agent, whose routes allow 60s, not on a page render. */
+ *  agent, whose routes allow 60s, not on a page render — but the cron sweep
+ *  shares one 60s limit across several runs, so a caller with less time left
+ *  than this passes a smaller budgetMs. */
 const PLAN_TIMEOUT_MS = 30_000;
 
 /** Never used: when askOr falls back, draftPlan discards this value and
@@ -159,6 +161,9 @@ export type DraftPlanInput = PlanInput & {
 
 export type DraftPlanOptions = {
   now?: Date;
+  /** How long the model may take, when the caller has less than
+   *  PLAN_TIMEOUT_MS left. Never raises the wait above it. */
+  budgetMs?: number;
   /** Injectable for tests; forwarded to askOr, defaults to global fetch. */
   fetchImpl?: typeof fetch;
 };
@@ -175,7 +180,7 @@ export async function draftPlan(
       system: systemPrompt(),
       prompt: userPrompt(input, horizonDays),
       schema: draftSchema,
-      timeoutMs: PLAN_TIMEOUT_MS,
+      timeoutMs: Math.min(options.budgetMs ?? PLAN_TIMEOUT_MS, PLAN_TIMEOUT_MS),
       fetchImpl: options.fetchImpl,
     },
     unusedFallback,

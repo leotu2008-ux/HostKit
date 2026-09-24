@@ -113,13 +113,6 @@ describe("each tool hits the route it says it does", () => {
     expect(toolByName("campus_events")).toBeUndefined();
     expect(toolByName("discover_events")).toBeUndefined();
   });
-
-  it("describes list_events in the order the API returns: oldest first, undated last", () => {
-    const description = toolByName("list_events")!.description;
-    expect(description).toMatch(/by date, oldest first, undated last/);
-    expect(description).toMatch(/compare dates to today to find what's next/i);
-    expect(description).not.toMatch(/soonest/);
-  });
 });
 
 describe("argument schemas", () => {

@@ -28,9 +28,9 @@ export default async function McpPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-8 pb-16 md:px-8 md:pt-14">
       <h1 className="font-display text-[34px] leading-[1.1] text-ink md:text-[46px]">Connect an agent</h1>
       <p className="mt-3 text-[16px] leading-relaxed text-ink-soft">
-        Cursor and Claude can read the events you host, who is on the list, and what a school already has
-        on. They see only your account, and they cannot publish, message anyone, or change a guest. Claude
-        and ChatGPT can also connect with OAuth, which is a separate set of tools.
+        Cursor and Claude can read the events you host and who is on the list. They see only your account,
+        and they cannot publish, message anyone, or change a guest. Claude and ChatGPT can also connect with
+        OAuth, which is a separate set of tools.
       </p>
 
       <Card className="mt-8 p-5">
@@ -128,7 +128,7 @@ export default async function McpPage() {
 
       <Card className="mt-4 p-5">
         <h2 className="font-display text-lg text-ink">What the bearer token can do</h2>
-        <p className="mt-1 text-[15px] text-ink-soft">Five tools, all read-only. These are the ones Cursor gets.</p>
+        <p className="mt-1 text-[15px] text-ink-soft">Three tools, all read-only. These are the ones Cursor gets.</p>
         <ul className="mt-4 divide-y divide-line">
           {TOOLS.map((tool) => (
             <li key={tool.name} className="py-3">
