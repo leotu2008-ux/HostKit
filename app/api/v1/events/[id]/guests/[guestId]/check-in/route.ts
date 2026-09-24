@@ -22,6 +22,8 @@ export async function POST(
     where: { id: guestId, eventId: event.id },
   });
   if (!guest) return apiError("Not found.", 404);
+  // Already in: answer with the first arrival rather than re-stamping it.
+  if (parsed.data.checkedIn && guest.checkedInAt) return json({ guest: serializeGuest(guest) });
 
   // The RSVP is the guest's, not the door's — see lib/actions/checkin.ts for
   // why overwriting it here quietly destroyed the attendance signal.

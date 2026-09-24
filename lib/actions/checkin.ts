@@ -26,9 +26,11 @@ export async function checkInGuestAction(formData: FormData) {
 
   const guest = await db.guest.findFirst({
     where: { id: guestId, eventId },
-    select: { id: true, name: true, rsvpStatus: true },
+    select: { id: true, name: true, rsvpStatus: true, checkedInAt: true },
   });
-  if (!guest) return;
+  // Already in: a second phone's stale tap must not move the arrival time or
+  // re-derive the walk-up flag from an RSVP the host has since changed.
+  if (!guest || guest.checkedInAt) return;
 
   await db.guest.update({
     where: { id: guest.id },
