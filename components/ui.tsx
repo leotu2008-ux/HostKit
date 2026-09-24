@@ -12,24 +12,51 @@ export function cx(...parts: Array<string | false | null | undefined>) {
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand";
 
+// Soft and tactile: pills that lift a pixel on hover and press in on click,
+// primaries with a gentle gradient and a glow in their own colour. Nothing
+// moves when a button is disabled or the reader asks for reduced motion, and
+// every button shows a focus ring for the keyboard. The ring is !important
+// because the app-wide focus ring in globals.css is unlayered, so it would
+// otherwise win over any utility (and square off the pill).
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[translate,scale,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px]! focus-visible:outline-brand! focus-visible:rounded-full! disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-none disabled:scale-none motion-reduce:translate-none! motion-reduce:scale-none! motion-reduce:transition-none";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
-  primary: "bg-clay text-on-clay hover:bg-clay-deep",
-  secondary:
-    "bg-surface text-ink border border-line-strong hover:border-ink-mute hover:bg-sunk",
+  primary: cx(
+    // Written out in full: Tailwind only generates classes it can read in source.
+    "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-clay)_82%,white),var(--color-clay))]",
+    "text-on-clay hover:-translate-y-px",
+    "shadow-[0_4px_12px_-2px_color-mix(in_srgb,var(--color-clay)_35%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
+    "hover:shadow-[0_8px_18px_-4px_color-mix(in_srgb,var(--color-clay)_45%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
+    "disabled:shadow-none",
+  ),
+  secondary: cx(
+    "bg-surface text-ink hover:-translate-y-px",
+    "shadow-[0_1px_2px_rgb(15_23_42/0.08),0_0_0_1px_rgb(15_23_42/0.08)]",
+    "hover:shadow-[0_4px_10px_-2px_rgb(15_23_42/0.12),0_0_0_1px_rgb(15_23_42/0.1)]",
+    "disabled:shadow-[0_0_0_1px_rgb(15_23_42/0.1)]",
+  ),
   ghost: "text-ink-soft hover:bg-sunk hover:text-ink",
-  danger: "bg-danger-wash text-danger hover:bg-danger hover:text-white",
-  // Brand blue, with a light glass edge so the page shows through.
-  brand:
-    "border border-white/40 bg-brand/75 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.45)] backdrop-blur-md backdrop-saturate-150 hover:bg-brand/85",
+  danger:
+    "bg-danger-wash text-danger hover:-translate-y-px hover:bg-[color-mix(in_srgb,var(--color-danger)_16%,white)]",
+  // The landing's call to action: the brand blue, with a bigger glow.
+  brand: cx(
+    "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-brand)_82%,white),var(--color-brand))]",
+    "text-white hover:-translate-y-px",
+    "shadow-[0_10px_24px_-8px_color-mix(in_srgb,var(--color-brand)_60%,transparent),inset_0_1px_0_rgb(255_255_255/0.3)]",
+    "hover:shadow-[0_14px_28px_-8px_color-mix(in_srgb,var(--color-brand)_70%,transparent),inset_0_1px_0_rgb(255_255_255/0.3)]",
+    "disabled:shadow-none",
+  ),
 };
 
+// Phones keep a 44px tap target at every size; on wider screens "small" is
+// really small, so a row's button doesn't crowd the row. A caller that needs
+// its own height passes it with `!` (e.g. `min-h-12!`): a plain `min-h-*`
+// would lose to the `md:` minimum here from md up.
 const BUTTON_SIZE = {
-  sm: "min-h-11 px-3.5 text-sm",
-  md: "min-h-12 px-4 text-sm",
-  lg: "min-h-12 px-6 text-base",
+  sm: "min-h-11 px-3.5 text-[13px] md:min-h-[34px]",
+  md: "min-h-11 px-[18px] text-sm md:min-h-[42px]",
+  lg: "min-h-12 px-[26px] text-base md:min-h-[50px]",
 } as const;
 
 type ButtonSize = keyof typeof BUTTON_SIZE;

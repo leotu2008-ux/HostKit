@@ -60,7 +60,7 @@ export default async function CheckInPage({
           className="min-h-12"
           aria-label="Search guests"
         />
-        <Button type="submit" variant="secondary" className="min-h-12 px-5">
+        <Button type="submit" variant="secondary" className="min-h-12! px-5">
           Find
         </Button>
       </form>
@@ -102,7 +102,7 @@ export default async function CheckInPage({
                       <Button
                         type="submit"
                         variant="secondary"
-                        className="min-h-12 min-w-[7rem] bg-amber-wash text-amber"
+                        className="min-h-12! min-w-[7rem] bg-amber-wash text-amber"
                       >
                         Already in
                       </Button>
@@ -115,7 +115,7 @@ export default async function CheckInPage({
                     <form action={checkInGuestAction}>
                       <input type="hidden" name="eventId" value={event.id} />
                       <input type="hidden" name="guestId" value={guest.id} />
-                      <Button type="submit" className="min-h-12 min-w-[7rem]">
+                      <Button type="submit" className="min-h-12! min-w-[7rem]">
                         Check in
                       </Button>
                     </form>
