@@ -33,15 +33,21 @@ function trimZero(value: string): string {
   return value.endsWith(".0") ? value.slice(0, -2) : value;
 }
 
+/** The most a typed amount may be: $10M, the same cap as the API's
+ *  budgetCents. Cents columns are Postgres Int, which overflows at ~$21.4M. */
+export const MAX_CENTS = 1_000_000_000;
+
 /** Parses user input ("1,200", "$1200.50", "1200") into cents.
- *  Returns null for anything that isn't a non-negative amount, so callers are
- *  forced to handle bad input rather than silently banking a NaN. */
+ *  Returns null for anything that isn't a non-negative amount up to
+ *  MAX_CENTS, so callers are forced to handle bad input rather than silently
+ *  banking a NaN or a number the database can't hold. */
 export function parseCents(input: string): number | null {
   const cleaned = input.replace(/[$,\s]/g, "");
   if (cleaned === "" || !/^\d*\.?\d*$/.test(cleaned)) return null;
   const value = Number(cleaned);
   if (!Number.isFinite(value) || value < 0) return null;
-  return Math.round(value * 100);
+  const cents = Math.round(value * 100);
+  return cents > MAX_CENTS ? null : cents;
 }
 
 /** Splits `totalCents` across weights that sum to 1, without losing or

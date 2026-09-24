@@ -3,6 +3,7 @@ import { isPublicPageVisible } from "@/lib/listing";
 import { notify } from "@/lib/notify";
 import { newRsvpToken } from "@/lib/tokens";
 import { linkGuestsToContacts } from "@/lib/guest-book";
+import { hasFinished } from "@/lib/outcomes";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 /** Where an account stands with an event. Mirrors `RegistrationState` on iOS. */
@@ -12,7 +13,7 @@ export type RegistrationResult =
   | { ok: true; state: "going" | "pending" | "waitlisted"; changed: boolean }
   | {
       ok: false;
-      code: "not_listed" | "declined" | "sign_in";
+      code: "not_listed" | "declined" | "sign_in" | "closed";
       error: string;
     };
 
@@ -96,6 +97,10 @@ export async function registerGuest(input: {
       ownerId: true,
       guestCount: true,
       requiresApproval: true,
+      date: true,
+      endDate: true,
+      durationHours: true,
+      status: true,
       club: { select: { id: true, members: { select: { userId: true } } } },
     },
   });
@@ -107,6 +112,11 @@ export async function registerGuest(input: {
     viewer.id === event.ownerId ||
     (event.club?.members.some((m) => m.userId === viewer.id) ?? false);
   if (!isPublicPageVisible(event) && !isHost) return NOT_LISTED;
+  // An old link stays up after the night; registering then would add a
+  // "going" guest (or a request for the host) to a night that's over.
+  if (event.status === "COMPLETED" || hasFinished(event)) {
+    return { ok: false, code: "closed", error: "This night has already happened." };
+  }
 
   const email = viewer.email.trim().toLowerCase();
 

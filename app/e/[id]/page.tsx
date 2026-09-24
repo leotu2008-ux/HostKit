@@ -14,6 +14,7 @@ import { Avatar } from "@/components/avatar";
 import { formatCents } from "@/lib/money";
 import { formatDurationLong, formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
+import { hasFinished } from "@/lib/outcomes";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { eventUrl } from "@/lib/promote";
 import { AddToCalendar } from "@/components/add-to-calendar";
@@ -118,7 +119,8 @@ export default async function PublicEventPage({
   const going = event._count.guests;
   const spotsLeft = Math.max(0, event.guestCount - going);
   // With a waitlist, a full night still takes registrations.
-  const canRegister = event.published && registration === "none";
+  const over = event.status === "COMPLETED" || hasFinished(event);
+  const canRegister = event.published && !over && registration === "none";
   const registerMode = event.requiresApproval ? "request" : spotsLeft === 0 ? "waitlist" : "register";
   const ticketLabel =
     event.ticketType === "PAID" ? formatCents(event.ticketPriceCents) : "Free";
@@ -236,6 +238,8 @@ export default async function PublicEventPage({
                   This is a draft. Publish it from the dashboard before guests
                   can register.
                 </p>
+              ) : over ? (
+                <p className="text-[15px] text-ink-soft">This night has already happened.</p>
               ) : alreadyGoing ? (
                 <div className="space-y-3">
                   <p className="font-medium text-forest">

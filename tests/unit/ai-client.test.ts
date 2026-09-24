@@ -116,6 +116,22 @@ describe("a good round trip", () => {
     });
     expect(out).toEqual(good);
   });
+
+  it("tells the model the shape its answer will be held to", async () => {
+    let sent: { system: string } | undefined;
+    const capture = (async (_url: string, init: RequestInit) => {
+      sent = JSON.parse(String(init.body));
+      return modelSays(JSON.stringify(good))(_url, init);
+    }) as unknown as typeof fetch;
+
+    await ask({ system: "Standing rules.", prompt: "p", schema, fetchImpl: capture });
+
+    expect(sent!.system.startsWith("Standing rules.")).toBe(true);
+    // Callers' prompts say "matching the schema you are given"; the key names
+    // are the part a model can't guess.
+    expect(sent!.system).toContain('"title"');
+    expect(sent!.system).toContain('"tasks"');
+  });
 });
 
 describe("output is validated, not trusted", () => {

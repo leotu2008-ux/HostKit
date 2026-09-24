@@ -9,6 +9,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { DAY_MS, startOfDay } from "@/lib/plan";
+import { arrivalClock } from "@/lib/runsheet";
 
 export type RerunSource = {
   id: string;
@@ -56,9 +57,19 @@ export type RerunSource = {
 
 export type RerunPlan = ReturnType<typeof planRerun>;
 
-/** Moves a run-sheet time onto the new day: by the date gap, or, with no source date, keeping its time of day. */
-function shiftTime(at: Date, from: Date | null, to: Date): Date {
-  if (from) return new Date(at.getTime() + (to.getTime() - from.getTime()));
+/** When guests arrive on a night: its start time, or for a date-only night (stored
+ *  at noon) the type's usual hour, which is where the run sheet was drafted. */
+function arrival(date: Date, type: EventType): Date {
+  const { hour, minute } = arrivalClock(date, type);
+  const at = new Date(date);
+  at.setHours(hour, minute, 0, 0);
+  return at;
+}
+
+/** Moves a run-sheet time onto the new day: by the gap between the two arrivals, or,
+ *  with no source date, keeping its time of day. */
+function shiftTime(at: Date, from: Date | null, to: Date, type: EventType): Date {
+  if (from) return new Date(at.getTime() + (arrival(to, type).getTime() - arrival(from, type).getTime()));
   const moved = new Date(to);
   moved.setHours(at.getHours(), at.getMinutes(), 0, 0);
   return moved;
@@ -121,7 +132,7 @@ export function planRerun(source: RerunSource, date: Date) {
       owner: r.owner,
       notes: r.notes,
       source: r.source,
-      startsAt: shiftTime(r.startsAt, source.date, date),
+      startsAt: shiftTime(r.startsAt, source.date, date, source.type),
     })),
     collaborators: source.collaborators.map((c) => ({
       kind: c.kind,

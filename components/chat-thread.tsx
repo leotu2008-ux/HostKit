@@ -18,6 +18,13 @@ import { cx } from "@/components/ui";
 
 const STICK_PX = 80;
 
+/** What the stick-to-bottom effect watches: the newest message's id. Not the
+ *  count, because `mergeFeed` caps the feed at 100 rows, and past that a new
+ *  message pushes the oldest out and the length never changes. */
+export function scrollKey(messages: ChatMessage[]): string {
+  return messages[messages.length - 1]?.id ?? "";
+}
+
 type Group = { speaker: ChatSpeaker; messages: ChatMessage[] };
 
 function groupMessages(messages: ChatMessage[]): Group[] {
@@ -53,6 +60,8 @@ function Bubble({ message }: { message: ChatMessage }) {
         mine ? "rounded-tr-md bg-brand text-white" : "rounded-tl-md bg-sunk text-ink",
       )}
     >
+      {/* Every bubble, even under a group's "Hosty" header: the list is a
+          live region, so a bubble appended to a group is announced alone. */}
       <span className="sr-only">{mine ? "You: " : "Hosty: "}</span>
       {message.text}
       {message.action ? (
@@ -69,16 +78,18 @@ function Bubble({ message }: { message: ChatMessage }) {
   );
 }
 
+/** Announced once, by the sr-only text: an aria-label on the `<li>` as well
+ *  would make some screen readers say it twice. */
 function Typing() {
   return (
-    <li className="flex items-start gap-2.5" aria-label="Hosty is typing">
+    <li className="flex items-start gap-2.5">
       <Avatar />
       <span className="inline-flex items-center gap-1 rounded-2xl rounded-tl-md bg-sunk px-3 py-2.5">
         {[0, 150, 300].map((delay) => (
           <span
             key={delay}
             aria-hidden
-            className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-mute"
+            className="h-1.5 w-1.5 motion-safe:animate-pulse rounded-full bg-ink-mute"
             style={{ animationDelay: `${delay}ms` }}
           />
         ))}
@@ -101,11 +112,12 @@ export function ChatThread({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
+  const newest = scrollKey(messages);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el && stickRef.current) el.scrollTop = el.scrollHeight;
-  }, [messages.length, running]);
+  }, [newest, running]);
 
   function onScroll() {
     const el = scrollRef.current;

@@ -65,6 +65,15 @@ describe("parseCents", () => {
   it("rejects negatives", () => {
     expect(parseCents("-5")).toBeNull();
   });
+
+  // Every cents column is a Postgres Int (max 2,147,483,647), and the brief and
+  // inquiry actions write this result straight into one.
+  it("rejects amounts over the API's $10M budget cap", () => {
+    expect(parseCents("10,000,000")).toBe(1_000_000_000);
+    expect(parseCents("10,000,000.01")).toBeNull();
+    expect(parseCents("$25,000,000")).toBeNull();
+    expect(parseCents("99999999999999999999")).toBeNull();
+  });
 });
 
 describe("allocateCents", () => {

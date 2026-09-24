@@ -125,3 +125,35 @@ export function skippedSteps(brief: BriefFacts, context: StepContext): SkippedSt
   }
   return skipped;
 }
+
+/** The line the vendor step posts when no catalog listing fits. */
+export const NO_VENDORS_TITLE = "No vendors to draft for";
+
+/** Whether a step's feed line says it ran and turned up nothing: no venues
+ *  nearby, or no catalog vendor that fits. That's a clean run, not a failure,
+ *  but it isn't a finished step either. */
+export function foundNothing(line: { kind: string; title: string }): boolean {
+  return (
+    line.kind === "venue_search_empty" ||
+    (line.kind === "inquiries_drafted" && line.title === NO_VENDORS_TITLE)
+  );
+}
+
+/** The run_finished body: "Done: plan, venues · Left undone: vendors".
+ *  A step that found nothing is in neither list; its own line already said
+ *  so, and listing it as done would contradict that line. Null when both
+ *  lists are empty, so the feed has nothing to render instead of an empty
+ *  line. */
+export function runSummaryBody(
+  results: Array<{ name: StepName; ok: boolean; empty: boolean }>,
+): string | null {
+  const done = results.filter((result) => result.ok && !result.empty).map((result) => result.name);
+  const undone = results.filter((result) => !result.ok).map((result) => result.name);
+  const body = [
+    done.length > 0 ? `Done: ${done.join(", ")}` : null,
+    undone.length > 0 ? `Left undone: ${undone.join(", ")}` : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" · ");
+  return body || null;
+}

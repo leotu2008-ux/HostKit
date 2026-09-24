@@ -9,7 +9,7 @@ import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
 import { snapQuarterHours } from "@/lib/duration";
-import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, UNTITLED } from "@/lib/brief";
+import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, namedVenue, UNTITLED } from "@/lib/brief";
 import { clientIp } from "@/lib/rate-limit";
 import { runAgent } from "@/lib/agent/run";
 import { record } from "@/lib/activity";
@@ -110,9 +110,13 @@ export async function saveBriefAction(
   if (address) {
     // A host who types a venue address here is telling the agent it can skip
     // venue search — this is what lets it later find that out.
-    const existing = await db.eventCollaborator.findFirst({
-      where: { eventId: event.id, kind: "VENUE" },
-    });
+    const existing = namedVenue(
+      await db.eventCollaborator.findMany({
+        where: { eventId: event.id, kind: "VENUE" },
+        orderBy: { createdAt: "asc" },
+      }),
+      event.address,
+    );
     if (existing) {
       await db.eventCollaborator.update({ where: { id: existing.id }, data: { detail: address } });
     } else {

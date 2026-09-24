@@ -81,7 +81,7 @@ export function AgentStatusLine({
   now: string;
 }) {
   const mark = (pulse = false) => (
-    <HostyMark size={20} className={cx("shrink-0 text-ink", pulse && "animate-pulse")} />
+    <HostyMark size={20} className={cx("shrink-0 text-ink", pulse && "motion-safe:animate-pulse")} />
   );
 
   if (agent.status === "running") {

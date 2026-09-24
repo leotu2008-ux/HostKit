@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { EventType } from "@/generated/prisma/enums";
+import type { CollaboratorSource, CollaboratorStatus, EventType } from "@/generated/prisma/enums";
 
 /**
  * What "not filled in yet" means for an event, in one place.
@@ -136,4 +136,21 @@ export function briefHash(brief: BriefFacts): string {
  *  publishing "Untitled event" would put a placeholder in front of guests. */
 export function readyToPublish(brief: BriefFacts): boolean {
   return briefIsComplete(brief) && brief.title.trim() !== "" && brief.title !== UNTITLED;
+}
+
+/**
+ * The venue behind the Brief tab's address: the row the saved address
+ * already belongs to (a venue picked on Create), else the first (pass rows
+ * oldest first) that the host typed in or confirmed. The options the agent or
+ * the venue finder lined up are only options until the host picks one, so
+ * their addresses never become the night's address, and a typed address
+ * never overwrites theirs.
+ */
+export function namedVenue<
+  T extends { detail: string | null; source: CollaboratorSource; status: CollaboratorStatus },
+>(venues: T[], address: string | null = null): T | undefined {
+  return (
+    (address ? venues.find((v) => v.detail === address) : undefined) ??
+    venues.find((v) => v.status !== "DECLINED" && (v.source === "MANUAL" || v.status === "CONFIRMED"))
+  );
 }

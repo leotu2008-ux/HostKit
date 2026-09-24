@@ -27,6 +27,17 @@ describe("priceForEvent", () => {
     expect(basis).toBe("6 hours");
   });
 
+  it("keeps an hourly estimate in whole cents over a part-hour night", () => {
+    // Money is integer cents: $33.33/hr for 90 minutes is 4999.5¢, not a price.
+    const listing = venue({ priceCents: 3_333 });
+    expect(priceForEvent(listing, event({ durationHours: 1.5 })).cents).toBe(
+      5_000,
+    );
+    expect(priceForEvent(listing, event({ durationHours: 0.25 })).cents).toBe(
+      833,
+    );
+  });
+
   it("multiplies a per-person rate by the headcount", () => {
     const { cents, basis } = priceForEvent(
       venue({ priceCents: 8_500, priceUnit: "PERSON" }),

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
+  eventFindMany: vi.fn(),
   guestFindMany: vi.fn(),
   guestUpdateMany: vi.fn(),
   guestCreateMany: vi.fn(),
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
-    event: { findUnique: mocks.eventFind },
+    event: { findUnique: mocks.eventFind, findMany: mocks.eventFindMany },
     guest: { findMany: mocks.guestFindMany, updateMany: mocks.guestUpdateMany, createMany: mocks.guestCreateMany },
     contact: { createMany: mocks.contactCreateMany, findMany: mocks.contactFindMany },
   },
@@ -74,6 +75,7 @@ describe("linkGuestsToContacts", () => {
 describe("guestBookFor", () => {
   it("lists people who came before, most-attended first, excluding this event's guests", async () => {
     mocks.guestFindMany.mockResolvedValue([{ contactId: "c-already" }]);
+    mocks.eventFindMany.mockResolvedValue([]);
     mocks.contactFindMany.mockResolvedValue([
       { id: "c1", name: "Ana", email: "ana@x.com", _count: { guests: 1 } },
       { id: "c2", name: "Bo", email: "bo@x.com", _count: { guests: 3 } },
@@ -86,6 +88,48 @@ describe("guestBookFor", () => {
     const where = mocks.contactFindMany.mock.calls[0][0].where;
     expect(where.ownerId).toBe("host-1");
     expect(where.id).toEqual({ notIn: ["c-already"] });
+  });
+
+  it("counts only check-ins at events where the host ran the door, so a no-show isn't 'came'", async () => {
+    mocks.guestFindMany.mockResolvedValue([]);
+    mocks.eventFindMany.mockResolvedValue([{ id: "door-night" }]);
+    mocks.contactFindMany.mockResolvedValue([]);
+
+    await guestBookFor("host-1", "evt-1");
+
+    expect(mocks.eventFindMany.mock.calls[0][0].where).toEqual({
+      ownerId: "host-1",
+      guests: { some: { checkedInAt: { not: null } } },
+    });
+    const { where, select } = mocks.contactFindMany.mock.calls[0][0];
+    const came = {
+      OR: [
+        { checkedInAt: { not: null } },
+        { rsvpStatus: "ATTENDING", eventId: { notIn: ["door-night"] }, event: expect.anything() },
+      ],
+    };
+    expect(where.guests).toEqual({ some: { eventId: { not: "evt-1" }, ...came } });
+    expect(select._count).toEqual({ select: { guests: { where: came } } });
+  });
+
+  it("doesn't count a yes to a night that hasn't happened yet, or was cancelled, as 'came'", async () => {
+    mocks.guestFindMany.mockResolvedValue([]);
+    mocks.eventFindMany.mockResolvedValue([]);
+    mocks.contactFindMany.mockResolvedValue([]);
+    const now = new Date("2026-09-24T12:00:00Z");
+
+    await guestBookFor("host-1", "evt-1", now);
+
+    const { where, select } = mocks.contactFindMany.mock.calls[0][0];
+    const happened = {
+      status: { not: "CANCELLED" },
+      OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
+    };
+    const came = {
+      OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING", eventId: { notIn: [] }, event: happened }],
+    };
+    expect(where.guests).toEqual({ some: { eventId: { not: "evt-1" }, ...came } });
+    expect(select._count).toEqual({ select: { guests: { where: came } } });
   });
 });
 

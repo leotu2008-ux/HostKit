@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 
 /**
  * The one place Hosty talks to a model.
@@ -96,6 +96,17 @@ export function extractJson(text: string): string {
   return body.slice(start, end + 1);
 }
 
+/**
+ * Callers tell the model to answer "matching the schema you are given", so
+ * give it one: the same schema the reply is validated against, as JSON
+ * Schema. Without it the model has to guess key names like `picks`, and a
+ * wrong guess is a bad-output fallback. Refinements don't carry over; the
+ * safeParse below still enforces them.
+ */
+function withSchema(system: string, schema: ZodType<unknown>): string {
+  return `${system}\n\nJSON Schema for your answer:\n${JSON.stringify(z.toJSONSchema(schema))}`;
+}
+
 export type AskOptions<T> = {
   /** Standing instructions: who it is and what it must never do. */
   system: string;
@@ -138,7 +149,7 @@ export async function ask<T>(options: AskOptions<T>): Promise<T> {
       body: JSON.stringify({
         model: aiModel(),
         max_tokens: options.maxTokens ?? 2048,
-        system: options.system,
+        system: withSchema(options.system, options.schema),
         messages: [{ role: "user", content: options.prompt }],
       }),
     });

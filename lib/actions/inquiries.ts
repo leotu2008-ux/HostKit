@@ -52,7 +52,8 @@ const updateSchema = z.object({
 
 /**
  * Moves an inquiry along, and — on BOOKED — writes the commitment back into
- * the budget and closes the matching timeline task.
+ * the budget and closes the matching timeline task. Any other status takes
+ * that budget line back off.
  *
  * That write-back is the whole reason these things live in one app. Booking a
  * caterer in a vacuum is a note in a spreadsheet; booking one here moves the
@@ -177,9 +178,11 @@ export async function updateInquiryAction(
       });
     }
 
-    if (status === "DECLINED") {
-      // A declined booking should not keep spending the budget.
-      await tx.budgetItem.deleteMany({ where: { inquiryId: inquiry.id } });
+    if (status !== "BOOKED") {
+      // Only a booking spends the budget. Declined, or moved back to
+      // Quoted/Replied because the vendor fell through, its line goes. The
+      // ticked task stays: whether the job is still done is the host's call.
+      await tx.budgetItem.deleteMany({ where: { inquiryId: inquiry.id, eventId } });
     }
   });
 
@@ -216,9 +219,11 @@ export async function deleteInquiryAction(formData: FormData) {
   await requireEvent(eventId);
 
   // The budget item cascades to null on delete, so remove it explicitly —
-  // an orphaned line with no inquiry behind it is worse than no line.
+  // an orphaned line with no inquiry behind it is worse than no line. Scoped
+  // to eventId like the inquiry itself: requireEvent only vouches for this
+  // event, not for whichever inquiry id was posted with it.
   await db.$transaction(async (tx) => {
-    await tx.budgetItem.deleteMany({ where: { inquiryId } });
+    await tx.budgetItem.deleteMany({ where: { inquiryId, eventId } });
     await tx.inquiry.deleteMany({ where: { id: inquiryId, eventId } });
   });
   refresh();

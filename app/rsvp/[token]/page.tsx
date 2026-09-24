@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { RsvpForm } from "@/components/rsvp-form";
 import { Badge } from "@/components/ui";
+import { hasFinished } from "@/lib/outcomes";
 
 export const metadata = {
   title: "You're invited",
@@ -25,6 +26,9 @@ export default async function RsvpPage({ params }: PageProps<"/rsvp/[token]">) {
           title: true,
           type: true,
           date: true,
+          endDate: true,
+          durationHours: true,
+          status: true,
           city: true,
           vibe: true,
         },
@@ -35,6 +39,8 @@ export default async function RsvpPage({ params }: PageProps<"/rsvp/[token]">) {
 
   const { event } = guest;
   const replied = guest.rsvpStatus !== "INVITED";
+  // After the night the reply is history (submitRsvpAction refuses it too).
+  const over = event.status === "COMPLETED" || hasFinished(event);
 
   return (
     <main className="flex flex-1 flex-col items-center px-5 py-14">
@@ -74,18 +80,24 @@ export default async function RsvpPage({ params }: PageProps<"/rsvp/[token]">) {
             {replied ? <Badge tone="forest">Reply received</Badge> : null}
           </div>
 
-          <RsvpForm
-            token={token}
-            current={guest.rsvpStatus}
-            plusOnes={guest.plusOnes}
-            dietary={guest.dietary}
-            allowPlusOnes
-          />
+          {over ? (
+            <p className="text-[15px] text-ink-soft">This night has already happened.</p>
+          ) : (
+            <RsvpForm
+              token={token}
+              current={guest.rsvpStatus}
+              plusOnes={guest.plusOnes}
+              dietary={guest.dietary}
+              allowPlusOnes
+            />
+          )}
         </div>
 
-        <p className="mt-6 text-center text-sm text-ink-mute">
-          You can change your reply any time with this link.
-        </p>
+        {over ? null : (
+          <p className="mt-6 text-center text-sm text-ink-mute">
+            You can change your reply any time with this link.
+          </p>
+        )}
       </div>
     </main>
   );

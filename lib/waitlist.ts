@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { notify } from "@/lib/notify";
+import { hasFinished } from "@/lib/outcomes";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 async function eventTitle(eventId: string): Promise<string> {
@@ -45,8 +46,14 @@ export async function promoteWaitlist(eventId: string): Promise<PromotedGuest[]>
 async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
-    const event = await tx.event.findUnique({ where: { id: eventId }, select: { guestCount: true } });
+    const event = await tx.event.findUnique({
+      where: { id: eventId },
+      select: { guestCount: true, date: true, endDate: true, durationHours: true, status: true },
+    });
     if (!event) return [];
+    // Once the night is over, a seat freed by tidying the list (a no-show
+    // marked "Not going") is no seat at all: don't tell anyone they're in.
+    if (event.status === "COMPLETED" || hasFinished(event)) return [];
     const attending = await tx.guest.count({ where: { eventId, rsvpStatus: "ATTENDING" } });
     const room = event.guestCount - attending;
     if (room <= 0) return [];

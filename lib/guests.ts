@@ -19,6 +19,8 @@ export type GuestSummary = {
   confirmedHeads: number;
   /** Heads that have actively said no, including their plus-ones. */
   declinedHeads: number;
+  /** Heads on a maybe, including their plus-ones. */
+  maybeHeads: number;
   /**
    * The number to plan against: everyone who has not actually declined,
    * counting plus-ones. See effectiveHeadcount for why this and not the
@@ -46,11 +48,12 @@ export function summarizeGuests(guests: GuestLike[]): GuestSummary {
 
   const confirmedHeads = attending.reduce((sum, g) => sum + heads(g), 0);
   const declinedHeads = declined.reduce((sum, g) => sum + heads(g), 0);
+  const maybeHeads = maybe.reduce((sum, g) => sum + heads(g), 0);
   // Someone who asked to join is likely coming, so they count toward the
   // planning number like an unanswered invite; the waitlist doesn't fit.
   const expectedHeads =
     confirmedHeads +
-    maybe.reduce((sum, g) => sum + heads(g), 0) +
+    maybeHeads +
     awaiting.reduce((sum, g) => sum + heads(g), 0) +
     pending.reduce((sum, g) => sum + heads(g), 0);
 
@@ -67,9 +70,28 @@ export function summarizeGuests(guests: GuestLike[]): GuestSummary {
     waitlisted: waitlisted.length,
     confirmedHeads,
     declinedHeads,
+    maybeHeads,
     expectedHeads,
     responded,
     responseRate: askable ? Math.round((responded / askable) * 100) : 0,
+  };
+}
+
+/**
+ * The expected heads split the way predictTurnout weighs them. A maybe's
+ * plus-ones are maybes too: a host changing a yes to a maybe keeps the
+ * plus-ones, and counting them as unanswered would tell the host "2 have not
+ * replied" when everyone has.
+ */
+export function turnoutReplies(summary: GuestSummary): {
+  attendingHeads: number;
+  maybeHeads: number;
+  noReplyHeads: number;
+} {
+  return {
+    attendingHeads: summary.confirmedHeads,
+    maybeHeads: summary.maybeHeads,
+    noReplyHeads: summary.expectedHeads - summary.confirmedHeads - summary.maybeHeads,
   };
 }
 
@@ -111,11 +133,16 @@ export function effectiveHeadcount(
  * Parses a pasted list into guests. Accepts "Name <email>", "Name, email",
  * "Name email" or a bare name per line — hosts paste from wherever the list
  * already lives, and rejecting their format is a good way to lose them.
+ *
+ * Emails come back lowercased (registration and the guest book match on the
+ * lowercased form), and an email repeated within one paste keeps its first
+ * line only. Names without an email are never merged: two Sams are two people.
  */
 export function parseGuestList(
   input: string,
 ): Array<{ name: string; email: string | null }> {
   const EMAIL = /[^\s,<>]+@[^\s,<>]+\.[^\s,<>]+/;
+  const seen = new Set<string>();
 
   return input
     .split(/\r?\n/)
@@ -123,12 +150,18 @@ export function parseGuestList(
     .filter(Boolean)
     .map((line) => {
       const match = line.match(EMAIL);
-      const email = match ? match[0] : null;
-      const name = (email ? line.replace(email, "") : line)
+      const typed = match ? match[0] : null;
+      const name = (typed ? line.replace(typed, "") : line)
         .replace(/[<>]/g, "")
         .replace(/[,;]+/g, " ")
         .trim();
-      return { name: name || (email ?? "Guest"), email };
+      return { name: name || (typed ?? "Guest"), email: typed?.toLowerCase() ?? null };
     })
-    .filter((guest) => guest.name.length > 0);
+    .filter((guest) => {
+      if (guest.name.length === 0) return false;
+      if (!guest.email) return true;
+      if (seen.has(guest.email)) return false;
+      seen.add(guest.email);
+      return true;
+    });
 }

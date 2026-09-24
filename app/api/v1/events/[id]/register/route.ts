@@ -1,7 +1,7 @@
 import { registerGuest } from "@/lib/registration";
 import { apiError, apiUser, json } from "@/lib/api/http";
 
-const STATUS_FOR_CODE = { sign_in: 401, not_listed: 404, declined: 409 } as const;
+const STATUS_FOR_CODE = { sign_in: 401, not_listed: 404, declined: 409, closed: 409 } as const;
 
 /** Registers the signed-in account for a night: `state` is going, pending
  *  (the host approves) or waitlisted (the night is full). */

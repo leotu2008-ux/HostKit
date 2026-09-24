@@ -6,6 +6,7 @@ import { planningContext } from "@/lib/event-context";
 import { composeInquiry, type OutreachEvent } from "@/lib/outreach";
 import { isViable, scoreListing } from "@/lib/scoring";
 import { draftInquiry } from "@/lib/inquiries";
+import { NO_VENDORS_TITLE } from "@/lib/agent/steps";
 
 /**
  * The agent's vendor step: for each category the plan allocated money to, the
@@ -65,7 +66,7 @@ export async function draftVendorInquiries(
   if (drafted.length === 0) {
     // Nothing in the catalog fits this city and these dates. Worth a quiet
     // line rather than silence, so the host knows the step ran.
-    return { actor: "agent", kind: "inquiries_drafted", title: "No vendors to draft for" };
+    return { actor: "agent", kind: "inquiries_drafted", title: NO_VENDORS_TITLE };
   }
 
   return {

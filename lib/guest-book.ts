@@ -1,8 +1,25 @@
 import { db } from "@/lib/db";
 import { newRsvpToken } from "@/lib/tokens";
 
-/** Came = said yes, or was checked in at the door. */
-const CAME = { OR: [{ rsvpStatus: "ATTENDING" as const }, { checkedInAt: { not: null } }] };
+/**
+ * Came = checked in at the door, or said yes to an event where the host never
+ * ran the door. Once anyone was checked in at an event, the check-ins are the
+ * truth there, so a yes who never walked in doesn't count (as in turnout).
+ * A yes only counts once the night has happened: not for one still ahead
+ * (flexible dates: until the last acceptable day) and not for a cancelled one.
+ */
+function came(doorEventIds: string[], now: Date) {
+  const happened = {
+    status: { not: "CANCELLED" as const },
+    OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
+  };
+  return {
+    OR: [
+      { checkedInAt: { not: null } },
+      { rsvpStatus: "ATTENDING" as const, eventId: { notIn: doorEventIds }, event: happened },
+    ],
+  };
+}
 
 export type GuestBookEntry = { id: string; name: string; email: string | null; came: number };
 
@@ -65,12 +82,13 @@ export async function linkGuestsToContacts(eventId: string): Promise<number> {
 }
 
 /** People who came to one of this host's other events and aren't on this one. Most-attended first. */
-export async function guestBookFor(ownerId: string, eventId: string): Promise<GuestBookEntry[]> {
-  const onThisEvent = await db.guest.findMany({
-    where: { eventId, contactId: { not: null } },
-    select: { contactId: true },
-  });
+export async function guestBookFor(ownerId: string, eventId: string, now = new Date()): Promise<GuestBookEntry[]> {
+  const [onThisEvent, doorEvents] = await Promise.all([
+    db.guest.findMany({ where: { eventId, contactId: { not: null } }, select: { contactId: true } }),
+    db.event.findMany({ where: { ownerId, guests: { some: { checkedInAt: { not: null } } } }, select: { id: true } }),
+  ]);
   const exclude = onThisEvent.map((g) => g.contactId as string);
+  const CAME = came(doorEvents.map((e) => e.id), now);
 
   const contacts = await db.contact.findMany({
     where: { ownerId, id: { notIn: exclude }, guests: { some: { eventId: { not: eventId }, ...CAME } } },

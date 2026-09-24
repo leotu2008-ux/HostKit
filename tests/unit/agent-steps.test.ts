@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { BriefFacts } from "@/lib/brief";
 import {
+  foundNothing,
   planSteps,
+  runSummaryBody,
   skippedSteps,
   vendorCategories,
   type StepContext,
@@ -174,5 +176,43 @@ describe("skippedSteps", () => {
     const skipped = skippedSteps({ ...brief, budgetTotalCents: 0 }, context);
     expect(skipped).toHaveLength(3);
     for (const step of skipped) expect(step.why.length).toBeGreaterThan(0);
+  });
+});
+
+describe("foundNothing", () => {
+  it("is true for the venue and vendor steps' nothing-turned-up lines", () => {
+    expect(foundNothing({ kind: "venue_search_empty", title: "No venues turned up nearby" })).toBe(true);
+    expect(foundNothing({ kind: "inquiries_drafted", title: "No vendors to draft for" })).toBe(true);
+  });
+
+  it("is false for a step that produced something", () => {
+    expect(foundNothing({ kind: "venues_attached", title: "3 venues lined up" })).toBe(false);
+    expect(foundNothing({ kind: "inquiries_drafted", title: "2 vendor inquiries drafted" })).toBe(false);
+    expect(foundNothing({ kind: "plan_drafted", title: "Drafted the plan" })).toBe(false);
+  });
+});
+
+describe("runSummaryBody", () => {
+  const ok = (name: "plan" | "venues" | "vendors", empty = false) => ({ name, ok: true, empty });
+  const broke = (name: "plan" | "venues" | "vendors") => ({ name, ok: false, empty: false });
+
+  it("lists what was done and what was left undone", () => {
+    expect(runSummaryBody([ok("plan"), ok("venues"), ok("vendors")])).toBe("Done: plan, venues, vendors");
+    expect(runSummaryBody([ok("plan"), broke("vendors")])).toBe("Done: plan · Left undone: vendors");
+  });
+
+  // "I couldn't find vendors in the catalog…" followed by "I finished the
+  // plan, venues and vendor inquiries" contradicts itself: a step that ran
+  // and found nothing didn't finish anything.
+  it("doesn't count a step that found nothing as done", () => {
+    expect(runSummaryBody([ok("plan"), ok("venues"), ok("vendors", true)])).toBe("Done: plan, venues");
+    expect(runSummaryBody([ok("plan"), ok("venues", true), broke("vendors")])).toBe(
+      "Done: plan · Left undone: vendors",
+    );
+  });
+
+  it("is null when nothing was done or left undone", () => {
+    expect(runSummaryBody([])).toBeNull();
+    expect(runSummaryBody([ok("venues", true), ok("vendors", true)])).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { currentProfile, requireEvent } from "@/lib/session";
-import { describeMissing, missingBriefFields } from "@/lib/brief";
+import { describeMissing, missingBriefFields, namedVenue } from "@/lib/brief";
 import { formatCents } from "@/lib/money";
 import { splitStart } from "@/lib/when";
 import { BriefForm } from "@/components/brief-form";
@@ -29,12 +29,16 @@ export default async function BriefPage({ params }: PageProps<"/events/[id]/brie
   // event.address is the source of truth once it's set; before then, an
   // existing VENUE collaborator (e.g. from before this brief existed) is the
   // fallback so a host doesn't see a blank field for a venue they already named.
+  // Not one the agent merely lined up: a save would make it the night's address.
   const venue = event.address
     ? null
-    : await db.eventCollaborator.findFirst({
-        where: { eventId: event.id, kind: "VENUE" },
-        select: { name: true, detail: true },
-      });
+    : namedVenue(
+        await db.eventCollaborator.findMany({
+          where: { eventId: event.id, kind: "VENUE" },
+          orderBy: { createdAt: "asc" },
+          select: { name: true, detail: true, source: true, status: true },
+        }),
+      );
 
   const { date, time } = splitStart(event.date);
   const missing = missingBriefFields(event);

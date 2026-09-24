@@ -21,6 +21,14 @@ import { formatDurationLong } from "@/lib/when";
  * to spend is how it becomes what you spend.
  */
 
+/** Readable labels for the outreach kinds, matching the section titles on
+ *  the Outreach page (app/(workspace)/events/[id]/(outreach)/outreach/page.tsx). */
+export const COLLABORATOR_KIND_LABEL: Record<CollaboratorKind, string> = {
+  VENUE: "Venue",
+  SPEAKER: "Speaker",
+  COHOST: "Cohost",
+};
+
 export type OutreachEvent = {
   title: string;
   type: EventType;
@@ -165,9 +173,12 @@ export function composeInquiry(
     DEFAULT_QUESTIONS;
   const listing = target;
 
-  const subject = event.date
-    ? `${EVENT_TYPE_LABEL[event.type]} inquiry — ${formatDate(event.date)}, ${event.guestCount} guests`
-    : `${EVENT_TYPE_LABEL[event.type]} inquiry — ${event.guestCount} guests`;
+  // No headcount yet (0 is "not filled in") means no "0 guests" in the subject either.
+  const facts = [
+    ...(event.date ? [formatDate(event.date)] : []),
+    ...(event.guestCount > 0 ? [`${event.guestCount} guests`] : []),
+  ];
+  const subject = [`${EVENT_TYPE_LABEL[event.type]} inquiry`, facts.join(", ")].filter(Boolean).join(" — ");
 
   // City and headcount are both blank on a brand-new event — say something
   // true rather than "in " or "around 0 guests" until the brief fills them in.

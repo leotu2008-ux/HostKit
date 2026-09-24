@@ -27,7 +27,8 @@ describe("AgentStatusLine", () => {
   it("shows Hosty working, with the mark pulsing", () => {
     const html = render({ status: "running" });
     expect(html).toContain("Hosty is working on this…");
-    expect(html).toContain("animate-pulse");
+    expect(html).toContain("motion-safe:animate-pulse");
+    expect(html).not.toMatch(/(^|[\s"])animate-pulse/);
     expect(html).toContain('viewBox="0 0 100 100"');
   });
 

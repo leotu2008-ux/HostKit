@@ -1,5 +1,6 @@
 import type { EventType, ListingCategory } from "@/generated/prisma/enums";
 import { CATEGORY_LABEL } from "@/lib/catalog";
+import { hasClock } from "@/lib/when";
 
 /**
  * The day-of run sheet: who arrives when, and what happens in what order.
@@ -39,6 +40,17 @@ const DEFAULT_START_HOUR: Record<EventType, number> = {
 
 export function defaultStartHour(type: EventType): number {
   return DEFAULT_START_HOUR[type];
+}
+
+/** When guests arrive: the start time the host saved, or this kind of
+ *  event's usual hour when they only gave a date. */
+export function arrivalClock(
+  eventDate: Date,
+  type: EventType,
+): { hour: number; minute: number } {
+  return hasClock(eventDate)
+    ? { hour: eventDate.getHours(), minute: eventDate.getMinutes() }
+    : { hour: defaultStartHour(type), minute: 0 };
 }
 
 /** How long before guests arrive each kind of supplier needs the room. */
@@ -204,9 +216,10 @@ export function draftToDate(
   eventDate: Date,
   startHour: number,
   offsetMinutes: number,
+  startMinute = 0,
 ): Date {
   const start = new Date(eventDate);
-  start.setHours(startHour, 0, 0, 0);
+  start.setHours(startHour, startMinute, 0, 0);
   return new Date(start.getTime() + offsetMinutes * 60_000);
 }
 

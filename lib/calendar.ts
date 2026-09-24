@@ -24,6 +24,22 @@ export function floating(date: Date): string {
   );
 }
 
+/** A date saved without a start time is stored as noon (see `parseStart`),
+ *  so it goes in as an all-day entry rather than noon to whenever. */
+function isDateOnly(date: Date): boolean {
+  return date.getUTCHours() === 12 && date.getUTCMinutes() === 0;
+}
+
+/** YYYYMMDD from the UTC fields. */
+function day(date: Date): string {
+  return floating(date).slice(0, 8);
+}
+
+/** An all-day entry ends on the next day (the end date is exclusive). */
+function nextDay(date: Date): Date {
+  return new Date(date.getTime() + 24 * 60 * 60 * 1000);
+}
+
 export function endOf(event: Pick<CalendarEvent, "date" | "durationHours">): Date {
   return new Date(event.date.getTime() + event.durationHours * 60 * 60 * 1000);
 }
@@ -61,8 +77,9 @@ export function icsFor(event: CalendarEvent, url: string, now = new Date()): str
     "BEGIN:VEVENT",
     `UID:${event.id}@hostkit`,
     `DTSTAMP:${floating(now)}Z`,
-    `DTSTART:${floating(event.date)}`,
-    `DTEND:${floating(endOf(event))}`,
+    ...(isDateOnly(event.date)
+      ? [`DTSTART;VALUE=DATE:${day(event.date)}`, `DTEND;VALUE=DATE:${day(nextDay(event.date))}`]
+      : [`DTSTART:${floating(event.date)}`, `DTEND:${floating(endOf(event))}`]),
     `SUMMARY:${escapeIcs(event.title)}`,
     ...(place ? [`LOCATION:${escapeIcs(place)}`] : []),
     `DESCRIPTION:${escapeIcs([event.description ?? "", url].filter(Boolean).join("\n\n"))}`,
@@ -78,7 +95,9 @@ export function googleCalendarUrl(event: CalendarEvent, url: string): string {
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: event.title,
-    dates: `${floating(event.date)}/${floating(endOf(event))}`,
+    dates: isDateOnly(event.date)
+      ? `${day(event.date)}/${day(nextDay(event.date))}`
+      : `${floating(event.date)}/${floating(endOf(event))}`,
     ...(place ? { location: place } : {}),
     details: [event.description ?? "", url].filter(Boolean).join("\n\n"),
   });
