@@ -3,6 +3,7 @@ import {
   effectiveHeadcount,
   parseGuestList,
   summarizeGuests,
+  turnoutReplies,
 } from "@/lib/guests";
 import type { GuestLike } from "@/lib/guests";
 
@@ -43,6 +44,28 @@ describe("summarizeGuests", () => {
 
   it("ignores a negative plus-one count", () => {
     expect(summarizeGuests([g("ATTENDING", -3)]).confirmedHeads).toBe(1);
+  });
+});
+
+describe("turnoutReplies", () => {
+  it("counts a maybe's plus-ones as maybe, not as unanswered", () => {
+    expect(turnoutReplies(summarizeGuests([g("MAYBE", 2)]))).toEqual({
+      attendingHeads: 0,
+      maybeHeads: 3,
+      noReplyHeads: 0,
+    });
+  });
+
+  it("splits every head that hasn't declined into yes, maybe and no reply", () => {
+    const s = summarizeGuests([
+      g("ATTENDING", 1),
+      g("MAYBE", 2),
+      g("INVITED", 1),
+      g("PENDING"),
+      g("DECLINED", 3),
+      g("WAITLISTED", 1),
+    ]);
+    expect(turnoutReplies(s)).toEqual({ attendingHeads: 2, maybeHeads: 3, noReplyHeads: 3 });
   });
 });
 

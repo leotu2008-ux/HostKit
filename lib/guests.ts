@@ -19,6 +19,8 @@ export type GuestSummary = {
   confirmedHeads: number;
   /** Heads that have actively said no, including their plus-ones. */
   declinedHeads: number;
+  /** Heads on a maybe, including their plus-ones. */
+  maybeHeads: number;
   /**
    * The number to plan against: everyone who has not actually declined,
    * counting plus-ones. See effectiveHeadcount for why this and not the
@@ -46,11 +48,12 @@ export function summarizeGuests(guests: GuestLike[]): GuestSummary {
 
   const confirmedHeads = attending.reduce((sum, g) => sum + heads(g), 0);
   const declinedHeads = declined.reduce((sum, g) => sum + heads(g), 0);
+  const maybeHeads = maybe.reduce((sum, g) => sum + heads(g), 0);
   // Someone who asked to join is likely coming, so they count toward the
   // planning number like an unanswered invite; the waitlist doesn't fit.
   const expectedHeads =
     confirmedHeads +
-    maybe.reduce((sum, g) => sum + heads(g), 0) +
+    maybeHeads +
     awaiting.reduce((sum, g) => sum + heads(g), 0) +
     pending.reduce((sum, g) => sum + heads(g), 0);
 
@@ -67,9 +70,28 @@ export function summarizeGuests(guests: GuestLike[]): GuestSummary {
     waitlisted: waitlisted.length,
     confirmedHeads,
     declinedHeads,
+    maybeHeads,
     expectedHeads,
     responded,
     responseRate: askable ? Math.round((responded / askable) * 100) : 0,
+  };
+}
+
+/**
+ * The expected heads split the way predictTurnout weighs them. A maybe's
+ * plus-ones are maybes too: a host changing a yes to a maybe keeps the
+ * plus-ones, and counting them as unanswered would tell the host "2 have not
+ * replied" when everyone has.
+ */
+export function turnoutReplies(summary: GuestSummary): {
+  attendingHeads: number;
+  maybeHeads: number;
+  noReplyHeads: number;
+} {
+  return {
+    attendingHeads: summary.confirmedHeads,
+    maybeHeads: summary.maybeHeads,
+    noReplyHeads: summary.expectedHeads - summary.confirmedHeads - summary.maybeHeads,
   };
 }
 

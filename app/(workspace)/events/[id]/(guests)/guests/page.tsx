@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { guestPhone, verifiedPhone } from "@/lib/api/serialize";
 import { formatPhone } from "@/lib/phone";
-import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
+import { effectiveHeadcount, summarizeGuests, turnoutReplies } from "@/lib/guests";
 import { predictTurnout, showHistoryFor } from "@/lib/turnout";
 import { daysUntil } from "@/lib/plan";
 import { conflictCountFor } from "@/lib/campus/conflicts";
@@ -69,9 +69,7 @@ export default async function GuestsPage({
     conflictCountFor(event.schoolDomain, event.date),
   ]);
   const turnout = predictTurnout({
-    attendingHeads: summary.confirmedHeads,
-    maybeHeads: summary.maybe,
-    noReplyHeads: Math.max(0, summary.expectedHeads - summary.confirmedHeads - summary.maybe),
+    ...turnoutReplies(summary),
     capacity: event.guestCount,
     daysUntil: daysUntil(event.date),
     conflicts,
