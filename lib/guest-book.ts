@@ -9,19 +9,40 @@ import { newRsvpToken } from "@/lib/tokens";
  * (flexible dates: until the last acceptable day) and not for a cancelled one.
  */
 function came(doorEventIds: string[], now: Date) {
-  const happened = {
-    status: { not: "CANCELLED" as const },
-    OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
-  };
   return {
     OR: [
       { checkedInAt: { not: null } },
-      { rsvpStatus: "ATTENDING" as const, eventId: { notIn: doorEventIds }, event: happened },
+      { rsvpStatus: "ATTENDING" as const, eventId: { notIn: doorEventIds }, event: happened(now) },
     ],
   };
 }
 
-export type GuestBookEntry = { id: string; name: string; email: string | null; came: number };
+function happened(now: Date) {
+  return {
+    status: { not: "CANCELLED" as const },
+    OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
+  };
+}
+
+/**
+ * Contacts still on the waitlist at the host's most recent other night that
+ * has happened: they wanted in and didn't get a seat, so they get first dibs.
+ */
+async function missedOutLastTime(ownerId: string, eventId: string, now: Date): Promise<string[]> {
+  const last = await db.event.findFirst({
+    where: { ownerId, id: { not: eventId }, ...happened(now) },
+    orderBy: { date: { sort: "desc", nulls: "last" } },
+    select: { id: true },
+  });
+  if (!last) return [];
+  const rows = await db.guest.findMany({
+    where: { eventId: last.id, rsvpStatus: "WAITLISTED", checkedInAt: null, contactId: { not: null } },
+    select: { contactId: true },
+  });
+  return rows.map((g) => g.contactId as string);
+}
+
+export type GuestBookEntry = { id: string; name: string; email: string | null; came: number; missedOut: boolean };
 
 /** Guest-book emails are stored lowercased and trimmed; blank means none. */
 export function contactEmail(raw: string | null | undefined): string | null {
@@ -81,23 +102,36 @@ export async function linkGuestsToContacts(eventId: string): Promise<number> {
   return linked;
 }
 
-/** People who came to one of this host's other events and aren't on this one. Most-attended first. */
+/**
+ * People who came to one of this host's other events and aren't on this one,
+ * plus anyone who missed out on the host's last night. Those who missed out
+ * come first, then most-attended.
+ */
 export async function guestBookFor(ownerId: string, eventId: string, now = new Date()): Promise<GuestBookEntry[]> {
-  const [onThisEvent, doorEvents] = await Promise.all([
+  const [onThisEvent, doorEvents, missedIds] = await Promise.all([
     db.guest.findMany({ where: { eventId, contactId: { not: null } }, select: { contactId: true } }),
     db.event.findMany({ where: { ownerId, guests: { some: { checkedInAt: { not: null } } } }, select: { id: true } }),
+    missedOutLastTime(ownerId, eventId, now),
   ]);
   const exclude = onThisEvent.map((g) => g.contactId as string);
+  const missed = new Set(missedIds.filter((id) => !exclude.includes(id)));
   const CAME = came(doorEvents.map((e) => e.id), now);
+  const cameBefore = { guests: { some: { eventId: { not: eventId }, ...CAME } } };
 
   const contacts = await db.contact.findMany({
-    where: { ownerId, id: { notIn: exclude }, guests: { some: { eventId: { not: eventId }, ...CAME } } },
+    where: {
+      ownerId,
+      id: { notIn: exclude },
+      ...(missed.size > 0 ? { OR: [cameBefore, { id: { in: [...missed] } }] } : cameBefore),
+    },
     select: { id: true, name: true, email: true, _count: { select: { guests: { where: CAME } } } },
   });
 
   return contacts
-    .map((c) => ({ id: c.id, name: c.name, email: c.email, came: c._count.guests }))
-    .sort((a, b) => b.came - a.came || a.name.localeCompare(b.name));
+    .map((c) => ({ id: c.id, name: c.name, email: c.email, came: c._count.guests, missedOut: missed.has(c.id) }))
+    .sort(
+      (a, b) => Number(b.missedOut) - Number(a.missedOut) || b.came - a.came || a.name.localeCompare(b.name),
+    );
 }
 
 /**

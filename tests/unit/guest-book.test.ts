@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
   eventFindMany: vi.fn(),
+  eventFindFirst: vi.fn(),
   guestFindMany: vi.fn(),
   guestUpdateMany: vi.fn(),
   guestCreateMany: vi.fn(),
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
-    event: { findUnique: mocks.eventFind, findMany: mocks.eventFindMany },
+    event: { findUnique: mocks.eventFind, findMany: mocks.eventFindMany, findFirst: mocks.eventFindFirst },
     guest: { findMany: mocks.guestFindMany, updateMany: mocks.guestUpdateMany, createMany: mocks.guestCreateMany },
     contact: { createMany: mocks.contactCreateMany, findMany: mocks.contactFindMany },
   },
@@ -84,7 +85,7 @@ describe("guestBookFor", () => {
     const book = await guestBookFor("host-1", "evt-1");
 
     expect(book.map((e) => e.id)).toEqual(["c2", "c1"]);
-    expect(book[0]).toEqual({ id: "c2", name: "Bo", email: "bo@x.com", came: 3 });
+    expect(book[0]).toEqual({ id: "c2", name: "Bo", email: "bo@x.com", came: 3, missedOut: false });
     const where = mocks.contactFindMany.mock.calls[0][0].where;
     expect(where.ownerId).toBe("host-1");
     expect(where.id).toEqual({ notIn: ["c-already"] });
@@ -130,6 +131,72 @@ describe("guestBookFor", () => {
     };
     expect(where.guests).toEqual({ some: { eventId: { not: "evt-1" }, ...came } });
     expect(select._count).toEqual({ select: { guests: { where: came } } });
+  });
+});
+
+describe("guestBookFor: missed out last time", () => {
+  const now = new Date("2026-09-24T12:00:00Z");
+
+  it("puts people waitlisted at the host's last night first, even if they never came", async () => {
+    mocks.guestFindMany
+      .mockResolvedValueOnce([]) // on this event
+      .mockResolvedValueOnce([{ contactId: "c-missed" }]); // waitlisted last time
+    mocks.eventFindMany.mockResolvedValue([]);
+    mocks.eventFindFirst.mockResolvedValue({ id: "last-night" });
+    mocks.contactFindMany.mockResolvedValue([
+      { id: "c-regular", name: "Ana", email: "ana@x.com", _count: { guests: 4 } },
+      { id: "c-missed", name: "Zed", email: "zed@x.com", _count: { guests: 0 } },
+    ]);
+
+    const book = await guestBookFor("host-1", "evt-1", now);
+
+    expect(book).toEqual([
+      { id: "c-missed", name: "Zed", email: "zed@x.com", came: 0, missedOut: true },
+      { id: "c-regular", name: "Ana", email: "ana@x.com", came: 4, missedOut: false },
+    ]);
+    const where = mocks.contactFindMany.mock.calls[0][0].where;
+    expect(where.OR).toEqual([{ guests: expect.anything() }, { id: { in: ["c-missed"] } }]);
+  });
+
+  it("looks at the host's most recent other night that happened, and only its waitlist nobody checked in from", async () => {
+    mocks.guestFindMany.mockResolvedValue([]);
+    mocks.eventFindMany.mockResolvedValue([]);
+    mocks.eventFindFirst.mockResolvedValue({ id: "last-night" });
+    mocks.contactFindMany.mockResolvedValue([]);
+
+    await guestBookFor("host-1", "evt-1", now);
+
+    expect(mocks.eventFindFirst.mock.calls[0][0]).toEqual({
+      where: {
+        ownerId: "host-1",
+        id: { not: "evt-1" },
+        status: { not: "CANCELLED" },
+        OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
+      },
+      orderBy: { date: { sort: "desc", nulls: "last" } },
+      select: { id: true },
+    });
+    expect(mocks.guestFindMany.mock.calls[1][0].where).toEqual({
+      eventId: "last-night",
+      rsvpStatus: "WAITLISTED",
+      checkedInAt: null,
+      contactId: { not: null },
+    });
+  });
+
+  it("doesn't flag anyone already on this event", async () => {
+    mocks.guestFindMany
+      .mockResolvedValueOnce([{ contactId: "c-missed" }])
+      .mockResolvedValueOnce([{ contactId: "c-missed" }]);
+    mocks.eventFindMany.mockResolvedValue([]);
+    mocks.eventFindFirst.mockResolvedValue({ id: "last-night" });
+    mocks.contactFindMany.mockResolvedValue([]);
+
+    await guestBookFor("host-1", "evt-1", now);
+
+    const where = mocks.contactFindMany.mock.calls[0][0].where;
+    expect(where.id).toEqual({ notIn: ["c-missed"] });
+    expect(where.OR).toBeUndefined();
   });
 });
 
