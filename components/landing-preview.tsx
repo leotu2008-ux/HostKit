@@ -53,6 +53,12 @@ const THINK_MS = 800;
 const TASK_MS = 170;
 const CHIP_MS = 110;
 
+/** A line of the example lifts off the card while the pointer is on it.
+ *  Translate and scale are their own properties, so they don't fight the
+ *  play-through, which moves lines with `transform`. */
+const POP =
+  "example-pop relative transition-[translate,scale,box-shadow,background-color] duration-200 ease-out hover:z-10 hover:-translate-y-1 hover:scale-[1.03] hover:bg-white hover:shadow-[0_10px_24px_rgb(20_20_20/0.14)]";
+
 type Frame = {
   /** Brief rows fully typed; the row at this index is the one being typed. */
   row: number;
@@ -171,6 +177,7 @@ export function LandingPreview() {
   return (
     <div
       ref={ref}
+      id="example-brief"
       className="overflow-hidden rounded-card border border-line bg-surface"
       {...(playing ? { "data-play": "playing" } : {})}
     >
@@ -188,7 +195,7 @@ export function LandingPreview() {
             return (
               <div
                 key={label}
-                className="flex items-baseline justify-between gap-4 py-1.5"
+                className={`${POP} -mx-1.5 flex items-baseline justify-between gap-4 rounded-md px-1.5 py-1.5`}
               >
                 <dt className="text-[13px] text-ink-mute">{label}</dt>
                 <dd className="text-[14px] font-medium text-ink">
@@ -218,7 +225,7 @@ export function LandingPreview() {
             ) : null}
           </div>
           <p
-            className="preview-line mt-2 text-[14px] text-ink"
+            className={`${POP} preview-line -mx-1.5 mt-2 rounded-md px-1.5 py-1 text-[14px] text-ink`}
             data-in={frame.tasks > 0 ? "" : undefined}
           >
             Here&rsquo;s your plan for Thursday&rsquo;s mixer:
@@ -228,7 +235,7 @@ export function LandingPreview() {
             {DRAFT_TASKS.map(([when, task], i) => (
               <li
                 key={task}
-                className="preview-line flex gap-3 text-[14px]"
+                className={`${POP} preview-line -mx-1.5 flex gap-3 rounded-md px-1.5 py-1 text-[14px]`}
                 data-in={i < frame.tasks ? "" : undefined}
               >
                 <span className="w-[92px] shrink-0 tabular-nums text-ink-mute">
@@ -243,7 +250,7 @@ export function LandingPreview() {
             {DRAFT_BUDGET.map(([category, amount], i) => (
               <span
                 key={category}
-                className="preview-line rounded-full border border-line px-3 py-1 text-[13px] text-ink-soft"
+                className={`${POP} preview-line rounded-full border border-line px-3 py-1 text-[13px] text-ink-soft hover:border-line-strong`}
                 data-in={i < frame.chips ? "" : undefined}
               >
                 {category}{" "}

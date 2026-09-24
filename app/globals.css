@@ -559,6 +559,11 @@ html[data-splash="played"] .rise {
     transform: none !important;
     transition: none !important;
   }
+
+  .example-pop:hover {
+    translate: none !important;
+    scale: none !important;
+  }
 }
 
 @media print {
