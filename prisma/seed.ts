@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
@@ -7,6 +8,7 @@ import type {
   PriceUnit,
 } from "../generated/prisma/enums";
 import { ADMIN_EMAIL } from "../lib/access";
+import { PUBLIC_DEMO_PASSWORD, demoPassword } from "../lib/demo-login";
 import { generatePlan } from "../lib/plan";
 
 /**
@@ -263,8 +265,33 @@ async function seedAdminAccount() {
   console.log(`Rotated the admin password for ${ADMIN_EMAIL}; old sessions end.`);
 }
 
+/** The hash a demo account is created with: never the public password on a
+ *  hosted build, since every Vercel build seeds the production database
+ *  (lib/demo-login.ts). Without DEMO_PASSWORD it is random and unknowable. */
+async function demoPasswordHash(): Promise<string> {
+  return bcrypt.hash(demoPassword(process.env) ?? randomBytes(32).toString("hex"), 10);
+}
+
+/**
+ * A demo account seeded before hosted builds stopped using the public
+ * password still has it, and the repo is public. Replace it, and bump the
+ * session version so anyone already signed in with it is signed out — the
+ * same move as seedAdminAccount's rotation.
+ */
+async function lockPublicDemoLogin(email: string): Promise<void> {
+  if (demoPassword(process.env) === PUBLIC_DEMO_PASSWORD) return;
+  const user = await db.user.findUnique({ where: { email }, select: { id: true, passwordHash: true } });
+  if (!user?.passwordHash || !(await bcrypt.compare(PUBLIC_DEMO_PASSWORD, user.passwordHash))) return;
+  await db.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await demoPasswordHash(), sessionVersion: { increment: 1 } },
+  });
+  console.log(`Locked the public demo password on ${email}; its sessions end.`);
+}
+
 async function seedDemoNights() {
   await confirmDemoAccount(DEMO_EMAIL);
+  await lockPublicDemoLogin(DEMO_EMAIL);
   const existing = await db.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (existing) {
     const nights = await db.event.count({ where: { ownerId: existing.id } });
@@ -274,7 +301,7 @@ async function seedDemoNights() {
     }
   }
 
-  const passwordHash = await bcrypt.hash("hostkit-demo", 10);
+  const passwordHash = await demoPasswordHash();
   const host =
     existing ??
     (await db.user.create({
@@ -378,6 +405,7 @@ const STUDENT_EMAIL = "sam@babson.edu";
  *  of Discover has something to show. Same password as the demo host. */
 async function seedCampusDemo() {
   await confirmDemoAccount(STUDENT_EMAIL);
+  await lockPublicDemoLogin(STUDENT_EMAIL);
   const existing = await db.user.findUnique({ where: { email: STUDENT_EMAIL } });
   if (existing) {
     const nights = await db.event.count({ where: { ownerId: existing.id } });
@@ -393,7 +421,7 @@ async function seedCampusDemo() {
       data: {
         email: STUDENT_EMAIL,
         name: "Sam Okafor",
-        passwordHash: await bcrypt.hash("hostkit-demo", 10),
+        passwordHash: await demoPasswordHash(),
         // As above: no inbox, so confirm at creation or it can never sign in.
         emailVerifiedAt: new Date(),
         schoolDomain: "babson.edu",
