@@ -1,14 +1,15 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { EmailSendError, isEmailConfigured, sendEmails } from "@/lib/email/send";
+import { EmailSendError, canDeliverLive, canDeliverToCatcher, sendEmails } from "@/lib/email/send";
 import { schoolDomainFor } from "@/lib/schools";
 
 /**
  * Account plumbing that goes through email: password resets and address
  * verification. Both work with one-time links whose token is only ever
- * stored hashed. Without Resend configured the link is logged and, outside
- * production, handed back to the caller so the flow can be exercised.
+ * stored hashed. The link is never written to the log. It is returned as
+ * `devLink` only when `VERCEL_ENV` is unset — a laptop. Preview and
+ * production do not get it, even when no mail actually left.
  */
 
 export class AccountError extends Error {
@@ -53,17 +54,18 @@ async function consume(token: string, kind: "reset" | "verify"): Promise<{ userI
 }
 
 /**
- * True when a confirmation link can actually reach someone: an email
- * service is configured, or this is development (where the link is handed
- * back instead). Sign-up refuses otherwise — an account nobody can confirm
- * is worse than no account.
+ * True when a confirmation link can reach someone, or this is a laptop
+ * (`VERCEL_ENV` unset) where the link is handed back instead. Preview sets
+ * `VERCEL_ENV` and `NODE_ENV=production`, so it is not a laptop and it is
+ * not live delivery. Sign-up refuses otherwise — an account nobody can
+ * confirm is worse than no account.
  */
 export function verificationDeliverable(): boolean {
-  return isEmailConfigured() || process.env.NODE_ENV !== "production";
+  return !process.env.VERCEL_ENV || canDeliverLive();
 }
 
 export const NOT_DELIVERABLE_MESSAGE =
-  "Email isn’t set up on this server yet, so new accounts can’t be confirmed. Ask whoever runs it to add RESEND_API_KEY and RESEND_FROM.";
+  "Email isn’t set up on this server yet, so new accounts can’t be confirmed. Ask whoever runs it to add Resend (RESEND_API_KEY and RESEND_FROM) or SMTP (SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM).";
 
 /** What sign-in says to an account that hasn’t confirmed its address. */
 export function unverifiedMessage(email: string): string {
@@ -87,7 +89,7 @@ export function sendFailedMessage(email: string): string {
  * not exist, so this says plainly that it is not them.
  */
 export function sendBlockedMessage(email: string): string {
-  return `We couldn’t send the confirmation email to ${email}, and it isn’t your address — this server’s email isn’t finished being set up, so the account wasn’t created. Ask whoever runs it to verify a sending domain in Resend and point RESEND_FROM at it.`;
+  return `We couldn’t send the confirmation email to ${email}, and it isn’t your address — this server’s email isn’t finished being set up, so the account wasn’t created. Ask whoever runs it to finish Resend (a verified sending domain and RESEND_FROM) or SMTP (the mailbox login and SMTP_FROM).`;
 }
 
 /** Picks the message that matches why the provider refused. */
@@ -105,15 +107,17 @@ async function deliver(
   subject: string,
   text: string,
   link: string,
+  template: string,
   required = false,
 ): Promise<{ devLink?: string }> {
-  if (isEmailConfigured()) {
-    await sendEmails([{ to, subject, text }]);
-    return {};
+  const handingOff = canDeliverLive() || canDeliverToCatcher();
+  // Preview and production without a real delivery path must not keep an
+  // account that can never open its link. A laptop still gets `devLink`.
+  if (!handingOff && required && process.env.VERCEL_ENV) {
+    throw new AccountError(NOT_DELIVERABLE_MESSAGE, 503);
   }
-  if (required && process.env.NODE_ENV === "production") throw new AccountError(NOT_DELIVERABLE_MESSAGE, 503);
-  console.log(`[account] no email configured — ${subject} for ${to}: ${link}`);
-  return process.env.NODE_ENV !== "production" ? { devLink: link } : {};
+  await sendEmails([{ to, subject, text, template }]);
+  return !handingOff && !process.env.VERCEL_ENV ? { devLink: link } : {};
 }
 
 /**
@@ -166,6 +170,7 @@ export async function requestPasswordReset(rawEmail: string, origin: string): Pr
         "If it wasn't you, ignore this — your password hasn't changed.",
       ].join("\n"),
       link,
+      "password_reset",
     ),
   );
 }
@@ -194,6 +199,7 @@ export async function sendApprovalInvite(
       "The link works for a week. After that, use \"Forgot password\" on the sign-in page.",
     ].join("\n"),
     link,
+    "approval_invite",
     true,
   );
 }
@@ -243,6 +249,7 @@ export async function sendVerification(
       "Until you do, you can’t sign in. If you didn’t sign up for Hosty, ignore this.",
     ].join("\n"),
     link,
+    "verify_email",
     true,
   );
 }

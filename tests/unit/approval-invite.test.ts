@@ -4,7 +4,6 @@ const mocks = vi.hoisted(() => ({
   tokenDeleteMany: vi.fn(),
   tokenCreate: vi.fn(),
   transaction: vi.fn(async (ops: unknown[]) => Promise.all(ops)),
-  isEmailConfigured: vi.fn(),
   sendEmails: vi.fn(),
 }));
 
@@ -15,10 +14,10 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/email/send", () => ({
-  isEmailConfigured: mocks.isEmailConfigured,
-  sendEmails: mocks.sendEmails,
-}));
+vi.mock("@/lib/email/send", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email/send")>("@/lib/email/send");
+  return { ...actual, sendEmails: mocks.sendEmails };
+});
 
 import { INVITE_TTL_MS, sendApprovalInvite } from "@/lib/account";
 
@@ -29,7 +28,6 @@ describe("sendApprovalInvite", () => {
     vi.clearAllMocks();
     mocks.tokenDeleteMany.mockResolvedValue({ count: 0 });
     mocks.tokenCreate.mockResolvedValue({});
-    mocks.isEmailConfigured.mockReturnValue(true);
     mocks.sendEmails.mockResolvedValue(1);
   });
 
