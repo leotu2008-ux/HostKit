@@ -1,8 +1,16 @@
 import { db } from "@/lib/db";
 import { newRsvpToken } from "@/lib/tokens";
 
-/** Came = said yes, or was checked in at the door. */
-const CAME = { OR: [{ rsvpStatus: "ATTENDING" as const }, { checkedInAt: { not: null } }] };
+/**
+ * Came = checked in at the door, or said yes to an event where the host never
+ * ran the door. Once anyone was checked in at an event, the check-ins are the
+ * truth there, so a yes who never walked in doesn't count (as in turnout).
+ */
+function came(doorEventIds: string[]) {
+  return {
+    OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING" as const, eventId: { notIn: doorEventIds } }],
+  };
+}
 
 export type GuestBookEntry = { id: string; name: string; email: string | null; came: number };
 
@@ -66,11 +74,12 @@ export async function linkGuestsToContacts(eventId: string): Promise<number> {
 
 /** People who came to one of this host's other events and aren't on this one. Most-attended first. */
 export async function guestBookFor(ownerId: string, eventId: string): Promise<GuestBookEntry[]> {
-  const onThisEvent = await db.guest.findMany({
-    where: { eventId, contactId: { not: null } },
-    select: { contactId: true },
-  });
+  const [onThisEvent, doorEvents] = await Promise.all([
+    db.guest.findMany({ where: { eventId, contactId: { not: null } }, select: { contactId: true } }),
+    db.event.findMany({ where: { ownerId, guests: { some: { checkedInAt: { not: null } } } }, select: { id: true } }),
+  ]);
   const exclude = onThisEvent.map((g) => g.contactId as string);
+  const CAME = came(doorEvents.map((e) => e.id));
 
   const contacts = await db.contact.findMany({
     where: { ownerId, id: { notIn: exclude }, guests: { some: { eventId: { not: eventId }, ...CAME } } },
