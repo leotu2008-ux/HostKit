@@ -13,7 +13,8 @@ import { cx } from "@/components/ui";
  *
  * Subtitles wave `by="word"` instead: each word is one lifted span holding
  * the real text, so the sentence is in the page once for screen readers,
- * copy and find-in-page.
+ * copy and find-in-page. Those spans stay inline (`.wave-wd`): find-in-page
+ * cannot match a phrase across inline-blocks.
  *
  * Each letter starts 28ms after the one before, each word 45ms. A long line
  * tightens that step, so the whole wave still lands within about a second.
@@ -43,7 +44,7 @@ export function WaveText({
         {words.map((word, w) => (
           <Fragment key={w}>
             {w > 0 ? " " : null}
-            <span className="wave-ch" style={{ "--n": w } as CSSProperties}>
+            <span className="wave-ch wave-wd" style={{ "--n": w } as CSSProperties}>
               {word}
             </span>
           </Fragment>
