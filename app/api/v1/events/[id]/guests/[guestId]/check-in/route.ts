@@ -25,13 +25,23 @@ export async function POST(
   // Already in: answer with the first arrival rather than re-stamping it.
   if (parsed.data.checkedIn && guest.checkedInAt) return json({ guest: serializeGuest(guest) });
 
+  if (!parsed.data.checkedIn) {
+    const updated = await db.guest.update({
+      where: { id: guest.id },
+      data: { checkedInAt: null, arrivedWithoutRsvp: false },
+    });
+    return json({ guest: serializeGuest(updated) });
+  }
+
   // The RSVP is the guest's, not the door's — see lib/actions/checkin.ts for
-  // why overwriting it here quietly destroyed the attendance signal.
-  const updated = await db.guest.update({
-    where: { id: guest.id },
-    data: parsed.data.checkedIn
-      ? { checkedInAt: new Date(), arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING" }
-      : { checkedInAt: null, arrivedWithoutRsvp: false },
+  // why overwriting it here quietly destroyed the attendance signal. Only
+  // while they're still not in, so a second device tapping at the same
+  // moment gets the first arrival back instead of re-stamping it.
+  await db.guest.updateMany({
+    where: { id: guest.id, checkedInAt: null },
+    data: { checkedInAt: new Date(), arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING" },
   });
-  return json({ guest: serializeGuest(updated) });
+  const admitted = await db.guest.findUnique({ where: { id: guest.id } });
+  if (!admitted) return apiError("Not found.", 404);
+  return json({ guest: serializeGuest(admitted) });
 }

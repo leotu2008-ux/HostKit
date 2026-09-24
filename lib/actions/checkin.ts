@@ -28,19 +28,25 @@ export async function checkInGuestAction(formData: FormData) {
     where: { id: guestId, eventId },
     select: { id: true, name: true, rsvpStatus: true, checkedInAt: true },
   });
+  if (!guest) return;
   // Already in: a second phone's stale tap must not move the arrival time or
-  // re-derive the walk-up flag from an RSVP the host has since changed.
-  if (!guest || guest.checkedInAt) return;
-
-  await db.guest.update({
-    where: { id: guest.id },
-    data: {
-      checkedInAt: new Date(),
-      // Frozen now rather than derived later: rsvpStatus stays editable.
-      arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING",
-    },
-  });
-  await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${guest.name} checked in` });
+  // re-derive the walk-up flag from an RSVP the host has since changed. It
+  // still refreshes, so that phone's list shows "Already in".
+  if (!guest.checkedInAt) {
+    // Only while they're still not in, so two doors tapping the same guest at
+    // once admit them once: the second write matches nothing.
+    const { count } = await db.guest.updateMany({
+      where: { id: guest.id, eventId, checkedInAt: null },
+      data: {
+        checkedInAt: new Date(),
+        // Frozen now rather than derived later: rsvpStatus stays editable.
+        arrivedWithoutRsvp: guest.rsvpStatus !== "ATTENDING",
+      },
+    });
+    if (count > 0) {
+      await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${guest.name} checked in` });
+    }
+  }
   refresh();
 }
 
