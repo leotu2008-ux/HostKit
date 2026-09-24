@@ -53,7 +53,10 @@ export type DraftContext = {
   subject: string;
   /** Every number the line may state, computed by code. */
   allowedNumbers: number[];
-  /** Words for a value the line may use, as handed to the writer ("tomorrow"). */
+  /**
+   * Words for a value the line may use, as handed to the writer ("tomorrow").
+   * Matched as whole words; digits in them are not allowed numbers.
+   */
   allowedPhrases?: string[];
   budgetMs?: number;
   fetch?: typeof fetch;
@@ -76,6 +79,8 @@ const MONTHS = [
   "january", "february", "march", "april", "june", "july", "august",
   "september", "october", "november", "december",
 ];
+// "May" is left out on purpose: as a word it's usually the verb ("you may
+// want to…"), and reading it as a date would fail a grounded line.
 
 /**
  * Checks what code can check: every value it can pull out of the line is one
