@@ -80,6 +80,18 @@ describe("registerGuest", () => {
     expect(mocks.guestCreate.mock.calls[0][0].data.rsvpStatus).toBe("WAITLISTED");
   });
 
+  // The host moved a guest bringing two to Maybe; one seat is left when they press Register.
+  it("counts the plus-ones on an existing row when they register", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestAggregate.mockResolvedValue({ _count: 9, _sum: { plusOnes: 0 } });
+    mocks.guestFindFirst.mockResolvedValue({ id: "g-7", userId: VIEWER.id, rsvpStatus: "MAYBE", plusOnes: 2 });
+
+    const result = await registerGuest({ eventId: "ev-1", viewer: VIEWER });
+
+    expect(result).toMatchObject({ ok: true, state: "waitlisted", changed: true });
+    expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("WAITLISTED");
+  });
+
   it("doesn't put anyone on the list once the night is over", async () => {
     // Someone opens last month's link and presses Register.
     mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() - 20 * HOUR)));

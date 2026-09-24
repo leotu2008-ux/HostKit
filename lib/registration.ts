@@ -36,6 +36,8 @@ export function decideRegistration(input: {
   requiresApproval: boolean;
   /** Heads already going, plus-ones included. */
   attending: number;
+  /** Heads the registrant would bring: themselves and their plus-ones. */
+  party: number;
   capacity: number;
 }): "going" | "pending" | "waitlisted" | "declined" | "unchanged" {
   switch (input.existing) {
@@ -49,7 +51,7 @@ export function decideRegistration(input: {
       break;
   }
   if (input.requiresApproval && !input.isHost) return "pending";
-  if (input.attending >= input.capacity) return "waitlisted";
+  if (input.attending + input.party > input.capacity) return "waitlisted";
   return "going";
 }
 
@@ -132,14 +134,14 @@ export async function registerGuest(input: {
       (await tx.guest.findFirst({ where: { eventId: event.id, email } }));
 
     // Capacity is people in the room: the yeses so far and the people they
-    // bring. The Register button only asks for the registrant's own seat;
-    // plus-ones come from their RSVP link, which checks there's room.
+    // bring, and a row the host already filled in keeps its plus-ones.
     const attending = await attendingHeads(tx, event.id);
     const decision = decideRegistration({
       existing: existing?.rsvpStatus ?? null,
       isHost,
       requiresApproval: event.requiresApproval,
       attending,
+      party: 1 + Math.max(0, existing?.plusOnes ?? 0),
       capacity: event.guestCount,
     });
 

@@ -14,11 +14,17 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 vi.mock("@/lib/session", () => ({ requireEvent: vi.fn() }));
 vi.mock("@/lib/db", () => {
+  // Only the transaction can count or write: outside it there's just the token lookup.
   const tx = {
     $executeRaw: mocks.lock,
-    guest: { findUnique: mocks.findUnique, update: mocks.update, count: mocks.count, aggregate: mocks.aggregate },
+    guest: { update: mocks.update, count: mocks.count, aggregate: mocks.aggregate },
   };
-  return { db: { ...tx, $transaction: (fn: (t: typeof tx) => unknown) => fn(tx) } };
+  return {
+    db: {
+      guest: { findUnique: mocks.findUnique },
+      $transaction: (fn: (t: typeof tx) => unknown) => fn(tx),
+    },
+  };
 });
 vi.mock("@/lib/activity", () => ({ record: mocks.record }));
 vi.mock("@/lib/waitlist", async (importOriginal) => ({
@@ -106,9 +112,14 @@ describe("submitRsvpAction", () => {
     const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
 
     expect(result).toBeUndefined();
-    expect(mocks.count).toHaveBeenCalledWith({ where: { eventId: "evt-1", rsvpStatus: "WAITLISTED" } });
+    // Only parties that could one day fit the 10-person night make a line.
+    expect(mocks.count).toHaveBeenCalledWith({
+      where: { eventId: "evt-1", rsvpStatus: "WAITLISTED", plusOnes: { lte: 9 } },
+    });
     const data = mocks.update.mock.calls[0][0].data;
     expect(data.rsvpStatus).toBe("WAITLISTED");
+    // The line changed, so it moves if there's room — them included.
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
     // The line is ordered by createdAt, so rejoining it now puts them last.
     expect(data.createdAt).toBeInstanceOf(Date);
     expect(Date.now() - data.createdAt.getTime()).toBeLessThan(5_000);
@@ -191,9 +202,8 @@ describe("submitRsvpAction", () => {
 
     await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
 
-    const [sql, eventId] = mocks.lock.mock.calls[0];
-    expect(sql.join("?")).toMatch(/FROM "Event" WHERE id = \? FOR UPDATE/);
-    expect(eventId).toBe("evt-1");
+    expect(mocks.lock).toHaveBeenCalledTimes(1);
+    expect(mocks.lock.mock.calls[0].slice(1)).toEqual(["evt-1"]);
     expect(mocks.lock.mock.invocationCallOrder[0]).toBeLessThan(mocks.aggregate.mock.invocationCallOrder[0]);
     expect(mocks.aggregate.mock.invocationCallOrder[0]).toBeLessThan(mocks.update.mock.invocationCallOrder[0]);
   });

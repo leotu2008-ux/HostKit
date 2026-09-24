@@ -165,11 +165,18 @@ export async function submitRsvpAction(
     // A guest who said no and changes their mind while people are waiting
     // joins the back of the line: they gave their seat up, and the waitlist
     // was there first. An invite (or a maybe) keeps its seat — the invite is
-    // the seat.
+    // the seat. A party too big for the whole night isn't a line anyone
+    // waits behind.
     const rejoining =
       guest.rsvpStatus === "DECLINED" &&
       parsed.data.rsvpStatus === "ATTENDING" &&
-      (await tx.guest.count({ where: { eventId: guest.eventId, rsvpStatus: "WAITLISTED" } })) > 0;
+      (await tx.guest.count({
+        where: {
+          eventId: guest.eventId,
+          rsvpStatus: "WAITLISTED",
+          plusOnes: { lte: guest.event.guestCount - 1 },
+        },
+      })) > 0;
 
     // Their own seat is theirs, but the people they bring need room — capacity
     // is people in the room. Plus-ones they already have stay once it fills.
@@ -207,7 +214,9 @@ export async function submitRsvpAction(
   if ("error" in outcome) return { error: outcome.error };
   const { rejoining } = outcome;
   const plusOnes = { from: guest.plusOnes, to: parsed.data.plusOnes };
-  if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) await promoteWaitlist(guest.eventId);
+  if (rejoining || releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) {
+    await promoteWaitlist(guest.eventId);
+  }
 
   // Only the move into ATTENDING (or back into line) is a new "yes" worth a
   // line — a guest can't pick PENDING or WAITLISTED themselves (guarded

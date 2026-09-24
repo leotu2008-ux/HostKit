@@ -5,7 +5,7 @@ import { recipientsFor } from "@/lib/blasts";
 import { summarizeGuests } from "@/lib/guests";
 
 describe("decideRegistration", () => {
-  const base = { existing: null, isHost: false, requiresApproval: false, attending: 3, capacity: 10 };
+  const base = { existing: null, isHost: false, requiresApproval: false, attending: 3, party: 1, capacity: 10 };
 
   it("goes straight in with room and no approval", () => {
     expect(decideRegistration(base)).toBe("going");
@@ -19,6 +19,12 @@ describe("decideRegistration", () => {
   it("waitlists when full, even with approval on", () => {
     expect(decideRegistration({ ...base, attending: 10 })).toBe("waitlisted");
     expect(decideRegistration({ ...base, attending: 10, requiresApproval: true })).toBe("pending");
+  });
+
+  // One seat left, but the row the host filled in brings two more.
+  it("waitlists a registrant whose party wouldn't fit", () => {
+    expect(decideRegistration({ ...base, attending: 9, party: 3 })).toBe("waitlisted");
+    expect(decideRegistration({ ...base, attending: 7, party: 3 })).toBe("going");
   });
 
   it("is idempotent for people already in, asked, or waiting", () => {
