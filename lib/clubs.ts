@@ -290,7 +290,7 @@ export async function postClubUpdate(club: { id: string; name: string }, authorI
     {
       kind: "club_update",
       title: `${club.name}: ${short}`,
-      body: body.length > 70 ? body : "Open the club page for more.",
+      body: body.length > 70 ? body : "",
       clubId: club.id,
     },
   );

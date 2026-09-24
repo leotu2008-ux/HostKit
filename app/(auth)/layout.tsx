@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
       </div>
       <p className="mt-6 text-center text-sm text-ink-mute">
         <Link href="/" className="text-clay">
-          Back to Discover
+          Back to Hosty
         </Link>
       </p>
     </main>

@@ -150,8 +150,23 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             </GlitchText>
             <br />
             <GlitchText as="span" className="font-display tracking-[-0.03em] text-black">
-              Let the agent do the work.
+              Let the agent do
             </GlitchText>
+            <span className="font-display tracking-[-0.03em]"> </span>
+            {/* Hosty pops out of "work." He's pinned to "the work." — kept whole
+                so a phone wraps before it, not inside it — rather than to the
+                line, so he stays beside the word wherever the headline breaks.
+                (GlitchText is an inline-block, so a split mid-phrase would
+                strand "work." on a line of its own.) */}
+            <span className="relative inline-block">
+              <GlitchText as="span" className="font-display tracking-[-0.03em] text-black">
+                the work.
+              </GlitchText>
+              <HostyMark
+                filled
+                className="hosty-pop pointer-events-none absolute -top-[0.06em] -right-[0.94em] h-[0.86em] w-[0.86em] text-ink"
+              />
+            </span>
           </h1>
 
           <p
@@ -168,9 +183,6 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             style={stagger(3)}
           >
             <PrimaryCta canCreate={canCreate} />
-            <ButtonLink href="/discover" variant="secondary" size="lg">
-              See what&rsquo;s on
-            </ButtonLink>
           </div>
           <p className="rise mt-4 text-[13px] text-ink-mute" style={stagger(4)}>
             {canCreate
@@ -300,9 +312,6 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             <nav className="flex items-center gap-5">
               <Link href="/events" className="hover:text-ink">
                 My events
-              </Link>
-              <Link href="/discover" className="hover:text-ink">
-                Discover
               </Link>
               <Link href="/mcp" className="hover:text-ink">
                 Connect an agent

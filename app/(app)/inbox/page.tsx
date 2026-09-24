@@ -25,14 +25,6 @@ export default async function InboxPage() {
     orderBy: { createdAt: "desc" },
     take: 100,
   });
-  const clubHandles = new Map(
-    (
-      await db.club.findMany({
-        where: { id: { in: items.map((n) => n.clubId).filter((id): id is string => Boolean(id)) } },
-        select: { id: true, handle: true },
-      })
-    ).map((c) => [c.id, c.handle]),
-  );
   const unread = items.filter((n) => !n.readAt).length;
   const days = groupByDay(items.map((n) => ({ ...n, date: n.createdAt })));
 
@@ -53,7 +45,7 @@ export default async function InboxPage() {
         <div className="mt-6">
           <EmptyState
             title="Nothing yet"
-            body="When a club you follow posts, a host confirms your spot, or a spot opens up, it lands here."
+            body="When someone asks to join your event, a host confirms your spot, or a spot opens up, it lands here."
           />
         </div>
       ) : (
@@ -67,9 +59,7 @@ export default async function InboxPage() {
                     ? n.kind === "agent_briefing"
                       ? `/events/${n.eventId}`
                       : `/e/${n.eventId}`
-                    : n.clubId
-                      ? `/c/${clubHandles.get(n.clubId) ?? ""}`
-                      : null;
+                    : null;
                   const inner = (
                     <div className="flex items-start gap-3 px-5 py-3.5">
                       <span aria-hidden className="mt-0.5 text-lg">{ICON[n.kind] ?? "•"}</span>

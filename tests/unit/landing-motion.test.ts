@@ -88,11 +88,18 @@ describe("landing page", () => {
     expect(lines[0]).toContain("Meet Hosty, an agent for the whole event");
     expect(lines[0]).toContain('viewBox="0 0 100 100"');
     expect(lines[1]).toContain("Plan the event.");
-    expect(lines[1]).toContain("Let the agent do the work.");
+    expect(lines[1]).toContain("Let the agent do");
+    expect(lines[1]).toContain("the work.");
+    // Hosty pops out of "work": the mark, filled so the sky doesn't show through him.
+    expect(lines[1]).toContain("hosty-pop");
+    expect(lines[1]).toContain('viewBox="0 0 100 100"');
+    expect(lines[1]).toContain('fill="#fff"');
     expect(lines[2]).toContain("Brief it once and it drafts the plan");
     expect(lines[3]).toContain("Join the waitlist");
     expect(lines[3]).toContain('href="/signup"');
-    expect(lines[3]).toContain("See what’s on");
+    // Hosty is B2B: no consumer "what's on" anywhere on the page.
+    expect(lines[3]).not.toContain("See what’s on");
+    expect(html).not.toContain('href="/discover"');
     expect(lines[4]).toContain("Invite-only while we’re small.");
     expect(html).not.toContain("Free to start");
     expect(html).not.toContain("No account needed");

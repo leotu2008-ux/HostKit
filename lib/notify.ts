@@ -52,7 +52,7 @@ export async function notify(userIds: string[], notice: Notice): Promise<number>
   try {
     if (EMAIL_KINDS.has(notice.kind) && isEmailConfigured()) {
       const users = await db.user.findMany({ where: { id: { in: ids } }, select: { email: true } });
-      await sendEmails(users.map((u) => ({ to: u.email, subject: notice.title, text: notice.body })));
+      await sendEmails(users.map((u) => ({ to: u.email, subject: notice.title, text: notice.body || notice.title })));
     }
   } catch (error) {
     console.error("[notify] email failed", error);
