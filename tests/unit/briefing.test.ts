@@ -415,11 +415,16 @@ describe("briefingFor — before-the-night reminders", () => {
     guest("ATTENDING", "d@example.com"),
     guest("WAITLISTED", "e@example.com"),
   ];
-  const at = (days: number, over: Partial<Parameters<typeof briefingFor>[1]> = {}) =>
+  // A Saturday 7 PM night at an East Coast school (stored as wall-clock UTC),
+  // looked at from 9:30 AM EST some days before, as a real instant.
+  const NIGHT = new Date("2026-01-24T19:00:00Z");
+  const before = (days: number) => new Date(Date.parse("2026-01-24T14:30:00Z") - days * 86_400_000);
+  const on = (now: Date, over: Partial<Parameters<typeof briefingFor>[1]> = {}) =>
     briefingFor(
-      { ...EVENT, date: inDays(days) },
-      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], guests: LIST, blasts: [], now: NOW, ...over },
+      { ...EVENT, date: NIGHT },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], guests: LIST, blasts: [], now, ...over },
     );
+  const at = (days: number, over: Partial<Parameters<typeof briefingFor>[1]> = {}) => on(before(days), over);
 
   it("about a week out, the invited who can be emailed and haven't replied", () => {
     const item = at(5).items.find((i) => i.kind === "guests_unreplied");
@@ -434,12 +439,12 @@ describe("briefingFor — before-the-night reminders", () => {
   });
 
   it("the nudge disappears once a blast to the unreplied went out inside the week", () => {
-    expect(at(5, { blasts: [{ segment: "pending", sentAt: daysAgo(1) }] }).items.some((i) => i.kind === "guests_unreplied")).toBe(false);
+    expect(at(5, { blasts: [{ segment: "pending", sentAt: before(6) }] }).items.some((i) => i.kind === "guests_unreplied")).toBe(false);
     // An older nudge, from before the week, doesn't count; nor does a blast to another segment.
     const older = at(5, {
       blasts: [
-        { segment: "pending", sentAt: daysAgo(20) },
-        { segment: "going", sentAt: daysAgo(1) },
+        { segment: "pending", sentAt: before(25) },
+        { segment: "going", sentAt: before(6) },
       ],
     });
     expect(older.items.some((i) => i.kind === "guests_unreplied")).toBe(true);
@@ -455,15 +460,30 @@ describe("briefingFor — before-the-night reminders", () => {
     });
     expect(at(2).items.some((i) => i.kind === "guests_remind")).toBe(false);
     expect(at(0).items.some((i) => i.kind === "guests_remind")).toBe(false);
-    expect(at(1, { blasts: [{ segment: "going", sentAt: NOW }] }).items.some((i) => i.kind === "guests_remind")).toBe(false);
+    expect(at(1, { blasts: [{ segment: "going", sentAt: before(1) }] }).items.some((i) => i.kind === "guests_remind")).toBe(false);
+  });
+
+  it("counts the days on the school's clock, so the evening before is still the day before", () => {
+    // Thursday 9 PM EST is already Friday in UTC: the night is still two days off.
+    const thursdayEvening = on(new Date("2026-01-23T02:00:00Z"));
+    expect(thursdayEvening.items.some((i) => i.kind === "guests_remind")).toBe(false);
+    expect(thursdayEvening.items.find((i) => i.kind === "guests_unreplied")?.detail).toBe("The night is in 2 days");
+    // Friday 9 PM EST is already Saturday in UTC: the night is tomorrow.
+    const fridayEvening = on(new Date("2026-01-24T02:00:00Z"));
+    expect(fridayEvening.items.find((i) => i.kind === "guests_remind")?.detail).toBe("The night is tomorrow");
+    // A reminder sent that Friday evening counts as sent the day before.
+    const sent = on(new Date("2026-01-24T03:00:00Z"), {
+      blasts: [{ segment: "going", sentAt: new Date("2026-01-24T02:00:00Z") }],
+    });
+    expect(sent.items.some((i) => i.kind === "guests_remind")).toBe(false);
   });
 
   it("says nothing when no one can be emailed, and nothing for a cancelled night", () => {
     const b = at(1, { guests: [guest("ATTENDING", null)] });
     expect(b.items.some((i) => i.kind === "guests_remind")).toBe(false);
     const cancelled = briefingFor(
-      { ...EVENT, date: inDays(5), status: "CANCELLED" },
-      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], guests: LIST, blasts: [], now: NOW },
+      { ...EVENT, date: NIGHT, status: "CANCELLED" },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], guests: LIST, blasts: [], now: before(5) },
     );
     expect(cancelled.items.some((i) => i.kind === "guests_unreplied")).toBe(false);
   });

@@ -457,6 +457,11 @@ export function sourcesFor(schoolDomain: string | null | undefined): CampusSourc
   return CAMPUS_SOURCES.filter((s) => s.schoolDomain === schoolDomain);
 }
 
+/** The zone a school's clock reads in, for turning real instants into wall-clock time. */
+export function schoolTimeZone(schoolDomain: string | null | undefined): string {
+  return sourcesFor(schoolDomain)[0]?.timeZone ?? "America/New_York";
+}
+
 export function sourceByKey(key: string): CampusSource | null {
   return CAMPUS_SOURCES.find((s) => s.key === key) ?? null;
 }

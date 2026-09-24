@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { effectiveHeadcount, summarizeGuests } from "@/lib/guests";
-import { sourcesFor } from "@/lib/campus/sources";
+import { schoolTimeZone } from "@/lib/campus/sources";
 import { wallClock } from "@/lib/campus/time";
 
 /**
@@ -80,8 +80,7 @@ export function hasStarted(
   now = new Date(),
 ): boolean {
   if (!event.date) return false;
-  const zone = sourcesFor(event.schoolDomain)[0]?.timeZone ?? "America/New_York";
-  return event.date.getTime() <= wallClock(now, zone).getTime();
+  return event.date.getTime() <= wallClock(now, schoolTimeZone(event.schoolDomain)).getTime();
 }
 
 /** How many other things were on at that school that day. Null when unknown. */

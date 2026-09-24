@@ -8,6 +8,8 @@ import type {
   TaskStatus,
 } from "@/generated/prisma/enums";
 import { recipientsFor, type BlastDraftKind } from "@/lib/blasts";
+import { schoolTimeZone } from "@/lib/campus/sources";
+import { wallClock } from "@/lib/campus/time";
 import { CHASE_AFTER_DAYS, goneQuiet, quietContacts } from "@/lib/chase";
 import { daysBetween, daysUntil, describeCountdown } from "@/lib/plan";
 
@@ -122,7 +124,13 @@ export type BriefingInput = {
   now: Date;
 };
 
-export type BriefingEvent = { id: string; title: string; date: Date | null; status?: EventStatus };
+export type BriefingEvent = {
+  id: string;
+  title: string;
+  date: Date | null;
+  status?: EventStatus;
+  schoolDomain?: string | null;
+};
 
 /** Fixed tiebreak order once urgency is equal. */
 const KIND_RANK: Record<BriefingKind, number> = {
@@ -276,6 +284,16 @@ function eventSoonItem(event: BriefingEvent, now: Date): BriefingItem | null {
 }
 
 /**
+ * Calendar days from `at` to the night. `date` is the host's wall-clock time
+ * encoded as UTC, so the day is read off the clock at the event's school.
+ */
+function nightIn(event: BriefingEvent, at: Date): number | null {
+  if (!event.date) return null;
+  const today = wallClock(at, schoolTimeZone(event.schoolDomain));
+  return Math.floor(event.date.getTime() / DAY_MS) - Math.floor(today.getTime() / DAY_MS);
+}
+
+/**
  * The two before-the-night reminders. Hosty never sends them: each opens a
  * drafted blast the host edits and sends. About a week out, the invited who
  * haven't replied; the day before, the guests going (never the waitlist).
@@ -284,11 +302,11 @@ function eventSoonItem(event: BriefingEvent, now: Date): BriefingItem | null {
  * window.
  */
 function guestItems(event: BriefingEvent, input: BriefingInput): BriefingItem[] {
-  const days = daysUntil(event.date, input.now);
+  const days = nightIn(event, input.now);
   if (days === null || days < 1 || days > NUDGE_DAYS || event.status === "CANCELLED") return [];
   const guests = input.guests ?? [];
   const sentWithin = (segment: string, window: number) =>
-    (input.blasts ?? []).some((b) => b.segment === segment && (daysUntil(event.date, b.sentAt) ?? Infinity) <= window);
+    (input.blasts ?? []).some((b) => b.segment === segment && (nightIn(event, b.sentAt) ?? Infinity) <= window);
 
   if (days === 1) {
     const n = recipientsFor("going", guests).length;
