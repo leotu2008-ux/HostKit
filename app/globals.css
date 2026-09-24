@@ -468,7 +468,8 @@ html[data-splash="played"] .rise {
 }
 
 /* Headline wave (components/wave-text.tsx): hovering a line lifts its
-   letters one after another, then lets them settle. Words stay whole. */
+   letters (or, on subtitles, its words) one after another, then lets them
+   settle. Words stay whole. */
 .wave-word {
   display: inline-block;
   white-space: nowrap;

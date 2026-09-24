@@ -44,24 +44,37 @@ describe("landing headings", () => {
 
 describe("landing subtitles", () => {
   const html = renderToStaticMarkup(createElement(Landing, { canCreate: false }));
+  const text = (markup: string) => markup.replace(/<[^>]+>/g, "");
+  const paragraphs = [...html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/g)].map((m) => m[1]);
 
-  /** The markup of the paragraph whose screen-reader text starts with `start`. */
+  /** The markup of the paragraph whose text starts with `start`. */
   const paragraph = (start: string) => {
-    const at = html.indexOf(start);
-    expect(at).toBeGreaterThan(-1);
-    return html.slice(html.lastIndexOf("<p", at), html.indexOf("</p>", at));
+    const found = paragraphs.filter((p) => text(p).startsWith(start));
+    expect(found).toHaveLength(1);
+    return found[0];
   };
 
+  const subtitles = [
+    "Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day. You approve. It does the rest.",
+    "Not a chatbot bolted onto a form. It carries one event from the first idea to the last person through the door.",
+    "The agent drafts the plan",
+    "Nothing is sent, published or spent without you pressing the button. Every message is yours to edit first.",
+    "You’ll have a plan before you close the tab.",
+    "Claude and ChatGPT can read your events and briefs and search venues. Cursor can read your events and guest lists.",
+  ];
+
   it("waves the line under every heading, like the headings", () => {
-    for (const start of [
-      "Brief it once and it drafts the plan",
-      "Not a chatbot bolted onto a form",
-      "The agent drafts the plan",
-      "Nothing is sent, published or spent",
-      "You’ll have a plan before you close the tab.",
-      "Claude and ChatGPT can read your events",
-    ]) {
-      expect(paragraph(start)).toContain('class="wave-line');
+    for (const subtitle of subtitles) expect(paragraph(subtitle)).toContain('class="wave-line');
+  });
+
+  it("holds each subtitle's text once, so copy and find-in-page see it once", () => {
+    const page = text(html);
+    for (const subtitle of subtitles) {
+      const markup = paragraph(subtitle);
+      expect(text(markup)).toBe(subtitle);
+      expect(markup).not.toContain("sr-only");
+      expect(markup).not.toContain("aria-hidden");
+      expect(page.split(subtitle)).toHaveLength(2);
     }
   });
 
@@ -71,20 +84,34 @@ describe("landing subtitles", () => {
 });
 
 describe("WaveText timing", () => {
-  const step = (text: string) => {
-    const html = renderToStaticMarkup(createElement(WaveText, { text }));
+  const step = (text: string, by?: "letter" | "word") => {
+    const html = renderToStaticMarkup(createElement(WaveText, { text, by }));
     const m = html.match(/--wave-step:(\d+)ms/);
-    return { ms: m ? Number(m[1]) : 28, letters: text.replace(/ /g, "").length };
+    return {
+      ms: m ? Number(m[1]) : 28,
+      letters: text.replace(/ /g, "").length,
+      words: text.split(" ").length,
+    };
   };
+  const long = "Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day.";
 
   it("keeps the 28ms letter stagger for headline-length text", () => {
     expect(step("Connect an agent").ms).toBe(28);
   });
 
   it("tightens the stagger for long lines, so the whole wave lands within about a second", () => {
-    const long = "Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day.";
     const { ms, letters } = step(long);
     expect(ms).toBeLessThan(28);
     expect(ms * letters).toBeLessThanOrEqual(1100);
+  });
+
+  it("staggers words by 45ms on short subtitles", () => {
+    expect(step("The agent drafts the plan", "word").ms).toBe(45);
+  });
+
+  it("tightens the word stagger for long subtitles, so the wave still lands within about a second", () => {
+    const { ms, words } = step(long, "word");
+    expect(ms).toBeLessThan(45);
+    expect(ms * words).toBeLessThanOrEqual(1000);
   });
 });
