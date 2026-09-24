@@ -76,6 +76,20 @@ function assertSmtpHostAllowed(): void {
   throw new EmailSendError(0, "Refusing SMTP to a non-loopback host while live delivery is off.", "smtp");
 }
 
+/** RFC 5321's limit on a forward path; no deliverable address is longer. */
+const MAX_ADDRESS_LENGTH = 254;
+
+/**
+ * Nodemailer's address parser is quadratic in its input (GHSA-2x7j-588g-ccc2),
+ * so an address no server would accept is refused before it gets parsed. 553
+ * is the reply a server gives for a mailbox name it won't take, so this fails
+ * exactly as that address would have.
+ */
+function assertAddressLength(address: string | undefined): void {
+  if (address === undefined || address.length <= MAX_ADDRESS_LENGTH) return;
+  throw new EmailSendError(553, `Address is ${address.length} characters; the limit is ${MAX_ADDRESS_LENGTH}.`, "smtp");
+}
+
 /**
  * One message per recipient, matching the Resend path: nobody is ever put in
  * a header alongside someone else's address.
@@ -86,6 +100,8 @@ export async function sendViaSmtp(emails: OutgoingEmail[]): Promise<number> {
   const from = stripHeader(process.env.SMTP_FROM!);
   let sent = 0;
   for (const email of emails) {
+    assertAddressLength(email.to);
+    assertAddressLength(email.replyTo);
     const headers = plainHeaders(email.headers);
     try {
       await transport().sendMail({

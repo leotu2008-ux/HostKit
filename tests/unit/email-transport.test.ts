@@ -409,3 +409,38 @@ describe("SMTP refuses a remote host unless live delivery is on", () => {
     );
   });
 });
+
+describe("SMTP refuses an address longer than a mail path can be", () => {
+  const tooLong = `${"a".repeat(290)}@example.com`;
+
+  function withCatcher() {
+    withSmtp();
+    process.env.SMTP_HOST = "127.0.0.1";
+  }
+
+  it("rejects an overlong recipient as the address's fault, before nodemailer parses it", async () => {
+    withCatcher();
+    const error = await sendViaSmtp([{ to: tooLong, subject: "Hello", text: "plain" }]).catch((e) => e);
+    expect(error).toBeInstanceOf(EmailSendError);
+    expect(error.cause).toBe("recipient");
+    expect(smtpSend.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("rejects an overlong reply-to the same way", async () => {
+    withCatcher();
+    const error = await sendViaSmtp([
+      { to: "ada@example.com", subject: "Hello", text: "plain", replyTo: tooLong },
+    ]).catch((e) => e);
+    expect(error).toBeInstanceOf(EmailSendError);
+    expect(error.cause).toBe("recipient");
+    expect(smtpSend.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("still sends an address at exactly the 254-character limit", async () => {
+    withCatcher();
+    const atLimit = `${"a".repeat(254 - "@example.com".length)}@example.com`;
+    expect(atLimit).toHaveLength(254);
+    await expect(sendViaSmtp([{ to: atLimit, subject: "Hello", text: "plain" }])).resolves.toBe(1);
+    expect(smtpSend.sendMail).toHaveBeenCalledWith(expect.objectContaining({ to: atLimit }));
+  });
+});
