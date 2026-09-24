@@ -23,17 +23,20 @@ vi.mock("next/image", () => ({
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 
 describe("Connect an agent landing section", () => {
-  it("says Cursor and Claude can read Hosty, and links to /mcp for setup", () => {
+  it("says Claude, ChatGPT and Cursor can read Hosty, and links to /mcp for setup", () => {
     const html = renderToStaticMarkup(createElement(ConnectAgentSection));
 
     expect(html).toContain("Connect an agent");
+    expect(html).toContain("Claude, ChatGPT and Cursor");
     expect(html).toContain(
-      "Cursor and Claude can connect to Hosty to read events, guests, campus events, and Discover.",
+      "Claude and ChatGPT can read your events and briefs and search venues. Cursor can read your events and guest lists.",
     );
-    expect(html).toContain("Events");
-    expect(html).toContain("Guests");
-    expect(html).toContain("Campus events");
-    expect(html).toContain("Discover");
+    const tiles = ["Events", "Briefs", "Guests", "Venues"].map((tile) => html.indexOf(`>${tile}</li>`));
+    expect(tiles.every((at) => at > -1)).toBe(true);
+    expect(tiles).toEqual([...tiles].sort((a, b) => a - b));
+    // Hosty is B2B: no consumer reads advertised.
+    expect(html).not.toContain("Campus events");
+    expect(html).not.toContain("Discover");
     expect(html).toContain('href="/mcp"');
     expect(html).toContain("Endpoint, token generation, and setup config");
     expect(html).not.toContain("HostKit");
