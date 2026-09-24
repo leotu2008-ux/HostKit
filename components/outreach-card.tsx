@@ -29,7 +29,7 @@ const STATUS: Record<OutreachRow["status"], { label: string; tone: Tone }> = {
  *  mails the row saved in the database, not whatever is on screen, so a
  *  dirty textarea must not be sendable. Copied from the SendButton in
  *  components/inquiry-panel.tsx. */
-function SendButton({ dirty }: { dirty: boolean }) {
+function SendButton({ dirty, name }: { dirty: boolean; name: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -37,14 +37,16 @@ function SendButton({ dirty }: { dirty: boolean }) {
       disabled={pending || dirty}
       className="h-9 rounded-full bg-clay px-4 text-sm font-medium text-on-clay hover:bg-clay-deep disabled:opacity-50"
     >
-      {pending ? "Sending…" : dirty ? "Save your changes first" : "Send it"}
+      {pending ? "Sending…" : dirty ? "Save your changes first" : `Send to ${name}`}
     </button>
   );
 }
 
 /** One person or place to reach, with the drafted first message ready. */
 export function OutreachCard({ row, eventId }: { row: OutreachRow; eventId: string }) {
-  const [open, setOpen] = useState(false);
+  // A draft that hasn't gone out starts open, so after a run the host reads
+  // down the page and sends each one. Still one press per send.
+  const [open, setOpen] = useState(row.status === "PENDING" && !row.sentAt);
   const [message, setMessage] = useState(row.message);
   const [email, setEmail] = useState(row.email ?? "");
   // Resync whenever the server's copy changes, the React-recommended way to
@@ -196,7 +198,7 @@ export function OutreachCard({ row, eventId }: { row: OutreachRow; eventId: stri
             <form action={sendAction}>
               <input type="hidden" name="eventId" value={eventId} />
               <input type="hidden" name="collaboratorId" value={row.id} />
-              <SendButton dirty={dirty} />
+              <SendButton dirty={dirty} name={row.name} />
             </form>
           ) : null}
           {sendState?.error ? <p className="text-[13px] text-danger">{sendState.error}</p> : null}
