@@ -64,6 +64,23 @@ function value(rule: Rule, property: string): string | undefined {
 
 const setting = (list: Rule[], property: string) => list.filter((r) => value(r, property) !== undefined);
 
+/** The pixel value the cascade gives a plain (no hover, no :disabled) button's `property` at `width`. */
+function resolved(list: Rule[], property: string, width: number): number {
+  const applies = setting(list, property).filter((r) => {
+    if (/[^\\]:/.test(r.selector)) return false;
+    if (r.media === null) return true;
+    const min = r.media.match(/^@media \(width >= ([\d.]+)rem\)$/);
+    return min !== null && Number(min[1]) * 16 <= width;
+  });
+  const important = applies.filter((r) => value(r, property)!.endsWith("!important"));
+  const winner = value((important.length ? important : applies).at(-1)!, property)!.replace(" !important", "");
+  const spacing = winner.match(/^calc\(var\(--spacing\) \* ([\d.]+)\)$/);
+  if (spacing) return Number(spacing[1]) * 4;
+  const length = winner.match(/^([\d.]+)(px|rem)$/);
+  if (!length) throw new Error(`can't resolve ${property}: ${winner}`);
+  return Number(length[1]) * (length[2] === "rem" ? 16 : 1);
+}
+
 describe("buttons: soft and tactile", () => {
   const primary = createElement(Button, null, "Publish");
 
@@ -115,22 +132,16 @@ describe("buttons: soft and tactile", () => {
   });
 
   it("keeps a 44px tap target on phones and tightens from md up", async () => {
-    const expected = { sm: ["2.75rem", "34px"], md: ["2.75rem", "42px"], lg: ["3rem", "50px"] } as const;
+    const expected = { sm: [44, 34], md: [44, 42], lg: [48, 50] } as const;
     for (const [size, [phone, wide]] of Object.entries(expected)) {
       const css = await rules(createElement(Button, { size: size as keyof typeof expected }, "Go"));
-      expect(setting(css, "min-height").map((r) => value(r, "min-height"))).toEqual(["var(--button-h)"]);
-      expect(setting(css, "--button-h").map((r) => [r.media, value(r, "--button-h")])).toEqual([
-        [null, phone],
-        ["@media (width >= 48rem)", wide],
-      ]);
+      expect([resolved(css, "min-height", 390), resolved(css, "min-height", 1024)]).toEqual([phone, wide]);
     }
   });
 
-  it("lets a caller's own min-height win at every width", async () => {
-    const css = await rules(createElement(Button, { className: "min-h-12" }, "Check in"));
-    const minHeights = setting(css, "min-height");
-    expect(minHeights.every((r) => r.media === null)).toBe(true);
-    expect(minHeights.at(-1)!.selector).toBe(".min-h-12");
+  it("lets the door's 48px buttons keep their height at every width", async () => {
+    const css = await rules(createElement(Button, { className: "min-h-12! min-w-[7rem]" }, "Check in"));
+    expect([resolved(css, "min-height", 390), resolved(css, "min-height", 1024)]).toEqual([48, 48]);
   });
 
   it("doesn't lift ghost buttons", () => {

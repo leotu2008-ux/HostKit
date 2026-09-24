@@ -279,12 +279,6 @@ html[data-splash="pending"] .launch-splash-logo {
    states on the client only, after hydration and before first paint.
 --------------------------------------------------------------------------- */
 
-/* Hero entrance: each line rises in turn; `--i` is its place in the queue.
-   Under the first-visit splash the whole queue waits for the overlay to
-   start fading (55% of the splash clock, see launch-splash-overlay), so the
-   hero comes up through the black rather than sitting there behind it. The
-   wait holds once the splash has `played`: a delay that changed mid-run
-   would retime every line still rising. */
 /* The landing's motion tokens: slow, and eased out with no overshoot, so
    everything settles into place rather than springing. Shared by the hero,
    Hosty and the scroll reveals. */
@@ -294,6 +288,12 @@ html[data-splash="pending"] .launch-splash-logo {
   --landing-stagger: 150ms;
 }
 
+/* Hero entrance: each line rises in turn; `--i` is its place in the queue.
+   Under the first-visit splash the whole queue waits for the overlay to
+   start fading (55% of the splash clock, see launch-splash-overlay), so the
+   hero comes up through the black rather than sitting there behind it. The
+   wait holds once the splash has `played`: a delay that changed mid-run
+   would retime every line still rising. */
 .rise {
   --rise-base: 0s;
   animation: rise var(--landing-rise-duration) var(--landing-ease) both;
@@ -438,7 +438,7 @@ html[data-splash="played"] .rise {
 
 /* Hosty floats out of "work." just after the headline has risen in (it
    inherits the hero's --rise-base, so it waits for the splash too), then
-   bobs. The origin sits at his tail, so he springs out of the word. */
+   bobs. The origin sits at his tail, so he floats out of the word. */
 .hosty-pop {
   transform-origin: 18% 92%;
   animation:

@@ -17,7 +17,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand";
 // moves when a button is disabled or the reader asks for reduced motion, and
 // every button shows a focus ring for the keyboard.
 const BUTTON_BASE =
-  "inline-flex min-h-(--button-h) items-center justify-center gap-2 rounded-full font-semibold transition-[translate,scale,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-none disabled:scale-none motion-reduce:translate-none! motion-reduce:scale-none! motion-reduce:transition-none";
+  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[translate,scale,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-none disabled:scale-none motion-reduce:translate-none! motion-reduce:scale-none! motion-reduce:transition-none";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
   primary: cx(
@@ -48,12 +48,11 @@ const BUTTON_VARIANT: Record<Variant, string> = {
 };
 
 // Phones keep a 44px tap target at every size; on wider screens "small" is
-// really small, so a row's button doesn't crowd the row. Sizes set a height
-// the base reads, so a caller's own min-h-* still wins at every width.
+// really small, so a row's button doesn't crowd the row.
 const BUTTON_SIZE = {
-  sm: "[--button-h:2.75rem] px-3.5 text-[13px] md:[--button-h:34px]",
-  md: "[--button-h:2.75rem] px-[18px] text-sm md:[--button-h:42px]",
-  lg: "[--button-h:3rem] px-[26px] text-base md:[--button-h:50px]",
+  sm: "min-h-11 px-3.5 text-[13px] md:min-h-[34px]",
+  md: "min-h-11 px-[18px] text-sm md:min-h-[42px]",
+  lg: "min-h-12 px-[26px] text-base md:min-h-[50px]",
 } as const;
 
 type ButtonSize = keyof typeof BUTTON_SIZE;
