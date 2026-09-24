@@ -17,6 +17,16 @@ const nextConfig: NextConfig = {
     // fallback serves them from /api/images, which is same-origin.
     remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
   },
+  // Hosty is B2B: the consumer pages (Discover, campus calendars, clubs)
+  // are gone from the web — kept on the `discover` branch — and their
+  // old links land on the home page. Temporary, so they can come back.
+  async redirects() {
+    return ["/discover", "/discover/:path*", "/campus", "/campus/:path*", "/c/:path*", "/clubs", "/clubs/:path*"].map((source) => ({
+      source,
+      destination: "/",
+      permanent: false,
+    }));
+  },
   async headers() {
     return [
       {

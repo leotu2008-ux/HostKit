@@ -8,14 +8,12 @@ import { cx } from "@/components/ui";
  *  My events (and /events/new), not on the bar. */
 const TABS = [
   { href: "/", label: "Home", icon: HomeIcon, match: "home" },
-  { href: "/discover", label: "Discover", icon: DiscoverIcon, match: "discover" },
   { href: "/events", label: "Events", icon: NightsIcon, match: "nights" },
   { href: "/profile", label: "Profile", icon: YouIcon, match: "you" },
 ] as const;
 
 function tabActive(pathname: string, match: (typeof TABS)[number]["match"]) {
   if (match === "home") return pathname === "/";
-  if (match === "discover") return pathname.startsWith("/discover");
   if (match === "nights") {
     return pathname === "/events" || pathname.startsWith("/events/");
   }
@@ -42,7 +40,6 @@ export function DesktopNav() {
   const pathname = usePathname();
   const links = [
     { href: "/", label: "Home", match: "home" },
-    { href: "/discover", label: "Discover", match: "discover" },
     { href: "/events", label: "My events", match: "nights" },
   ] as const;
 
@@ -110,26 +107,6 @@ function HomeIcon({ active }: { active: boolean }) {
         stroke="currentColor"
         strokeWidth={active ? 2 : 1.6}
         strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DiscoverIcon({ active }: { active: boolean }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle
-        cx="11"
-        cy="11"
-        r="6.5"
-        stroke="currentColor"
-        strokeWidth={active ? 2 : 1.6}
-      />
-      <path
-        d="M16 16.5 20.5 21"
-        stroke="currentColor"
-        strokeWidth={active ? 2 : 1.6}
-        strokeLinecap="round"
       />
     </svg>
   );

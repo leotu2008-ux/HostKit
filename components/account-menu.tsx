@@ -16,11 +16,10 @@ export type MenuUser = {
 };
 
 const ROWS = [
-  { href: "/inbox", label: "Inbox", hint: "Requests, approvals, clubs you follow" },
+  { href: "/inbox", label: "Inbox", hint: "Requests and approvals" },
   { href: "/profile", label: "Profile", hint: "Name, photo, bio" },
   { href: "/events", label: "My events", hint: "Upcoming nights you host" },
   { href: "/events?tab=past", label: "Past events", hint: "Everything you've hosted" },
-  { href: "/clubs", label: "Clubs", hint: "Yours, and the ones you follow" },
   { href: "/settings", label: "Settings", hint: "Phone number, account" },
   { href: "/mcp", label: "Connect an agent", hint: "Cursor and Claude, read-only" },
 ];

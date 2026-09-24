@@ -2,16 +2,19 @@
  * Hosty, the event agent: an outline ghost whose last hem bump is a speech
  * tail, with two eyes. Drawn in currentColor so it takes the ink of whatever
  * it sits in. Decorative by default — pass `title` where the mark is the only
- * thing naming Hosty.
+ * thing naming Hosty. `filled` paints him white inside, for busy backgrounds
+ * like the landing sky.
  */
 export function HostyMark({
   size = 20,
   className,
   title,
+  filled = false,
 }: {
   size?: number;
   className?: string;
   title?: string;
+  filled?: boolean;
 }) {
   const a11y = title ? { role: "img", "aria-label": title } : { "aria-hidden": true };
   return (
@@ -26,7 +29,7 @@ export function HostyMark({
       {title ? <title>{title}</title> : null}
       <path
         d="M22 50 A28 28 0 0 1 78 50 V80 q-7 8 -14 0 t-14 0 t-14 0 L17 94 L22 72 Z"
-        fill="none"
+        fill={filled ? "#fff" : "none"}
         stroke="currentColor"
         strokeWidth={7}
         strokeLinejoin="round"

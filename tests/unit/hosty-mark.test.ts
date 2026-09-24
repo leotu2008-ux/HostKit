@@ -19,6 +19,13 @@ describe("HostyMark", () => {
     expect(html).toContain('width="20"');
   });
 
+  it("stays hollow by default and fills white when asked, for busy backgrounds", () => {
+    expect(renderToStaticMarkup(createElement(HostyMark))).toContain('fill="none"');
+    const filled = renderToStaticMarkup(createElement(HostyMark, { filled: true }));
+    expect(filled).toContain('fill="#fff"');
+    expect(filled).not.toContain('fill="none"');
+  });
+
   it("becomes a labelled image when given a title", () => {
     const html = renderToStaticMarkup(createElement(HostyMark, { title: "Hosty" }));
     expect(html).toContain('role="img"');
