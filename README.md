@@ -1,26 +1,112 @@
 # Hosty
 
-Plan an event end to end: scout venues and vendors, build the budget and the
-timeline, track every booking, collect RSVPs, and print the run sheet.
+**An AI agent for people who run the same event again and again.**
 
-Hosty is **host-side only**. Venue and vendor owners never log in and never
-list anything — the catalog is seeded data, and every user is someone planning
-an event. The Airbnb comparison describes the *scouting* experience
-(photo-forward browsing, filters, saved shortlists), not a two-sided
-marketplace.
+Brief Hosty once and he drafts the plan, lines up venues, writes to vendors,
+tracks who's coming and hands you a run sheet for the day. You approve. He
+does the rest. The second, fifth and twentieth night should take a fraction
+of the first.
 
-## The idea
+Live at [tryhosty.app](https://tryhosty.app). Invite-only while we're small.
 
-Because Hosty knows your event — date, headcount, city, budget — it can
-price every listing *against that specific event*. A directory tells you a
-venue is "$640/hour". Hosty tells you it's **"$5,120 for your 8 hours, 33%
-of your venue budget, and comfortable for 90 guests."**
+## Who it's for
 
-Then it keeps the pieces connected. Marking an inquiry **booked** writes a
-committed line into the budget and ticks off the matching timeline task.
-Declining takes the money back out. RSVPs feed back into the headcount that
-every listing is priced against. That write-back loop is what makes it
-end-to-end rather than a pile of separate tools.
+**Recurring hosts**: the person behind a monthly pitch night, a weekly run
+club social or a termly alumni dinner. Every product decision is judged by
+one question: *does this make the next night faster than the last one?*
+
+Hosty is **B2B and host-side only**. Guests never need an account to be
+invited, vendors and venues never log in, and there is no consumer
+marketplace. One-off hosts can use Hosty, but nothing is built for them
+specifically. The full product scope is locked in
+[`docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md`](docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md).
+
+## Meet Hosty
+
+Hosty is the agent, and he talks to you like a colleague, not a to-do list.
+
+- **On the Overview**, what he's done reads as a chat: *"I drafted your plan:
+  13 tasks and 4 budget categories."* · *"I lined up 3 venues: Back Bay
+  Events Center, Somerville Studios and Southie Event Spaces. Nothing's been
+  sent."* Your own actions appear as your replies, and he shows a typing
+  indicator while he works.
+- **Beside every page**, he greets you with what needs you: *"Hi Leo, one
+  thing needs you today and 4 are coming up:"* followed by each item and its
+  one button.
+- **He runs himself.** Saving a complete brief starts a run. So does the
+  "Run again" button, and a daily sweep at 13:30 UTC. Each run drafts the
+  plan, finds venues and drafts vendor inquiries.
+
+Three rules hold everywhere:
+
+1. **Hosty drafts; a human presses every send, publish and spend button.**
+   He never emails a vendor, publishes an event or commits money on his own.
+2. **He only says what's true.** Every sentence he speaks is phrased from
+   what was actually saved (`lib/hosty-voice.ts`), and a number that isn't in
+   the record never appears in his words.
+3. **He works without a model, and better with one.** With
+   `ANTHROPIC_API_KEY` set he uses Claude (`claude-sonnet-5` by default,
+   `AI_MODEL` to override) to write the plan and pick venues. Without it, or
+   if a call fails or times out, he falls back to Hosty's own planning
+   templates, so a run always finishes.
+
+## What a host does with it
+
+**Brief**: the kind of event, the date, the city, the headcount and the
+budget. That's all Hosty needs to start.
+
+**The workspace** (`/events/:id`) has six tabs:
+
+| Tab | What's there |
+| --- | --- |
+| **Overview** | Headcount at a glance, Hosty's chat thread, what's next |
+| **Brief** | The five essentials plus the vibe and a venue if you already have one |
+| **Planning** | The timeline counted back from the date, the budget split, the run sheet |
+| **Venue** | Venues near you, priced against this event |
+| **Outreach** | Venues, vendors, speakers and cohosts, each with a drafted first message; confirm, send or remove |
+| **Guests** | The guest list, the guest book, blasts, promotion and door check-in |
+
+Hosty prices every option against *your* event. A directory says a venue is
+"$640/hour". Hosty says it's **"$5,120 for your 8 hours, 33% of your venue
+budget, and comfortable for 90 guests."** Booking a vendor writes into the
+budget and ticks off the matching task, and RSVPs feed back into the
+headcount everything is priced against.
+
+**For the next night:**
+
+- **Run it again** (owner only) copies the brief, budget split, tasks, vendors
+  and run sheet into a new draft on a new date. Guests aren't copied
+  (`lib/run-again.ts`).
+- **Series** groups repeat nights; `/series/:id` lists every night and who
+  came.
+- **Guest book** (`lib/guest-book.ts`): everyone who came to your events,
+  ready to invite again in one click.
+- **Vendor book** (`lib/vendor-book.ts`): every venue, speaker, cohost and
+  catalog vendor you've confirmed or booked, ready to add to the next event.
+
+## Access
+
+Hosty is invite-only. People join the waitlist on the landing page. The
+administrator (`ADMIN_EMAIL` in `lib/access.ts`) lets them in from
+`/admin/waitlist`, and each one gets an email with a link to set a password.
+The administrator also sees `/admin/events`, every host's events, and can
+remove any of them.
+
+## Connect an agent
+
+Hosty speaks MCP, so Claude, ChatGPT and Cursor can read your events.
+`POST /api/mcp` accepts two credentials:
+
+- **OAuth**, for Claude and ChatGPT custom connectors. Consent, refresh and
+  disconnect live under Settings → AI connections. Tools: `list_events`,
+  `get_event_brief`, `search_venues`.
+- **Bearer token**, for Cursor and anything else that can send
+  `Authorization: Bearer`. Get one from the Connect an agent page (`/mcp`) or
+  `POST /api/v1/auth/token`. Tools: `list_events`, `get_event`,
+  `list_guests`, `campus_events`, `discover_events`.
+
+An OAuth token is checked first; anything that isn't a live grant falls
+through to the bearer token. See [docs/mcp.md](docs/mcp.md).
 
 ## Running it
 
@@ -29,35 +115,26 @@ Requires Node 20.19+ and PostgreSQL 16.
 ```bash
 npm install
 
-# Create the database (any Postgres will do)
-createdb hostkit
-
+createdb hostkit            # any Postgres will do
 cp .env.example .env        # then set DATABASE_URL and AUTH_SECRET
 npm run db:migrate          # apply migrations
-npm run db:seed             # 72 venues and vendors across 3 cities
+npm run db:seed             # the catalog, demo events and demo accounts
 
 npm run dev                 # http://localhost:3000
 ```
 
-Open the dev server as `localhost`, `127.0.0.1`, or your machine's Wi-Fi
-address from a phone (`192.168.x.x:3000`) — those origins are listed in
-`allowedDevOrigins` in `next.config.ts`. `next dev` refuses to serve its
-scripts to any other hostname, and a page without scripts looks stuck on
-the launch splash.
-
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
-Planning a night on the website needs a sign-in. Access is closed: the
-seeded Maya Chen account, the administrator (`ADMIN_EMAIL` in
-`lib/access.ts`), and people the administrator has let in can sign in. New
-sign-ups join the waitlist. The administrator lets people in from
-`/admin/waitlist`, and each one gets an email to set a password. The
-administrator also gets an Admin row in the account menu: `/admin/events`
-lists every host's events and can remove any of them for good. A
-confirmation link and password resets go out by email once Resend is
-configured (until then the links are logged, and returned to the client
-outside production) — see `docs/backend.md` for the whole backend
-map: data, images, accounts, and which keys turn on what.
+Open the dev server as `localhost`, `127.0.0.1` or your machine's Wi-Fi
+address from a phone (`192.168.x.x:3000`). Those origins are listed in
+`allowedDevOrigins` in `next.config.ts`; `next dev` refuses to serve its
+scripts to any other hostname.
+
+**Demo login, local and CI only:** `maya@hostkit.demo` / `hostkit-demo`.
+The repo is public, so hosted builds never use that password
+(`lib/demo-login.ts`). Preview and production share one database, so there
+a demo account gets `DEMO_PASSWORD` if it's set and an unknowable random
+password otherwise.
 
 ### Scripts
 
@@ -69,366 +146,131 @@ map: data, images, accounts, and which keys turn on what.
 | `npm run test:e2e` | End-to-end spine test (Playwright) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm run db:migrate` / `db:seed` / `db:reset` | Database. Seed is a no-op if the catalog already has rows. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL`. |
+| `npm run db:migrate` / `db:seed` / `db:reset` | Database. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL` |
 | `npm run db:studio` | Prisma Studio |
-| `npm run import:campus-json -- path/to.json` | One-off CampusEvent upsert from a JSON dump. Refuses to run unless `DATABASE_URL` is set. |
-| `npm run relink:guest-book` | One-off, after the recurring-hosts migration reaches production: links guests added since its backfill to the host's guest book. Idempotent. |
+| `npm run relink:guest-book` | One-off: links guests added since the recurring-hosts backfill to their host's guest book. Idempotent |
 | `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
 
 ## Deploying to Vercel
 
-Vercel is already the right host (Next.js + serverless). The GitHub integration
-will fail the build until the project has a hosted Postgres and the Auth.js
-secret — the app is not a static site.
+Use **one** Vercel project for this repo. Connect **Prisma Postgres** or
+**Neon** under Storage (that injects `DATABASE_URL`), then set these for
+Production and Preview:
 
-Use **one** Vercel project for this repo. Extra projects on the same GitHub
-repo each get their own production deploy and will all fail independently.
-
-1. In that project, open **Storage** and connect **Prisma Postgres** (or Neon).
-   That injects `DATABASE_URL`.
-2. Add environment variables for **Production** and **Preview**:
-
-   | Variable | Value |
-   | --- | --- |
-   | `DATABASE_URL` | From Storage, if it was not added automatically |
-   | `AUTH_SECRET` | `openssl rand -base64 32` |
-   | `AUTH_TRUST_HOST` | `true` |
-   | `DIRECT_URL` | Optional. The provider's direct (non-pooled) URL, used by `prisma migrate` |
-   | `HOSTY_ADMIN_PASSWORD` | Optional. The administrator's password; the seed creates or rotates the admin account from it on every deploy |
-   | `DEMO_PASSWORD` | Optional, 8+ characters. The password for the demo accounts (`maya@hostkit.demo`, `sam@babson.edu`); the seed applies it on every deploy. Without it, hosted deploys give them a random password, so no demo login works |
-
-3. Redeploy the production branch.
-
-`vercel-build` then generates Prisma Client, applies migrations, seeds the
-catalog if it is empty, and runs `next build`. Later deploys skip the catalog
-seed so they do not duplicate listings. To rebuild the catalog from scratch,
-wipe the `Listing` rows (or the database) and redeploy, or run
-`npm run db:reset` against that `DATABASE_URL` locally.
-
-Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
-
-## Students
-
-Sign up with a school `.edu` email and Hosty treats you as a student of that
-school (`lib/schools.ts` maps domains to names and home cities; the domain is
-trusted, not verified yet). Your events are tagged with your school
-automatically, the app's Discover leads with **At [School]** above the city feed, and
-both apps detect your city once from your location (nearest known city, no
-geocoding service). Tagging only surfaces events — anyone nearby can register.
-Demo student: `sam@babson.edu` / `hostkit-demo` on a local or CI seed only;
-hosted deployments (preview and production share the production database)
-use `DEMO_PASSWORD` if set, otherwise there is no usable demo login. Design notes in
-`docs/superpowers/specs/2026-09-11-campus-discover-design.md`.
-
-You can also **pick or change your school** on your Profile (web and iOS),
-alongside a **company** for hosts who work rather than study, and your
-**X, LinkedIn and Instagram** under Connect (paste a handle or a profile
-link; `lib/socials.ts` keeps just the handle and rebuilds the link). The
-school matters because of the next part.
-
-### Official campus events
-
-Each school's public calendar is pulled into Hosty and shown next to
-student-hosted nights in the iOS app: under **At [School]** on Home and
-Discover, and in Discover → See all. Official events open on the school's own
-page; nobody registers for them here. The web's `/campus` page is gone (it
-redirects home and lives on the `discover` branch); the data stays, and the
-daily sync also feeds the Guests tab's night advice.
-
-- `lib/campus/sources.ts` lists the feeds per school — the catalog covers
-  the Boston schools Hosty started with plus the U.S. News top 50, and
-  53 of them have a verified feed: Localist JSON (MIT, BC, Northeastern,
-  USC, UT Austin, Stanford, Yale, Cornell, WashU, UNC, UCSD, Purdue, UGA,
-  Rochester, Wake Forest, FSU), iCalendar from LiveWhale (NYU, UChicago,
-  Brown, Berkeley, Rice, Vanderbilt, CMU, Georgetown, UF, Texas A&M,
-  Minnesota), Trumba (Tufts, Harvard's Gazette, UW, UVA, Brandeis) and
-  home-grown calendars (BU, Duke, Notre Dame, Wisconsin), Bedework JSON
-  (Columbia), CampusGroups RSS (Babson's *Belong* plus 20 other schools'
-  student-org calendars), Anthology Engage (17 schools), Princeton's RSS,
-  and plain HTML listings for schools with no feed (Babson's events page,
-  Olin, Wellesley, Dartmouth, Rutgers). No public feed was found for
-  Caltech, Johns Hopkins, Penn, Emory, UIUC, Ohio State or UCLA — they're
-  in the catalog and show student-hosted nights only. Add a feed by adding
-  a line.
-- `lib/campus/parsers/*` turn each format into one shape;
-  `lib/campus/sync.ts` stores it in `CampusEvent` (full replace per feed,
-  next 90 days, wall-clock times like every other event).
-- **When it runs:** `vercel.json` schedules `GET /api/cron/campus-sync`
-  daily (set `CRON_SECRET`; Vercel sends it as a bearer token), and any
-  student's feed older than six hours is refreshed in the background right
-  after their request. Locally, `curl "localhost:3000/api/cron/campus-sync?school=babson.edu"`
-  syncs one school on demand.
-- `GET /api/v1/campus` and `discover.official` serve them as regular events
-  with `official: { source, url, allDay, endsAt }` and ids prefixed
-  `campus_`, so the iOS app's existing rows and detail screen show them.
-
-## Your account
-
-The iOS app opens on **Home**: the Hosty brand, **Your events** — what you
-host and what you've registered for, soonest first (`lib/mine.ts`) — quick
-actions, and a taste of what's on nearby. **Discover** in the app is the full
-feed with the city picker. The web is B2B: `/` is the landing page, and
-`/discover` redirects home (the page lives on the `discover` branch). On the
-web the logo (and your avatar) opens the account menu: profile, your events,
-past events, settings, sign out; on phones the tab bar is Home · Events ·
-Profile (creating an event is behind the "Create event" buttons, not a tab).
-
-- **Profile picture** and **event covers** are uploads (`lib/images.ts`):
-  JPEG/PNG/WebP up to 5 MB, downscaled in the client first. They go to
-  Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set, otherwise into Postgres
-  and out through `/api/images/:id`, so local dev needs no storage service.
-  Without a photo an event keeps the cover drawn from its id.
-- **Phone number**, verified by a texted code (`lib/phone.ts`): six digits,
-  hashed, ten minutes, five tries, one code a minute. Twilio sends the text
-  when configured; otherwise the code is logged and — outside production —
-  returned so the flow works locally. Hosts see registrants' verified numbers
-  on the guest list.
-- **Registering puts the event on your calendar and sets reminders.** On
-  iOS the app adds it with write-only EventKit access (it never reads your
-  calendar) and schedules local notifications for the evening before and an
-  hour before — no server push; reminders re-sync from "Your events" on
-  every Discover load, so a moved date moves the reminder. Both are toggles
-  in Settings. On the web, registering shows Apple/Outlook (`.ics`, from
-  `/e/:id/calendar.ics`) and Google Calendar links (`lib/calendar.ts`).
-  Times are floating local time — 7:30 PM stays 7:30 PM.
-- Everything is set in Inter, on the web and in the app.
-
-## Clubs, requests and the Inbox
-
-- **Clubs** (`lib/clubs.ts`) are pages people follow, run by an owner and
-  admins: a club page in the iOS app. The web's club pages (`/c/handle`,
-  `/clubs`, `/clubs/new`) redirect home and live on the `discover` branch;
-  the data and the iOS API stay. Anyone signed in to the app can start one;
-  a student's club is tagged with their school and surfaces there. Events
-  can be posted **as** a club from Create, the club's admins run those
-  events alongside the owner, and followers see the club's events under
-  **From clubs you follow** on Home.
-  - Clubs have a **kind** (Social, Professional, Sports & fitness, Arts &
-    music, Cultural, Service, Academic — `lib/club-format.ts`); the app's
-    Clubs screen searches every club by name and browses by kind
-    (`GET /api/v1/clubs?q=&category=` → `results`).
-  - Admins post **Updates** from the club page: a short note that lands in
-    every follower's Inbox (`club_update`, emailed when Resend is set up)
-    and stays on the page (`ClubPost`; `POST /api/v1/clubs/:handle/updates`,
-    `DELETE …/updates/:id`).
-  - In the app, the event's **Hosted by** row has a Follow button, and a
-    club page shows past events and how many it has run. On the web,
-    `/e/:id` shows the club's name as plain text.
-  - **Official clubs are real.** When a feed names the organisation behind
-    each event, the campus sync keeps a Club for it (`Club.sourceRef`,
-    `isOfficial`; `lib/campus/sync.ts` `syncOfficialClubs`). Three kinds of
-    feed do: **CampusGroups** sites (`<school>.campusgroups.com/rss_events`
-    — Babson's *Belong*, plus Northeastern, Harvard, MIT, Tufts, Princeton,
-    Northwestern, Columbia, Dartmouth, CMU, Georgetown, USC, UC Davis, UCI,
-    UCSB, Wisconsin, Rutgers, UW, Lehigh, Rochester, FSU), **Anthology
-    Engage** sites (`<school>.campuslabs.com/engage` — BC, UChicago, Berkeley, Rice, Notre Dame, Vanderbilt, Michigan, UVA, UNC,
-    NYU, UF, UT Austin, Georgia Tech, Purdue, Maryland, UGA, Wake Forest),
-    and **Localist** calendars, whose events carry a student group or a
-    department. Official clubs carry an **Official** badge, nobody here runs
-    them, their events come from the feed (`CampusEvent.hostRef`), and
-    following one puts those events under From clubs you follow. Hosty
-    never invents a club: seeds create none, and the only other way a club
-    exists is a person starting one.
-- **Approval and the waitlist** (`lib/registration.ts`, `lib/waitlist.ts`):
-  Promote → "Approve registrations" turns registrations into requests the
-  host answers from Overview. A full event takes registrations onto a
-  waitlist and lets the longest-waiting in automatically whenever a seat
-  frees. Register and promote run with the event row locked.
-- **Who's going**: event pages show the first few attending account
-  registrations — first name and photo — unless they've turned "Show me on
-  guest lists" off in Settings (`lib/attendees.ts`).
-- **Inbox** (`lib/notify.ts`): a club you follow in the app posts, someone
-  asks to join your event, a host confirms your spot, a spot opens for you,
-  a host sends a blast — each lands in the Inbox (bell in the header; Home on iOS), goes
-  by email for the ones worth an email when Resend is configured, and by
-  **push** when `APNS_*` is set. Push needs a paid Apple developer team: add
-  the Push Notifications capability and an `aps-environment` entitlement,
-  set `HostyPushEnabled = true` in `ios/Config/Info.plist`, and the app
-  registers its token; until then nothing on the phone changes.
-- **SMS blasts**: with Twilio configured the composer offers "Also text N
-  guests with a verified phone" (200 per blast).
-
-## Hosting an event
-
-**Registering needs an account.** Guests sign in or create one on the event
-page and Hosty registers the account's email — that's the address blasts go
-to (`lib/registration.ts`).
-
-**Create** asks the essentials and, optionally, a venue: search real places
-near your city (Google Places on the web, MapKit on iOS) or skip it if you
-already have one. A picked venue becomes the event's address and the first
-row in Outreach.
-
-**Manage event** (`/events/:id`, and the Manage screen in the iOS app) has four
-tabs:
-
-| Tab | What's there |
+| Variable | Value |
 | --- | --- |
-| **Overview** | Going / checked-in / capacity, a "next up" checklist, the guest list with check-in |
-| **Outreach** | Venue, speakers, vendors and cohosts in one list, each with a drafted first message (`lib/outreach.ts`), Copy / email / call, confirm or remove, add someone |
-| **Blasts** | Email everyone going, those who haven't replied, or all — `{name}` becomes their first name. Sends via Resend when configured, otherwise hands you the addresses and message to paste (`lib/blasts.ts`, `lib/blast-send.ts`) |
-| **Promote** | Publish and visibility, the share link, a QR code for posters and the door, paste-ready copy for a story or group chat (`lib/promote.ts`, `lib/qr.ts`) |
+| `DATABASE_URL` | From Storage, if it wasn't added automatically |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `AUTH_TRUST_HOST` | `true` |
+| `DIRECT_URL` | Optional. The non-pooled URL, used by `prisma migrate` |
+| `HOSTY_ADMIN_PASSWORD` | Optional. The seed creates or rotates the administrator from it on every deploy |
+| `DEMO_PASSWORD` | Optional, 8+ characters. Applied to the demo accounts on every deploy; without it they get a random password |
+| `CRON_SECRET` | Protects the scheduled routes below; Vercel sends it as a bearer token |
 
-**For recurring hosts:**
+`vercel-build` generates Prisma Client, applies migrations, seeds the catalog
+if it's empty, and runs `next build`. **Preview builds run against the
+production database too**, so a migration or seed change takes effect the
+moment a preview builds.
 
-- **Run it again** (`/events/:id/run-again`, owner only) copies the brief,
-  budget split, tasks, vendors and run sheet into a new draft on a new date.
-  Guests aren't copied (`lib/run-again.ts`).
-- **Series**: the first run-again puts both nights in a series named after
-  the event; `/series/:id` lists every night and how many came.
-- **Guest book** (`lib/guest-book.ts`): everyone with an email on your
-  events becomes a contact. The Guests tab offers the people who came before
-  so you can invite them again.
-- **Vendor book** (`lib/vendor-book.ts`): confirmed venues, speakers and
-  cohosts, and booked catalog vendors, are remembered. The Outreach tab adds
-  a remembered venue, speaker or cohost to a new event in one click.
+**Scheduled jobs** (`vercel.json`): `agent-briefing` (13:00 UTC) sends each
+host their "needs you today" digest; `agent-run` (13:30 UTC) picks up runs
+that never finished and events that never started one; `close-events` (09:00
+UTC) marks finished events completed and freezes their outcome;
+`campus-sync` (10:00 UTC) refreshes school calendars, which feed the Guests
+tab's "what else is on that night" advice.
 
-Optional services, both off by default (see `.env.example`):
+### Optional services
 
-| Variable | Enables |
+| Variable | Turns on |
 | --- | --- |
-| `GOOGLE_MAPS_API_KEY` | Venue search on the website (Google Places API (New) Text Search). Enable Places API (New) in Google Cloud Console, create a key, set it on Vercel and redeploy. Places SKUs have a monthly free usage cap. Preferred when both Google and Apple are set. The iOS app uses MapKit directly and needs nothing |
-| `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Fallback venue search on the website (Apple Maps Server API; a Maps key from developer.apple.com → Keys). Used only when `GOOGLE_MAPS_API_KEY` is unset |
-| `RESEND_API_KEY`, `RESEND_FROM` | Real email blasts (resend.com, after verifying a sending domain). Without them blasts are recorded and copied by hand |
-| `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob (Vercel → Storage → Blob). Without it photos are stored in Postgres |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Texting phone-verification codes and SMS blasts. Without them the code is logged (and returned in development) and blasts are email-only |
-| `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APNS_ENV` | Push notifications to the iOS app (a .p8 key from developer.apple.com → Keys; `APNS_ENV` is `sandbox` or `production`). Needs a paid developer team; until then notifications stay in the Inbox and email |
-| `CRON_SECRET` | Protects `/api/cron/campus-sync`; Vercel sets it on the scheduled call. Without it the route only answers in development (the background refresh on stale feeds works regardless) |
+| `ANTHROPIC_API_KEY` (`AI_MODEL` optional) | Model-written plans and venue picks. Without it Hosty uses his templates |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email from any mailbox (Gmail app password, Fastmail…), no DNS needed |
+| `RESEND_API_KEY`, `RESEND_FROM` | Email through Resend with a verified domain. Wins over SMTP when both are set |
+| `GOOGLE_MAPS_API_KEY` | Venue search (Google Places API (New)) |
+| `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID`, `APPLE_MAPS_PRIVATE_KEY` | Fallback venue search (Apple Maps Server API), used only without the Google key |
+| `BLOB_READ_WRITE_TOKEN` | Photo uploads in Vercel Blob; without it photos live in Postgres |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Phone verification texts and SMS blasts |
+| `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APNS_ENV` | Push notifications to the iOS app |
 
-## iOS app
-
-`ios/` is a native SwiftUI app (iOS 26) on the same backend: Discover and
-register, a host timeline, publish, guest check-in, and create — with Apple
-Intelligence drafting event descriptions on-device and Siri shortcuts for the
-door. Open `ios/Hosty.xcodeproj`; see [`ios/README.md`](ios/README.md).
-
-It talks to the website through a small JSON API under `/api/v1`:
-
-| Route | What it does |
-| --- | --- |
-| `POST /api/v1/auth/signup` | Name + email + password → account and token, in one step |
-| `POST /api/v1/auth/token` | Email + password → 30-day bearer token |
-| `GET /api/v1/me` | The token's user |
-| `GET /api/v1/discover?city=` | Upcoming public, published events; with a token also `mine` (hosting + going) and a student's `campus` and `official` (the school's calendar) |
-| `GET /api/v1/campus?school=` | A school's official calendar, soonest first, with `sources` and `syncedAt` |
-| `GET /api/v1/schools` | The schools Settings can pick, and which have official feeds |
-| `GET /api/cron/campus-sync` | Runs the sync (`Authorization: Bearer $CRON_SECRET`; `?school=` for one) |
-| `GET /api/v1/events` · `POST` | The host's events · create one (with its plan). Signed out, `POST` makes a draft and returns a `claimToken` |
-| `GET /api/v1/events/:id` | One event (public if live; owner or drafting device sees drafts) |
-| `POST /api/v1/events/:id/register` | Register the signed-in account → `{ state: going \| pending \| waitlisted }` (401 without a token) |
-| `POST /api/v1/events/:id/publish` | Publish / unpublish, optional `visibility` — needs sign-in; claims a draft on the way |
-| `POST /api/v1/drafts/claim` | Attach a device's drafts to the signed-in host |
-| `GET /api/v1/events/:id/guests` | Guest list and door counts |
-| `POST /api/v1/events/:id/guests/:guestId/check-in` | Check in / undo |
-| `GET /api/v1/venues/search?q=&city=` | Venue search (Google Places, or Apple Maps if Google isn't configured); `{ venues: [], unavailable: true }` when keys are missing |
-| `GET /api/v1/events/:id/outreach` · `POST` | Everyone to reach, with drafted messages · add a venue / speaker / cohost |
-| `PATCH /api/v1/events/:id/outreach/:rowId` · `DELETE` | Confirm / pending / declined · remove |
-| `GET /api/v1/events/:id/blasts` · `POST` | Segments with counts, past blasts, `canSend` · send one (returns recipients when it couldn't email) |
-| `PUT /api/v1/me/avatar` · `DELETE` | Profile picture — the image is the request body, with its `Content-Type` |
-| `PUT /api/v1/events/:id/cover` · `DELETE` | Event cover photo, same shape; honours the drafts header |
-| `POST /api/v1/me/phone` · `DELETE` | `{ phone }` → texts a code (`devCode` in development without Twilio) · remove the number |
-| `POST /api/v1/me/phone/verify` | `{ code }` → the number goes on the account |
-| `PATCH /api/v1/events/:id/guests/:guestId` | `{ status }` — approve / decline a request, change a reply; frees seats to the waitlist |
-| `GET/POST /api/v1/clubs` | Clubs you manage + suggestions for your school or city · start one |
-| `GET/PATCH /api/v1/clubs/:handle` | A club page (club, upcoming events, admins) · edit details |
-| `POST/DELETE /api/v1/clubs/:handle/follow` · `…/members` · `PUT/DELETE …/avatar` | Follow / unfollow · add or remove admins · the club's picture |
-| `GET /api/v1/me/notifications` · `POST …/read` | The Inbox with the unread count · mark read |
-| `PUT/DELETE /api/v1/me/push-token` | The iOS device token (answers `pushEnabled`) |
-
-Like the website's draft cookie, a signed-out device proves it made a draft
-by sending `X-Hosty-Drafts: id.token,id.token` (`lib/api/drafts.ts`).
-
-Web and API share their rules: `lib/event-create.ts` builds an event and its
-plan, and `lib/registration.ts` decides who can register — an existing guest is
-never renamed and a declined guest can't be flipped back by someone who knows
-their email.
+Email covers waitlist invites, password resets, blasts and vendor outreach.
+Without a transport, production refuses to pretend an email went out.
+`docs/backend.md` maps the whole backend: data, images, accounts, and which
+keys turn on what.
 
 ## How it's put together
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Prisma 7 → Postgres ·
 Auth.js v5 · Vitest · Playwright.
 
-The interesting logic is pure and unit-tested, deliberately kept out of
-components so the cases that matter are reachable from a test:
+The interesting logic is pure and unit-tested, kept out of components so the
+cases that matter are reachable from a test:
 
 | Module | Responsibility |
 | --- | --- |
+| `lib/agent/*` | Hosty's run: the plan, venue and vendor steps, triggers, the sweep, the daily briefing |
+| `lib/hosty-voice.ts` | How Hosty phrases what happened, grounded in the saved record |
+| `lib/ai/*` | The model client and its schema-checked answers, with template fallbacks |
 | `lib/scoring.ts` | Prices and scores one listing against one event |
-| `lib/plan.ts` | Turns intake answers into a budget and a timeline |
-| `lib/templates.ts` | What each event type needs, and in what order |
-| `lib/budget.ts` | Rolls commitments up into a budget summary |
-| `lib/guests.ts` | RSVP maths and the headcount to plan against |
-| `lib/outreach.ts` | Drafts the first message to a vendor |
-| `lib/runsheet.ts` | Builds a day-of schedule from your bookings |
+| `lib/plan.ts`, `lib/templates.ts` | The budget and timeline for an event type |
+| `lib/run-again.ts`, `lib/guest-book.ts`, `lib/vendor-book.ts` | The recurring-host features |
+| `lib/budget.ts`, `lib/guests.ts`, `lib/runsheet.ts` | Budget roll-up, RSVP maths, the day-of schedule |
 | `lib/money.ts` | Integer-cent arithmetic and formatting |
 
-A few decisions worth knowing about:
+Decisions worth knowing:
 
+- **Shared writers never live in `"use server"` modules.** Every export of
+  one is a public endpoint; the agent and the host's own buttons share
+  writers in plain modules (`lib/inquiries.ts`, `lib/replan-apply.ts`).
 - **Money is integer cents, everywhere.** `allocateCents` splits a budget
   across weights without losing or inventing a cent.
-- **Venues and vendors share one `Listing` table**, discriminated by `kind`.
-  They share name, artwork, location, price and tags; splitting them would
-  duplicate the whole search stack.
-- **Event templates live in code, not the database.** They're typed planning
-  logic that evolves with the app, and a change should be reviewable in a diff.
-- **Timeline positions are fractions of a planning horizon**, so a fundraiser
-  booked six weeks out compresses the 120-day template into the 42 days that
-  actually exist rather than emitting overdue tasks.
-- **The planning headcount starts from your estimate** and only moves for a
-  real signal — a regret, or a guest list that outgrows the estimate. Using the
-  guest list directly would reprice your venue for four guests the moment you
-  typed the fourth name.
-- **Inquiry drafts never mention your budget.** Telling a vendor what you have
-  to spend is how it becomes what you spend.
-- **Guests need no account.** The token in `/rsvp/[token]` is the
-  authorization.
+- **Timeline positions are fractions of a planning horizon**, so an event
+  booked six weeks out compresses the template into the 42 days that exist
+  instead of emitting overdue tasks.
+- **The planning headcount only moves for a real signal**, a regret or a
+  guest list that outgrows the estimate, so typing a fourth guest's name
+  doesn't reprice the venue for four people.
+- **Inquiry drafts never mention your budget.** Telling a vendor what you
+  have to spend is how it becomes what you spend.
+- **Hosty's activity is stored once and phrased when shown.** The feed saves
+  plain rows (`lib/activity.ts`), and the chat voice is applied at render
+  time, so old history reads in his voice too and a new kind of row can
+  never disappear.
+
+## The iOS app and the consumer side
+
+`ios/` is a native SwiftUI app (iOS 26) on the same backend, with a JSON API
+under `/api/v1`. It predates the B2B focus and still carries the consumer
+features: discovering events, student and campus calendars, and clubs. It is
+**frozen**: bug fixes only. See [`ios/README.md`](ios/README.md).
+
+On the web, those consumer pages are gone: `/discover`, `/campus`, `/c/…` and
+`/clubs` redirect home. The full pre-B2B app, including all of them, is kept
+on the **`discover` branch**. The data and the iOS API routes stay on `main`.
 
 ## Known limits
 
-This is a working demo, not a production service. Specifically:
-
-- **The catalog is invented.** All 72 venues and vendors are fiction — plausible
-  names, prices and ratings chosen to exercise the scoring logic. None are real
-  businesses. Listing artwork is generated locally from the listing id rather
-  than photographed.
-- **Inquiries aren't sent.** Hosty drafts inquiry messages and per-guest RSVP
-  links, but you copy and send those yourself. Account email (resets,
-  verification), blasts and club posts do go out once Resend is configured.
-- **No payments.** Ticket price is shown to guests; you collect it yourself.
-  The planner budget *tracks* money (committed, paid, outstanding) rather
-  than moving it.
-- **Discovery scores in application code**, not SQL. At catalog scale (tens per
-  city) that's the right trade, since the price that matters is computed
-  per-event; tens of thousands of listings would want it precomputed.
-- **Two web themes.** Public pages are light warm monochrome and the signed-in
-  app (`app/(app)` and the event workspace) is blue; the comment in
-  `app/globals.css` is the source of truth.
-- `npm audit` reports advisories inside the Prisma **CLI's** dependency tree
-  (`mysql2`, a driver this project never uses, and `deepmerge-ts`). They are
-  build-time only and reach neither the server runtime nor the browser bundle.
+- **The catalog is invented.** The seeded venues and vendors are plausible
+  fiction chosen to exercise the pricing logic, not real businesses.
+- **No payments.** The budget tracks money (committed, paid, outstanding);
+  it doesn't move it. Ticket prices are shown, and hosts collect them.
+- **Two web themes.** Public pages are light warm monochrome; the signed-in
+  app is blue. `app/globals.css` is the source of truth.
+- `npm audit` reports advisories inside the Prisma CLI's build-time
+  dependencies (`mysql2`, `deepmerge-ts`). They reach neither the server
+  runtime nor the browser.
 
 ## Tests
 
-Unit tests cover the pure logic, including the boundaries that bite:
-per-person pricing exactly at capacity, a budget that doesn't divide evenly, an
-event whose date has passed, an unallocated category, an RSVP round that has
-barely started.
+Unit tests cover the pure logic and the boundaries that bite: pricing
+exactly at capacity, a budget that doesn't divide evenly, an event whose date
+has passed, and every kind of line Hosty can say.
 
-`tests/e2e/spine.spec.ts` is one deliberately long Playwright test walking sign
-up → intake → generated plan → filtered discovery → shortlist → drafted inquiry
-→ booking → budget write-back → declining. The product's claim is that these
-steps are connected, and that's only tested by walking the connection.
+`tests/e2e/spine.spec.ts` is one deliberately long Playwright test that walks
+the whole host journey, from sign-in to brief, plan, discovery, a drafted
+inquiry, booking and the budget write-back. The product's claim is that these
+steps are connected, and only walking the connection tests that.
 
 ```bash
 npm test          # unit
 npm run test:e2e  # end to end (starts a dev server if one isn't running)
 ```
-
-## MCP
-
-Hosty exposes one remote MCP endpoint, `POST /api/mcp`, with two credentials.
-
-- **Bearer token.** Cursor, and any client that can send `Authorization: Bearer`. The token comes from `POST /api/v1/auth/token` or the Connect an agent page (`/mcp`). Tools: `list_events`, `get_event`, `list_guests`, `campus_events`, `discover_events`.
-- **OAuth.** Claude and ChatGPT custom connectors. Consent, refresh, and disconnect live under Settings → AI connections. Tools: `list_events`, `get_event_brief`, `search_venues`.
-
-An OAuth access token is checked first. Anything that is not a live grant falls through to the bearer token. See [docs/mcp.md](docs/mcp.md).
