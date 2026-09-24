@@ -100,7 +100,7 @@ OAuth access tokens are not accepted as native API tokens, and native API tokens
 2. Set `MCP_PUBLIC_ORIGIN` to the exact HTTPS deployment origin, without a trailing slash. It must be the same origin where users sign into Hosty, e.g. `https://tryhosty.app`. Never derive this setting from a request header. Leave it unset to keep OAuth off; the bearer MCP keeps working.
 3. Configure one pre-registered OAuth client per AI app through `MCP_CLIENTS_JSON`. Use a new random secret of at least 32 characters for each confidential client. This is a Hosty OAuth client secret, not an Anthropic or OpenAI API key.
 4. Register the exact callback URL provided by the AI app's connector configuration. Do not guess it, use wildcards, or use a callback on a domain you do not trust. For ChatGPT, the callback may be specific to that connector. If necessary, create the connector first, copy the callback, update the allowlist, and retry connecting.
-5. Keep the existing auth and database settings. Configure Google Places or Apple Maps as documented in the main README if you want venue results. Without maps configuration, the tool returns a clear unavailable result.
+5. Keep the existing auth and database settings. Configure Google Places or Apple Maps as documented in [backend.md](backend.md) if you want venue results. Without maps configuration, the tool returns a clear unavailable result.
 
 Example environment value (replace every placeholder):
 

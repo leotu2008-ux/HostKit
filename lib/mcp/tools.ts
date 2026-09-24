@@ -10,7 +10,7 @@ import { z } from "zod";
  *
  * Read-only for now. The plan's autonomy decision was drafts only, a human
  * presses every button, and nothing should write from here until there is an
- * audit log to write alongside it. The write tools are sketched in the README
+ * audit log to write alongside it. The write tools are sketched in docs/mcp.md
  * so the shape is agreed before the capability exists.
  *
  * Tool definitions live apart from the transport so they can be tested without
