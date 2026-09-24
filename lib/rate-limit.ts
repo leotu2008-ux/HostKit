@@ -50,7 +50,7 @@ export const LIMITS = {
   verify: { perUser: [3, 60 * 60_000] },
   /** "Resend the confirmation link" for an address that can’t sign in yet. */
   resend: { perIp: [10, 60 * 60_000], perEmail: [3, 60 * 60_000] },
-  /** Drafts made without an account: cheap rows anyone can create. */
+  /** Unused while anonymous drafts are disabled for the beta. */
   draft: { perIp: [20, 60 * 60_000] },
   /** Photo uploads: up to 5 MB each, so a quota per account (or address). */
   upload: { perActor: [40, 60 * 60_000] },

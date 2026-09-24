@@ -1,5 +1,6 @@
 import { Button, ButtonLink, cx } from "@/components/ui";
 import { toggleTaskAction } from "@/lib/actions/tasks";
+import { setEventTypeAction } from "@/lib/actions/brief";
 import type { BriefingItem } from "@/lib/agent/briefing";
 
 /**
@@ -104,6 +105,25 @@ function AgentCardAction({
       // Opens the drafted blast; the host edits it and presses send there.
       return (
         <ButtonLink href={`/events/${eventId}/blasts?draft=${action.draft}`} variant="secondary" size="sm">
+          {action.label}
+        </ButtonLink>
+      );
+
+    case "set_type":
+      // The host settles the type Jev wasn't sure of; nothing else changes.
+      return (
+        <form action={setEventTypeAction}>
+          <input type="hidden" name="eventId" value={eventId} />
+          <input type="hidden" name="type" value={action.eventType} />
+          <Button size="sm" variant="secondary" type="submit">
+            {action.label}
+          </Button>
+        </form>
+      );
+
+    case "open_brief":
+      return (
+        <ButtonLink href={`/events/${eventId}/brief`} variant="secondary" size="sm">
           {action.label}
         </ButtonLink>
       );

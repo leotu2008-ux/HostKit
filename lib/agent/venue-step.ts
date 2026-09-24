@@ -61,7 +61,7 @@ export async function attachTopVenues(
   });
 
   const centre = CITY_CENTERS[event.city];
-  const { venues } = await rankVenuesForEvent(
+  const { venues, worthALook } = await rankVenuesForEvent(
     candidates,
     {
       type: event.type,
@@ -74,7 +74,7 @@ export async function attachTopVenues(
       lng: event.lng ?? centre.lng,
       venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
     },
-    { fetchImpl: options.fetchImpl },
+    { fetchImpl: options.fetchImpl, eventId: event.id },
   );
 
   const top = venues.slice(0, limit);
@@ -112,7 +112,10 @@ export async function attachTopVenues(
     actor: "agent",
     kind: "venues_attached",
     title: `${top.length} venue${top.length === 1 ? "" : "s"} lined up`,
-    body: top.map((venue) => venue.name).join(" · "),
+    // A venue Jev wasn't sure about is still lined up, and says so.
+    body: top
+      .map((venue) => (worthALook?.has(venue.id) ? `${venue.name} (worth a look)` : venue.name))
+      .join(" · "),
     href: `/events/${event.id}/outreach`,
   };
 }
