@@ -7,7 +7,7 @@ vi.mock("next/link", () => ({
     createElement("a", { href, className }, children),
 }));
 
-import { ChatThread } from "@/components/chat-thread";
+import { ChatThread, scrollKey } from "@/components/chat-thread";
 import { ActivityFeed } from "@/components/activity-feed";
 import type { ChatMessage } from "@/lib/hosty-voice";
 import type { FeedRow } from "@/lib/activity-format";
@@ -84,6 +84,24 @@ describe("ChatThread", () => {
     const html = render([], true);
     expect(html).toContain("Hosty is typing");
     expect(html).not.toContain("Fill in the brief");
+  });
+});
+
+describe("scrollKey", () => {
+  it("changes when a new message arrives even though the capped feed stays the same length", () => {
+    const full = Array.from({ length: 100 }, (_, i) => msg({ id: `m${i}` }));
+    const next = [...full.slice(1), msg({ id: "m100" })];
+    expect(next).toHaveLength(full.length);
+    expect(scrollKey(next)).not.toBe(scrollKey(full));
+  });
+
+  it("stays put when a poll brings nothing new", () => {
+    const rows = [msg({ id: "a" }), msg({ id: "b" })];
+    expect(scrollKey([...rows])).toBe(scrollKey(rows));
+  });
+
+  it("is empty for an empty thread", () => {
+    expect(scrollKey([])).toBe("");
   });
 });
 

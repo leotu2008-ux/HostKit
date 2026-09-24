@@ -18,6 +18,13 @@ import { cx } from "@/components/ui";
 
 const STICK_PX = 80;
 
+/** What the stick-to-bottom effect watches: the newest message's id. Not the
+ *  count, because `mergeFeed` caps the feed at 100 rows, and past that a new
+ *  message pushes the oldest out and the length never changes. */
+export function scrollKey(messages: ChatMessage[]): string {
+  return messages[messages.length - 1]?.id ?? "";
+}
+
 type Group = { speaker: ChatSpeaker; messages: ChatMessage[] };
 
 function groupMessages(messages: ChatMessage[]): Group[] {
@@ -101,11 +108,12 @@ export function ChatThread({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
+  const newest = scrollKey(messages);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el && stickRef.current) el.scrollTop = el.scrollHeight;
-  }, [messages.length, running]);
+  }, [newest, running]);
 
   function onScroll() {
     const el = scrollRef.current;
