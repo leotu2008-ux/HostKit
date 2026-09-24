@@ -63,6 +63,10 @@ export async function sendBlast(input: {
         subject: input.subject,
         text: personalize(input.body, r.name),
         replyTo: input.host.email,
+        // Its own From (RESEND_FROM_BLAST), so a complaint on a blast
+        // cannot sink password resets.
+        stream: "blast" as const,
+        template: "blast",
       })),
     );
     provider = "resend";
