@@ -125,9 +125,12 @@ export function ChatThread({
     stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_PX;
   }
 
+  // Notes alone still count as empty: every event starts with an
+  // "Event created" note, so the invitation would otherwise never show.
   const shown: ChatMessage[] =
-    messages.length === 0 && !running
+    messages.every((message) => message.speaker === "note") && !running
       ? [
+          ...messages,
           {
             id: "hosty-empty",
             speaker: "hosty",

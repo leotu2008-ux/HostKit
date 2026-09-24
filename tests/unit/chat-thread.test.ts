@@ -93,6 +93,28 @@ describe("ChatThread", () => {
     expect(html).toContain('href="/events/e1/brief"');
   });
 
+  it("still invites the host when the only rows are system notes, after the notes", () => {
+    const html = render([msg({ id: "1", speaker: "note", text: "Event created" })]);
+    expect(html).toContain("Event created");
+    expect(html).toContain("Fill in the brief and I");
+    expect(html).toContain('href="/events/e1/brief"');
+    expect(html.indexOf("Event created")).toBeLessThan(html.indexOf("Fill in the brief"));
+  });
+
+  it("drops the invitation once Hosty or the host has said anything", () => {
+    const note = msg({ id: "1", speaker: "note", text: "Event created" });
+    expect(render([note, msg({ id: "2", text: "On it." })])).not.toContain("Fill in the brief");
+    expect(render([note, msg({ id: "2", speaker: "you", text: "Updated the brief" })])).not.toContain(
+      "Fill in the brief",
+    );
+  });
+
+  it("shows typing instead of the invitation when Hosty is running on a notes-only thread", () => {
+    const html = render([msg({ id: "1", speaker: "note", text: "Event created" })], true);
+    expect(html).toContain("Hosty is typing");
+    expect(html).not.toContain("Fill in the brief");
+  });
+
   it("shows typing instead of the invitation when Hosty is already running on an empty thread", () => {
     const html = render([], true);
     expect(html).toContain("Hosty is typing");
