@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import type { EventType } from "@/generated/prisma/enums";
 import { briefingFor, type Briefing, type BriefingEvent } from "@/lib/agent/briefing";
-import { loadDecisions } from "@/lib/ai/decide";
+import { jevEnabled, loadDecisions } from "@/lib/ai/decide";
 import { FALLBACK_TYPE } from "@/lib/brief";
 import { typeCheckFrom } from "@/lib/brief-classify";
 import { loadCompetitors } from "@/lib/night-competition";
@@ -26,7 +26,8 @@ export async function loadBriefing(
 ): Promise<Briefing> {
   // Only an event still on the fallback type with words of its own can have
   // a type worth asking about, so only that one pays for the lookup.
-  const askAboutType = event.type === FALLBACK_TYPE && Boolean(event.kind?.trim());
+  const askAboutType =
+    jevEnabled("brief") && event.type === FALLBACK_TYPE && Boolean(event.kind?.trim());
   const [tasks, inquiries, collaborators, guests, blasts, briefDecisions, competitors] = await Promise.all([
     db.task.findMany({
       where: { eventId: event.id, status: "TODO" },

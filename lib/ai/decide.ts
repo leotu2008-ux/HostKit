@@ -24,7 +24,7 @@ import { record } from "@/lib/activity";
  * The same four rules as lib/ai/client.ts, because every caller leans on them.
  *
  * **Absence is normal.** A point that isn't in `JEV_DECISIONS`, a server with
- * no `TYPESAFE_API_KEY`, an error, a slow answer or a malformed one all come
+ * no `AI_GATEWAY_API_KEY`, an error, a slow answer or a malformed one all come
  * back as `null`, and every caller already has today's behaviour to fall back
  * on. Nothing here throws into a run.
  *
@@ -41,6 +41,19 @@ import { record } from "@/lib/activity";
  * fields by that point's own builder — never guest names, emails or phones,
  * the host's contact details, or the budget.
  */
+
+/**
+ * Every call goes through Vercel AI Gateway's TypeSafe-compatible API, never
+ * to TypeSafe directly: one key (`AI_GATEWAY_API_KEY`), billing and logs
+ * alongside the other models, and zero data retention on every request.
+ */
+export const JEV_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/typesafe";
+export const JEV_MODEL = "typesafe-ai/jev";
+
+/** The gateway extension that routes a request only to providers with a zero
+ *  data retention agreement; with none available, the request fails (and the
+ *  point falls back) rather than going somewhere that keeps the data. */
+export const ZERO_DATA_RETENTION = { gateway: { zeroDataRetention: true } } as const;
 
 export const DECISION_POINTS = ["guardrail", "brief", "venue", "competing"] as const;
 export type DecisionPoint = (typeof DECISION_POINTS)[number];
@@ -66,7 +79,7 @@ export function jevPoints(env: Env = process.env): Set<DecisionPoint> {
 }
 
 export function jevEnabled(point: DecisionPoint, env: Env = process.env): boolean {
-  return Boolean(env.TYPESAFE_API_KEY?.trim()) && jevPoints(env).has(point);
+  return Boolean(env.AI_GATEWAY_API_KEY?.trim()) && jevPoints(env).has(point);
 }
 
 export function jevTimeoutMs(env: Env = process.env): number {
@@ -121,19 +134,37 @@ export type DecideOptions = {
 
 let cached: { key: string; client: TypeSafeClient } | null = null;
 
-function clientFor(env: Env, fetchImpl?: typeof fetch): TypeSafeClient {
-  const config = {
-    apiKey: env.TYPESAFE_API_KEY?.trim(),
-    baseURL: env.TYPESAFE_BASE_URL?.trim() || undefined,
+/** A TypeSafe client pointed at the gateway. Exported for the eval script. */
+export function gatewayClient(
+  apiKey: string,
+  opts: { fetch?: typeof fetch; timeoutMs?: number } = {},
+): TypeSafeClient {
+  return new TypeSafeClient({
+    apiKey,
+    baseURL: JEV_GATEWAY_BASE_URL,
+    defaultModel: JEV_MODEL,
     // One attempt: a retry would outlast the timeout the caller is counting on.
     retry: { maxRetries: 0 },
-    timeout: jevTimeoutMs(env),
+    timeout: opts.timeoutMs ?? DEFAULT_JEV_TIMEOUT_MS,
     // The SDK logs request bodies at debug; state never goes to the logs.
-    logLevel: "off" as const,
-  };
-  if (fetchImpl) return new TypeSafeClient({ ...config, fetch: fetchImpl });
-  const key = `${config.apiKey}|${config.baseURL ?? ""}`;
-  if (cached?.key !== key) cached = { key, client: new TypeSafeClient(config) };
+    logLevel: "off",
+    ...(opts.fetch ? { fetch: opts.fetch } : {}),
+  });
+}
+
+/** The request body: the model, the state and questions, and zero data
+ *  retention. The SDK forwards fields it doesn't know, which is how the
+ *  gateway's `providerOptions` reaches it. */
+export function gatewayRequest<const Q extends Questions>(state: EntryType, questions: Q) {
+  return { model: JEV_MODEL, state, questions, ...{ providerOptions: ZERO_DATA_RETENTION } };
+}
+
+function clientFor(env: Env, fetchImpl?: typeof fetch): TypeSafeClient {
+  const apiKey = env.AI_GATEWAY_API_KEY?.trim() ?? "";
+  const timeoutMs = jevTimeoutMs(env);
+  if (fetchImpl) return gatewayClient(apiKey, { fetch: fetchImpl, timeoutMs });
+  const key = `${apiKey}|${timeoutMs}`;
+  if (cached?.key !== key) cached = { key, client: gatewayClient(apiKey, { timeoutMs }) };
   return cached.client;
 }
 
@@ -200,7 +231,7 @@ export async function decide<const Q extends Questions>(
     timer = setTimeout(() => controller.abort(), remaining);
 
     const result = await clientFor(env, opts.fetch).systemOne(
-      { state, questions },
+      gatewayRequest(state, questions),
       { signal: controller.signal, timeout: remaining, retry: { maxRetries: 0 } },
     );
 

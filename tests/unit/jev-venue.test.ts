@@ -7,7 +7,7 @@ import { judgeVenues, sizeBand, stateForVenue, VENUE_MAX_KM } from "@/lib/ai/ven
 import { rankVenuesForEvent, type VenueRankEvent } from "@/lib/ai/venue-rank";
 import type { VenueResult } from "@/lib/venues/types";
 
-const JEV_ON = { TYPESAFE_API_KEY: "ts-test-key", JEV_DECISIONS: "venue" };
+const JEV_ON = { AI_GATEWAY_API_KEY: "gw-test-key", JEV_DECISIONS: "venue" };
 
 const EVENT: VenueRankEvent = {
   type: "MIXER",

@@ -67,7 +67,6 @@ export default async function BriefPage({ params }: PageProps<"/events/[id]/brie
           id: event.id,
           title: event.title,
           kind: event.kind ?? "",
-          type: event.type,
           date,
           time,
           durationHours: event.durationHours,

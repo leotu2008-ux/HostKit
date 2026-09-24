@@ -1,7 +1,10 @@
 /**
  * Measures one Jev decision point against a hand-labelled fixture.
  *
- *   TYPESAFE_API_KEY=... npx tsx scripts/jev-eval.ts guardrail|brief|venue|competing
+ *   AI_GATEWAY_API_KEY=... npx tsx scripts/jev-eval.ts guardrail|brief|venue|competing
+ *
+ * Calls go through Vercel AI Gateway with zero data retention, exactly as the
+ * app's do (lib/ai/decide.ts).
  *
  * Real API calls, so manual runs only: never from CI or the test suite. It
  * sends each example in tests/fixtures/jev/<point>.json through the same
@@ -16,8 +19,8 @@
 import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { TypeSafeClient, type EntryType, type Questions } from "@typesafe-ai/sdk";
-import { picked, scored, yesNo } from "../lib/ai/decide";
+import type { EntryType, Questions } from "@typesafe-ai/sdk";
+import { gatewayClient, gatewayRequest, picked, scored, yesNo } from "../lib/ai/decide";
 import { BUDGET_BAND, GUARDRAIL_QUESTIONS, VALUES_BAND } from "../lib/ai/guardrail";
 import { BRIEF_MIN_CONFIDENCE, BRIEF_QUESTIONS, stateForBrief } from "../lib/brief-classify";
 import {
@@ -118,15 +121,16 @@ async function main() {
     console.error(`Usage: npx tsx scripts/jev-eval.ts ${Object.keys(POINTS).join("|")}`);
     process.exit(1);
   }
-  if (!process.env.TYPESAFE_API_KEY?.trim()) {
-    console.error("Set TYPESAFE_API_KEY to run an eval.");
+  const apiKey = process.env.AI_GATEWAY_API_KEY?.trim();
+  if (!apiKey) {
+    console.error("Set AI_GATEWAY_API_KEY to run an eval.");
     process.exit(1);
   }
 
   const fixture = JSON.parse(await readFile(resolve("tests/fixtures/jev", `${name}.json`), "utf8")) as {
     examples: Example[];
   };
-  const client = new TypeSafeClient({ retry: { maxRetries: 0 }, timeout: 10_000, logLevel: "off" });
+  const client = gatewayClient(apiKey, { timeoutMs: 10_000 });
 
   const latencies: number[] = [];
   const tokens: number[] = [];
@@ -137,7 +141,7 @@ async function main() {
   for (const example of fixture.examples) {
     const started = Date.now();
     try {
-      const result = await client.systemOne({ state: point.state(example), questions: point.questions });
+      const result = await client.systemOne(gatewayRequest(point.state(example), point.questions));
       latencies.push(Date.now() - started);
       tokens.push(result.usage.input_tokens);
       const answers = result.answers as unknown as Record<string, AnyAnswer>;

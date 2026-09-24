@@ -49,9 +49,10 @@ Three rules hold everywhere:
    `AI_MODEL` to override) to write the plan and pick venues. Without it, or
    if a call fails or times out, he falls back to Hosty's own planning
    templates, so a run always finishes.
-   Decisions are a separate job: with `TYPESAFE_API_KEY` and `JEV_DECISIONS`
-   set, Jev (TypeSafe's System One model) answers typed yes/no, pick-one and
-   rating questions, and code does the math. Claude writes, Jev decides, code
+   Decisions are a separate job: with `AI_GATEWAY_API_KEY` and
+   `JEV_DECISIONS` set, Jev (TypeSafe's System One model, called through
+   Vercel AI Gateway with zero data retention) answers typed yes/no, pick-one
+   and rating questions, and code does the math. Claude writes, Jev decides, code
    counts. Every Jev point is off unless named, and falls back to today's
    behaviour when it's off, slow or unsure.
 
@@ -192,7 +193,7 @@ tab's "what else is on that night" advice.
 | Variable | Turns on |
 | --- | --- |
 | `ANTHROPIC_API_KEY` (`AI_MODEL` optional) | Model-written plans and venue picks. Without it Hosty uses his templates |
-| `TYPESAFE_API_KEY`, `JEV_DECISIONS` (`JEV_TIMEOUT_MS` optional) | Jev's decisions, one point at a time: `JEV_DECISIONS=guardrail,brief,venue,competing` names the points that are on (empty means none). Timeout defaults to 3000ms. See [docs/backend.md](docs/backend.md#jev-decisions) |
+| `AI_GATEWAY_API_KEY`, `JEV_DECISIONS` (`JEV_TIMEOUT_MS` optional) | Jev's decisions through Vercel AI Gateway (the official `@typesafe-ai/sdk` package, pinned at 0.6.0), one point at a time: `JEV_DECISIONS=guardrail,brief,venue,competing` names the points that are on. Unset or empty means all off, and no Jev call is made. Timeout defaults to 3000ms. See [docs/backend.md](docs/backend.md#jev-decisions) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email from any mailbox (Gmail app password, Fastmail…), no DNS needed |
 | `RESEND_API_KEY`, `RESEND_FROM` | Email through Resend with a verified domain. Wins over SMTP when both are set |
 | `GOOGLE_MAPS_API_KEY` | Venue search (Google Places API (New)) |

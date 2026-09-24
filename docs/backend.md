@@ -20,7 +20,7 @@ Postgres database. There is no second service to deploy.
 | **Push** | APNs (`lib/push/apns.ts`). | Needs a paid Apple team + `APNS_*` |
 | **Campus sync** | Daily cron (`vercel.json` → `/api/cron/campus-sync`) plus on-demand refresh. | Needs `CRON_SECRET` for the schedule |
 | **Venue search (web)** | Google Places API (New) Text Search, or Apple Maps Server API if Google isn't configured. | Needs `GOOGLE_MAPS_API_KEY` or `APPLE_MAPS_*` |
-| **Jev decisions** | TypeSafe System One (`@typesafe-ai/sdk`) through `lib/ai/decide.ts`, one flag per decision point. | Off unless `TYPESAFE_API_KEY` and `JEV_DECISIONS` are set |
+| **Jev decisions** | TypeSafe System One through Vercel AI Gateway (`@typesafe-ai/sdk@0.6.0`, base URL `https://ai-gateway.vercel.sh/typesafe`, model `typesafe-ai/jev`, zero data retention on every request), in `lib/ai/decide.ts`, with one flag per decision point. | Off unless `AI_GATEWAY_API_KEY` and `JEV_DECISIONS` are set |
 
 ## What to set in Vercel, in order of impact
 
@@ -36,9 +36,20 @@ Jev answers typed questions with probabilities in a few hundred milliseconds.
 Claude still writes every sentence, and code still does money, dates, counts,
 capacity and permissions.
 
-**Switching points on.** `TYPESAFE_API_KEY` plus `JEV_DECISIONS`, a
-comma-separated list of the points to use. Empty or unset means all off, and
-Hosty behaves exactly as it did before Jev. `JEV_TIMEOUT_MS` (default 3000)
+**How it's called.** Every request goes through Vercel AI Gateway's
+TypeSafe-compatible API (`https://ai-gateway.vercel.sh/typesafe`, model
+`typesafe-ai/jev`), never to TypeSafe directly, and every request sets
+`providerOptions.gateway.zeroDataRetention: true`. The gateway then routes it
+only to a provider with a zero data retention agreement, and TypeSafe AI is on
+Vercel's list. If no such provider is available, the request fails and the
+point falls back. Per-request ZDR needs a Pro or Enterprise team. The
+credential is `AI_GATEWAY_API_KEY`, created in the Vercel dashboard under AI
+Gateway → API keys. A `TYPESAFE_API_KEY` is not used.
+
+**Switching points on.** `AI_GATEWAY_API_KEY` plus `JEV_DECISIONS`, a
+comma-separated list of the points to use. Empty or unset means all off: Hosty
+behaves exactly as it did before Jev and makes no Jev call.
+`tests/unit/jev-default-off.test.ts` holds it to that. `JEV_TIMEOUT_MS` (default 3000)
 bounds each call. At most 8 calls run at once per server process.
 
 | Point | Where | What Jev decides | What happens when it's unsure or silent |

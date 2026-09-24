@@ -161,7 +161,7 @@ describe("saveBriefAction's planning type", () => {
 
   /** Jev, over the network the action really uses, picking one type. */
   function jevPicks(choice: string, confidence: number) {
-    vi.stubEnv("TYPESAFE_API_KEY", "ts-test-key");
+    vi.stubEnv("AI_GATEWAY_API_KEY", "gw-test-key");
     vi.stubEnv("JEV_DECISIONS", "brief");
     vi.stubGlobal(
       "fetch",

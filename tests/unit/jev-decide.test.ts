@@ -19,7 +19,7 @@ import {
   yesNo,
 } from "@/lib/ai/decide";
 
-const ON = { TYPESAFE_API_KEY: "ts-test-key", JEV_DECISIONS: "venue,brief" };
+const ON = { AI_GATEWAY_API_KEY: "gw-test-key", JEV_DECISIONS: "venue,brief" };
 
 const QUESTIONS = {
   rentsPrivate: noul("The venue rents out a private space for groups."),
@@ -82,6 +82,36 @@ describe("decide", () => {
     expect(decision?.inputTokens).toBe(42);
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ state: { name: "Lakeside Hall" } });
+  });
+
+  it("goes through AI Gateway, with its key, the Jev model and zero data retention", async () => {
+    const calls: Array<{ url: string; auth: string | null; body: Record<string, unknown> }> = [];
+    const gateway = (async (url: string, init?: RequestInit) => {
+      calls.push({
+        url,
+        auth: new Headers(init?.headers).get("authorization"),
+        body: JSON.parse(String(init?.body)),
+      });
+      return new Response(
+        JSON.stringify({ model: "typesafe-ai/jev", answers: GOOD_ANSWERS, usage: { input_tokens: 1, output_tokens: 1 } }),
+        { status: 200 },
+      );
+    }) as unknown as typeof fetch;
+
+    await decide("venue", "text", QUESTIONS, { env: ON, fetch: gateway });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://ai-gateway.vercel.sh/typesafe/v1/systemone");
+    expect(calls[0].auth).toBe("Bearer gw-test-key");
+    expect(calls[0].body).toMatchObject({
+      model: "typesafe-ai/jev",
+      state: "text",
+      providerOptions: { gateway: { zeroDataRetention: true } },
+    });
+  });
+
+  it("isn't on with only a TypeSafe key: the gateway key is the only credential", () => {
+    expect(jevEnabled("venue", { TYPESAFE_API_KEY: "direct-key", JEV_DECISIONS: "venue" })).toBe(false);
   });
 
   it("returns null without calling out when the point is off or there's no key", async () => {

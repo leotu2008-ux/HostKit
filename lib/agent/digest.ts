@@ -5,6 +5,7 @@ import { loadBriefing } from "@/lib/agent/load";
 import { digestNotice, worthNotifying } from "@/lib/agent/briefing";
 import { phraseBriefing } from "@/lib/ai/briefing-voice";
 import { notify } from "@/lib/notify";
+import { jevEnabled } from "@/lib/ai/decide";
 
 /**
  * The daily "what needs you today" digest — modelled on completeFinishedEvents
@@ -64,7 +65,9 @@ export async function sendDailyBriefings(now = new Date()): Promise<DigestResult
 
   let notified = 0;
   let skipped = 0;
-  const phrasingDeadline = Date.now() + PHRASING_BUDGET_MS;
+  // Only the guardrail's retry needs the deadline; without it, phrasing is
+  // bounded by PHRASED_LIMIT alone, exactly as before.
+  const phrasingDeadline = jevEnabled("guardrail") ? Date.now() + PHRASING_BUDGET_MS : Infinity;
 
   for (const event of candidates) {
     const recipients = recipientsFor(event).filter((id) => !alreadyNotified.has(`${id}:${event.id}`));

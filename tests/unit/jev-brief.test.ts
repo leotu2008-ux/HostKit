@@ -14,7 +14,7 @@ import { BRIEF_MIN_CONFIDENCE, classifyKind, stateForBrief, typeCheckFrom } from
 import { briefingFor } from "@/lib/agent/briefing";
 import { AgentPanel } from "@/components/agent-panel";
 
-const JEV_ON = { TYPESAFE_API_KEY: "ts-test-key", JEV_DECISIONS: "brief" };
+const JEV_ON = { AI_GATEWAY_API_KEY: "gw-test-key", JEV_DECISIONS: "brief" };
 
 /** A Jev that picks `choice` with `confidence`, and remembers what it was sent. */
 function jevPicks(choice: string, confidence: number, sent: unknown[] = []): typeof fetch {

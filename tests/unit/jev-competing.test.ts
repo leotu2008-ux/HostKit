@@ -17,7 +17,7 @@ import {
 } from "@/lib/night-competition";
 import { briefingFor } from "@/lib/agent/briefing";
 
-const JEV_ON = { TYPESAFE_API_KEY: "ts-test-key", JEV_DECISIONS: "competing" };
+const JEV_ON = { AI_GATEWAY_API_KEY: "gw-test-key", JEV_DECISIONS: "competing" };
 
 const HOST = {
   id: "evt-1",
