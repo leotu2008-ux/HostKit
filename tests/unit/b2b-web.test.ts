@@ -56,7 +56,10 @@ describe("the consumer web pages are gone", () => {
   it("does not tell a host that Discover leads with their school", () => {
     const profile = readFileSync(new URL("../../app/(app)/profile/page.tsx", import.meta.url), "utf8");
     expect(profile).not.toContain("Discover leads");
+    expect(profile).not.toContain("see your campus first");
+    expect(profile).not.toContain("official events included");
     expect(profile).toContain("Your events are tagged ${user.school.short}.");
+    expect(profile).toContain("Pick your school to tag your events.");
   });
 
   it("sends signed-out visitors on the auth pages back home, not to Discover", () => {
