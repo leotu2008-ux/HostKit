@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { Eyebrow } from "@/components/eyebrow";
+import { WaveText } from "@/components/wave-text";
 import { NYC_BOROUGHS } from "./nyc-boroughs";
 import styles from "./venue-discovery.module.css";
 
@@ -86,7 +87,9 @@ export function VenueDiscovery() {
         <div className={styles.heading}>
           <div>
             <Eyebrow>A place for your people</Eyebrow>
-            <h2 id="venue-discovery-title" className="font-display mt-3 text-[28px] leading-tight md:text-[40px]">Your next event starts nearby.</h2>
+            <h2 id="venue-discovery-title" className="font-display mt-3 text-[28px] leading-tight md:text-[40px]">
+              <WaveText text="Your next event starts nearby." />
+            </h2>
             <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">An area, a headcount, a feel. Give your agent a starting point, then explore spaces that could fit your brief.</p>
           </div>
           <a href="#venue-discovery-end" className={styles.skip}>Skip the map <span aria-hidden>↘</span></a>
