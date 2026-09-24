@@ -5,7 +5,9 @@ import { record, type ActivityLine } from "@/lib/activity";
 import { LIMITS, RateLimitError, assertRateLimit } from "@/lib/rate-limit";
 import { isVenueSearchConfigured } from "@/lib/venues/search";
 import {
+  foundNothing,
   planSteps,
+  runSummaryBody,
   skippedSteps,
   vendorCategories,
   type Step,
@@ -84,7 +86,8 @@ const FAILED_TITLE: Record<StepName, string> = {
   vendors: "Couldn't draft vendor inquiries",
 };
 
-type StepResult = { name: StepName; ok: boolean; note: string };
+/** `empty`: the step ran cleanly but turned up nothing (see foundNothing). */
+type StepResult = { name: StepName; ok: boolean; empty: boolean; note: string };
 
 /**
  * Runs one step against the wall clock and the feed. Out of time, it says so
@@ -106,13 +109,13 @@ async function runStep(
       title: SKIP_TITLE[step.name],
       body: note,
     });
-    return { name: step.name, ok: false, note };
+    return { name: step.name, ok: false, empty: false, note };
   }
 
   try {
     const line = await fn();
     await record(eventId, line);
-    return { name: step.name, ok: true, note: line.title };
+    return { name: step.name, ok: true, empty: foundNothing(line), note: line.title };
   } catch (error) {
     const note = String(error instanceof Error ? error.message : error).slice(0, 200);
     await record(eventId, {
@@ -121,7 +124,7 @@ async function runStep(
       title: FAILED_TITLE[step.name],
       body: note,
     });
-    return { name: step.name, ok: false, note };
+    return { name: step.name, ok: false, empty: false, note };
   }
 }
 
@@ -326,23 +329,14 @@ async function attemptRun(eventId: string, options: RunOptions): Promise<RunOutc
     },
   });
 
-  const ran = results.filter((result) => result.ok).map((result) => result.name);
-  const failed = results.filter((result) => !result.ok).map((result) => result.name);
-  const body = [
-    ran.length > 0 ? `Done: ${ran.join(", ")}` : null,
-    failed.length > 0 ? `Left undone: ${failed.join(", ")}` : null,
-  ]
-    .filter((part): part is string => part !== null)
-    .join(" · ");
   await record(eventId, {
     actor: "agent",
     kind: "run_finished",
     title: allOk ? "The agent finished" : "The agent finished with problems",
     // Every step can be skipped before it's attempted (a manual run on a
-    // brief with nothing runnable in it), and the skip lines above already
-    // said why — null rather than an empty string, so the feed has nothing
-    // to render instead of an empty line.
-    body: body || null,
+    // brief with nothing runnable in it) or find nothing, and the lines
+    // above already said why.
+    body: runSummaryBody(results),
   });
 
   return { ran: true, runId, steps: results };
