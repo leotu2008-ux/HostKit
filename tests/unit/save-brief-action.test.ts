@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Venue = { id: string; name: string; detail: string | null; source: string; status: string };
 
@@ -32,7 +32,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { saveBriefAction } from "@/lib/actions/brief";
+import { saveBriefAction, setEventTypeAction } from "@/lib/actions/brief";
 
 const event = {
   id: "evt-1",
@@ -138,5 +138,85 @@ describe("saveBriefAction's capacity", () => {
     await saveBriefAction(undefined, capacity("30"));
 
     expect(mocks.promoteWaitlist).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveBriefAction's planning type", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.venues = [];
+    mocks.requireEvent.mockResolvedValue({ user: { id: "host-1" }, event });
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  function kindForm(kind: string) {
+    const data = new FormData();
+    data.set("eventId", "evt-1");
+    data.set("kind", kind);
+    return data;
+  }
+
+  /** Jev, over the network the action really uses, picking one type. */
+  function jevPicks(choice: string, confidence: number) {
+    vi.stubEnv("TYPESAFE_API_KEY", "ts-test-key");
+    vi.stubEnv("JEV_DECISIONS", "brief");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            model: "jev-1.13",
+            answers: { eventType: { type: "choice", choice, confidence, probabilities: {} } },
+            usage: { input_tokens: 10, output_tokens: 1 },
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+  }
+
+  it("still plans words it doesn't know as a mixer when Jev is off", async () => {
+    await saveBriefAction(undefined, kindForm("crawfish boil"));
+    expect(mocks.eventUpdate.mock.calls[0][0].data).toMatchObject({ kind: "crawfish boil", type: "MIXER" });
+  });
+
+  it("saves Jev's confident pick for words the keyword table doesn't know", async () => {
+    jevPicks("DINNER_PARTY", 0.93);
+    await saveBriefAction(undefined, kindForm("crawfish boil"));
+    expect(mocks.eventUpdate.mock.calls[0][0].data).toMatchObject({ type: "DINNER_PARTY" });
+  });
+
+  it("keeps the mixer when Jev isn't sure", async () => {
+    jevPicks("DINNER_PARTY", 0.4);
+    await saveBriefAction(undefined, kindForm("crawfish boil"));
+    expect(mocks.eventUpdate.mock.calls[0][0].data).toMatchObject({ type: "MIXER" });
+  });
+});
+
+describe("setEventTypeAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireEvent.mockResolvedValue({ user: { id: "host-1" }, event });
+  });
+
+  function typeForm(type: string) {
+    const data = new FormData();
+    data.set("eventId", "evt-1");
+    data.set("type", type);
+    return data;
+  }
+
+  it("sets the type the host chose from the briefing", async () => {
+    await setEventTypeAction(typeForm("DINNER_PARTY"));
+    expect(mocks.eventUpdate).toHaveBeenCalledWith({ where: { id: "evt-1" }, data: { type: "DINNER_PARTY" } });
+  });
+
+  it("ignores a type that isn't one", async () => {
+    await setEventTypeAction(typeForm("WEDDING"));
+    expect(mocks.requireEvent).not.toHaveBeenCalled();
+    expect(mocks.eventUpdate).not.toHaveBeenCalled();
   });
 });

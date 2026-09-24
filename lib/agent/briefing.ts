@@ -2,6 +2,7 @@ import type {
   CollaboratorKind,
   CollaboratorStatus,
   EventStatus,
+  EventType,
   InquiryStatus,
   ListingCategory,
   RsvpStatus,
@@ -12,6 +13,7 @@ import { schoolTimeZone } from "@/lib/campus/sources";
 import { wallClock } from "@/lib/campus/time";
 import { CHASE_AFTER_DAYS, goneQuiet, quietContacts } from "@/lib/chase";
 import { daysBetween, daysUntil, describeCountdown } from "@/lib/plan";
+import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 
 /**
  * The single source of truth for "what needs you today" on one event.
@@ -50,7 +52,8 @@ export type BriefingKind =
   | "venue_missing"
   | "event_soon"
   | "guests_unreplied"
-  | "guests_remind";
+  | "guests_remind"
+  | "type_check";
 
 export type BriefingAction =
   | { type: "complete_task"; taskId: string; label: "Mark done" }
@@ -58,7 +61,8 @@ export type BriefingAction =
   | { type: "find_venues"; label: "Find venues" }
   | { type: "open_runsheet"; label: "Open run sheet" }
   | { type: "open_plan"; label: "Open the plan" }
-  | { type: "open_blast"; draft: BlastDraftKind; label: "Nudge them" | "Write reminder" };
+  | { type: "open_blast"; draft: BlastDraftKind; label: "Nudge them" | "Write reminder" }
+  | { type: "set_type"; eventType: EventType; label: string };
 
 export type BriefingItem = {
   id: string; // `${kind}:${refId}`
@@ -121,6 +125,9 @@ export type BriefingInput = {
    *  that predate the guest reminders can omit them. */
   guests?: BriefingGuest[];
   blasts?: BriefingBlast[];
+  /** The type Jev guessed but wasn't sure of (lib/brief-classify.ts's
+   *  typeCheckFrom), when it's worth asking the host about. */
+  typeCheck?: EventType | null;
   now: Date;
 };
 
@@ -142,6 +149,7 @@ const KIND_RANK: Record<BriefingKind, number> = {
   guests_unreplied: 5,
   outreach_quiet: 6,
   outreach_unsent: 7,
+  type_check: 8,
 };
 
 const DAY_MS = 86_400_000;
@@ -337,6 +345,21 @@ function guestItems(event: BriefingEvent, input: BriefingInput): BriefingItem[] 
   ];
 }
 
+/** "Is this a dinner party?", with the one press that settles it. The
+ *  words come from EVENT_TYPE_LABEL; Jev only chose which label. */
+function typeCheckItem(event: BriefingEvent, type: EventType | null | undefined): BriefingItem | null {
+  if (!type) return null;
+  const label = EVENT_TYPE_LABEL[type].toLowerCase();
+  return {
+    id: `type_check:${event.id}`,
+    kind: "type_check",
+    urgency: "soon",
+    title: `Is this a ${label}?`,
+    detail: "It's planned as a mixer until you say",
+    action: { type: "set_type", eventType: type, label: `Plan it as a ${label}` },
+  };
+}
+
 export function briefingFor(event: BriefingEvent, input: BriefingInput): Briefing {
   const items: BriefingItem[] = [
     ...taskItems(input.tasks, input.now),
@@ -350,6 +373,9 @@ export function briefingFor(event: BriefingEvent, input: BriefingInput): Briefin
 
   const eventSoon = eventSoonItem(event, input.now);
   if (eventSoon) items.push(eventSoon);
+
+  const typeCheck = typeCheckItem(event, input.typeCheck);
+  if (typeCheck) items.push(typeCheck);
 
   items.sort((a, b) => {
     if (a.urgency !== b.urgency) return a.urgency === "now" ? -1 : 1;

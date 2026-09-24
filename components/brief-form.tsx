@@ -5,7 +5,8 @@ import { useFormStatus } from "react-dom";
 import { saveBriefAction } from "@/lib/actions/brief";
 import { checkNightAction } from "@/lib/actions/night";
 import { EVENT_TYPE_LABEL, EVENT_TYPE_OPTIONS } from "@/lib/catalog";
-import { eventTypeForKind } from "@/lib/brief";
+import { eventTypeForKind, FALLBACK_TYPE } from "@/lib/brief";
+import type { EventType } from "@/generated/prisma/enums";
 import { CalendarPicker } from "@/components/calendar-picker";
 import { CapacityField } from "@/components/capacity-field";
 import { CityField } from "@/components/city-field";
@@ -21,6 +22,9 @@ export type BriefFormEvent = {
   id: string;
   title: string;
   kind: string;
+  /** The saved planning type, which Jev may have chosen for words the
+   *  keyword table doesn't know (lib/brief-classify.ts). */
+  type?: EventType;
   date: string;
   time: string;
   durationHours: number;
@@ -48,7 +52,11 @@ export function BriefForm({ event, hasSchool }: { event: BriefFormEvent; hasScho
   const [kind, setKind] = useState(event.kind);
   const [nightLine, setNightLine] = useState<string | null>(null);
 
-  const kindType = eventTypeForKind(kind);
+  // The keywords answer live as the host types; for the words already saved,
+  // the saved type is the answer, whoever chose it.
+  const kindType =
+    eventTypeForKind(kind) ??
+    (kind === event.kind && event.type && event.type !== FALLBACK_TYPE ? event.type : null);
   const kindHint = kindType
     ? `Planning this like a ${EVENT_TYPE_LABEL[kindType].toLowerCase()}`
     : kind.trim()

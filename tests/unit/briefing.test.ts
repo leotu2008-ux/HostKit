@@ -154,6 +154,9 @@ describe("briefingFor — every emitted action.type is a known kind", () => {
         case "open_blast":
           expect(["nudge", "reminder"]).toContain(action.draft);
           break;
+        case "set_type":
+          expect(action.label).toMatch(/^Plan it as a /);
+          break;
         default: {
           // Exhaustive: adding a BriefingAction variant without a case here
           // fails to compile, not just fails at runtime.
