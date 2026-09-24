@@ -522,7 +522,7 @@ html[data-splash="played"] .rise {
 
 /* Venue discovery map (components/venue-discovery.tsx). The tall track and
    the sticky frame exist only while scroll is driving the camera. Reduced
-   motion, and the server render, keep a single close frame in normal flow. */
+   motion, and the server render, keep the neighborhood frame in normal flow. */
 .venue-discovery-map {
   aspect-ratio: 1240 / 780;
   min-height: 280px;

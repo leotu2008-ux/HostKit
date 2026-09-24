@@ -17,18 +17,25 @@ import { discoveryCamera, venueVisibility } from "@/lib/venue-discovery-camera";
 import { MAP_CAMERA, MAP_VIEW } from "@/lib/venue-discovery-geometry";
 
 describe("downtown venue map camera", () => {
-  it("stays inside the neighborhood crop, never a city-wide zoom out", () => {
+  it("starts on the blocks and zooms out to a neighborhood that still shows streets", () => {
+    const start = discoveryCamera(0);
+    const end = discoveryCamera(1);
+    expect(start.scale).toBe(MAP_CAMERA.block);
+    expect(end.scale).toBe(MAP_CAMERA.neighborhood);
+    expect(start.scale).toBeGreaterThan(end.scale);
+    expect(MAP_CAMERA.neighborhood).toBeGreaterThan(1.3);
+
     for (let step = 0; step <= 20; step++) {
       const camera = discoveryCamera(step / 20);
-      expect(camera.scale).toBeGreaterThanOrEqual(MAP_CAMERA.wide - 0.001);
-      expect(camera.scale).toBeLessThanOrEqual(MAP_CAMERA.close + 0.001);
+      expect(camera.scale).toBeGreaterThanOrEqual(MAP_CAMERA.neighborhood - 0.001);
+      expect(camera.scale).toBeLessThanOrEqual(MAP_CAMERA.block + 0.001);
       expect(camera.x).toBeGreaterThan(0);
       expect(camera.x).toBeLessThan(MAP_VIEW.width);
       expect(camera.y).toBeGreaterThan(0);
       expect(camera.y).toBeLessThan(MAP_VIEW.height);
     }
-    expect(MAP_CAMERA.wide).toBeGreaterThan(1);
-    expect(discoveryCamera(0.5).scale).toBe(MAP_CAMERA.close);
+    // After the zoom-out, the camera holds the neighborhood.
+    expect(discoveryCamera(0.5).scale).toBe(MAP_CAMERA.neighborhood);
   });
 
   it("marks the example rooms only after the scan", () => {

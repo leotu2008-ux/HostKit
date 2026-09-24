@@ -32,17 +32,17 @@ import {
  *
  * The drawing is downtown Manhattan only — Houston Street to the Brooklyn
  * Bridge, Hudson to the East River — so the widest frame is already a
- * neighborhood, not the five boroughs. Scrolling zooms into SoHo until the
- * streets read clearly, holds, scans, marks example rooms, then eases back
- * without leaving the district.
+ * neighborhood, not the five boroughs. Scrolling starts on the blocks and
+ * zooms out until the neighborhood is in frame. That widest frame still
+ * shows the streets. It then holds, scans, and marks example rooms.
  *
- * The server (and reduced motion) renders the released frame: venues marked,
- * camera still close. The client only scrubs when motion is allowed.
+ * The server (and reduced motion) renders the neighborhood frame with the
+ * rooms marked. The client only scrubs when motion is allowed.
  */
 
 const PHASE_LABEL: Record<DiscoveryPhase, string> = {
-  zoom: "Closing in on SoHo",
-  lock: "Locked on the neighborhood",
+  zoom: "Opening to the neighborhood",
+  lock: "Neighborhood in view",
   scan: "Scanning the blocks",
   venues: "Marking rooms that fit",
   release: "SoHo, Lower Manhattan",
@@ -178,7 +178,7 @@ export function VenueDiscovery() {
                     y2={street.y}
                     stroke="#141414"
                     strokeOpacity={street.major ? 0.78 : 0.45}
-                    strokeWidth={street.major ? 8 : 4.2}
+                    strokeWidth={street.major ? 10 : 6}
                   />
                 ))}
                 {AVENUES.map((avenue) => (
@@ -190,7 +190,7 @@ export function VenueDiscovery() {
                     y2={MAP_VIEW.height}
                     stroke="#141414"
                     strokeOpacity={avenue.major ? 0.78 : 0.45}
-                    strokeWidth={avenue.major ? 8 : 4.2}
+                    strokeWidth={avenue.major ? 10 : 6}
                   />
                 ))}
                 <path

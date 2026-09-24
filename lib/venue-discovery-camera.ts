@@ -1,9 +1,7 @@
 import { MAP_CAMERA, MAP_FOCUS, SCAN_BAND } from "@/lib/venue-discovery-geometry";
 
-/** Center of the downtown crop: both rivers, the bridges, the whole neighborhood. */
-const WIDE_FOCUS = { x: 760, y: 520 } as const;
-/** After the venues are marked, still SoHo — a little wider than the lock. */
-const RELEASE_FOCUS = { x: 640, y: 430 } as const;
+/** Downtown crop once the camera has pulled back: rivers, bridges, and the grid. */
+const NEIGHBORHOOD_FOCUS = { x: 700, y: 540 } as const;
 
 export type DiscoveryPhase = "zoom" | "lock" | "scan" | "venues" | "release";
 
@@ -23,37 +21,29 @@ function lerp(a: number, b: number, t: number): number {
 export type DiscoveryCamera = { scale: number; x: number; y: number };
 
 /**
- * Zoom into SoHo, hold, then ease back — still inside the downtown crop.
- * Scale never drops to a five-borough view; the widest frame is this neighborhood.
+ * Starts on the blocks in SoHo and zooms out to the neighborhood.
+ * The widest frame is still downtown Manhattan, close enough that street lines remain visible.
  */
 export function discoveryCamera(progress: number): DiscoveryCamera {
   const p = clamp01(progress);
-  const { wide, close, release } = MAP_CAMERA;
-  if (p < 0.2) {
-    const t = ease(p / 0.2);
+  const { block, neighborhood } = MAP_CAMERA;
+  if (p < 0.3) {
+    const t = ease(p / 0.3);
     return {
-      scale: lerp(wide, close, t),
-      x: lerp(WIDE_FOCUS.x, MAP_FOCUS.x, t),
-      y: lerp(WIDE_FOCUS.y, MAP_FOCUS.y, t),
+      scale: lerp(block, neighborhood, t),
+      x: lerp(MAP_FOCUS.x, NEIGHBORHOOD_FOCUS.x, t),
+      y: lerp(MAP_FOCUS.y, NEIGHBORHOOD_FOCUS.y, t),
     };
   }
-  if (p < 0.76) {
-    return { scale: close, x: MAP_FOCUS.x, y: MAP_FOCUS.y };
-  }
-  const t = ease((p - 0.76) / 0.24);
-  return {
-    scale: lerp(close, release, t),
-    x: lerp(MAP_FOCUS.x, RELEASE_FOCUS.x, t),
-    y: lerp(MAP_FOCUS.y, RELEASE_FOCUS.y, t),
-  };
+  return { scale: neighborhood, x: NEIGHBORHOOD_FOCUS.x, y: NEIGHBORHOOD_FOCUS.y };
 }
 
 export function discoveryPhase(progress: number): DiscoveryPhase {
   const p = clamp01(progress);
-  if (p < 0.2) return "zoom";
-  if (p < 0.34) return "lock";
-  if (p < 0.5) return "scan";
-  if (p < 0.78) return "venues";
+  if (p < 0.3) return "zoom";
+  if (p < 0.42) return "lock";
+  if (p < 0.56) return "scan";
+  if (p < 0.8) return "venues";
   return "release";
 }
 
@@ -63,9 +53,9 @@ export function venueVisibility(progress: number, index: number): number {
   return clamp01((progress - start) / 0.07);
 }
 
-/** A band that sweeps Houston toward Canal while the camera is locked. */
+/** A band that sweeps Houston toward Canal once the neighborhood is in frame. */
 export function scanBand(progress: number): { y: number; opacity: number } {
-  const t = clamp01((progress - 0.32) / 0.18);
+  const t = clamp01((progress - 0.4) / 0.16);
   const opacity = t <= 0 || t >= 1 ? 0 : Math.sin(t * Math.PI);
   return { y: lerp(SCAN_BAND.from, SCAN_BAND.to, t), opacity };
 }

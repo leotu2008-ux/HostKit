@@ -9,8 +9,12 @@ export const MAP_VIEW = { width: 1240, height: 920 } as const;
 /** The lock point: Spring Street and Mercer Street, SoHo. */
 export const MAP_FOCUS = { x: 586.4, y: 322.0 } as const;
 
-/** Wide shows this whole downtown crop. Close moves in on SoHo. Release stays there. */
-export const MAP_CAMERA = { wide: 1.2, close: 1.9, release: 1.42 } as const;
+/**
+ * Block is a few SoHo blocks. Neighborhood is the downtown crop pulled back
+ * just far enough to read the district, still close enough that the streets
+ * stay visible.
+ */
+export const MAP_CAMERA = { block: 2.8, neighborhood: 1.4 } as const;
 
 export const SCAN_BAND = { from: 178.5, to: 522.6 } as const;
 
