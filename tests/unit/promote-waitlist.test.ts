@@ -63,6 +63,26 @@ describe("promoteWaitlist", () => {
     expect(mocks.notify).not.toHaveBeenCalled();
   });
 
+  it("stops moving people in once the night has started", async () => {
+    // A no-show marked "Not going" at 7:10 for a 7pm start: whoever's next
+    // is at home, so the host moves someone in by hand if they want to.
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() - 10 * 60_000)));
+
+    const promoted = await promoteWaitlist("ev-1");
+
+    expect(promoted).toEqual([]);
+    expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("keeps the line moving for a night with no date yet", async () => {
+    mocks.eventFind.mockResolvedValue({ ...eventAt(new Date()), date: null });
+
+    const promoted = await promoteWaitlist("ev-1");
+
+    expect(promoted.map((g) => g.id)).toEqual(["g-1"]);
+  });
+
   it("doesn't promote on a night already marked completed", async () => {
     mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR), "COMPLETED"));
 

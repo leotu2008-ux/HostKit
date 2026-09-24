@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { notify } from "@/lib/notify";
-import { hasFinished } from "@/lib/outcomes";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 async function eventTitle(eventId: string): Promise<string> {
@@ -12,7 +11,7 @@ async function eventTitle(eventId: string): Promise<string> {
  * Approval requests and the waitlist. A seat frees whenever an ATTENDING
  * guest stops attending (host change, their own decline, removal); every
  * path that does that calls `promoteWaitlist`, which lets in the people who
- * have waited longest until the event is full again.
+ * have waited longest until the event is full again, up to the start time.
  */
 
 /** True when moving a guest from `from` to `to` frees a seat. */
@@ -48,12 +47,13 @@ async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
     const event = await tx.event.findUnique({
       where: { id: eventId },
-      select: { guestCount: true, date: true, endDate: true, durationHours: true, status: true },
+      select: { guestCount: true, date: true, status: true },
     });
     if (!event) return [];
-    // Once the night is over, a seat freed by tidying the list (a no-show
-    // marked "Not going") is no seat at all: don't tell anyone they're in.
-    if (event.status === "COMPLETED" || hasFinished(event)) return [];
+    // Once the night has started, whoever's next is at home: a seat freed by
+    // a no-show marked "Not going" shouldn't tell them they're in. The host
+    // can still move someone in by hand from the Guests tab.
+    if (event.status === "COMPLETED" || (event.date && event.date.getTime() <= Date.now())) return [];
     const attending = await tx.guest.count({ where: { eventId, rsvpStatus: "ATTENDING" } });
     const room = event.guestCount - attending;
     if (room <= 0) return [];
