@@ -477,7 +477,7 @@ html[data-splash="played"] .rise {
 .wave-ch {
   display: inline-block;
   transition: translate 0.55s var(--landing-ease);
-  transition-delay: calc(var(--n, 0) * 28ms);
+  transition-delay: calc(var(--n, 0) * var(--wave-step, 28ms));
 }
 
 .wave-line:hover .wave-ch {

@@ -13,6 +13,7 @@ vi.mock("next/image", () => ({
 vi.mock("@/lib/actions/events", () => ({ createBlankEventAction: vi.fn() }));
 
 import { Landing } from "@/components/landing";
+import { WaveText } from "@/components/wave-text";
 
 /** Every h1–h3 on the page, as markup. */
 function headings(html: string): string[] {
@@ -38,5 +39,52 @@ describe("landing headings", () => {
     expect(html).toContain('<span class="sr-only">The agent works every stage</span>');
     expect(html).toContain('<span class="sr-only">Connect an agent</span>');
     expect(html).toContain('<span class="sr-only">Give it a date and a headcount</span>');
+  });
+});
+
+describe("landing subtitles", () => {
+  const html = renderToStaticMarkup(createElement(Landing, { canCreate: false }));
+
+  /** The markup of the paragraph whose screen-reader text starts with `start`. */
+  const paragraph = (start: string) => {
+    const at = html.indexOf(start);
+    expect(at).toBeGreaterThan(-1);
+    return html.slice(html.lastIndexOf("<p", at), html.indexOf("</p>", at));
+  };
+
+  it("waves the line under every heading, like the headings", () => {
+    for (const start of [
+      "Brief it once and it drafts the plan",
+      "Not a chatbot bolted onto a form",
+      "The agent drafts the plan",
+      "Nothing is sent, published or spent",
+      "You’ll have a plan before you close the tab.",
+      "Claude and ChatGPT can read your events",
+    ]) {
+      expect(paragraph(start)).toContain('class="wave-line');
+    }
+  });
+
+  it("leaves the stage descriptions still, so the page doesn't feel busy", () => {
+    expect(paragraph("Tell it what you").includes("wave-line")).toBe(false);
+  });
+});
+
+describe("WaveText timing", () => {
+  const step = (text: string) => {
+    const html = renderToStaticMarkup(createElement(WaveText, { text }));
+    const m = html.match(/--wave-step:(\d+)ms/);
+    return { ms: m ? Number(m[1]) : 28, letters: text.replace(/ /g, "").length };
+  };
+
+  it("keeps the 28ms letter stagger for headline-length text", () => {
+    expect(step("Connect an agent").ms).toBe(28);
+  });
+
+  it("tightens the stagger for long lines, so the whole wave lands within about a second", () => {
+    const long = "Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day.";
+    const { ms, letters } = step(long);
+    expect(ms).toBeLessThan(28);
+    expect(ms * letters).toBeLessThanOrEqual(1100);
   });
 });
