@@ -9,7 +9,10 @@ import { requireEvent } from "@/lib/session";
 import { parseCents } from "@/lib/money";
 import { parseStart } from "@/lib/when";
 import { snapQuarterHours } from "@/lib/duration";
-import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, namedVenue, UNTITLED } from "@/lib/brief";
+import { briefIsComplete, namedVenue, UNTITLED } from "@/lib/brief";
+import { classifyKind } from "@/lib/brief-classify";
+import { ALL_EVENT_TYPES } from "@/lib/catalog";
+import type { EventType } from "@/generated/prisma/enums";
 import { clientIp } from "@/lib/rate-limit";
 import { runAgent } from "@/lib/agent/run";
 import { record } from "@/lib/activity";
@@ -76,9 +79,10 @@ export async function saveBriefAction(
   const kind = trimmedKind || null;
   // Only re-derive the planning type when the kind text itself changed — a
   // host who corrected it must not lose that on an unrelated field's save.
+  // Keywords first; Jev only when they find nothing (lib/brief-classify.ts).
   const type =
     trimmedKind !== (event.kind ?? "")
-      ? (eventTypeForKind(trimmedKind) ?? FALLBACK_TYPE)
+      ? (await classifyKind(event.id, trimmedKind)).type
       : event.type;
 
   const title = input.title?.trim() || UNTITLED;
@@ -172,4 +176,31 @@ export async function saveBriefAction(
   }
 
   return { saved: true };
+}
+
+/**
+ * The briefing's "Plan it as a …" button: the host settling the type Jev
+ * wasn't sure of. It sets the type alone; the next change to the kind text
+ * derives it again, the same as any other save.
+ */
+export async function setEventTypeAction(formData: FormData): Promise<void> {
+  const eventId = String(formData.get("eventId") ?? "");
+  const type = String(formData.get("type") ?? "") as EventType;
+  if (!ALL_EVENT_TYPES.includes(type)) return;
+
+  const { event } = await requireEvent(eventId);
+  if (event.type === type) return;
+
+  await db.event.update({ where: { id: event.id }, data: { type } });
+  await record(event.id, { actor: "host", kind: "brief_saved", title: "Brief updated", body: "Type" });
+  refresh();
+
+  // A new type is a new brief to the agent (briefHash reads it), so a
+  // complete one runs again, exactly as a save would.
+  if (briefIsComplete({ ...event, type })) {
+    const ipKey = event.ownerId ? null : clientIp(await headers());
+    after(async () => {
+      await runAgent(event.id, { reason: "brief", ipKey });
+    });
+  }
 }

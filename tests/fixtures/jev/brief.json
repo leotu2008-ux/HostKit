@@ -1,0 +1,8 @@
+{
+  "about": "Made-up host words the keyword table doesn't match, labelled with the template a person would pick. Replace with real kinds from saved briefs.",
+  "examples": [
+    { "id": "crawfish", "kind": "crawfish boil", "expect": "DINNER_PARTY" },
+    { "id": "demo-day", "kind": "demo day for the accelerator cohort", "expect": "PITCH_NIGHT" },
+    { "id": "finals-snacks", "kind": "finals week snacks and coloring", "expect": "STUDY_BREAK" }
+  ]
+}

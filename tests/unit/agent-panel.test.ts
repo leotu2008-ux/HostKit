@@ -7,6 +7,7 @@ vi.mock("next/link", () => ({
     createElement("a", { href, className }, children),
 }));
 vi.mock("@/lib/actions/tasks", () => ({ toggleTaskAction: vi.fn() }));
+vi.mock("@/lib/actions/brief", () => ({ setEventTypeAction: vi.fn() }));
 
 import { AgentPanel } from "@/components/agent-panel";
 import type { Briefing } from "@/lib/agent/briefing";

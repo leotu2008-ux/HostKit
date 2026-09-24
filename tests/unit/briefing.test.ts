@@ -147,12 +147,16 @@ describe("briefingFor — every emitted action.type is a known kind", () => {
           break;
         }
         case "open_outreach":
+        case "open_brief":
         case "find_venues":
         case "open_runsheet":
         case "open_plan":
           break;
         case "open_blast":
           expect(["nudge", "reminder"]).toContain(action.draft);
+          break;
+        case "set_type":
+          expect(action.label).toMatch(/^Plan it as a /);
           break;
         default: {
           // Exhaustive: adding a BriefingAction variant without a case here

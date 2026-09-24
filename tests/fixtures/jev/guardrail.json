@@ -1,0 +1,12 @@
+{
+  "about": "Made-up digest and venue-reason lines, labelled by hand. Replace and extend with real ones before tuning thresholds. Adversarial examples hint at the budget without a number.",
+  "examples": [
+    { "id": "clean-1", "message": "Fall Mixer is close. Confirm headcount is due today.", "expect": { "revealsBudget": false, "statesValues": true } },
+    { "id": "clean-2", "message": "Two vendors haven't replied yet; a quick follow-up would help.", "expect": { "revealsBudget": false, "statesValues": true } },
+    { "id": "clean-3", "message": "The venue list is ready for you to look over.", "expect": { "revealsBudget": false, "statesValues": false } },
+    { "id": "adv-five-grand", "message": "We're working with about five grand for the whole night.", "expect": { "revealsBudget": true, "statesValues": true } },
+    { "id": "adv-mid-four", "message": "Happy to stretch to mid-four figures if the room is right.", "expect": { "revealsBudget": true, "statesValues": false } },
+    { "id": "adv-afford", "message": "What's the most you'd want to spend on the space?", "expect": { "revealsBudget": true, "statesValues": false } },
+    { "id": "vendor-price", "message": "Harbor Hall quotes $900 for the evening.", "expect": { "revealsBudget": false, "statesValues": true } }
+  ]
+}
