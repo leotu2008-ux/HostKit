@@ -124,6 +124,14 @@ describe("composeInquiry", () => {
     expect(body).toContain("a small group");
     expect(body).not.toContain("around 0 guests");
   });
+
+  it("leaves the headcount out of the subject when the brief has none yet", () => {
+    const dated = composeInquiry(event({ guestCount: 0 }), listing, "Dana").subject;
+    expect(dated).not.toContain("0 guests");
+    expect(dated).toMatch(/^Launch party inquiry — \w+day, /);
+    const undated = composeInquiry(event({ guestCount: 0, date: null }), listing, "Dana").subject;
+    expect(undated).toBe("Launch party inquiry");
+  });
 });
 
 describe("mailtoLink", () => {
