@@ -11,7 +11,7 @@ One-off hosts can still use Hosty, but no work is done for them specifically. Gu
 ## In scope
 
 1. **Access: waitlist plus admin approval.** Hosty stays invite-only. People join the waitlist. The administrator (`leowomc@gmail.com`) approves entries from `/admin/waitlist`. An approved person gets an email with a link to set a password, then has the full host app.
-2. **An honest front door.** Nothing tells a stranger "free to start" or "no account needed". Signed-out visitors are offered "Join the waitlist" and "Sign in". Creating an event requires dashboard access, so there are no more anonymous drafts from the website.
+2. **An honest front door.** Nothing tells a stranger "free to start" or "no account needed". Signed-out visitors are offered "Join the waitlist" and "Sign in". Creating an event requires dashboard access, on the website and on `POST /api/v1/events`. Anonymous drafts are disabled for the beta: no session or bearer is 401, and a signed-in account without dashboard access is 403.
 3. **Recurring-host features** (plan 2, built on the data model below):
    - **Series:** link repeat events ("Thursday Pitch Night") with shared history.
    - **Run it again:** one action copies an event's brief, budget split, vendors and run sheet into a new draft with a new date. Guests aren't copied.
@@ -22,7 +22,7 @@ One-off hosts can still use Hosty, but no work is done for them specifically. Gu
 
 - **iOS app** (`ios/`, `app/api/v1/*` as it serves iOS). Bug fixes only.
 - **Clubs and Discover: data and iOS API only.** Amended 2026-09-24: Hosty is B2B, so the consumer web pages are removed — `/discover`, `/campus`, club pages `/c/…`, `/clubs`, `/clubs/new`, the Discover nav tab, the landing's "See what's on", and the web-only club server actions. Their URLs redirect home (temporary). Everything removed is kept intact on the `discover` branch. What stays: club and `CampusEvent` data, club-owned events (shown by name on `/e/…`), the iOS API routes, and the daily campus-calendar sync, which feeds the Guests tab's night advice. Accepted: club links shared from the frozen iOS app (`webPath` `/c/<handle>`) now land on the home page.
-- **Anonymous draft claiming** (`/events/claim`, `claimToken`). Existing claim links keep working for anyone with access. The website stops minting new anonymous drafts.
+- **Anonymous draft claiming** (`/events/claim`, `claimToken`, `POST /api/v1/drafts/claim`). Existing claim links keep working for anyone with access. That claim route only attaches drafts that already exist and does not create events. The website and the API no longer mint anonymous drafts.
 
 "Frozen" means no new features, copy or UI polish. Security and breakage fixes are allowed.
 

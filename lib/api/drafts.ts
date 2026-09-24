@@ -1,7 +1,8 @@
 import { claimMatches, type DraftClaim } from "@/lib/drafts";
 
 /**
- * How a signed-out phone proves it made a draft.
+ * How a device proves it holds a draft created before anonymous drafts were
+ * disabled. The API no longer mints these.
  *
  * The website keeps `{id, token}` pairs in a cookie; the app keeps the same
  * pairs on the device and sends them as `X-Hosty-Drafts: id.token,id.token`.
