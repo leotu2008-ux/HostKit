@@ -60,6 +60,8 @@ function Bubble({ message }: { message: ChatMessage }) {
         mine ? "rounded-tr-md bg-brand text-white" : "rounded-tl-md bg-sunk text-ink",
       )}
     >
+      {/* Every bubble, even under a group's "Hosty" header: the list is a
+          live region, so a bubble appended to a group is announced alone. */}
       <span className="sr-only">{mine ? "You: " : "Hosty: "}</span>
       {message.text}
       {message.action ? (
@@ -76,9 +78,11 @@ function Bubble({ message }: { message: ChatMessage }) {
   );
 }
 
+/** Announced once, by the sr-only text: an aria-label on the `<li>` as well
+ *  would make some screen readers say it twice. */
 function Typing() {
   return (
-    <li className="flex items-start gap-2.5" aria-label="Hosty is typing">
+    <li className="flex items-start gap-2.5">
       <Avatar />
       <span className="inline-flex items-center gap-1 rounded-2xl rounded-tl-md bg-sunk px-3 py-2.5">
         {[0, 150, 300].map((delay) => (

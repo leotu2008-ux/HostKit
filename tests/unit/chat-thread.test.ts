@@ -74,6 +74,13 @@ describe("ChatThread", () => {
     expect(render([msg({ id: "1", text: "x" })], false)).not.toContain("Hosty is typing");
   });
 
+  it("says Hosty is typing once to a screen reader, not as a label and again as text", () => {
+    const html = render([msg({ id: "1", text: "x" })], true);
+    expect(html.match(/Hosty is typing/g)).toHaveLength(1);
+    expect(html).toContain('<span class="sr-only">Hosty is typing</span>');
+    expect(html).not.toContain("aria-label");
+  });
+
   it("pulses the typing dots only when the host allows motion", () => {
     const html = render([msg({ id: "1", text: "x" })], true);
     expect(html.match(/motion-safe:animate-pulse/g)).toHaveLength(3);
