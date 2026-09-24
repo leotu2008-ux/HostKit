@@ -56,8 +56,10 @@ export function GuestBookPicker({ eventId, entries }: { eventId: string; entries
         </Button>
       </div>
       <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-lg border border-line">
-        {entries.map((entry) => (
+        {entries.map((entry, i) => (
           <li key={entry.id}>
+            {entry.missedOut && i === 0 ? <GroupLabel>Missed out last time</GroupLabel> : null}
+            {!entry.missedOut && entries[i - 1]?.missedOut ? <GroupLabel>Came before</GroupLabel> : null}
             <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
               <input
                 type="checkbox"
@@ -70,9 +72,11 @@ export function GuestBookPicker({ eventId, entries }: { eventId: string; entries
                 <span className="block truncate text-[14px] font-medium text-ink">{entry.name}</span>
                 <span className="block truncate text-[12px] text-ink-mute">{entry.email}</span>
               </span>
-              <span className="text-[12px] text-ink-mute">
-                came {entry.came} {entry.came === 1 ? "time" : "times"}
-              </span>
+              {entry.came > 0 ? (
+                <span className="text-[12px] text-ink-mute">
+                  came {entry.came} {entry.came === 1 ? "time" : "times"}
+                </span>
+              ) : null}
             </label>
           </li>
         ))}
@@ -87,5 +91,13 @@ export function GuestBookPicker({ eventId, entries }: { eventId: string; entries
         {pending ? "Inviting…" : `Invite ${pickedVisible.length || ""}`.trim()}
       </Button>
     </form>
+  );
+}
+
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="border-b border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-ink-mute">
+      {children}
+    </p>
   );
 }

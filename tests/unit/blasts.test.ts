@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { personalize, phoneRecipientsFor, recipientsFor, segmentsFor } from "@/lib/blasts";
+import { blastDraft, personalize, phoneRecipientsFor, recipientsFor, segmentsFor } from "@/lib/blasts";
 import { composeInquiry } from "@/lib/outreach";
 import { promoBlurb } from "@/lib/promote";
 
@@ -152,5 +152,35 @@ describe("promoBlurb", () => {
       "https://tryhosty.app/e/abc",
     );
     expect(text.split("\n")[1]).toBe("Fri, Oct 23 · Olin Hall");
+  });
+});
+
+describe("blastDraft", () => {
+  // ICU puts a narrow no-break space before AM/PM.
+  const plain = (s: string) => s.replace(/[\u202f\u00a0]/g, " ");
+  const night = { title: "Moth Night", date: new Date(2026, 8, 26, 19, 0) };
+
+  it("the week-out nudge goes to the unreplied and asks them to say either way", () => {
+    const draft = blastDraft("nudge", night);
+    expect(draft.segment).toBe("pending");
+    expect(draft.subject).toBe("Moth Night: can you make it?");
+    expect(plain(draft.body)).toBe(
+      "Hi {name},\n\nMoth Night is Sat, Sep 26 at 7:00 PM. Can you make it? Let me know either way.\n\n",
+    );
+  });
+
+  it("the day-before reminder goes to the guests going", () => {
+    const draft = blastDraft("reminder", night);
+    expect(draft.segment).toBe("going");
+    expect(draft.subject).toBe("See you tomorrow: Moth Night");
+    expect(plain(draft.body)).toBe("Hi {name},\n\nA reminder that Moth Night is tomorrow at 7:00 PM. See you there.\n\n");
+  });
+
+  it("leaves out a time the host never set, and a date that isn't there", () => {
+    const noon = { title: "Moth Night", date: new Date(2026, 8, 26, 12, 0) };
+    expect(blastDraft("reminder", noon).body).toBe("Hi {name},\n\nA reminder that Moth Night is tomorrow. See you there.\n\n");
+    expect(blastDraft("nudge", { title: "Moth Night", date: null }).body).toBe(
+      "Hi {name},\n\nCan you make it to Moth Night? Let me know either way.\n\n",
+    );
   });
 });

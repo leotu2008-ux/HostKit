@@ -26,7 +26,7 @@ export function SectionNav({
   const pathname = usePathname();
 
   return (
-    <nav aria-label={label} className="mb-6 max-w-full overflow-x-auto">
+    <nav aria-label={label} className="no-print mb-6 max-w-full overflow-x-auto">
       <div className="flex gap-5 border-b border-line">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);

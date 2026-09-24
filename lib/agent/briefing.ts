@@ -1,10 +1,15 @@
 import type {
   CollaboratorKind,
   CollaboratorStatus,
+  EventStatus,
   InquiryStatus,
   ListingCategory,
+  RsvpStatus,
   TaskStatus,
 } from "@/generated/prisma/enums";
+import { recipientsFor, type BlastDraftKind } from "@/lib/blasts";
+import { schoolTimeZone } from "@/lib/campus/sources";
+import { wallClock } from "@/lib/campus/time";
 import { CHASE_AFTER_DAYS, goneQuiet, quietContacts } from "@/lib/chase";
 import { daysBetween, daysUntil, describeCountdown } from "@/lib/plan";
 
@@ -31,6 +36,9 @@ export const EVENT_SOON_DAYS = 7;
 export const MAX_ITEMS = 8;
 /** Inside this many days out, a missing venue escalates from "soon" to "now". */
 export const VENUE_URGENT_DAYS = 30;
+/** "About a week out": the nudge to the unreplied shows from this many days
+ *  before the night until the day before takes over with the reminder. */
+export const NUDGE_DAYS = 7;
 
 export type BriefingUrgency = "now" | "soon";
 
@@ -40,14 +48,17 @@ export type BriefingKind =
   | "outreach_quiet"
   | "outreach_unsent"
   | "venue_missing"
-  | "event_soon";
+  | "event_soon"
+  | "guests_unreplied"
+  | "guests_remind";
 
 export type BriefingAction =
   | { type: "complete_task"; taskId: string; label: "Mark done" }
   | { type: "open_outreach"; label: string }
   | { type: "find_venues"; label: "Find venues" }
   | { type: "open_runsheet"; label: "Open run sheet" }
-  | { type: "open_plan"; label: "Open the plan" };
+  | { type: "open_plan"; label: "Open the plan" }
+  | { type: "open_blast"; draft: BlastDraftKind; label: "Nudge them" | "Write reminder" };
 
 export type BriefingItem = {
   id: string; // `${kind}:${refId}`
@@ -98,23 +109,39 @@ export type BriefingCollaborator = {
   respondedAt?: Date | null;
 };
 
+export type BriefingGuest = { name: string; email: string | null; rsvpStatus: RsvpStatus };
+
+export type BriefingBlast = { segment: string; sentAt: Date };
+
 export type BriefingInput = {
   tasks: BriefingTask[];
   inquiries: BriefingInquiry[];
   collaborators: BriefingCollaborator[];
+  /** Optional, like BriefingCollaborator.respondedAt, so callers and fixtures
+   *  that predate the guest reminders can omit them. */
+  guests?: BriefingGuest[];
+  blasts?: BriefingBlast[];
   now: Date;
 };
 
-export type BriefingEvent = { id: string; title: string; date: Date | null };
+export type BriefingEvent = {
+  id: string;
+  title: string;
+  date: Date | null;
+  status?: EventStatus;
+  schoolDomain?: string | null;
+};
 
 /** Fixed tiebreak order once urgency is equal. */
 const KIND_RANK: Record<BriefingKind, number> = {
   event_soon: 0,
-  task_overdue: 1,
-  task_due: 2,
-  venue_missing: 3,
-  outreach_quiet: 4,
-  outreach_unsent: 5,
+  guests_remind: 1,
+  task_overdue: 2,
+  task_due: 3,
+  venue_missing: 4,
+  guests_unreplied: 5,
+  outreach_quiet: 6,
+  outreach_unsent: 7,
 };
 
 const DAY_MS = 86_400_000;
@@ -231,7 +258,7 @@ function venueMissingItem(
     inquiries.some((i) => i.category === "VENUE" && i.status === "BOOKED");
   if (hasVenue) return null;
 
-  const days = daysUntil(event.date, now);
+  const days = nightIn(event, now);
   const urgency: BriefingUrgency = days !== null && days <= VENUE_URGENT_DAYS ? "now" : "soon";
   return {
     id: `venue_missing:${event.id}`,
@@ -244,7 +271,7 @@ function venueMissingItem(
 }
 
 function eventSoonItem(event: BriefingEvent, now: Date): BriefingItem | null {
-  const days = daysUntil(event.date, now);
+  const days = nightIn(event, now);
   if (days === null || days < 0 || days > EVENT_SOON_DAYS) return null;
   return {
     id: `event_soon:${event.id}`,
@@ -256,11 +283,66 @@ function eventSoonItem(event: BriefingEvent, now: Date): BriefingItem | null {
   };
 }
 
+/**
+ * Calendar days from `at` to the night. `date` is the host's wall-clock time
+ * encoded as UTC, so the day is read off the clock at the event's school.
+ */
+export function nightIn(event: BriefingEvent, at: Date): number | null {
+  if (!event.date) return null;
+  const today = wallClock(at, schoolTimeZone(event.schoolDomain));
+  return Math.floor(event.date.getTime() / DAY_MS) - Math.floor(today.getTime() / DAY_MS);
+}
+
+/**
+ * The two before-the-night reminders. Hosty never sends them: each opens a
+ * drafted blast the host edits and sends. About a week out, the invited who
+ * haven't replied; the day before, the guests going (never the waitlist).
+ * Counts are the people the blast would actually reach (an email, once each),
+ * and an item goes away once a blast to that segment has gone out inside its
+ * window.
+ */
+function guestItems(event: BriefingEvent, input: BriefingInput): BriefingItem[] {
+  const days = nightIn(event, input.now);
+  if (days === null || days < 1 || days > NUDGE_DAYS || event.status === "CANCELLED") return [];
+  const guests = input.guests ?? [];
+  const sentWithin = (segment: string, window: number) =>
+    (input.blasts ?? []).some((b) => b.segment === segment && (nightIn(event, b.sentAt) ?? Infinity) <= window);
+
+  if (days === 1) {
+    const n = recipientsFor("going", guests).length;
+    if (n === 0 || sentWithin("going", 1)) return [];
+    return [
+      {
+        id: `guests_remind:${event.id}`,
+        kind: "guests_remind",
+        urgency: "now",
+        title: `Remind your ${n} ${n === 1 ? "guest" : "guests"}`,
+        detail: "The night is tomorrow",
+        action: { type: "open_blast", draft: "reminder", label: "Write reminder" },
+      },
+    ];
+  }
+
+  const n = recipientsFor("pending", guests).length;
+  if (n === 0 || sentWithin("pending", NUDGE_DAYS)) return [];
+  return [
+    {
+      id: `guests_unreplied:${event.id}`,
+      kind: "guests_unreplied",
+      urgency: "soon",
+      title: `${n} ${n === 1 ? "hasn't" : "haven't"} replied`,
+      detail: `The night is ${describeCountdown(days)}`,
+      action: { type: "open_blast", draft: "nudge", label: "Nudge them" },
+    },
+  ];
+}
+
 export function briefingFor(event: BriefingEvent, input: BriefingInput): Briefing {
   const items: BriefingItem[] = [
     ...taskItems(input.tasks, input.now),
     ...inquiryItems(input.inquiries, event, input.now),
     ...collaboratorItems(input.collaborators, input.now),
+    ...guestItems(event, input),
   ];
 
   const venueMissing = venueMissingItem(event, input.inquiries, input.collaborators, input.now);

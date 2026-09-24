@@ -64,7 +64,7 @@ budget. That's all Hosty needs to start.
 | **Planning** | The timeline counted back from the date, the budget split, the run sheet |
 | **Venue** | Venues near you, priced against this event |
 | **Outreach** | Venues, vendors, speakers and cohosts, each with a drafted first message; confirm, send or remove |
-| **Guests** | The guest list, the guest book, blasts, promotion and door check-in |
+| **Guests** | The guest list, the guest book, blasts, promotion and door check-in (walk-ups, a printable door list) |
 
 Hosty prices every option against *your* event. A directory says a venue is
 "$640/hour". Hosty says it's **"$5,120 for your 8 hours, 33% of your venue
@@ -77,10 +77,11 @@ headcount everything is priced against.
 - **Run it again** (owner only) copies the brief, budget split, tasks, vendors
   and run sheet into a new draft on a new date. Guests aren't copied
   (`lib/run-again.ts`).
-- **Series** groups repeat nights; `/series/:id` lists every night and who
-  came.
+- **Series** groups repeat nights; `/series/:id` lists every night and, once
+  it has started, how many came and how many were new.
 - **Guest book** (`lib/guest-book.ts`): everyone who came to your events,
-  ready to invite again in one click.
+  ready to invite again in one click. Anyone left on the waitlist at your last
+  night is listed first, under "Missed out last time".
 - **Vendor book** (`lib/vendor-book.ts`): every venue, speaker, cohost and
   catalog vendor you've confirmed or booked, ready to add to the next event.
 
