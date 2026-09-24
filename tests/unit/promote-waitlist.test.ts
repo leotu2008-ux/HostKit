@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
   guestAggregate: vi.fn(),
+  guestCount: vi.fn(),
   guestFindMany: vi.fn(),
   guestFindFirst: vi.fn(),
   guestUpdate: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("@/lib/db", () => {
     event: { findUnique: mocks.eventFind },
     guest: {
       aggregate: mocks.guestAggregate,
+      count: mocks.guestCount,
       findMany: mocks.guestFindMany,
       findFirst: mocks.guestFindFirst,
       update: mocks.guestUpdate,
@@ -37,6 +39,12 @@ const HOUR = 3_600_000;
 const WAITING = [
   { id: "g-1", userId: "u-1", name: "Ada", email: "ada@example.com", plusOnes: 0, createdAt: new Date(0) },
 ];
+
+/** The WAITLISTED rows a `guest.count` query would find. */
+function line(rows: { id: string; plusOnes: number }[]) {
+  return ({ where }: { where: { plusOnes: { lte: number }; id?: { not: string } } }) =>
+    rows.filter((r) => r.plusOnes <= where.plusOnes.lte && r.id !== where.id?.not).length;
+}
 
 /** What the ATTENDING rows add up to: `rows` guests bringing `plusOnes` between them. */
 function going(rows: number, plusOnes = 0) {
@@ -140,6 +148,21 @@ describe("promoteWaitlist", () => {
     });
   });
 
+  // Two seats free, a party of three first in line: the two behind them get in.
+  it("lets smaller parties behind a party that doesn't fit into the free seats", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestAggregate.mockResolvedValue(going(8));
+    mocks.guestFindMany.mockResolvedValue([
+      { ...WAITING[0], id: "g-three", plusOnes: 2 },
+      { ...WAITING[0], id: "g-2", createdAt: new Date(1) },
+      { ...WAITING[0], id: "g-3", createdAt: new Date(2) },
+    ]);
+
+    const promoted = await promoteWaitlist("ev-1");
+
+    expect(promoted.map((g) => g.id)).toEqual(["g-2", "g-3"]);
+  });
+
   // A party bigger than the whole night can never go in; everyone behind
   // them shouldn't wait forever for it.
   it("passes over a party that could never fit the night", async () => {
@@ -181,6 +204,7 @@ describe("decideRequest", () => {
     vi.clearAllMocks();
     mocks.eventFind.mockResolvedValue({ title: "Pitch Night", guestCount: 10 });
     mocks.guestFindFirst.mockResolvedValue(REQUEST);
+    mocks.guestCount.mockImplementation(line([]));
   });
 
   it("waitlists an approved request whose plus-one wouldn't fit", async () => {
@@ -199,5 +223,36 @@ describe("decideRequest", () => {
 
     expect(decided?.state).toBe("going");
     expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("ATTENDING");
+  });
+
+  // Two seats free, but someone who fits them has been waiting longer.
+  it("waitlists an approved request while someone waiting fits the free seats", async () => {
+    mocks.guestAggregate.mockResolvedValue(going(8));
+    mocks.guestCount.mockImplementation(line([{ id: "g-early", plusOnes: 0 }]));
+
+    const decided = await decideRequest("ev-1", "g-2", true);
+
+    expect(decided?.state).toBe("waitlisted");
+  });
+
+  // Only a party too big for the free seats is waiting, so they don't hold the request up.
+  it("seats an approved request when nobody waiting fits the free seats", async () => {
+    mocks.guestAggregate.mockResolvedValue(going(8));
+    mocks.guestCount.mockImplementation(line([{ id: "g-big", plusOnes: 4 }]));
+
+    const decided = await decideRequest("ev-1", "g-2", true);
+
+    expect(decided?.state).toBe("going");
+  });
+
+  // A waitlisted guest being approved isn't waiting behind themselves.
+  it("doesn't count the approved guest as someone ahead of them", async () => {
+    mocks.guestFindFirst.mockResolvedValue({ ...REQUEST, rsvpStatus: "WAITLISTED" });
+    mocks.guestAggregate.mockResolvedValue(going(8));
+    mocks.guestCount.mockImplementation(line([{ id: "g-2", plusOnes: 1 }]));
+
+    const decided = await decideRequest("ev-1", "g-2", true);
+
+    expect(decided?.state).toBe("going");
   });
 });

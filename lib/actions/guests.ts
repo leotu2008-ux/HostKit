@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseGuestList } from "@/lib/guests";
-import { attendingHeads, promoteWaitlist, releasesSeat } from "@/lib/waitlist";
+import { attendingHeads, promoteWaitlist, releasesSeat, seatFree } from "@/lib/waitlist";
 import { newRsvpToken } from "@/lib/tokens";
 import { record } from "@/lib/activity";
 import { hasFinished } from "@/lib/outcomes";
@@ -163,10 +163,10 @@ export async function submitRsvpAction(
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${guest.eventId} FOR UPDATE`;
 
     // A guest who said no and changes their mind while people are waiting
-    // joins the back of the line: they gave their seat up, and the waitlist
-    // was there first. An invite (or a maybe) keeps its seat — the invite is
-    // the seat. A party too big for the whole night isn't a line anyone
-    // waits behind.
+    // joins the back of the line unless there's a seat nobody waiting fits:
+    // they gave their seat up, and the waitlist was there first. An invite
+    // (or a maybe) keeps its seat — the invite is the seat. A party too big
+    // for the whole night isn't a line anyone waits behind.
     const rejoining =
       guest.rsvpStatus === "DECLINED" &&
       parsed.data.rsvpStatus === "ATTENDING" &&
@@ -176,7 +176,8 @@ export async function submitRsvpAction(
           rsvpStatus: "WAITLISTED",
           plusOnes: { lte: guest.event.guestCount - 1 },
         },
-      })) > 0;
+      })) > 0 &&
+      !(await seatFree(tx, guest.eventId, guest.event.guestCount, 1 + parsed.data.plusOnes, guest.id));
 
     // Their own seat is theirs, but the people they bring need room — capacity
     // is people in the room. Plus-ones they already have stay once it fills.

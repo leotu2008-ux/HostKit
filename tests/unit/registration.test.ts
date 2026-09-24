@@ -5,7 +5,7 @@ import { recipientsFor } from "@/lib/blasts";
 import { summarizeGuests } from "@/lib/guests";
 
 describe("decideRegistration", () => {
-  const base = { existing: null, isHost: false, requiresApproval: false, attending: 3, party: 1, capacity: 10 };
+  const base = { existing: null, isHost: false, requiresApproval: false, seatFree: true };
 
   it("goes straight in with room and no approval", () => {
     expect(decideRegistration(base)).toBe("going");
@@ -16,15 +16,9 @@ describe("decideRegistration", () => {
     expect(decideRegistration({ ...base, requiresApproval: true, isHost: true })).toBe("going");
   });
 
-  it("waitlists when full, even with approval on", () => {
-    expect(decideRegistration({ ...base, attending: 10 })).toBe("waitlisted");
-    expect(decideRegistration({ ...base, attending: 10, requiresApproval: true })).toBe("pending");
-  });
-
-  // One seat left, but the row the host filled in brings two more.
-  it("waitlists a registrant whose party wouldn't fit", () => {
-    expect(decideRegistration({ ...base, attending: 9, party: 3 })).toBe("waitlisted");
-    expect(decideRegistration({ ...base, attending: 7, party: 3 })).toBe("going");
+  it("waitlists when there's no seat for them, even with approval on", () => {
+    expect(decideRegistration({ ...base, seatFree: false })).toBe("waitlisted");
+    expect(decideRegistration({ ...base, seatFree: false, requiresApproval: true })).toBe("pending");
   });
 
   it("is idempotent for people already in, asked, or waiting", () => {
@@ -54,21 +48,18 @@ describe("waitlist", () => {
     expect(promotionPlan([t("1")], 0)).toEqual([]);
   });
 
-  // Capacity means people in the room, so a party only goes in whole — and
-  // nobody behind them jumps the line into a seat they're waiting for.
+  // Capacity means people in the room, so a party only goes in whole.
   it("counts a waiting guest's plus-ones against the room", () => {
     const party = { ...t("1"), plusOnes: 2 };
-    expect(promotionPlan([party, t("2")], 2)).toEqual([]);
     expect(promotionPlan([party, t("2")], 4).map((g) => g.id)).toEqual(["1", "2"]);
     expect(promotionPlan([t("2"), { ...t("3"), plusOnes: 2 }], 2).map((g) => g.id)).toEqual(["2"]);
   });
 
-  it("passes over a party bigger than the whole night instead of holding the line", () => {
-    const tooBig = { ...t("1"), plusOnes: 12 };
-    expect(promotionPlan([tooBig, t("2")], 1, 10).map((g) => g.id)).toEqual(["2"]);
-    // One that fits the night one day still holds its place.
+  // Two seats free and a party of three first in line: the seats shouldn't sit empty.
+  it("passes over a party that doesn't fit the seats left for the ones behind it", () => {
     const party = { ...t("1"), plusOnes: 2 };
-    expect(promotionPlan([party, t("2")], 1, 10)).toEqual([]);
+    expect(promotionPlan([party, t("2"), t("3")], 2).map((g) => g.id)).toEqual(["2", "3"]);
+    expect(promotionPlan([{ ...t("1"), plusOnes: 12 }, t("2")], 1).map((g) => g.id)).toEqual(["2"]);
   });
 
   it("knows when a status change frees a seat", () => {
@@ -76,6 +67,14 @@ describe("waitlist", () => {
     expect(releasesSeat("ATTENDING", null)).toBe(true);
     expect(releasesSeat("ATTENDING", "ATTENDING")).toBe(false);
     expect(releasesSeat("PENDING", "DECLINED")).toBe(false);
+  });
+
+  // A waiting party that leaves or shrinks may have been what kept smaller ones out.
+  it("moves the line when a waiting party leaves or gets smaller", () => {
+    expect(releasesSeat("WAITLISTED", "DECLINED")).toBe(true);
+    expect(releasesSeat("WAITLISTED", null)).toBe(true);
+    expect(releasesSeat("WAITLISTED", "WAITLISTED", { from: 2, to: 0 })).toBe(true);
+    expect(releasesSeat("WAITLISTED", "WAITLISTED", { from: 0, to: 2 })).toBe(false);
   });
 
   // Capacity is heads, so a guest who stays but brings fewer people frees room.

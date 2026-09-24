@@ -17,37 +17,33 @@ async function eventTitle(eventId: string): Promise<string> {
  */
 
 /**
- * True when moving a guest from `from` to `to` frees room: they stop
- * attending, or stay and bring fewer plus-ones than before.
+ * True when moving a guest from `from` to `to` can let someone waiting in:
+ * a going guest stops attending or brings fewer plus-ones, or a waiting
+ * party leaves the line or gets smaller and so stops holding a seat for
+ * whoever fits behind them.
  */
 export function releasesSeat(
   from: RsvpStatus,
   to: RsvpStatus | null,
   plusOnes?: { from: number; to: number },
 ): boolean {
-  if (from !== "ATTENDING") return false;
-  if (to !== "ATTENDING") return true;
+  if (from !== "ATTENDING" && from !== "WAITLISTED") return false;
+  if (to !== from) return true;
   return plusOnes !== undefined && plusOnes.to < plusOnes.from;
 }
 
 /**
  * Pure: which of the waiting guests (oldest first) fit into `room` seats.
- * A guest takes a seat for themselves and one per plus-one, and the line
- * stops at the first party that doesn't fit rather than letting anyone
- * behind them jump ahead. A party bigger than the whole night (`capacity`)
- * could never go in, so it's passed over instead of holding the line.
+ * A guest takes a seat for themselves and one per plus-one. A party that
+ * doesn't fit the seats left is passed over for now, so a big party never
+ * keeps smaller ones behind it out of seats that would otherwise sit empty.
  */
-export function promotionPlan<T extends { createdAt: Date; plusOnes?: number }>(
-  waiting: T[],
-  room: number,
-  capacity = Infinity,
-): T[] {
+export function promotionPlan<T extends { createdAt: Date; plusOnes?: number }>(waiting: T[], room: number): T[] {
   const plan: T[] = [];
   let left = room;
   for (const guest of [...waiting].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())) {
     const heads = 1 + Math.max(0, guest.plusOnes ?? 0);
-    if (heads > capacity) continue;
-    if (heads > left) break;
+    if (heads > left) continue;
     plan.push(guest);
     left -= heads;
   }
@@ -70,6 +66,31 @@ export async function attendingHeads(
     _sum: { plusOnes: true },
   });
   return going._count + (going._sum.plusOnes ?? 0);
+}
+
+/**
+ * Whether a party of `heads` gets a seat now: it fits the seats left and
+ * nobody already waiting fits them first (the line was there first).
+ * `except` leaves the party's own row out of both counts.
+ */
+export async function seatFree(
+  client: Pick<typeof db, "guest">,
+  eventId: string,
+  capacity: number,
+  heads: number,
+  except?: string,
+): Promise<boolean> {
+  const room = capacity - (await attendingHeads(client, eventId, except));
+  if (heads > room) return false;
+  const waitingThatFits = await client.guest.count({
+    where: {
+      eventId,
+      rsvpStatus: "WAITLISTED",
+      plusOnes: { lte: room - 1 },
+      ...(except ? { id: { not: except } } : {}),
+    },
+  });
+  return waitingThatFits === 0;
 }
 
 export type PromotedGuest = { id: string; userId: string | null; name: string; email: string | null };
@@ -110,7 +131,6 @@ async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
         select: { id: true, userId: true, name: true, email: true, plusOnes: true, createdAt: true },
       }),
       room,
-      event.guestCount,
     );
     if (waiting.length === 0) return [];
     await tx.guest.updateMany({
@@ -168,7 +188,7 @@ async function decideRequestRow(
     } else {
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { guestCount: true } });
       const heads = 1 + Math.max(0, guest.plusOnes);
-      state = event && (await attendingHeads(tx, eventId)) + heads <= event.guestCount ? "going" : "waitlisted";
+      state = event && (await seatFree(tx, eventId, event.guestCount, heads, guest.id)) ? "going" : "waitlisted";
     }
     await tx.guest.update({
       where: { id: guest.id },

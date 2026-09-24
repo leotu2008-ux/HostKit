@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
   guestFindFirst: vi.fn(),
   guestAggregate: vi.fn(),
+  guestCount: vi.fn(),
   guestCreate: vi.fn(),
   guestUpdate: vi.fn(),
   notify: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("@/lib/db", () => {
     guest: {
       findFirst: mocks.guestFindFirst,
       aggregate: mocks.guestAggregate,
+      count: mocks.guestCount,
       create: mocks.guestCreate,
       update: mocks.guestUpdate,
     },
@@ -58,6 +60,7 @@ describe("registerGuest", () => {
     vi.clearAllMocks();
     mocks.guestFindFirst.mockResolvedValue(null);
     mocks.guestAggregate.mockResolvedValue({ _count: 3, _sum: { plusOnes: 0 } });
+    mocks.guestCount.mockResolvedValue(0);
   });
 
   it("saves a spot on a night still to come", async () => {
@@ -90,6 +93,31 @@ describe("registerGuest", () => {
 
     expect(result).toMatchObject({ ok: true, state: "waitlisted", changed: true });
     expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("WAITLISTED");
+  });
+
+  // Seven seats free, but someone who fits them has been waiting: they were there first.
+  it("puts a new registrant behind someone waiting who fits the free seats", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestCount.mockImplementation(({ where }: { where: { rsvpStatus: string; plusOnes: { lte: number } } }) =>
+      where.rsvpStatus === "WAITLISTED" && 0 <= where.plusOnes.lte ? 1 : 0,
+    );
+
+    const result = await registerGuest({ eventId: "ev-1", viewer: VIEWER });
+
+    expect(result).toMatchObject({ ok: true, state: "waitlisted", changed: true });
+    expect(mocks.guestCreate.mock.calls[0][0].data.rsvpStatus).toBe("WAITLISTED");
+  });
+
+  // Only a party of eight is waiting and seven seats are free: a newcomer's single seat stays theirs.
+  it("seats a new registrant when nobody waiting fits the free seats", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestCount.mockImplementation(({ where }: { where: { plusOnes: { lte: number } } }) =>
+      7 <= where.plusOnes.lte ? 1 : 0,
+    );
+
+    const result = await registerGuest({ eventId: "ev-1", viewer: VIEWER });
+
+    expect(result).toMatchObject({ ok: true, state: "going", changed: true });
   });
 
   it("doesn't put anyone on the list once the night is over", async () => {

@@ -156,6 +156,30 @@ describe("submitRsvpAction", () => {
     expect(data.plusOnes).toBe(3);
   });
 
+  // A party of five waits for seats; three are free, so the returning guest's single seat is theirs.
+  it("lets a guest who declined back in when nobody waiting fits the free seats", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 7, _sum: { plusOnes: 0 } });
+    mocks.count.mockImplementation(({ where }: { where: { plusOnes: { lte: number } } }) =>
+      4 <= where.plusOnes.lte ? 1 : 0,
+    );
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.update.mock.calls[0][0].data.rsvpStatus).toBe("ATTENDING");
+  });
+
+  // A waiting party of three leaving may be what kept a single behind them out.
+  it("moves the line when a waitlisted guest steps back", async () => {
+    mocks.findUnique.mockResolvedValue(guest("WAITLISTED", { date: new Date(Date.now() + 2 * DAY) }, 2));
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "DECLINED" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+  });
+
   it("lets a guest who declined back in when nobody is waiting", async () => {
     mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
 

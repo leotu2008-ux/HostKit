@@ -4,7 +4,7 @@ import { notify } from "@/lib/notify";
 import { newRsvpToken } from "@/lib/tokens";
 import { linkGuestsToContacts } from "@/lib/guest-book";
 import { hasFinished } from "@/lib/outcomes";
-import { attendingHeads } from "@/lib/waitlist";
+import { seatFree } from "@/lib/waitlist";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 /** Where an account stands with an event. Mirrors `RegistrationState` on iOS. */
@@ -34,11 +34,8 @@ export function decideRegistration(input: {
   existing: RsvpStatus | null;
   isHost: boolean;
   requiresApproval: boolean;
-  /** Heads already going, plus-ones included. */
-  attending: number;
-  /** Heads the registrant would bring: themselves and their plus-ones. */
-  party: number;
-  capacity: number;
+  /** Their party fits the seats left and nobody waiting fits them first. */
+  seatFree: boolean;
 }): "going" | "pending" | "waitlisted" | "declined" | "unchanged" {
   switch (input.existing) {
     case "ATTENDING":
@@ -51,7 +48,7 @@ export function decideRegistration(input: {
       break;
   }
   if (input.requiresApproval && !input.isHost) return "pending";
-  if (input.attending + input.party > input.capacity) return "waitlisted";
+  if (!input.seatFree) return "waitlisted";
   return "going";
 }
 
@@ -135,14 +132,12 @@ export async function registerGuest(input: {
 
     // Capacity is people in the room: the yeses so far and the people they
     // bring, and a row the host already filled in keeps its plus-ones.
-    const attending = await attendingHeads(tx, event.id);
+    const party = 1 + Math.max(0, existing?.plusOnes ?? 0);
     const decision = decideRegistration({
       existing: existing?.rsvpStatus ?? null,
       isHost,
       requiresApproval: event.requiresApproval,
-      attending,
-      party: 1 + Math.max(0, existing?.plusOnes ?? 0),
-      capacity: event.guestCount,
+      seatFree: await seatFree(tx, event.id, event.guestCount, party),
     });
 
     if (decision === "declined") {

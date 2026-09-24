@@ -63,6 +63,12 @@ describe("updateGuestAction", () => {
     expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
   });
 
+  it("moves the line when the host takes a waiting party off it", async () => {
+    mocks.findFirst.mockResolvedValue({ rsvpStatus: "WAITLISTED", plusOnes: 2 });
+    await updateGuestAction(form({ rsvpStatus: "DECLINED", plusOnes: "2" }));
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+  });
+
   it("doesn't touch the waitlist when a going guest brings more", async () => {
     mocks.findFirst.mockResolvedValue({ rsvpStatus: "ATTENDING", plusOnes: 0 });
     await updateGuestAction(form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
