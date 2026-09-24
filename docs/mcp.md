@@ -68,7 +68,7 @@ npm run mcp
 
 | tool | what it answers |
 |---|---|
-| `list_events` | Every event you host, soonest first. Start here for an id. |
+| `list_events` | Every night you host, by date, oldest first, undated last; compare dates to today to find what's next. Start here for an id. |
 | `get_event` | One event in full: when, where, capacity, published or not. |
 | `list_guests` | The list, each person's RSVP and whether they came through the door, plus a summary. |
 

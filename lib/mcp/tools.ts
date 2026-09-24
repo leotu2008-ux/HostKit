@@ -93,7 +93,7 @@ export const TOOLS: ToolSpec[] = [
     name: "list_events",
     title: "List the events you host",
     description:
-      "Every event this account hosts or helps run, soonest first, with dates, cities, capacity and how many have said yes. Start here to find an event's id.",
+      "Every night this account hosts or helps run, by date, oldest first, undated last, with dates, cities, capacity and how many have said yes. Compare dates to today to find what's next. Start here to find an event's id.",
     schema: listEventsSchema,
     readOnly: true,
     run: (ctx) => apiGet(ctx, "/api/v1/events"),
