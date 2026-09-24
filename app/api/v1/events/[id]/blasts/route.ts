@@ -3,7 +3,7 @@ import type { EventStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
 import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, segmentsFor, type Segment } from "@/lib/blasts";
-import { sendBlast } from "@/lib/blast-send";
+import { BlastError, sendBlast } from "@/lib/blast-send";
 import { isEmailConfigured } from "@/lib/email/send";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 
@@ -86,6 +86,7 @@ export async function POST(
     });
     return json({ ...outcome, ...(await feed(event)) }, 201);
   } catch (error) {
+    if (error instanceof BlastError) return apiError(error.message, error.status);
     return apiError(error instanceof Error ? error.message : "Couldn't send that.", 502);
   }
 }

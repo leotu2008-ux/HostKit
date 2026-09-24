@@ -12,6 +12,12 @@ import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { isSmsConfigured, sendSms } from "@/lib/sms/twilio";
 import { notify } from "@/lib/notify";
 
+export class BlastError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
 export type BlastOutcome = {
   id: string;
   provider: "resend" | "manual";
@@ -70,7 +76,7 @@ export async function sendBlast(input: {
   // A stale composer or an API call can still name "came"; only send it
   // once the night has happened and the door was run.
   if (event && !segmentsFor(event, guests).includes(input.segment)) {
-    throw new Error("“Came” opens after the night, once guests were checked in at the door.");
+    throw new BlastError("“Came” opens after the night, once guests were checked in at the door.", 409);
   }
   const recipients = recipientsFor(input.segment, guests);
   const phoneRecipients = phoneRecipientsFor(input.segment, guests);
