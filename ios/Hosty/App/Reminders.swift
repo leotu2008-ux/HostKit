@@ -6,7 +6,8 @@ import UserNotifications
 /// events" on every Discover load, so a moved date moves the reminder — no
 /// server push needed.
 enum Reminders {
-    private static let prefix = "hosty-event-"
+    // Scheduled on users' devices, so the prefix keeps its pre-rebrand name on purpose.
+    private static let prefix = "hostkit-event-"
 
     /// Asks once; later calls just report the current setting.
     static func requestPermission() async -> Bool {

@@ -14,10 +14,11 @@ nonisolated struct DraftClaim: Codable, Hashable, Sendable {
 nonisolated enum Session {
     static let defaultServer = URL(string: "https://tryhosty.app")!
 
-    private static let serverKey = "hosty.serverURL"
-    private static let userKey = "hosty.user"
-    private static let draftsKey = "hosty.drafts"
-    private static let cityKey = "hosty.city"
+    // Stored on users' devices, so these keep their pre-rebrand names on purpose.
+    private static let serverKey = "hostkit.serverURL"
+    private static let userKey = "hostkit.user"
+    private static let draftsKey = "hostkit.drafts"
+    private static let cityKey = "hostkit.city"
 
     /// The city Discover opens on: chosen by the host, or detected once from
     /// the phone's location. Empty string means "Everywhere" was chosen.
@@ -31,10 +32,11 @@ nonisolated enum Session {
             }
         }
     }
-    private static let tokenAccount = "hosty.apiToken"
-    private static let remindersKey = "hosty.remindersEnabled"
-    private static let calendarKey = "hosty.calendarEnabled"
-    private static let calendarEntriesKey = "hosty.calendarEntries"
+    // Stored on users' devices, so these keep their pre-rebrand names on purpose.
+    private static let tokenAccount = "hostkit.apiToken"
+    private static let remindersKey = "hostkit.remindersEnabled"
+    private static let calendarKey = "hostkit.calendarEnabled"
+    private static let calendarEntriesKey = "hostkit.calendarEntries"
 
     /// Reminders the evening before and an hour before events you're going to. On by default.
     static var remindersEnabled: Bool {
@@ -49,9 +51,10 @@ nonisolated enum Session {
     }
 
     /// Home's "Are you a student?" nudge, shown once to accounts with no school.
+    /// Stored on users' devices, so the key keeps its pre-rebrand name on purpose.
     static var schoolPromptDismissed: Bool {
-        get { UserDefaults.standard.bool(forKey: "hosty.schoolPromptDismissed") }
-        set { UserDefaults.standard.set(newValue, forKey: "hosty.schoolPromptDismissed") }
+        get { UserDefaults.standard.bool(forKey: "hostkit.schoolPromptDismissed") }
+        set { UserDefaults.standard.set(newValue, forKey: "hostkit.schoolPromptDismissed") }
     }
 
     /// Event id → calendar entry identifier, so a night is only added once.
