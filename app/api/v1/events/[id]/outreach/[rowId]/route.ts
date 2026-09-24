@@ -2,6 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
 import { loadOutreach } from "@/lib/api/outreach";
+import { rememberCollaborator } from "@/lib/vendor-book";
 
 const patchSchema = z.object({
   status: z.enum(["PENDING", "CONFIRMED", "DECLINED"]),
@@ -25,6 +26,15 @@ export async function PATCH(
     data: { status: parsed.data.status },
   });
   if (result.count === 0) return apiError("Not found.", 404);
+  if (parsed.data.status === "CONFIRMED") {
+    // Same as the web's setCollaboratorStatusAction: best-effort, since the
+    // vendor book must never fail a status change that already committed.
+    try {
+      await rememberCollaborator(rowId);
+    } catch (error) {
+      console.error("rememberCollaborator failed", error);
+    }
+  }
   return json({ rows: await loadOutreach(event, user?.name ?? "the host") });
 }
 
