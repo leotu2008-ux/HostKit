@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   currentUser: vi.fn(),
@@ -18,8 +18,16 @@ import { isAdmin } from "@/lib/access";
 import { AccountError } from "@/lib/account";
 import { approveWaitlistEntryAction, deleteEventAsAdminAction } from "@/lib/actions/admin";
 
-const ADMIN = { id: "u-admin", email: "leowomc@gmail.com", name: "Leo" };
+const ADMIN = { id: "u-admin", email: "admin@hosty.test", name: "Hosty" };
 const MAYA = { id: "u-maya", email: "maya@hosty.demo", name: "Maya Chen" };
+
+beforeEach(() => {
+  vi.stubEnv("ADMIN_EMAILS", ADMIN.email);
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function form(eventId: string) {
   const data = new FormData();
@@ -29,10 +37,10 @@ function form(eventId: string) {
 
 describe("isAdmin", () => {
   it("is only the administrator's exact address", () => {
-    expect(isAdmin({ email: "leowomc@gmail.com" })).toBe(true);
-    expect(isAdmin({ email: " LeoWomc@Gmail.com " })).toBe(true);
+    expect(isAdmin({ email: "admin@hosty.test" })).toBe(true);
+    expect(isAdmin({ email: " Admin@Hosty.test " })).toBe(true);
     expect(isAdmin({ email: "maya@hosty.demo" })).toBe(false);
-    expect(isAdmin({ email: "leowomc@gmail.com.evil.com" })).toBe(false);
+    expect(isAdmin({ email: "admin@hosty.test.evil.com" })).toBe(false);
   });
 });
 

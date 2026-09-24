@@ -1,4 +1,5 @@
 import { signOutAction } from "@/lib/actions/auth";
+import { revokeAgentAccessAction } from "@/lib/actions/mcp";
 import { setGuestListVisibilityAction } from "@/lib/actions/profile";
 import { currentProfile } from "@/lib/session";
 import { PhoneForm } from "@/components/phone-form";
@@ -7,8 +8,12 @@ import { redirect } from "next/navigation";
 
 export const metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
-  const user = await currentProfile();
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ agent?: string }>;
+}) {
+  const [user, query] = await Promise.all([currentProfile(), searchParams]);
   if (!user) redirect("/signin?next=%2Fsettings");
 
   return (
@@ -66,11 +71,28 @@ export default async function SettingsPage() {
       <Card className="mt-4 p-5">
         <h2 className="font-display text-lg text-ink">Connect an agent</h2>
         <p className="mt-1 mb-4 text-[15px] text-ink-soft">
-          Let Cursor or Claude read your events and guest lists. Read-only, and only this account.
+          Let Cursor or Claude read your events and guest lists. Read-only, and only this account. Guest
+          emails and phone numbers are not included.
         </p>
         <ButtonLink href="/mcp" variant="secondary">
           Set it up
         </ButtonLink>
+        <form action={revokeAgentAccessAction} className="mt-4 border-t border-line pt-4">
+          <p className="mb-3 text-[13px] leading-relaxed text-ink-mute">
+            Revoke agent access ends every bearer token issued before now, including the one the iOS app
+            uses. This browser stays signed in. Generate a new token afterward if you still want Cursor
+            connected. Claude and ChatGPT OAuth connections stay until you disconnect them under AI
+            connections.
+          </p>
+          {query.agent === "revoked" ? (
+            <p className="mb-3 text-sm font-medium text-ink" role="status">
+              Agent access revoked. Existing tokens no longer work.
+            </p>
+          ) : null}
+          <Button type="submit" variant="danger">
+            Revoke agent access
+          </Button>
+        </form>
       </Card>
 
       <Card className="mt-4 p-5">

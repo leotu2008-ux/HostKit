@@ -108,6 +108,36 @@ describe("each tool hits the route it says it does", () => {
     expect(calls[0].url).toBe("https://tryhosty.app/api/v1/events/evt_1/guests");
   });
 
+  it("list_guests has no email or phone", async () => {
+    const { fetchImpl } = stubApi({
+      guests: [
+        {
+          id: "g1",
+          name: "Sam",
+          email: "sam@babson.edu",
+          phone: "+16175550100",
+          status: "ATTENDING",
+          plusOnes: 2,
+          user: { email: "hidden@example.com", phone: "+19995550100" },
+        },
+      ],
+      summary: { going: 1, pending: 0, waitlisted: 0, checkedIn: 0 },
+    });
+    const result = await toolByName("list_guests")!.run(ctxWith(fetchImpl), { eventId: "evt_1" });
+    const text = JSON.stringify(result);
+    expect(text).not.toContain("sam@babson.edu");
+    expect(text).not.toContain("hidden@example.com");
+    expect(text).not.toContain("6175550100");
+    expect(text).not.toContain("9995550100");
+    expect(text).not.toContain("email");
+    expect(text).not.toContain("phone");
+    expect(result).toEqual({
+      guests: [{ id: "g1", name: "Sam", status: "ATTENDING", plusOnes: 2, user: {} }],
+      summary: { going: 1, pending: 0, waitlisted: 0, checkedIn: 0 },
+    });
+    expect(toolByName("list_guests")!.description).toMatch(/not included/i);
+  });
+
   it("offers the host's own events and guests, and no consumer browsing", () => {
     expect(TOOLS.map((t) => t.name)).toEqual(["list_events", "get_event", "list_guests"]);
     expect(toolByName("campus_events")).toBeUndefined();

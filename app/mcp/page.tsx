@@ -73,7 +73,8 @@ export default async function McpPage() {
         <h2 className="font-display text-lg text-ink">A token</h2>
         <p className="mt-1 mb-4 text-[15px] text-ink-soft">
           Every call carries <code className="text-ink">Authorization: Bearer</code>. The token is the same
-          one the iOS app uses. It expires, and a password reset invalidates every token issued before it.
+          one the iOS app uses. It expires after 30 days. A password reset, or Revoke agent access in Settings,
+          invalidates every token issued before that.
         </p>
         <McpConnect signedIn={Boolean(user)} configUrl={onProduction ? PRODUCTION_MCP_URL : here} />
         {user ? null : (

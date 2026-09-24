@@ -88,7 +88,7 @@ headcount everything is priced against.
 ## Access
 
 Hosty is invite-only. People join the waitlist on the landing page. The
-administrator (`ADMIN_EMAIL` in `lib/access.ts`) lets them in from
+administrator (addresses in `ADMIN_EMAILS`) lets them in from
 `/admin/waitlist`, and each one gets an email with a link to set a password.
 The administrator also sees `/admin/events`, every host's events, and can
 remove any of them.

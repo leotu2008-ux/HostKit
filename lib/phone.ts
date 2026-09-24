@@ -17,6 +17,18 @@ export const CODE_TTL_MS = 10 * 60 * 1000;
 export const RESEND_AFTER_MS = 60 * 1000;
 export const MAX_ATTEMPTS = 5;
 
+/** Production, including a Vercel production deployment, must not print a
+ *  number or a verification code. Preview sets NODE_ENV=production too. */
+export function smsFallbackClosed(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.NODE_ENV === "production" || env.VERCEL_ENV === "production";
+}
+
+/** Last four digits only, so a development log is not a copy of the number. */
+export function maskPhone(phone: string): string {
+  const tail = phone.replace(/\D/g, "").slice(-4);
+  return `+••••${tail}`;
+}
+
 export class PhoneError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
@@ -24,10 +36,16 @@ export class PhoneError extends Error {
 }
 
 /** Sends a fresh code. Returns the code itself only when there's no SMS
- *  service and this isn't production, so the flow can be walked locally. */
+ *  service and this isn't production, so the flow can be walked locally.
+ *  Production without Twilio fails closed and writes nothing. */
 export async function startPhoneVerification(userId: string, rawPhone: string) {
   const phone = normalizePhone(rawPhone);
   if (!phone) throw new PhoneError("Enter a phone number with the area code.", 400);
+
+  const configured = isSmsConfigured();
+  if (!configured && smsFallbackClosed()) {
+    throw new PhoneError("SMS isn't configured, so a verification code can't be sent.", 503);
+  }
 
   const taken = await db.user.findFirst({ where: { phone, NOT: { id: userId } }, select: { id: true } });
   if (taken) throw new PhoneError("That number is already on another account.", 409);
@@ -50,16 +68,15 @@ export async function startPhoneVerification(userId: string, rawPhone: string) {
     }),
   ]);
 
-  const configured = isSmsConfigured();
   if (configured) {
     await sendSms(phone, codeMessage(code));
-  } else {
-    console.log(`[sms] no Twilio configured — code for ${phone}: ${code}`);
+  } else if (!smsFallbackClosed()) {
+    console.log(`[sms] no Twilio configured — code for ${maskPhone(phone)}: ${code}`);
   }
   return {
     phone,
     expiresAt,
-    devCode: !configured && process.env.NODE_ENV !== "production" ? code : undefined,
+    devCode: !configured && !smsFallbackClosed() ? code : undefined,
   };
 }
 

@@ -2,7 +2,8 @@
  * The one place Hosty sends a text from: Twilio's Messages endpoint, one
  * plain fetch, no SDK. `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and
  * `TWILIO_FROM` (a number you own, E.164) turn it on. Without them
- * `isSmsConfigured()` is false and verification codes go to the log.
+ * `isSmsConfigured()` is false. Development logs a masked number and the
+ * code. Production refuses to send and does not log either.
  */
 
 export function isSmsConfigured(): boolean {

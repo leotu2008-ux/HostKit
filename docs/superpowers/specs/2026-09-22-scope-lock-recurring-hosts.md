@@ -10,7 +10,7 @@ One-off hosts can still use Hosty, but no work is done for them specifically. Gu
 
 ## In scope
 
-1. **Access: waitlist plus admin approval.** Hosty stays invite-only. People join the waitlist. The administrator (`leowomc@gmail.com`) approves entries from `/admin/waitlist`. An approved person gets an email with a link to set a password, then has the full host app.
+1. **Access: waitlist plus admin approval.** Hosty stays invite-only. People join the waitlist. The administrator (an address in `ADMIN_EMAILS`) approves entries from `/admin/waitlist`. An approved person gets an email with a link to set a password, then has the full host app.
 2. **An honest front door.** Nothing tells a stranger "free to start" or "no account needed". Signed-out visitors are offered "Join the waitlist" and "Sign in". Creating an event requires dashboard access, so there are no more anonymous drafts from the website.
 3. **Recurring-host features** (plan 2, built on the data model below):
    - **Series:** link repeat events ("Thursday Pitch Night") with shared history.

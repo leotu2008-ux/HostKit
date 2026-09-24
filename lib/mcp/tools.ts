@@ -48,7 +48,7 @@ export async function apiGet<T>(ctx: ToolContext, path: string): Promise<T> {
     // 401 is nearly always a stale token, and saying so saves a support round trip.
     const hint =
       response.status === 401
-        ? "The token was rejected. Tokens expire and a password reset invalidates them; get a new one from POST /api/v1/auth/token."
+        ? "The token was rejected. Tokens expire, and a password reset or Revoke agent access in Settings invalidates them; get a new one from POST /api/v1/auth/token."
         : body.slice(0, 200);
     throw new HostyApiError(response.status, `Hosty answered ${response.status}. ${hint}`);
   }
@@ -75,6 +75,20 @@ export const getEventSchema = z.object({
 export const listGuestsSchema = z.object({
   eventId: z.string().min(1).describe("The event's id."),
 });
+
+const CONTACT_KEYS = new Set(["email", "phone"]);
+
+/** Drops guest email and phone, including nested copies, from an API payload. */
+export function omitGuestContacts(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(omitGuestContacts);
+  if (!value || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (CONTACT_KEYS.has(key)) continue;
+    out[key] = omitGuestContacts(child);
+  }
+  return out;
+}
 
 export type ToolName = "list_events" | "get_event" | "list_guests";
 
@@ -111,11 +125,13 @@ export const TOOLS: ToolSpec[] = [
     name: "list_guests",
     title: "List an event's guests",
     description:
-      "The guest list with each person's RSVP and whether they came through the door, plus a summary of how many are going, pending, waitlisted and checked in. The RSVP and the check-in are separate facts: someone can have said yes and not turned up, or turned up without ever replying.",
+      "The guest list with each person's name, RSVP, plus-ones, and whether they came through the door, plus counts of how many are going, pending, waitlisted and checked in. Email addresses and phone numbers are not included. The RSVP and the check-in are separate facts: someone can have said yes and not turned up, or turned up without ever replying.",
     schema: listGuestsSchema,
     readOnly: true,
-    run: (ctx, args) =>
-      apiGet(ctx, `/api/v1/events/${encodeURIComponent(String(args.eventId))}/guests`),
+    run: async (ctx, args) =>
+      omitGuestContacts(
+        await apiGet(ctx, `/api/v1/events/${encodeURIComponent(String(args.eventId))}/guests`),
+      ),
   },
 ];
 
