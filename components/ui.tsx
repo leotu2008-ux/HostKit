@@ -15,9 +15,11 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand";
 // Soft and tactile: pills that lift a pixel on hover and press in on click,
 // primaries with a gentle gradient and a glow in their own colour. Nothing
 // moves when a button is disabled or the reader asks for reduced motion, and
-// every button shows a focus ring for the keyboard.
+// every button shows a focus ring for the keyboard. The ring is !important
+// because the app-wide focus ring in globals.css is unlayered, so it would
+// otherwise win over any utility (and square off the pill).
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[translate,scale,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-none disabled:scale-none motion-reduce:translate-none! motion-reduce:scale-none! motion-reduce:transition-none";
+  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[translate,scale,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px]! focus-visible:outline-brand! focus-visible:rounded-full! disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-none disabled:scale-none motion-reduce:translate-none! motion-reduce:scale-none! motion-reduce:transition-none";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
   primary: cx(
