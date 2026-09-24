@@ -28,6 +28,13 @@ export function smsText(body: string, name: string, host: string): string {
   return `${message}\n— ${host} via Hosty. Reply STOP to opt out.`;
 }
 
+/** The email: the message, personalised, signed like the text. Replies go
+ *  to the host, so a reply is how a guest asks to stop. */
+export function emailText(body: string, name: string, host: string, event: string): string {
+  const message = personalize(body, name).trim();
+  return `${message}\n\n— ${host} via Hosty. Reply to this email to stop getting updates about ${event}.`;
+}
+
 /**
  * Sends a blast to a segment of the guest list and records it. With Resend
  * configured the mail goes out, reply-to the host; otherwise the blast is
@@ -74,7 +81,7 @@ export async function sendBlast(input: {
       recipients.map((r) => ({
         to: r.email,
         subject: input.subject,
-        text: personalize(input.body, r.name),
+        text: emailText(input.body, r.name, input.host.name, event?.title ?? "this event"),
         replyTo: input.host.email,
         // Its own From (RESEND_FROM_BLAST), so a complaint on a blast
         // cannot sink password resets.

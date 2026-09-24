@@ -28,13 +28,21 @@ vi.mock("@/lib/sms/twilio", () => ({
 
 vi.mock("@/lib/notify", () => ({ notify: mocks.notify }));
 
-import { sendBlast } from "@/lib/blast-send";
+import { emailText, sendBlast } from "@/lib/blast-send";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.blastCreate.mockResolvedValue({ id: "b1" });
   mocks.eventFind.mockResolvedValue({ title: "Supper club" });
   mocks.sendEmails.mockImplementation(async (emails: unknown[]) => emails.length);
+});
+
+describe("emailText", () => {
+  it("personalises the message and signs it with the host and the night", () => {
+    expect(emailText("Hi {name}, doors at 7.\n", "Ada Lovelace", "Sam", "Supper club")).toBe(
+      "Hi Ada, doors at 7.\n\n— Sam via Hosty. Reply to this email to stop getting updates about Supper club.",
+    );
+  });
 });
 
 describe("sendBlast", () => {
@@ -57,7 +65,7 @@ describe("sendBlast", () => {
       {
         to: "ada@example.com",
         subject: "Doors at 7",
-        text: "Hi Ada, doors at 7.",
+        text: "Hi Ada, doors at 7.\n\n— Sam via Hosty. Reply to this email to stop getting updates about Supper club.",
         replyTo: "sam@example.com",
         stream: "blast",
         template: "blast",
@@ -65,7 +73,7 @@ describe("sendBlast", () => {
       {
         to: "alan@example.com",
         subject: "Doors at 7",
-        text: "Hi Alan, doors at 7.",
+        text: "Hi Alan, doors at 7.\n\n— Sam via Hosty. Reply to this email to stop getting updates about Supper club.",
         replyTo: "sam@example.com",
         stream: "blast",
         template: "blast",
