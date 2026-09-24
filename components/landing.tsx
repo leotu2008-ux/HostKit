@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CloudSky } from "@/components/cloud-sky";
-import { VenueDiscovery } from "@/components/venue-discovery";
 import { ConnectAgentSection } from "@/components/connect-agent-section";
 import { CreateEventButton } from "@/components/create-event-button";
 import { Eyebrow } from "@/components/eyebrow";
 import { WaveText } from "@/components/wave-text";
 import { LandingPreview } from "@/components/landing-preview";
+import { VenueDiscovery } from "@/components/venue-discovery";
 import { HostyMark } from "@/components/hosty-mark";
 import { HeroHeadline } from "@/components/hero-headline";
 import { Reveal } from "@/components/reveal";
@@ -212,9 +212,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
         </Rails>
       </div>
 
-      <Rails>
-        <VenueDiscovery />
-      </Rails>
+      <VenueDiscovery />
 
       {/* After the four stages, still on the page ground so the section’s
           own surface cards stay as they are. */}

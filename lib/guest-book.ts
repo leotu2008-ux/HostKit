@@ -1,4 +1,6 @@
+import type { RsvpStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
+import { hasStarted } from "@/lib/outcomes";
 import { newRsvpToken } from "@/lib/tokens";
 
 /**
@@ -8,20 +10,46 @@ import { newRsvpToken } from "@/lib/tokens";
  * A yes only counts once the night has happened: not for one still ahead
  * (flexible dates: until the last acceptable day) and not for a cancelled one.
  */
-function came(doorEventIds: string[], now: Date) {
-  const happened = {
-    status: { not: "CANCELLED" as const },
-    OR: [{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }],
-  };
+function came(doorEventIds: string[], pastNightIds: string[]) {
+  const door = new Set(doorEventIds);
   return {
     OR: [
       { checkedInAt: { not: null } },
-      { rsvpStatus: "ATTENDING" as const, eventId: { notIn: doorEventIds }, event: happened },
+      { rsvpStatus: "ATTENDING" as const, eventId: { in: pastNightIds.filter((id) => !door.has(id)) } },
     ],
   };
 }
 
-export type GuestBookEntry = { id: string; name: string; email: string | null; came: number };
+type Night = { date: Date | null; endDate: Date | null; schoolDomain: string | null };
+
+/** The host's nights, cancelled ones left out; filter with `happened`. */
+const NIGHTS = { status: { not: "CANCELLED" as const } };
+
+/**
+ * Whether a night has happened: its start has passed on the clock at the
+ * event's school (`date` is wall-clock time, see `hasStarted`). A flexible
+ * night has happened once its last acceptable day has.
+ */
+function happened(night: Night, now: Date): boolean {
+  return hasStarted({ date: night.endDate ?? night.date, schoolDomain: night.schoolDomain }, now);
+}
+
+/**
+ * Contacts still on the waitlist at the host's most recent other night that
+ * has happened: they wanted in and didn't get a seat, so they get first dibs.
+ */
+async function missedOutLastTime(eventId: string, pastNights: (Night & { id: string })[]): Promise<string[]> {
+  const when = (n: Night) => n.date?.getTime() ?? 0;
+  const last = pastNights.filter((n) => n.id !== eventId).sort((a, b) => when(b) - when(a))[0];
+  if (!last) return [];
+  const rows = await db.guest.findMany({
+    where: { eventId: last.id, rsvpStatus: "WAITLISTED", checkedInAt: null, contactId: { not: null } },
+    select: { contactId: true },
+  });
+  return rows.map((g) => g.contactId as string);
+}
+
+export type GuestBookEntry = { id: string; name: string; email: string | null; came: number; missedOut: boolean };
 
 /** Guest-book emails are stored lowercased and trimmed; blank means none. */
 export function contactEmail(raw: string | null | undefined): string | null {
@@ -81,23 +109,91 @@ export async function linkGuestsToContacts(eventId: string): Promise<number> {
   return linked;
 }
 
-/** People who came to one of this host's other events and aren't on this one. Most-attended first. */
+/**
+ * People who came to one of this host's other events and aren't on this one,
+ * plus anyone who missed out on the host's last night. Those who missed out
+ * come first, then most-attended.
+ */
 export async function guestBookFor(ownerId: string, eventId: string, now = new Date()): Promise<GuestBookEntry[]> {
-  const [onThisEvent, doorEvents] = await Promise.all([
+  const [onThisEvent, doorEvents, nights] = await Promise.all([
     db.guest.findMany({ where: { eventId, contactId: { not: null } }, select: { contactId: true } }),
     db.event.findMany({ where: { ownerId, guests: { some: { checkedInAt: { not: null } } } }, select: { id: true } }),
+    db.event.findMany({
+      where: { ownerId, ...NIGHTS },
+      select: { id: true, date: true, endDate: true, schoolDomain: true },
+    }),
   ]);
+  const pastNights = nights.filter((n) => happened(n, now));
+  const missedIds = await missedOutLastTime(eventId, pastNights);
   const exclude = onThisEvent.map((g) => g.contactId as string);
-  const CAME = came(doorEvents.map((e) => e.id), now);
+  const missed = new Set(missedIds.filter((id) => !exclude.includes(id)));
+  const CAME = came(
+    doorEvents.map((e) => e.id),
+    pastNights.map((n) => n.id),
+  );
+  const cameBefore = { guests: { some: { eventId: { not: eventId }, ...CAME } } };
 
   const contacts = await db.contact.findMany({
-    where: { ownerId, id: { notIn: exclude }, guests: { some: { eventId: { not: eventId }, ...CAME } } },
+    where: {
+      ownerId,
+      id: { notIn: exclude },
+      ...(missed.size > 0 ? { OR: [cameBefore, { id: { in: [...missed] } }] } : cameBefore),
+    },
     select: { id: true, name: true, email: true, _count: { select: { guests: { where: CAME } } } },
   });
 
   return contacts
-    .map((c) => ({ id: c.id, name: c.name, email: c.email, came: c._count.guests }))
-    .sort((a, b) => b.came - a.came || a.name.localeCompare(b.name));
+    .map((c) => ({ id: c.id, name: c.name, email: c.email, came: c._count.guests, missedOut: missed.has(c.id) }))
+    .sort(
+      (a, b) => Number(b.missedOut) - Number(a.missedOut) || b.came - a.came || a.name.localeCompare(b.name),
+    );
+}
+
+type TurnoutNight = {
+  id: string;
+  date: Date | null;
+  endDate: Date | null;
+  guests: { contactId: string | null; rsvpStatus: RsvpStatus; checkedInAt: Date | null }[];
+};
+
+export type NightTurnout = { came: number; fresh: number };
+
+/**
+ * For each night that happened: how many came (the guest book's rule, per
+ * night) and how many of them came to none of the earlier nights. Pure. A
+ * guest with no contact counts as came but can't be called new.
+ */
+export function cameAndNew(nights: TurnoutNight[]): Map<string, NightTurnout> {
+  const when = (n: TurnoutNight) => (n.date ?? n.endDate)?.getTime() ?? 0;
+  const seen = new Set<string>();
+  const result = new Map<string, NightTurnout>();
+  for (const night of [...nights].sort((a, b) => when(a) - when(b))) {
+    const door = night.guests.some((g) => g.checkedInAt);
+    const cameHere = night.guests.filter((g) => (door ? g.checkedInAt : g.rsvpStatus === "ATTENDING"));
+    const contacts = new Set(cameHere.flatMap((g) => (g.contactId ? [g.contactId] : [])));
+    const fresh = [...contacts].filter((id) => !seen.has(id)).length;
+    contacts.forEach((id) => seen.add(id));
+    result.set(night.id, { came: cameHere.length, fresh });
+  }
+  return result;
+}
+
+/** `cameAndNew` over every night this host has had, keyed by event id. */
+export async function nightlyTurnout(ownerId: string, now = new Date()): Promise<Map<string, NightTurnout>> {
+  const nights = await db.event.findMany({
+    where: { ownerId, ...NIGHTS },
+    select: {
+      id: true,
+      date: true,
+      endDate: true,
+      schoolDomain: true,
+      guests: {
+        where: { OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING" }] },
+        select: { contactId: true, rsvpStatus: true, checkedInAt: true },
+      },
+    },
+  });
+  return cameAndNew(nights.filter((n) => happened(n, now)));
 }
 
 /**

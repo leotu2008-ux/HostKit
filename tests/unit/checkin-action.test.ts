@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   guestUpdate: vi.fn(),
   guestUpdateMany: vi.fn(),
   guestFindUnique: vi.fn(),
+  guestCreate: vi.fn(),
 }));
 
 vi.mock("@/lib/session", () => ({ requireEvent: mocks.requireEvent }));
@@ -18,6 +19,7 @@ vi.mock("@/lib/db", () => ({
     guest: {
       findFirst: mocks.guestFindFirst,
       findUnique: mocks.guestFindUnique,
+      create: mocks.guestCreate,
       update: mocks.guestUpdate,
       updateMany: mocks.guestUpdateMany,
     },
@@ -32,7 +34,7 @@ vi.mock("@/lib/api/http", async (importOriginal) => {
   };
 });
 
-import { checkInGuestAction } from "@/lib/actions/checkin";
+import { addWalkUpAction, checkInGuestAction } from "@/lib/actions/checkin";
 import { POST } from "@/app/api/v1/events/[id]/guests/[guestId]/check-in/route";
 
 const ARRIVED = new Date("2026-10-23T23:30:00Z");
@@ -73,6 +75,7 @@ beforeEach(() => {
   mocks.requireEvent.mockResolvedValue({ user: { id: "u1" }, event: { id: "e1", ownerId: "u1" } });
   mocks.guestUpdate.mockImplementation(async ({ data }) => guest(data));
   mocks.guestUpdateMany.mockResolvedValue({ count: 1 });
+  mocks.guestFindFirst.mockResolvedValue(null);
 });
 
 /**
@@ -107,6 +110,16 @@ describe("checkInGuestAction", () => {
     expect(mocks.record).toHaveBeenCalledTimes(1);
   });
 
+  it("lets in a guest who said no, keeping their RSVP and recording a walk-up (Check in anyway)", async () => {
+    mocks.guestFindFirst.mockResolvedValue(guest({ rsvpStatus: "DECLINED" }));
+    await checkInGuestAction(form());
+    expect(mocks.guestUpdateMany).toHaveBeenCalledWith({
+      where: { id: "g1", eventId: "e1", checkedInAt: null },
+      data: { checkedInAt: expect.any(Date), arrivedWithoutRsvp: true },
+    });
+    expect(mocks.guestUpdate).not.toHaveBeenCalled();
+  });
+
   it("admits a guest once when two phones tap Check in at the same moment", async () => {
     const { landed } = raceRow();
     await Promise.all([checkInGuestAction(form()), checkInGuestAction(form())]);
@@ -126,6 +139,78 @@ describe("checkInGuestAction", () => {
     expect(mocks.record).not.toHaveBeenCalled();
     // …but that phone's list still flips to "Already in".
     expect(mocks.refresh).toHaveBeenCalled();
+  });
+});
+
+function walkUp(name: string) {
+  const data = new FormData();
+  data.set("eventId", "e1");
+  data.set("name", name);
+  return data;
+}
+
+describe("addWalkUpAction", () => {
+  it("adds someone who isn't on the list and checks them in at once, as a walk-up", async () => {
+    await addWalkUpAction(walkUp("  Priya  "));
+    expect(mocks.requireEvent).toHaveBeenCalledWith("e1");
+    expect(mocks.guestCreate).toHaveBeenCalledWith({
+      data: {
+        eventId: "e1",
+        name: "Priya",
+        rsvpToken: expect.any(String),
+        checkedInAt: expect.any(Date),
+        arrivedWithoutRsvp: true,
+      },
+    });
+    // The RSVP is left at its default: they never replied.
+    expect(mocks.guestCreate.mock.calls[0][0].data).not.toHaveProperty("rsvpStatus");
+    expect(mocks.record).toHaveBeenCalledWith("e1", {
+      actor: "system",
+      kind: "guest_checked_in",
+      title: "Priya walked up and checked in",
+    });
+    expect(mocks.refresh).toHaveBeenCalled();
+  });
+
+  it("adds a walk-up once when the button is tapped twice before the first add lands", async () => {
+    const rows: { name: string; checkedInAt: Date; arrivedWithoutRsvp: boolean }[] = [];
+    mocks.guestFindFirst.mockImplementation(async ({ where }) =>
+      rows.find(
+        (r) =>
+          r.name === where.name &&
+          r.arrivedWithoutRsvp === where.arrivedWithoutRsvp &&
+          r.checkedInAt >= where.checkedInAt.gte,
+      ) ?? null,
+    );
+    mocks.guestCreate.mockImplementation(async ({ data }) => (rows.push(data), data));
+
+    await addWalkUpAction(walkUp("Priya"));
+    await addWalkUpAction(walkUp("Priya"));
+
+    expect(rows).toHaveLength(1);
+    expect(mocks.record).toHaveBeenCalledTimes(1);
+    // Both taps still refresh, so the list shows Priya as in.
+    expect(mocks.refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it("still adds a second walk-up with the same name once the first is more than a moment old", async () => {
+    await addWalkUpAction(walkUp("Priya"));
+    const { where } = mocks.guestFindFirst.mock.calls[0][0];
+    expect(where).toMatchObject({ eventId: "e1", name: "Priya", arrivedWithoutRsvp: true });
+    expect(Date.now() - where.checkedInAt.gte.getTime()).toBeLessThanOrEqual(60_000);
+    expect(mocks.guestCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds nobody without a name", async () => {
+    await addWalkUpAction(walkUp("   "));
+    expect(mocks.guestCreate).not.toHaveBeenCalled();
+    expect(mocks.record).not.toHaveBeenCalled();
+  });
+
+  it("checks access before writing", async () => {
+    mocks.requireEvent.mockRejectedValue(new Error("NEXT_NOT_FOUND"));
+    await expect(addWalkUpAction(walkUp("Priya"))).rejects.toThrow();
+    expect(mocks.guestCreate).not.toHaveBeenCalled();
   });
 });
 

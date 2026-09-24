@@ -130,6 +130,21 @@ export function effectiveHeadcount(
 }
 
 /**
+ * The printed door list, the paper backup for when the connection at the
+ * door gives out: everyone going (a yes, or already through the door, the
+ * same rule as the Door page's "going" count), A–Z by name, with the heads
+ * they bring.
+ */
+export function doorList<
+  T extends GuestLike & { name: string; checkedInAt: Date | null },
+>(guests: T[]): { guests: T[]; heads: number } {
+  const going = guests
+    .filter((g) => g.rsvpStatus === "ATTENDING" || g.checkedInAt)
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+  return { guests: going, heads: going.reduce((n, g) => n + heads(g), 0) };
+}
+
+/**
  * Parses a pasted list into guests. Accepts "Name <email>", "Name, email",
  * "Name email" or a bare name per line — hosts paste from wherever the list
  * already lives, and rejecting their format is a good way to lose them.

@@ -100,6 +100,14 @@ function AgentCardAction({
         </ButtonLink>
       );
 
+    case "open_blast":
+      // Opens the drafted blast; the host edits it and presses send there.
+      return (
+        <ButtonLink href={`/events/${eventId}/blasts?draft=${action.draft}`} variant="secondary" size="sm">
+          {action.label}
+        </ButtonLink>
+      );
+
     case "find_venues":
       // Venue search dark-launches until Apple Maps is configured, in which
       // case the Venue tab is where a host can actually see results.

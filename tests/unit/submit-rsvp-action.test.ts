@@ -4,15 +4,28 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
   findUnique: vi.fn(),
   update: vi.fn(),
+  count: vi.fn(),
+  aggregate: vi.fn(),
+  lock: vi.fn(),
   promoteWaitlist: vi.fn(),
   record: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 vi.mock("@/lib/session", () => ({ requireEvent: vi.fn() }));
-vi.mock("@/lib/db", () => ({
-  db: { guest: { findUnique: mocks.findUnique, update: mocks.update } },
-}));
+vi.mock("@/lib/db", () => {
+  // Only the transaction can count or write: outside it there's just the token lookup.
+  const tx = {
+    $executeRaw: mocks.lock,
+    guest: { update: mocks.update, count: mocks.count, aggregate: mocks.aggregate },
+  };
+  return {
+    db: {
+      guest: { findUnique: mocks.findUnique },
+      $transaction: (fn: (t: typeof tx) => unknown) => fn(tx),
+    },
+  };
+});
 vi.mock("@/lib/activity", () => ({ record: mocks.record }));
 vi.mock("@/lib/waitlist", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/waitlist")>()),
@@ -30,13 +43,14 @@ function form(fields: Record<string, string>) {
   return data;
 }
 
-function guest(rsvpStatus: string, event: { date: Date | null; status?: string }) {
+function guest(rsvpStatus: string, event: { date: Date | null; status?: string }, plusOnes = 0) {
   return {
     id: "g-1",
     eventId: "evt-1",
     name: "Sam",
     rsvpStatus,
-    event: { endDate: null, durationHours: 3, status: "PUBLISHED", ...event },
+    plusOnes,
+    event: { endDate: null, durationHours: 3, status: "PUBLISHED", guestCount: 10, ...event },
   };
 }
 
@@ -44,6 +58,8 @@ describe("submitRsvpAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.update.mockResolvedValue({});
+    mocks.count.mockResolvedValue(0);
+    mocks.aggregate.mockResolvedValue({ _count: 0, _sum: { plusOnes: 0 } });
   });
 
   // A guest who never replied to a night the host didn't run the door for
@@ -86,5 +102,177 @@ describe("submitRsvpAction", () => {
 
     expect(result).toBeUndefined();
     expect(mocks.update).toHaveBeenCalledTimes(1);
+  });
+
+  // They gave their seat up; the people waiting were there first.
+  it("sends a guest who declined to the back of the line when people are waitlisted", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(2);
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    expect(result).toBeUndefined();
+    // Only parties that could one day fit the 10-person night make a line.
+    expect(mocks.count).toHaveBeenCalledWith({
+      where: { eventId: "evt-1", rsvpStatus: "WAITLISTED", plusOnes: { lte: 9 } },
+    });
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("WAITLISTED");
+    // The line changed, so it moves if there's room — them included.
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+    // The line is ordered by createdAt, so rejoining it now puts them last.
+    expect(data.createdAt).toBeInstanceOf(Date);
+    expect(Date.now() - data.createdAt.getTime()).toBeLessThan(5_000);
+    expect(mocks.record).toHaveBeenCalledWith("evt-1", {
+      actor: "system",
+      kind: "guest_rsvp",
+      title: "Sam changed their mind and joined the waitlist",
+    });
+  });
+
+  // Capacity 10: joining the line with 12 people would sit at the front forever.
+  it("won't let a guest rejoin the line with a party bigger than the night", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(1);
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "12" }));
+
+    expect(result).toEqual({ error: "There’s only room for you and 9 more." });
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.record).not.toHaveBeenCalled();
+  });
+
+  // The night being full is why they're in line; their party just has to fit it one day.
+  it("lets a guest rejoin the line with plus-ones that fit the night", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(1);
+    mocks.aggregate.mockResolvedValue({ _count: 10, _sum: { plusOnes: 0 } });
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "3" }));
+
+    expect(result).toBeUndefined();
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("WAITLISTED");
+    expect(data.plusOnes).toBe(3);
+  });
+
+  // A party of five waits for seats; three are free, so the returning guest's single seat is theirs.
+  it("lets a guest who declined back in when nobody waiting fits the free seats", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 7, _sum: { plusOnes: 0 } });
+    mocks.count.mockImplementation(({ where }: { where: { plusOnes: { lte: number } } }) =>
+      4 <= where.plusOnes.lte ? 1 : 0,
+    );
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.update.mock.calls[0][0].data.rsvpStatus).toBe("ATTENDING");
+  });
+
+  // A waiting party of three leaving may be what kept a single behind them out.
+  it("moves the line when a waitlisted guest steps back", async () => {
+    mocks.findUnique.mockResolvedValue(guest("WAITLISTED", { date: new Date(Date.now() + 2 * DAY) }, 2));
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "DECLINED" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+  });
+
+  it("lets a guest who declined back in when nobody is waiting", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+
+    await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("ATTENDING");
+    expect(data.createdAt).toBeUndefined();
+  });
+
+  // The invite is the seat, even with a waitlist.
+  it("keeps the seat for an invited guest while people are waitlisted", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(3);
+
+    await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("ATTENDING");
+    expect(data.createdAt).toBeUndefined();
+    expect(mocks.record).toHaveBeenCalledWith("evt-1", expect.objectContaining({ title: "Sam is going" }));
+  });
+
+  // A 10-person night with 8 others going: room for Sam and one more.
+  it("won't let a guest bring more people than there's room for", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 6, _sum: { plusOnes: 2 } });
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "2" }));
+
+    expect(result).toEqual({ error: "There’s only room for you and 1 more." });
+    expect(mocks.aggregate).toHaveBeenCalledWith({
+      where: { eventId: "evt-1", rsvpStatus: "ATTENDING", id: { not: "g-1" } },
+      _count: true,
+      _sum: { plusOnes: true },
+    });
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  // Two replies racing for the last seat must not both see it free.
+  it("counts the room under the same event lock the other capacity writers take", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 6, _sum: { plusOnes: 2 } });
+
+    await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
+
+    expect(mocks.lock).toHaveBeenCalledTimes(1);
+    expect(mocks.lock.mock.calls[0].slice(1)).toEqual(["evt-1"]);
+    expect(mocks.lock.mock.invocationCallOrder[0]).toBeLessThan(mocks.aggregate.mock.invocationCallOrder[0]);
+    expect(mocks.aggregate.mock.invocationCallOrder[0]).toBeLessThan(mocks.update.mock.invocationCallOrder[0]);
+  });
+
+  it("takes plus-ones that fit", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 6, _sum: { plusOnes: 2 } });
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.update.mock.calls[0][0].data.plusOnes).toBe(1);
+  });
+
+  it("says so when the night is full", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 8, _sum: { plusOnes: 1 } });
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
+
+    expect(result).toEqual({ error: "The night is full, so there’s only room for you." });
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  // Once the night fills, a guest editing their dietary note keeps the two they're bringing.
+  it("keeps the plus-ones a guest already has when the night has filled", async () => {
+    mocks.findUnique.mockResolvedValue(guest("ATTENDING", { date: new Date(Date.now() + 2 * DAY) }, 2));
+    mocks.aggregate.mockResolvedValue({ _count: 8, _sum: { plusOnes: 0 } });
+
+    const kept = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "2" }));
+    const more = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "3" }));
+
+    expect(kept).toBeUndefined();
+    expect(more).toEqual({ error: "There’s only room for you and 2 more." });
+    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.promoteWaitlist).not.toHaveBeenCalled();
+  });
+
+  // Capacity counts plus-ones, so bringing fewer people is room for the waitlist.
+  it("lets the waitlist in when a going guest brings fewer people", async () => {
+    mocks.findUnique.mockResolvedValue(guest("ATTENDING", { date: new Date(Date.now() + 2 * DAY) }, 2));
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "0" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
   });
 });

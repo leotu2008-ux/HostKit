@@ -207,7 +207,7 @@ export function WorkspaceSidebar({
   return (
     <nav
       aria-label="Event workspace"
-      className="w-full shrink-0 border-b border-line bg-sunk/60 lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:overflow-y-auto lg:border-r lg:border-b-0"
+      className="no-print w-full shrink-0 border-b border-line bg-sunk/60 lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:overflow-y-auto lg:border-r lg:border-b-0"
     >
       <div className="flex h-full flex-col p-3">
         {/* The brand doubles as the way back out to every event — the same

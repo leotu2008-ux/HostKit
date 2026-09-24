@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { RsvpForm } from "@/components/rsvp-form";
 import { Badge } from "@/components/ui";
-import { hasFinished } from "@/lib/outcomes";
+import { hasFinished, hasStarted } from "@/lib/outcomes";
 
 export const metadata = {
   title: "You're invited",
@@ -29,6 +29,7 @@ export default async function RsvpPage({ params }: PageProps<"/rsvp/[token]">) {
           endDate: true,
           durationHours: true,
           status: true,
+          schoolDomain: true,
           city: true,
           vibe: true,
         },
@@ -84,11 +85,14 @@ export default async function RsvpPage({ params }: PageProps<"/rsvp/[token]">) {
             <p className="text-[15px] text-ink-soft">This night has already happened.</p>
           ) : (
             <RsvpForm
+              // A "yes" can land them on the waitlist; start the form afresh.
+              key={guest.rsvpStatus}
               token={token}
               current={guest.rsvpStatus}
               plusOnes={guest.plusOnes}
               dietary={guest.dietary}
               allowPlusOnes
+              started={hasStarted(event)}
             />
           )}
         </div>

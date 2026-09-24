@@ -38,11 +38,14 @@ export function RegisterForm({
   viewer,
   calendar,
   mode = "register",
+  started = false,
 }: {
   eventId: string;
   viewer: { name: string; email: string } | null;
   calendar: CalendarLinks | null;
   mode?: RegisterMode;
+  /** The night has begun: the line no longer moves by itself. */
+  started?: boolean;
 }) {
   const [state, formAction] = useActionState(
     registerForEventAction,
@@ -65,7 +68,9 @@ export function RegisterForm({
         <div className="rounded-card bg-amber-wash px-4 py-4 text-center">
           <p className="font-display text-lg text-ink">You’re on the waitlist</p>
           <p className="mt-1 text-sm text-ink-soft">
-            If a spot opens you’re in automatically — we’ll tell you at {viewer?.email}.
+            {started
+              ? `If a spot opens the host can let you in — we’ll tell you at ${viewer?.email}.`
+              : `If a spot opens you’re in automatically — we’ll tell you at ${viewer?.email}.`}
           </p>
         </div>
       );
@@ -111,7 +116,9 @@ export function RegisterForm({
         {mode === "request"
           ? `The host approves each guest. They’ll see your name and email (${viewer.email}).`
           : mode === "waitlist"
-            ? "You’ll be let in automatically when a spot opens."
+            ? started
+              ? "The host can let you in if a spot opens."
+              : "You’ll be let in automatically when a spot opens."
             : `The host will see your name and email (${viewer.email}).`}
       </p>
     </form>

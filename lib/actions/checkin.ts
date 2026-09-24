@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { record } from "@/lib/activity";
+import { newRsvpToken } from "@/lib/tokens";
 
 /**
  * The door.
@@ -46,6 +47,46 @@ export async function checkInGuestAction(formData: FormData) {
     if (count > 0) {
       await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${guest.name} checked in` });
     }
+  }
+  refresh();
+}
+
+const WALK_UP_REPEAT_MS = 10_000;
+
+/**
+ * Someone who isn't on the list, added and let in with one press. Their RSVP
+ * stays at the default because they never replied; the walk-up flag is what
+ * the outcome counts.
+ */
+export async function addWalkUpAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  await requireEvent(eventId);
+  if (!name) return;
+
+  // A second tap on a slow connection sends the same name again: the walk-up
+  // added moments ago is them, not someone new.
+  const now = new Date();
+  const justAdded = await db.guest.findFirst({
+    where: {
+      eventId,
+      name,
+      arrivedWithoutRsvp: true,
+      checkedInAt: { gte: new Date(now.getTime() - WALK_UP_REPEAT_MS) },
+    },
+    select: { id: true },
+  });
+  if (!justAdded) {
+    await db.guest.create({
+      data: {
+        eventId,
+        name,
+        rsvpToken: newRsvpToken(),
+        checkedInAt: now,
+        arrivedWithoutRsvp: true,
+      },
+    });
+    await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${name} walked up and checked in` });
   }
   refresh();
 }

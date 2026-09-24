@@ -7,14 +7,14 @@ import { canAccessEvent, getCurrentUser } from "@/lib/session";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
 import { registrationState } from "@/lib/registration";
-import { waitlistPositionFor } from "@/lib/waitlist";
+import { attendingHeads, seatFree, waitlistPositionFor } from "@/lib/waitlist";
 import { attendeesPreview, type Attendee } from "@/lib/attendees";
 import { GoingRow } from "@/components/going-row";
 import { Avatar } from "@/components/avatar";
 import { formatCents } from "@/lib/money";
 import { formatDurationLong, formatEventDate, formatEventTime } from "@/lib/when";
 import { isPublicPageVisible } from "@/lib/listing";
-import { hasFinished } from "@/lib/outcomes";
+import { hasFinished, hasStarted } from "@/lib/outcomes";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { eventUrl } from "@/lib/promote";
 import { AddToCalendar } from "@/components/add-to-calendar";
@@ -107,9 +107,11 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const [registration, preview] = await Promise.all([
+  const [registration, preview, heads, open] = await Promise.all([
     registrationState(event.id, user?.id ?? null),
     attendeesPreview(event.id),
+    attendingHeads(db, event.id),
+    seatFree(db, event.id, event.guestCount, 1),
   ]);
   const alreadyGoing = registration === "going";
   const waitlistPlace =
@@ -117,9 +119,13 @@ export default async function PublicEventPage({
 
   const school = schoolFor(event.schoolDomain);
   const going = event._count.guests;
-  const spotsLeft = Math.max(0, event.guestCount - going);
+  // Spots are people in the room, plus-ones included, and a seat someone in
+  // line fits is theirs — the same rule registration uses, so "Register"
+  // never quietly lands on the waitlist.
+  const spotsLeft = open ? Math.max(0, event.guestCount - heads) : 0;
   // With a waitlist, a full night still takes registrations.
   const over = event.status === "COMPLETED" || hasFinished(event);
+  const started = hasStarted(event);
   const canRegister = event.published && !over && registration === "none";
   const registerMode = event.requiresApproval ? "request" : spotsLeft === 0 ? "waitlist" : "register";
   const ticketLabel =
@@ -260,14 +266,18 @@ export default async function PublicEventPage({
                     You’re {waitlistPlace ? `#${waitlistPlace}` : ""} on the waitlist.
                   </p>
                   <p className="mt-1 text-[15px] text-ink-soft">
-                    When a spot opens you’re in automatically — we’ll tell you at {user?.email}.
+                    {started
+                      ? `If a spot opens the host can let you in — we’ll tell you at ${user?.email}.`
+                      : `When a spot opens you’re in automatically — we’ll tell you at ${user?.email}.`}
                   </p>
                 </div>
               ) : (
                 <>
                   <p className="mb-4 text-[15px] text-ink-soft">
                     {registerMode === "waitlist"
-                      ? "This night is full. Join the waitlist and you’re in automatically when a spot opens"
+                      ? started
+                        ? "This night is full. Join the waitlist and the host can let you in if a spot opens"
+                        : "This night is full. Join the waitlist and you’re in automatically when a spot opens"
                       : registerMode === "request"
                         ? "The host approves each guest. Ask to join below"
                         : "Welcome! Register below to save your spot"}
@@ -281,6 +291,7 @@ export default async function PublicEventPage({
                     viewer={user ? { name: user.name, email: user.email } : null}
                     calendar={calendar}
                     mode={registerMode}
+                    started={started}
                   />
                 </>
               )}

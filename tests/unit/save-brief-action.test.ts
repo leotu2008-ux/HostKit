@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   collaboratorUpdate: vi.fn(),
   collaboratorCreate: vi.fn(),
   eventUpdate: vi.fn(),
+  promoteWaitlist: vi.fn(),
 }));
 
 vi.mock("@/lib/session", () => ({ requireEvent: mocks.requireEvent }));
@@ -16,6 +17,7 @@ vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("next/server", () => ({ after: vi.fn() }));
 vi.mock("@/lib/agent/run", () => ({ runAgent: vi.fn() }));
 vi.mock("@/lib/activity", () => ({ record: vi.fn() }));
+vi.mock("@/lib/waitlist", () => ({ promoteWaitlist: mocks.promoteWaitlist }));
 vi.mock("@/lib/db", () => ({
   db: {
     event: { update: mocks.eventUpdate },
@@ -107,5 +109,34 @@ describe("saveBriefAction's venue address", () => {
     await saveBriefAction(undefined, form("40 Elm Street"));
 
     expect(mocks.collaboratorUpdate).toHaveBeenCalledWith({ where: { id: "opt-2" }, data: { detail: "40 Elm Street" } });
+  });
+});
+
+describe("saveBriefAction's capacity", () => {
+  function capacity(guestCount: string) {
+    const data = new FormData();
+    data.set("eventId", "evt-1");
+    data.set("guestCount", guestCount);
+    return data;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.venues = [];
+    mocks.requireEvent.mockResolvedValue({ user: { id: "host-1" }, event });
+  });
+
+  // Ten more seats on a full night: the people waiting shouldn't keep waiting.
+  it("lets the waitlist in when the host makes room for more people", async () => {
+    await saveBriefAction(undefined, capacity("50"));
+
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
+  });
+
+  it("leaves the waitlist alone when capacity stays or shrinks", async () => {
+    await saveBriefAction(undefined, capacity("40"));
+    await saveBriefAction(undefined, capacity("30"));
+
+    expect(mocks.promoteWaitlist).not.toHaveBeenCalled();
   });
 });

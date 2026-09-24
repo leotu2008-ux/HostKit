@@ -13,6 +13,7 @@ import { briefIsComplete, eventTypeForKind, FALLBACK_TYPE, namedVenue, UNTITLED 
 import { clientIp } from "@/lib/rate-limit";
 import { runAgent } from "@/lib/agent/run";
 import { record } from "@/lib/activity";
+import { promoteWaitlist } from "@/lib/waitlist";
 
 export type BriefFormState = { error?: string; saved?: boolean } | undefined;
 
@@ -148,6 +149,8 @@ export async function saveBriefAction(
     });
   }
   const updated = { title, kind, type, date, durationHours, city, guestCount, budgetTotalCents, vibe: description, description };
+
+  if (guestCount > event.guestCount) await promoteWaitlist(event.id);
 
   refresh();
 
