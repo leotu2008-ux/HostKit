@@ -53,7 +53,8 @@ export type BriefingKind =
   | "event_soon"
   | "guests_unreplied"
   | "guests_remind"
-  | "type_check";
+  | "type_check"
+  | "night_competition";
 
 export type BriefingAction =
   | { type: "complete_task"; taskId: string; label: "Mark done" }
@@ -62,7 +63,8 @@ export type BriefingAction =
   | { type: "open_runsheet"; label: "Open run sheet" }
   | { type: "open_plan"; label: "Open the plan" }
   | { type: "open_blast"; draft: BlastDraftKind; label: "Nudge them" | "Write reminder" }
-  | { type: "set_type"; eventType: EventType; label: string };
+  | { type: "set_type"; eventType: EventType; label: string }
+  | { type: "open_brief"; label: "Review the date" };
 
 export type BriefingItem = {
   id: string; // `${kind}:${refId}`
@@ -128,6 +130,9 @@ export type BriefingInput = {
   /** The type Jev guessed but wasn't sure of (lib/brief-classify.ts's
    *  typeCheckFrom), when it's worth asking the host about. */
   typeCheck?: EventType | null;
+  /** Same-night events Jev judged as competition, still on that night
+   *  (lib/night-competition.ts's loadCompetitors). */
+  competitors?: Array<{ id: string; title: string; pull: number }>;
   now: Date;
 };
 
@@ -150,6 +155,7 @@ const KIND_RANK: Record<BriefingKind, number> = {
   outreach_quiet: 6,
   outreach_unsent: 7,
   type_check: 8,
+  night_competition: 9,
 };
 
 const DAY_MS = 86_400_000;
@@ -360,6 +366,14 @@ function typeCheckItem(event: BriefingEvent, type: EventType | null | undefined)
   };
 }
 
+/** A competing night's detail line, from the pull level Jev's answer saved
+ *  (0–3, see lib/night-competition.ts): it says no more than that level. */
+export function pullPhrase(pull: number): string {
+  return Math.round(pull) >= 3
+    ? "Likely the same crowd; most of yours could be torn between the two"
+    : "Likely the same crowd; some of your guests might go there instead";
+}
+
 export function briefingFor(event: BriefingEvent, input: BriefingInput): Briefing {
   const items: BriefingItem[] = [
     ...taskItems(input.tasks, input.now),
@@ -376,6 +390,21 @@ export function briefingFor(event: BriefingEvent, input: BriefingInput): Briefin
 
   const typeCheck = typeCheckItem(event, input.typeCheck);
   if (typeCheck) items.push(typeCheck);
+
+  // Only a night still ahead: once it's passed, a clash is history.
+  const days = nightIn(event, input.now);
+  if (days !== null && days >= 0) {
+    for (const competitor of input.competitors ?? []) {
+      items.push({
+        id: `night_competition:${competitor.id}`,
+        kind: "night_competition",
+        urgency: "soon",
+        title: `Also on that night: ${competitor.title}`,
+        detail: pullPhrase(competitor.pull),
+        action: { type: "open_brief", label: "Review the date" },
+      });
+    }
+  }
 
   items.sort((a, b) => {
     if (a.urgency !== b.urgency) return a.urgency === "now" ? -1 : 1;

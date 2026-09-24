@@ -147,6 +147,7 @@ describe("briefingFor — every emitted action.type is a known kind", () => {
           break;
         }
         case "open_outreach":
+        case "open_brief":
         case "find_venues":
         case "open_runsheet":
         case "open_plan":

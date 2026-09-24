@@ -121,6 +121,13 @@ function AgentCardAction({
         </form>
       );
 
+    case "open_brief":
+      return (
+        <ButtonLink href={`/events/${eventId}/brief`} variant="secondary" size="sm">
+          {action.label}
+        </ButtonLink>
+      );
+
     case "find_venues":
       // Venue search dark-launches until Apple Maps is configured, in which
       // case the Venue tab is where a host can actually see results.

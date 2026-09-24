@@ -255,6 +255,8 @@ export type DecisionLog = {
   point: DecisionPoint;
   /** What was judged, when a point judges several things (a venue's name). */
   subject?: string;
+  /** The judged thing's id, when it has one (another event's id). */
+  subjectId?: string;
   answers: Record<string, AnswerSummary>;
   /** What the point did with the answers, in its own words. */
   verdict: string;
