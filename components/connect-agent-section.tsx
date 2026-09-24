@@ -3,14 +3,12 @@ import { GlitchText } from "@/components/glitch-text";
 import { LLMS } from "@/lib/llms";
 import { ButtonLink } from "@/components/ui";
 
-/** What Cursor and Claude can read once they are connected. */
-const READS = ["Events", "Guests", "Campus events", "Discover"] as const;
+/** What a connected agent can read — the host's own work, through the MCP
+ *  tools (list_events, list_guests, get_event_brief, search_venues). */
+const READS = ["Events", "Guests", "Briefs", "Venues"] as const;
 
 /**
  * The first scroll section under the landing hero.
- *
- * This copy says Hosty. The rest of the page still says Hosty until that
- * rebrand lands — don't rename those lines from here.
  */
 export function ConnectAgentSection() {
   return (
@@ -25,8 +23,8 @@ export function ConnectAgentSection() {
         Connect an agent
       </GlitchText>
       <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">
-        Cursor and Claude can connect to Hosty to read events, guests, campus
-        events, and Discover.
+        Claude, ChatGPT and Cursor can connect to Hosty to read your events,
+        guests and briefs, and search venues.
       </p>
 
       <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">

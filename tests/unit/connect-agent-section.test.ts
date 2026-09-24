@@ -28,12 +28,12 @@ describe("Connect an agent landing section", () => {
 
     expect(html).toContain("Connect an agent");
     expect(html).toContain(
-      "Cursor and Claude can connect to Hosty to read events, guests, campus events, and Discover.",
+      "Claude, ChatGPT and Cursor can connect to Hosty to read your events, guests and briefs, and search venues.",
     );
-    expect(html).toContain("Events");
-    expect(html).toContain("Guests");
-    expect(html).toContain("Campus events");
-    expect(html).toContain("Discover");
+    for (const tile of ["Events", "Guests", "Briefs", "Venues"]) expect(html).toContain(`>${tile}</li>`);
+    // Hosty is B2B: no consumer reads advertised.
+    expect(html).not.toContain("Campus events");
+    expect(html).not.toContain("Discover");
     expect(html).toContain('href="/mcp"');
     expect(html).toContain("Endpoint, token generation, and setup config");
     expect(html).not.toContain("HostKit");
