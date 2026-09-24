@@ -48,9 +48,10 @@ export function phoneRecipientsFor(
 
 export function inSegment(segment: Segment, status: RsvpStatus): boolean {
   // "Everyone" is everyone who might come — not the declined, and not the
-  // waitlist, who'd be confused by "doors at 7". The waitlist has its own.
+  // waitlist or requesters you haven't approved, who'd read "doors at 7" as
+  // "you're in". The waitlist has its own; approve requesters from Guests.
   return segment === "everyone"
-    ? status !== "DECLINED" && status !== "WAITLISTED"
+    ? status !== "DECLINED" && status !== "WAITLISTED" && status !== "PENDING"
     : segment === "going"
       ? status === "ATTENDING"
       : segment === "waitlist"

@@ -27,6 +27,20 @@ describe("recipientsFor", () => {
     const all = recipientsFor("everyone", guests);
     expect(all.map((r) => r.email)).toEqual(["ada@example.com", "grace@example.com"]);
   });
+
+  it("everyone leaves out requesters not yet approved and the waitlist", () => {
+    const list = [
+      ...guests,
+      { name: "Asked", email: "asked@example.com", rsvpStatus: "PENDING" as const },
+      { name: "Waiting", email: "waiting@example.com", rsvpStatus: "WAITLISTED" as const },
+      { name: "Unsure", email: "unsure@example.com", rsvpStatus: "MAYBE" as const },
+    ];
+    expect(recipientsFor("everyone", list).map((r) => r.name)).toEqual([
+      "Ada Lovelace",
+      "Grace Hopper",
+      "Unsure",
+    ]);
+  });
 });
 
 describe("personalize", () => {
