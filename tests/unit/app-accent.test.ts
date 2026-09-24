@@ -91,6 +91,7 @@ describe("signed-in accent", () => {
     const html = renderToStaticMarkup(
       createElement(InquiryPanel, {
         eventId: "e1",
+        vendorName: "Taco Cart",
         subject: "Mixer",
         inquiry: {
           id: "i1",
@@ -102,7 +103,7 @@ describe("signed-in accent", () => {
       }),
     );
 
-    const send = elements(html, /<button\b/).filter((b) => b.text === "Send it");
+    const send = elements(html, /<button\b/).filter((b) => b.text === "Send to Taco Cart");
     expect(send).toHaveLength(1);
     expectAccent(send[0].classes, ["bg-clay", "text-on-clay"]);
   });

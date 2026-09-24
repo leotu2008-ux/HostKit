@@ -102,11 +102,14 @@ function Typing() {
 export function ChatThread({
   messages,
   running,
+  needsBrief,
   now,
   eventId,
 }: {
   messages: ChatMessage[];
   running: boolean;
+  /** Whether the brief still has missing fields. */
+  needsBrief: boolean;
   now: Date;
   eventId: string;
 }) {
@@ -128,7 +131,7 @@ export function ChatThread({
   // Notes alone still count as empty: every event starts with an
   // "Event created" note, so the invitation would otherwise never show.
   const shown: ChatMessage[] =
-    messages.every((message) => message.speaker === "note") && !running
+    needsBrief && !running && messages.every((message) => message.speaker === "note")
       ? [
           ...messages,
           {

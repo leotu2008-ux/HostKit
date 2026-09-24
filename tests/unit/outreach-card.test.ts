@@ -53,13 +53,20 @@ describe("OutreachCard", () => {
     expect(buttons(html)).not.toContain("Send it");
   });
 
-  it("opens a drafted vendor inquiry too", () => {
+  it("keeps a drafted vendor inquiry closed, since it sends from its listing page", () => {
     const html = render(
       row({ source: "inquiry", kind: "VENDOR", name: "Taco Cart", listingPath: "/listings/l1?event=e1", canSend: false }),
     );
 
-    expect(html).toContain("<textarea");
-    expect(buttons(html)).toContain("Hide message");
+    expect(html).not.toContain("<textarea");
+    expect(buttons(html)).toContain("Draft message");
+  });
+
+  it("keeps a draft closed while there's no email to send it to", () => {
+    const html = render(row({ email: null, canSend: false }));
+
+    expect(html).not.toContain("<textarea");
+    expect(buttons(html)).toContain("Draft message");
   });
 
   it("keeps a row closed once it has been asked", () => {

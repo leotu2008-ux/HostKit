@@ -44,9 +44,10 @@ function SendButton({ dirty, name }: { dirty: boolean; name: string }) {
 
 /** One person or place to reach, with the drafted first message ready. */
 export function OutreachCard({ row, eventId }: { row: OutreachRow; eventId: string }) {
-  // A draft that hasn't gone out starts open, so after a run the host reads
+  const sendable = row.source === "collaborator" && row.canSend;
+  // A draft this card can send starts open, so after a run the host reads
   // down the page and sends each one. Still one press per send.
-  const [open, setOpen] = useState(row.status === "PENDING" && !row.sentAt);
+  const [open, setOpen] = useState(sendable && row.status === "PENDING");
   const [message, setMessage] = useState(row.message);
   const [email, setEmail] = useState(row.email ?? "");
   // Resync whenever the server's copy changes, the React-recommended way to
@@ -194,7 +195,7 @@ export function OutreachCard({ row, eventId }: { row: OutreachRow; eventId: stri
               somewhere to send it and it hasn't already gone out — once
               row.canSend flips false the "Asked"/status badge above is the
               only word on it. */}
-          {row.source === "collaborator" && row.canSend ? (
+          {sendable ? (
             <form action={sendAction}>
               <input type="hidden" name="eventId" value={eventId} />
               <input type="hidden" name="collaboratorId" value={row.id} />

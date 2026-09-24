@@ -20,8 +20,8 @@ const msg = (over: Partial<ChatMessage>): ChatMessage => ({
   createdAt: "2026-09-23T19:58:00.000Z",
   ...over,
 });
-const render = (messages: ChatMessage[], running = false) =>
-  renderToStaticMarkup(createElement(ChatThread, { messages, running, now: NOW, eventId: "e1" }));
+const render = (messages: ChatMessage[], running = false, needsBrief = true) =>
+  renderToStaticMarkup(createElement(ChatThread, { messages, running, needsBrief, now: NOW, eventId: "e1" }));
 
 describe("ChatThread", () => {
   it("keeps the order it's given, oldest first", () => {
@@ -109,6 +109,13 @@ describe("ChatThread", () => {
     );
   });
 
+  it("leaves the invitation off a notes-only thread once the brief is filled in", () => {
+    const notes = Array.from({ length: 100 }, (_, i) =>
+      msg({ id: `n${i}`, speaker: "note", text: `Guest ${i} checked in` }),
+    );
+    expect(render(notes, false, false)).not.toContain("Fill in the brief");
+  });
+
   it("shows typing instead of the invitation when Hosty is running on a notes-only thread", () => {
     const html = render([msg({ id: "1", speaker: "note", text: "Event created" })], true);
     expect(html).toContain("Hosty is typing");
@@ -169,5 +176,38 @@ describe("ActivityFeed", () => {
       html.indexOf("I drafted your plan: 13 tasks and 4 budget categories."),
     );
     expect(html).toContain("Hosty is typing");
+  });
+
+  it("keeps a busy night of guest notes from inviting the host back to a filled brief", () => {
+    const html = renderToStaticMarkup(
+      createElement(ActivityFeed, {
+        eventId: "e1",
+        initial: Array.from({ length: 100 }, (_, i) =>
+          row({
+            id: `rsvp${i}`,
+            actor: "system",
+            kind: "rsvp",
+            title: `Guest ${i} is coming`,
+            createdAt: new Date(NOW.getTime() - (100 - i) * 1000).toISOString(),
+          }),
+        ),
+        agent: { status: "done", lastRunAt: "2026-09-22T12:00:00.000Z", startedAt: null, needs: [] },
+        now: NOW.toISOString(),
+      }),
+    );
+    expect(html).toContain("Guest 99 is coming");
+    expect(html).not.toContain("Fill in the brief");
+  });
+
+  it("invites the host to the brief while it still has gaps", () => {
+    const html = renderToStaticMarkup(
+      createElement(ActivityFeed, {
+        eventId: "e1",
+        initial: [row({ id: "1", actor: "system", kind: "event_created", title: "Event created" })],
+        agent: { status: "idle", lastRunAt: null, startedAt: null, needs: ["date"] },
+        now: NOW.toISOString(),
+      }),
+    );
+    expect(html).toContain("Fill in the brief and I");
   });
 });
