@@ -149,6 +149,9 @@ describe("briefingFor — every emitted action.type is a known kind", () => {
         case "open_runsheet":
         case "open_plan":
           break;
+        case "open_blast":
+          expect(["nudge", "reminder"]).toContain(action.draft);
+          break;
         default: {
           // Exhaustive: adding a BriefingAction variant without a case here
           // fails to compile, not just fails at runtime.
@@ -395,5 +398,80 @@ describe("numbersAreGrounded", () => {
 
   it("passes text with no digits at all", () => {
     expect(numbersAreGrounded("nothing urgent", [3])).toBe(true);
+  });
+});
+
+describe("briefingFor — before-the-night reminders", () => {
+  const guest = (rsvpStatus: "INVITED" | "ATTENDING" | "WAITLISTED" | "DECLINED", email: string | null) => ({
+    name: "Guest",
+    email,
+    rsvpStatus,
+  });
+  const LIST = [
+    guest("INVITED", "a@example.com"),
+    guest("INVITED", "b@example.com"),
+    guest("INVITED", null),
+    guest("ATTENDING", "c@example.com"),
+    guest("ATTENDING", "d@example.com"),
+    guest("WAITLISTED", "e@example.com"),
+  ];
+  const at = (days: number, over: Partial<Parameters<typeof briefingFor>[1]> = {}) =>
+    briefingFor(
+      { ...EVENT, date: inDays(days) },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], guests: LIST, blasts: [], now: NOW, ...over },
+    );
+
+  it("about a week out, the invited who can be emailed and haven't replied", () => {
+    const item = at(5).items.find((i) => i.kind === "guests_unreplied");
+    expect(item).toMatchObject({
+      id: "guests_unreplied:e1",
+      urgency: "soon",
+      title: "2 haven't replied",
+      action: { type: "open_blast", draft: "nudge", label: "Nudge them" },
+    });
+    expect(at(10).items.some((i) => i.kind === "guests_unreplied")).toBe(false);
+    expect(at(1).items.some((i) => i.kind === "guests_unreplied")).toBe(false);
+  });
+
+  it("the nudge disappears once a blast to the unreplied went out inside the week", () => {
+    expect(at(5, { blasts: [{ segment: "pending", sentAt: daysAgo(1) }] }).items.some((i) => i.kind === "guests_unreplied")).toBe(false);
+    // An older nudge, from before the week, doesn't count; nor does a blast to another segment.
+    const older = at(5, {
+      blasts: [
+        { segment: "pending", sentAt: daysAgo(20) },
+        { segment: "going", sentAt: daysAgo(1) },
+      ],
+    });
+    expect(older.items.some((i) => i.kind === "guests_unreplied")).toBe(true);
+  });
+
+  it("the day before, a reminder to the guests going — never the waitlist", () => {
+    const item = at(1).items.find((i) => i.kind === "guests_remind");
+    expect(item).toMatchObject({
+      id: "guests_remind:e1",
+      urgency: "now",
+      title: "Remind your 2 guests",
+      action: { type: "open_blast", draft: "reminder", label: "Write reminder" },
+    });
+    expect(at(2).items.some((i) => i.kind === "guests_remind")).toBe(false);
+    expect(at(0).items.some((i) => i.kind === "guests_remind")).toBe(false);
+    expect(at(1, { blasts: [{ segment: "going", sentAt: NOW }] }).items.some((i) => i.kind === "guests_remind")).toBe(false);
+  });
+
+  it("says nothing when no one can be emailed, and nothing for a cancelled night", () => {
+    const b = at(1, { guests: [guest("ATTENDING", null)] });
+    expect(b.items.some((i) => i.kind === "guests_remind")).toBe(false);
+    const cancelled = briefingFor(
+      { ...EVENT, date: inDays(5), status: "CANCELLED" },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], guests: LIST, blasts: [], now: NOW },
+    );
+    expect(cancelled.items.some((i) => i.kind === "guests_unreplied")).toBe(false);
+  });
+
+  it("uses the singular for one", () => {
+    const b = at(5, { guests: [guest("INVITED", "a@example.com")] });
+    expect(b.items.find((i) => i.kind === "guests_unreplied")?.title).toBe("1 hasn't replied");
+    const r = at(1, { guests: [guest("ATTENDING", "a@example.com")] });
+    expect(r.items.find((i) => i.kind === "guests_remind")?.title).toBe("Remind your 1 guest");
   });
 });
