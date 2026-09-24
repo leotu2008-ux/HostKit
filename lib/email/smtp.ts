@@ -1,5 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { EmailSendError } from "@/lib/email/failure";
+import { plainHeaders, stripHeader } from "@/lib/email/headers";
+import type { OutgoingEmail } from "@/lib/email/resend";
 
 /**
  * SMTP, for the case Resend cannot cover: sending without owning a domain.
@@ -49,29 +51,51 @@ export function resetSmtpTransport(): void {
   cached = null;
 }
 
-export type SmtpMessage = {
-  to: string;
-  subject: string;
-  text: string;
-  replyTo?: string;
-};
+/**
+ * True for a host that cannot leave this machine. Preview must not be able
+ * to satisfy this with the production Gmail host.
+ */
+export function isLoopbackHost(host: string | undefined): boolean {
+  if (!host) return false;
+  let name = host.trim().toLowerCase();
+  if (name.startsWith("[") && name.endsWith("]")) name = name.slice(1, -1);
+  if (name === "localhost" || name === "::1") return true;
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(name)) return false;
+  const parts = name.split(".").map(Number);
+  return parts[0] === 127 && parts.every((n) => n <= 255);
+}
+
+/**
+ * Anywhere but production, only loopback is dialed. Production with a
+ * configured mailbox may use Gmail. This is the belt on the SMTP function
+ * itself, so a direct call cannot reach Gmail from Preview.
+ */
+function assertSmtpHostAllowed(): void {
+  if (isLoopbackHost(process.env.SMTP_HOST)) return;
+  if (process.env.VERCEL_ENV === "production" && isSmtpConfigured()) return;
+  throw new EmailSendError(0, "Refusing SMTP to a non-loopback host while live delivery is off.", "smtp");
+}
 
 /**
  * One message per recipient, matching the Resend path: nobody is ever put in
  * a header alongside someone else's address.
  */
-export async function sendViaSmtp(emails: SmtpMessage[]): Promise<number> {
+export async function sendViaSmtp(emails: OutgoingEmail[]): Promise<number> {
   if (emails.length === 0) return 0;
-  const from = process.env.SMTP_FROM!;
+  assertSmtpHostAllowed();
+  const from = stripHeader(process.env.SMTP_FROM!);
   let sent = 0;
   for (const email of emails) {
+    const headers = plainHeaders(email.headers);
     try {
       await transport().sendMail({
         from,
-        to: email.to,
-        subject: email.subject,
+        to: stripHeader(email.to),
+        subject: stripHeader(email.subject),
         text: email.text,
-        ...(email.replyTo ? { replyTo: email.replyTo } : {}),
+        ...(email.html !== undefined ? { html: email.html } : {}),
+        ...(email.replyTo ? { replyTo: stripHeader(email.replyTo) } : {}),
+        ...(headers ? { headers } : {}),
       });
       sent += 1;
     } catch (error) {

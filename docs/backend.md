@@ -15,7 +15,7 @@ Postgres database. There is no second service to deploy.
 | **Email verification** | A link on sign-up and on demand (`/verify-email?token=`, `POST /api/v1/auth/verify`); `User.emailVerifiedAt`; a nudge on the profile until confirmed. Students' `.edu` school stays a claim until this is set. | **Live**; needs Resend to actually email |
 | **Abuse limits** | Fixed-window counters in Postgres (`lib/rate-limit.ts`): sign-in 10/15 min per email and 30 per address, sign-up 10/hour per address, reset links 3/hour per email, verification resends 3/hour. | **Live** |
 | **Images** | `lib/images.ts`: profile pictures, event covers, club pictures. Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise bytes go into the `Image` table and out through `/api/images/:id`. | Works either way; **Blob recommended** for production |
-| **Email** | Resend (`lib/email/resend.ts`) or SMTP (`lib/email/smtp.ts`): blasts, approvals, promotions, club posts and updates, resets, verification. Resend wins if both are set. Target design: [email system plan](email-system-plan.md). | Live when either transport is configured |
+| **Email** | Resend (`lib/email/resend.ts`) or SMTP (`lib/email/smtp.ts`): blasts, approvals, promotions, club posts and updates, resets, verification. Resend wins if both are set. Target design: [email system plan](email-system-plan.md). | Live only when `VERCEL_ENV=production` and a transport is configured |
 | **SMS** | Twilio (`lib/sms`): phone verification codes, SMS blasts. | Needs `TWILIO_*` |
 | **Push** | APNs (`lib/push/apns.ts`). | Needs a paid Apple team + `APNS_*` |
 | **Campus sync** | Daily cron (`vercel.json` → `/api/cron/campus-sync`) plus on-demand refresh. | Needs `CRON_SECRET` for the schedule |
@@ -23,7 +23,7 @@ Postgres database. There is no second service to deploy.
 
 ## What to set in Vercel, in order of impact
 
-1. **`RESEND_API_KEY`, `RESEND_FROM`** — turns on every email: password resets, verification, approvals, club updates. Until then reset and verification links are written to the function logs (and, outside production, returned to the client) so the flows can be exercised.
+1. **`RESEND_API_KEY`, `RESEND_FROM`** — turns on every email in production: password resets, verification, approvals, club updates. Set them on Production only. Preview and a laptop log the template name and the recipient, never the link. A laptop (no `VERCEL_ENV`) still returns the link to the client so the flow can be clicked.
 2. **`BLOB_READ_WRITE_TOKEN`** — Vercel → Storage → Blob. Moves uploads out of Postgres onto a CDN. Existing rows keep serving from `/api/images/:id`.
 3. **`CRON_SECRET`** — any random string; Vercel sends it on the scheduled campus sync.
 4. **`DIRECT_URL`** — the provider's non-pooled URL so `prisma migrate deploy` doesn't go through the pooler.
