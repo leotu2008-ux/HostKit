@@ -149,14 +149,20 @@ export async function decideRequest(
 ): Promise<{ state: Decision; guest: PromotedGuest } | null> {
   const decided = await decideRequestRow(eventId, guestId, approve);
   if (decided?.guest.userId && decided.state !== "declined") {
-    const title = await eventTitle(eventId);
+    const event = await db.event.findUnique({
+      where: { id: eventId },
+      select: { title: true, date: true, schoolDomain: true },
+    });
+    const title = event?.title ?? "the event";
     await notify([decided.guest.userId], {
       kind: "registration_approved",
       title: decided.state === "going" ? `You're in: ${title}` : `Approved for ${title} — you're on the waitlist`,
       body:
         decided.state === "going"
           ? "The host confirmed your spot. See you there."
-          : "The host said yes, but it's full right now. You're in automatically when a spot opens.",
+          : event && hasStarted(event)
+            ? "The host said yes, but it's full right now. The host can let you in if a spot opens."
+            : "The host said yes, but it's full right now. You're in automatically when a spot opens.",
       eventId,
     });
   }

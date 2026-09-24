@@ -261,6 +261,23 @@ describe("decideRequest", () => {
     expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("ATTENDING");
   });
 
+  // Approved into a full 7pm night: before the start the line moves by itself;
+  // after it, only the host lets people in, so the notice mustn't promise more.
+  it("tells an approved guest landing on the waitlist what to expect, before and after the start", async () => {
+    mocks.eventFind.mockResolvedValue({ ...eventAt(new Date("2026-09-11T19:00:00Z")), guestCount: 10 });
+    mocks.guestAggregate.mockResolvedValue(going(10));
+
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-11T20:00:00Z") });
+    await decideRequest("ev-1", "g-2", true);
+    vi.setSystemTime(new Date("2026-09-12T00:00:00Z"));
+    await decideRequest("ev-1", "g-2", true);
+    vi.useRealTimers();
+
+    const [before, during] = mocks.notify.mock.calls.map((call) => call[1].body);
+    expect(before).toBe("The host said yes, but it's full right now. You're in automatically when a spot opens.");
+    expect(during).toBe("The host said yes, but it's full right now. The host can let you in if a spot opens.");
+  });
+
   it("keeps a waitlisted guest in line when the host lets in a party that doesn't fit", async () => {
     mocks.guestFindFirst.mockResolvedValue({ ...REQUEST, rsvpStatus: "WAITLISTED", plusOnes: 2 });
     mocks.guestAggregate.mockResolvedValue(going(8));

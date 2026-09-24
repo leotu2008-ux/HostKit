@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
+import { hasStarted } from "@/lib/outcomes";
 import { briefIsComplete, describeMissing, missingBriefFields } from "@/lib/brief";
 import { VISIBILITY_LABEL } from "@/lib/listing";
 import { formatCents } from "@/lib/money";
@@ -225,7 +226,10 @@ export default async function EventOverviewPage({
           <div className="border-b border-line px-5 py-4">
             <h2 className="text-[15px] font-semibold text-ink">Waitlist</h2>
             <p className="text-[13px] text-ink-mute">
-              {waitlist.length} in line, oldest first. They move up automatically when a spot opens.
+              {waitlist.length} in line, oldest first.{" "}
+              {hasStarted(event)
+                ? "The night has started, so they only move up when you let them in."
+                : "They move up automatically when a spot opens."}
             </p>
           </div>
           <ol className="divide-y divide-line">
