@@ -8,15 +8,25 @@ async function eventTitle(eventId: string): Promise<string> {
 }
 
 /**
- * Approval requests and the waitlist. A seat frees whenever an ATTENDING
- * guest stops attending (host change, their own decline, removal); every
- * path that does that calls `promoteWaitlist`, which lets in the people who
- * have waited longest until the event is full again, up to the start time.
+ * Approval requests and the waitlist. Room frees whenever an ATTENDING
+ * guest stops attending (host change, their own decline, removal) or brings
+ * fewer people; every path that does that calls `promoteWaitlist`, which lets
+ * in the people who have waited longest until the event is full again, up to
+ * the start time.
  */
 
-/** True when moving a guest from `from` to `to` frees a seat. */
-export function releasesSeat(from: RsvpStatus, to: RsvpStatus | null): boolean {
-  return from === "ATTENDING" && to !== "ATTENDING";
+/**
+ * True when moving a guest from `from` to `to` frees room: they stop
+ * attending, or stay and bring fewer plus-ones than before.
+ */
+export function releasesSeat(
+  from: RsvpStatus,
+  to: RsvpStatus | null,
+  plusOnes?: { from: number; to: number },
+): boolean {
+  if (from !== "ATTENDING") return false;
+  if (to !== "ATTENDING") return true;
+  return plusOnes !== undefined && plusOnes.to < plusOnes.from;
 }
 
 /**

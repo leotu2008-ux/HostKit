@@ -186,5 +186,16 @@ describe("submitRsvpAction", () => {
     expect(kept).toBeUndefined();
     expect(more).toEqual({ error: "There’s only room for you and 2 more." });
     expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.promoteWaitlist).not.toHaveBeenCalled();
+  });
+
+  // Capacity counts plus-ones, so bringing fewer people is room for the waitlist.
+  it("lets the waitlist in when a going guest brings fewer people", async () => {
+    mocks.findUnique.mockResolvedValue(guest("ATTENDING", { date: new Date(Date.now() + 2 * DAY) }, 2));
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "0" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.promoteWaitlist).toHaveBeenCalledWith("evt-1");
   });
 });

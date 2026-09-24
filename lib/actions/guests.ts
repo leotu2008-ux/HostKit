@@ -78,7 +78,10 @@ export async function updateGuestAction(formData: FormData) {
   });
   if (!parsed.success) return;
 
-  const before = await db.guest.findFirst({ where: { id: guestId, eventId }, select: { rsvpStatus: true } });
+  const before = await db.guest.findFirst({
+    where: { id: guestId, eventId },
+    select: { rsvpStatus: true, plusOnes: true },
+  });
   if (!before) return;
 
   await db.guest.updateMany({
@@ -92,7 +95,8 @@ export async function updateGuestAction(formData: FormData) {
       respondedAt: parsed.data.rsvpStatus === "INVITED" ? null : new Date(),
     },
   });
-  if (releasesSeat(before.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(eventId);
+  const plusOnes = { from: before.plusOnes, to: parsed.data.plusOnes };
+  if (releasesSeat(before.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) await promoteWaitlist(eventId);
   refresh();
 }
 
@@ -190,7 +194,8 @@ export async function submitRsvpAction(
       respondedAt: new Date(),
     },
   });
-  if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(guest.eventId);
+  const plusOnes = { from: guest.plusOnes, to: parsed.data.plusOnes };
+  if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) await promoteWaitlist(guest.eventId);
 
   // Only the move into ATTENDING (or back into line) is a new "yes" worth a
   // line — a guest can't pick PENDING or WAITLISTED themselves (guarded

@@ -63,6 +63,14 @@ describe("waitlist", () => {
     expect(releasesSeat("ATTENDING", "ATTENDING")).toBe(false);
     expect(releasesSeat("PENDING", "DECLINED")).toBe(false);
   });
+
+  // Capacity is heads, so a guest who stays but brings fewer people frees room.
+  it("frees room when an attending guest brings fewer people", () => {
+    expect(releasesSeat("ATTENDING", "ATTENDING", { from: 2, to: 1 })).toBe(true);
+    expect(releasesSeat("ATTENDING", "ATTENDING", { from: 1, to: 2 })).toBe(false);
+    expect(releasesSeat("ATTENDING", "ATTENDING", { from: 1, to: 1 })).toBe(false);
+    expect(releasesSeat("INVITED", "ATTENDING", { from: 2, to: 0 })).toBe(false);
+  });
 });
 
 describe("new statuses across the guest maths", () => {
