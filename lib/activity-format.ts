@@ -30,16 +30,6 @@ export function toFeedRow(row: ActivityRow): FeedRow {
   };
 }
 
-const ACTOR_LABEL: Record<ActivityActor, string> = {
-  agent: "Agent",
-  host: "You",
-  system: "Hosty",
-};
-
-export function actorLabel(actor: ActivityActor): string {
-  return ACTOR_LABEL[actor];
-}
-
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;

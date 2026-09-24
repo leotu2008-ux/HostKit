@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  actorLabel,
   feedIsQuiet,
   latestAt,
   mergeFeed,
@@ -100,14 +99,6 @@ describe("latestAt", () => {
 
   it("returns null for an empty feed", () => {
     expect(latestAt([])).toBeNull();
-  });
-});
-
-describe("actorLabel", () => {
-  it("covers all three actors", () => {
-    expect(actorLabel("agent")).toBe("Agent");
-    expect(actorLabel("host")).toBe("You");
-    expect(actorLabel("system")).toBe("Hosty");
   });
 });
 
