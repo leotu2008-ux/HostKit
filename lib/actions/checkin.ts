@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { record } from "@/lib/activity";
+import { newRsvpToken } from "@/lib/tokens";
 
 /**
  * The door.
@@ -47,6 +48,30 @@ export async function checkInGuestAction(formData: FormData) {
       await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${guest.name} checked in` });
     }
   }
+  refresh();
+}
+
+/**
+ * Someone who isn't on the list, added and let in with one press. Their RSVP
+ * stays at the default because they never replied; the walk-up flag is what
+ * the outcome counts.
+ */
+export async function addWalkUpAction(formData: FormData) {
+  const eventId = String(formData.get("eventId") ?? "");
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  await requireEvent(eventId);
+  if (!name) return;
+
+  await db.guest.create({
+    data: {
+      eventId,
+      name,
+      rsvpToken: newRsvpToken(),
+      checkedInAt: new Date(),
+      arrivedWithoutRsvp: true,
+    },
+  });
+  await record(eventId, { actor: "system", kind: "guest_checked_in", title: `${name} walked up and checked in` });
   refresh();
 }
 

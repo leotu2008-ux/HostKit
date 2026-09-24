@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import {
+  addWalkUpAction,
   checkInGuestAction,
   undoCheckInAction,
 } from "@/lib/actions/checkin";
@@ -108,9 +109,15 @@ export default async function CheckInPage({
                       </Button>
                     </form>
                   ) : guest.rsvpStatus === "DECLINED" ? (
-                    <span className="min-h-12 min-w-[7rem] rounded-full bg-danger-wash px-3 text-center text-sm leading-[3rem] font-medium text-danger">
-                      Not going
-                    </span>
+                    // They said no but turned up: the door can still let them
+                    // in. Their RSVP is kept and they count as a walk-up.
+                    <form action={checkInGuestAction}>
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input type="hidden" name="guestId" value={guest.id} />
+                      <Button type="submit" variant="secondary" className="min-h-12! min-w-[7rem]">
+                        Check in anyway
+                      </Button>
+                    </form>
                   ) : (
                     <form action={checkInGuestAction}>
                       <input type="hidden" name="eventId" value={event.id} />
@@ -126,6 +133,26 @@ export default async function CheckInPage({
           })}
         </ul>
       )}
+
+      <form action={addWalkUpAction} className="space-y-2 border-t border-line pt-4">
+        <input type="hidden" name="eventId" value={event.id} />
+        <label htmlFor="walk-up-name" className="block text-sm font-medium text-ink">
+          Add walk-up
+        </label>
+        <div className="flex gap-2">
+          <Input
+            id="walk-up-name"
+            name="name"
+            required
+            maxLength={120}
+            placeholder="Name"
+            className="min-h-12"
+          />
+          <Button type="submit" className="min-h-12! px-5">
+            Add and check in
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
