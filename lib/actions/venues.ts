@@ -109,7 +109,7 @@ export async function findVenuesAction(
     lat: event.lat ?? centre.lat,
     lng: event.lng ?? centre.lng,
     venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
-  });
+  }, { eventId: event.id });
 
   const hostName = user?.name || "the host";
   return {

@@ -23,6 +23,11 @@ import { notify } from "@/lib/notify";
  *  those. */
 const PHRASED_LIMIT = 8;
 
+/** With the guardrail on, one phrasing can take a retry and two checks, so
+ *  the count alone no longer bounds the time: phrasing also stops once this
+ *  much of the 60s is gone, and every later event gets digestNotice. */
+const PHRASING_BUDGET_MS = 45_000;
+
 export type DigestResult = { events: number; notified: number; skipped: number };
 
 export async function sendDailyBriefings(now = new Date()): Promise<DigestResult> {
@@ -59,6 +64,7 @@ export async function sendDailyBriefings(now = new Date()): Promise<DigestResult
 
   let notified = 0;
   let skipped = 0;
+  const phrasingDeadline = Date.now() + PHRASING_BUDGET_MS;
 
   for (const event of candidates) {
     const recipients = recipientsFor(event).filter((id) => !alreadyNotified.has(`${id}:${event.id}`));
@@ -74,8 +80,8 @@ export async function sendDailyBriefings(now = new Date()): Promise<DigestResult
     }
 
     const { notice } =
-      notified < PHRASED_LIMIT
-        ? await phraseBriefing(briefing, event.title, { eventDate: event.date, now })
+      notified < PHRASED_LIMIT && Date.now() < phrasingDeadline
+        ? await phraseBriefing(briefing, event.title, { eventDate: event.date, now, deadline: phrasingDeadline })
         : { notice: digestNotice(briefing, event.title) };
 
     await notify(recipients, { kind: "agent_briefing", title: notice.title, body: notice.body, eventId: event.id });

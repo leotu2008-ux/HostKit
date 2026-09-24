@@ -74,7 +74,7 @@ export async function attachTopVenues(
       lng: event.lng ?? centre.lng,
       venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
     },
-    { fetchImpl: options.fetchImpl },
+    { fetchImpl: options.fetchImpl, eventId: event.id },
   );
 
   const top = venues.slice(0, limit);

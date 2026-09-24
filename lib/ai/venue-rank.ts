@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { EventType } from "@/generated/prisma/enums";
 import { askOr } from "@/lib/ai/client";
+import { checkDraft } from "@/lib/ai/guardrail";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { daysUntil, describeCountdown } from "@/lib/plan";
 import { rankVenues, type RankableEvent, type RankedVenue } from "@/lib/venues/rank";
@@ -48,6 +49,10 @@ export type VenueRankOptions = {
   now?: Date;
   /** Injectable for tests; forwarded to askOr, defaults to global fetch. */
   fetchImpl?: typeof fetch;
+  /** The event the reasons are for, so the guardrail can log its checks. */
+  eventId?: string;
+  /** Injectable for tests: the guardrail's fetch and environment. */
+  jev?: { fetch?: typeof fetch; env?: Record<string, string | undefined> };
 };
 
 function systemPrompt(): string {
@@ -164,5 +169,43 @@ export async function rankVenuesForEvent(
     return { venues: rankVenues(candidates, rankEvent), source: "fallback" };
   }
 
-  return { venues: reconcile(value, candidates, rankEvent), source: "model" };
+  const picked = reconcile(value, candidates, rankEvent);
+  return { venues: await guardReasons(picked, value, candidates, rankEvent, event, now, opts), source: "model" };
+}
+
+/**
+ * The guardrail over the model's reasons (lib/ai/guardrail.ts): a reason that
+ * hints at the budget or states a value the record doesn't hold is swapped for
+ * the deterministic reason for that venue. No second try: a reason is a short
+ * note and the replacement is exact. With the guardrail off, nothing changes.
+ */
+async function guardReasons(
+  picked: RankedVenue[],
+  answer: RankAnswer,
+  candidates: VenueResult[],
+  rankEvent: RankableEvent,
+  event: VenueRankEvent,
+  now: Date,
+  opts: VenueRankOptions,
+): Promise<RankedVenue[]> {
+  const modelWrote = new Set(answer.picks.map((pick) => pick.id));
+  const plain = new Map(rankVenues(candidates, rankEvent, candidates.length).map((v) => [v.id, v.reason]));
+  const days = daysUntil(event.date, now);
+  const allowedNumbers = [event.guestCount, event.durationHours, ...(days === null ? [] : [days])];
+
+  return Promise.all(
+    picked.map(async (venue) => {
+      if (!modelWrote.has(venue.id)) return venue;
+      const check = await checkDraft(venue.reason, {
+        eventId: opts.eventId,
+        subject: `venue reason: ${venue.name}`,
+        allowedNumbers,
+        allowedPhrases: [describeCountdown(days), formatDuration(event.durationHours), venue.name],
+        fetch: opts.jev?.fetch,
+        env: opts.jev?.env,
+      });
+      if (!check || check.verdict === "pass") return venue;
+      return { ...venue, reason: plain.get(venue.id) ?? venue.reason };
+    }),
+  );
 }
