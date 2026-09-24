@@ -17,7 +17,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand";
 // moves when a button is disabled or the reader asks for reduced motion, and
 // every button shows a focus ring for the keyboard.
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[transform,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 disabled:scale-100 disabled:shadow-none motion-reduce:transform-none motion-reduce:transition-none";
+  "inline-flex min-h-(--button-h) items-center justify-center gap-2 rounded-full font-semibold transition-[translate,scale,box-shadow,background-color,color] duration-150 ease-out active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-none disabled:scale-none motion-reduce:translate-none! motion-reduce:scale-none! motion-reduce:transition-none";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
   primary: cx(
@@ -26,13 +26,15 @@ const BUTTON_VARIANT: Record<Variant, string> = {
     "text-on-clay hover:-translate-y-px",
     "shadow-[0_4px_12px_-2px_color-mix(in_srgb,var(--color-clay)_35%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
     "hover:shadow-[0_8px_18px_-4px_color-mix(in_srgb,var(--color-clay)_45%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
+    "disabled:shadow-none",
   ),
   secondary: cx(
     "bg-surface text-ink hover:-translate-y-px",
     "shadow-[0_1px_2px_rgb(15_23_42/0.08),0_0_0_1px_rgb(15_23_42/0.08)]",
     "hover:shadow-[0_4px_10px_-2px_rgb(15_23_42/0.12),0_0_0_1px_rgb(15_23_42/0.1)]",
+    "disabled:shadow-[0_0_0_1px_rgb(15_23_42/0.1)]",
   ),
-  ghost: "text-ink-soft hover:bg-sunk hover:text-ink hover:translate-y-0",
+  ghost: "text-ink-soft hover:bg-sunk hover:text-ink",
   danger:
     "bg-danger-wash text-danger hover:-translate-y-px hover:bg-[color-mix(in_srgb,var(--color-danger)_16%,white)]",
   // The landing's call to action: the brand blue, with a bigger glow.
@@ -41,15 +43,17 @@ const BUTTON_VARIANT: Record<Variant, string> = {
     "text-white hover:-translate-y-px",
     "shadow-[0_10px_24px_-8px_color-mix(in_srgb,var(--color-brand)_60%,transparent),inset_0_1px_0_rgb(255_255_255/0.3)]",
     "hover:shadow-[0_14px_28px_-8px_color-mix(in_srgb,var(--color-brand)_70%,transparent),inset_0_1px_0_rgb(255_255_255/0.3)]",
+    "disabled:shadow-none",
   ),
 };
 
 // Phones keep a 44px tap target at every size; on wider screens "small" is
-// really small, so a row's button doesn't crowd the row.
+// really small, so a row's button doesn't crowd the row. Sizes set a height
+// the base reads, so a caller's own min-h-* still wins at every width.
 const BUTTON_SIZE = {
-  sm: "min-h-11 px-3.5 text-[13px] md:min-h-[34px]",
-  md: "min-h-11 px-[18px] text-sm md:min-h-[42px]",
-  lg: "min-h-12 px-[26px] text-base md:min-h-[50px]",
+  sm: "[--button-h:2.75rem] px-3.5 text-[13px] md:[--button-h:34px]",
+  md: "[--button-h:2.75rem] px-[18px] text-sm md:[--button-h:42px]",
+  lg: "[--button-h:3rem] px-[26px] text-base md:[--button-h:50px]",
 } as const;
 
 type ButtonSize = keyof typeof BUTTON_SIZE;
