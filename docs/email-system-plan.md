@@ -162,9 +162,12 @@ from RSVP status (`lib/blasts.ts`: `going`, `pending` which is status
 `INVITED`, `waitlist`, `everyone` excluding declined, waitlisted and
 unapproved requesters, and `came`: attending guests checked in at the door,
 offered only once the night has happened and the door was run).
-`{name}` becomes the first name. Reply-To is the host. There is no blast
+`{name}` becomes the first name. Reply-To is the host. Every blast email
+ends with `— {host} via Hosty. Reply to this email to stop getting updates
+about {event}.` (`emailText`, mirroring the SMS footer). That reply is a
+stopgap: it reaches the host, who has to act on it by hand. There is no blast
 rate limit (`LIMITS.outreach` is 30/hour and covers vendor mail only), no
-unsubscribe, and no preference. The host's body is plain text today, so it
+unsubscribe link, and no preference. The host's body is plain text today, so it
 cannot carry HTML, but nothing strips CR/LF from the subject before it is
 placed in a header. The composer shows a live count for the selected
 segment. It does not show a rendered preview of each recipient's body
