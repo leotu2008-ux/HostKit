@@ -69,8 +69,7 @@ export function toEventCard(event: {
 
 /**
  * One night in a list: when, the title, who and where, with the cover as a
- * thumbnail on the right. The same row works in Discover and in a host's
- * timeline.
+ * thumbnail on the right, as in a host's list of their events.
  */
 export function EventCard({
   event,
