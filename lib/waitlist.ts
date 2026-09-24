@@ -69,26 +69,20 @@ export async function attendingHeads(
 }
 
 /**
- * Whether a party of `heads` gets a seat now: it fits the seats left and
- * nobody already waiting fits them first (the line was there first).
- * `except` leaves the party's own row out of both counts.
+ * Whether a party of `heads` from outside the line gets a seat now: it fits
+ * the seats left and nobody already waiting fits them first (the line was
+ * there first).
  */
 export async function seatFree(
   client: Pick<typeof db, "guest">,
   eventId: string,
   capacity: number,
   heads: number,
-  except?: string,
 ): Promise<boolean> {
-  const room = capacity - (await attendingHeads(client, eventId, except));
+  const room = capacity - (await attendingHeads(client, eventId));
   if (heads > room) return false;
   const waitingThatFits = await client.guest.count({
-    where: {
-      eventId,
-      rsvpStatus: "WAITLISTED",
-      plusOnes: { lte: room - 1 },
-      ...(except ? { id: { not: except } } : {}),
-    },
+    where: { eventId, rsvpStatus: "WAITLISTED", plusOnes: { lte: room - 1 } },
   });
   return waitingThatFits === 0;
 }
@@ -188,7 +182,15 @@ async function decideRequestRow(
     } else {
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { guestCount: true } });
       const heads = 1 + Math.max(0, guest.plusOnes);
-      state = event && (await seatFree(tx, eventId, event.guestCount, heads, guest.id)) ? "going" : "waitlisted";
+      // Letting someone in off the waitlist is the host picking them out of
+      // the line, before or after the start: their party only has to fit. A
+      // new request waits behind anyone already in line who fits.
+      const fits =
+        event &&
+        (guest.rsvpStatus === "WAITLISTED"
+          ? heads <= event.guestCount - (await attendingHeads(tx, eventId))
+          : await seatFree(tx, eventId, event.guestCount, heads));
+      state = fits ? "going" : "waitlisted";
     }
     await tx.guest.update({
       where: { id: guest.id },

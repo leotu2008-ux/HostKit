@@ -177,7 +177,7 @@ export async function submitRsvpAction(
           plusOnes: { lte: guest.event.guestCount - 1 },
         },
       })) > 0 &&
-      !(await seatFree(tx, guest.eventId, guest.event.guestCount, 1 + parsed.data.plusOnes, guest.id));
+      !(await seatFree(tx, guest.eventId, guest.event.guestCount, 1 + parsed.data.plusOnes));
 
     // Their own seat is theirs, but the people they bring need room — capacity
     // is people in the room. Plus-ones they already have stay once it fills.

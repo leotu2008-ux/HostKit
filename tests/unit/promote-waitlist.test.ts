@@ -42,8 +42,8 @@ const WAITING = [
 
 /** The WAITLISTED rows a `guest.count` query would find. */
 function line(rows: { id: string; plusOnes: number }[]) {
-  return ({ where }: { where: { plusOnes: { lte: number }; id?: { not: string } } }) =>
-    rows.filter((r) => r.plusOnes <= where.plusOnes.lte && r.id !== where.id?.not).length;
+  return ({ where }: { where: { plusOnes: { lte: number } } }) =>
+    rows.filter((r) => r.plusOnes <= where.plusOnes.lte).length;
 }
 
 /** What the ATTENDING rows add up to: `rows` guests bringing `plusOnes` between them. */
@@ -245,14 +245,28 @@ describe("decideRequest", () => {
     expect(decided?.state).toBe("going");
   });
 
-  // A waitlisted guest being approved isn't waiting behind themselves.
-  it("doesn't count the approved guest as someone ahead of them", async () => {
-    mocks.guestFindFirst.mockResolvedValue({ ...REQUEST, rsvpStatus: "WAITLISTED" });
+  // Mid-night, auto-promotion is off and two waiters fit the seats a no-show
+  // freed: the host's "Let in" picks one of them out of the line by hand.
+  it("lets the host move a waitlisted guest in while others waiting fit too", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-11T23:30:00Z") });
+    mocks.eventFind.mockResolvedValue({ ...eventAt(new Date("2026-09-11T19:00:00Z")), guestCount: 10 });
+    mocks.guestFindFirst.mockResolvedValue({ ...REQUEST, rsvpStatus: "WAITLISTED", plusOnes: 0 });
+    mocks.guestAggregate.mockResolvedValue(going(7));
+    mocks.guestCount.mockImplementation(line([{ id: "g-2", plusOnes: 0 }, { id: "g-3", plusOnes: 0 }]));
+
+    const decided = await decideRequest("ev-1", "g-2", true);
+    vi.useRealTimers();
+
+    expect(decided?.state).toBe("going");
+    expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("ATTENDING");
+  });
+
+  it("keeps a waitlisted guest in line when the host lets in a party that doesn't fit", async () => {
+    mocks.guestFindFirst.mockResolvedValue({ ...REQUEST, rsvpStatus: "WAITLISTED", plusOnes: 2 });
     mocks.guestAggregate.mockResolvedValue(going(8));
-    mocks.guestCount.mockImplementation(line([{ id: "g-2", plusOnes: 1 }]));
 
     const decided = await decideRequest("ev-1", "g-2", true);
 
-    expect(decided?.state).toBe("going");
+    expect(decided?.state).toBe("waitlisted");
   });
 });
