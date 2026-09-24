@@ -6,6 +6,7 @@ import {
   checkInGuestAction,
   undoCheckInAction,
 } from "@/lib/actions/checkin";
+import { LocalTime } from "@/components/local-time";
 import { PrintButton } from "@/components/print-button";
 import { Button, Card, EmptyState, Input } from "@/components/ui";
 
@@ -95,13 +96,18 @@ export default async function CheckInPage({
                     <p className="font-medium text-ink">{guest.name}</p>
                     <p className="truncate text-[13px] text-ink-mute">
                       {guest.email ?? "No email"}
-                      {inDoor
-                        ? ` · in ${guest.checkedInAt!.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
-                        : guest.rsvpStatus === "ATTENDING"
-                          ? " · going"
-                          : guest.rsvpStatus === "DECLINED"
-                            ? " · not going"
-                            : " · invited"}
+                      {inDoor ? (
+                        <>
+                          {" · in "}
+                          <LocalTime iso={guest.checkedInAt!.toISOString()} format="time" />
+                        </>
+                      ) : guest.rsvpStatus === "ATTENDING" ? (
+                        " · going"
+                      ) : guest.rsvpStatus === "DECLINED" ? (
+                        " · not going"
+                      ) : (
+                        " · invited"
+                      )}
                     </p>
                   </div>
                   {inDoor ? (

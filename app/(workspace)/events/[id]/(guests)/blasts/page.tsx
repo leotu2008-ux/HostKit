@@ -4,6 +4,7 @@ import { phoneRecipientsFor, recipientsFor, segmentsFor, SEGMENTS, type Segment 
 import { isEmailConfigured } from "@/lib/email/send";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 import { BlastComposer } from "@/components/blast-composer";
+import { LocalTime } from "@/components/local-time";
 import { Badge, Card, EmptyState, SectionHeading } from "@/components/ui";
 
 /** Email the guest list: compose to a segment, and see what's gone out. */
@@ -71,7 +72,7 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
                 </div>
                 <p className="text-[13px] text-ink-mute">
                   {SEGMENTS[blast.segment as Segment] ?? blast.segment} · {blast.recipientCount} emailed{blast.smsCount > 0 ? ` · ${blast.smsCount} texted` : ""} ·{" "}
-                  {blast.sentAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  <LocalTime iso={blast.sentAt.toISOString()} format="date" />
                 </p>
               </div>
             ))}
