@@ -157,43 +157,55 @@ export async function submitRsvpAction(
     return { error: "Pick whether you can make it." };
   }
 
-  // A guest who said no and changes their mind while people are waiting joins
-  // the back of the line: they gave their seat up, and the waitlist was there
-  // first. An invite (or a maybe) keeps its seat — the invite is the seat.
-  const rejoining =
-    guest.rsvpStatus === "DECLINED" &&
-    parsed.data.rsvpStatus === "ATTENDING" &&
-    (await db.guest.count({ where: { eventId: guest.eventId, rsvpStatus: "WAITLISTED" } })) > 0;
+  const outcome = await db.$transaction(async (tx) => {
+    // The same event-row lock registration and the waitlist take, so the room
+    // counted here is still the room when the reply is written.
+    await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${guest.eventId} FOR UPDATE`;
 
-  // Their own seat is theirs, but the people they bring need room — capacity
-  // is people in the room. Plus-ones they already have stay once it fills.
-  const kept = guest.rsvpStatus === "ATTENDING" ? guest.plusOnes : 0;
-  if (parsed.data.rsvpStatus === "ATTENDING" && !rejoining && parsed.data.plusOnes > kept) {
-    const room = guest.event.guestCount - 1 - (await attendingHeads(db, guest.eventId, guest.id));
-    const allowed = Math.max(kept, room);
-    if (parsed.data.plusOnes > allowed) {
-      return {
-        error:
-          allowed > 0
-            ? `There’s only room for you and ${allowed} more.`
-            : "The night is full, so there’s only room for you.",
-      };
+    // A guest who said no and changes their mind while people are waiting
+    // joins the back of the line: they gave their seat up, and the waitlist
+    // was there first. An invite (or a maybe) keeps its seat — the invite is
+    // the seat.
+    const rejoining =
+      guest.rsvpStatus === "DECLINED" &&
+      parsed.data.rsvpStatus === "ATTENDING" &&
+      (await tx.guest.count({ where: { eventId: guest.eventId, rsvpStatus: "WAITLISTED" } })) > 0;
+
+    // Their own seat is theirs, but the people they bring need room — capacity
+    // is people in the room. Plus-ones they already have stay once it fills.
+    // Someone joining the line waits for room, but their party still has to
+    // fit the night one day.
+    const kept = guest.rsvpStatus === "ATTENDING" ? guest.plusOnes : 0;
+    if (parsed.data.rsvpStatus === "ATTENDING" && parsed.data.plusOnes > kept) {
+      const others = rejoining ? 0 : await attendingHeads(tx, guest.eventId, guest.id);
+      const allowed = Math.max(kept, guest.event.guestCount - 1 - others);
+      if (parsed.data.plusOnes > allowed) {
+        return {
+          error:
+            allowed > 0
+              ? `There’s only room for you and ${allowed} more.`
+              : "The night is full, so there’s only room for you.",
+        };
+      }
     }
-  }
 
-  await db.guest.update({
-    where: { id: guest.id },
-    data: {
-      rsvpStatus: rejoining ? "WAITLISTED" : parsed.data.rsvpStatus,
-      // The line is ordered by createdAt, so rejoining it now puts them last.
-      ...(rejoining ? { createdAt: new Date() } : {}),
-      // Only an attending guest brings anyone with them.
-      plusOnes:
-        parsed.data.rsvpStatus === "ATTENDING" ? parsed.data.plusOnes : 0,
-      dietary: parsed.data.dietary?.trim() || null,
-      respondedAt: new Date(),
-    },
+    await tx.guest.update({
+      where: { id: guest.id },
+      data: {
+        rsvpStatus: rejoining ? "WAITLISTED" : parsed.data.rsvpStatus,
+        // The line is ordered by createdAt, so rejoining it now puts them last.
+        ...(rejoining ? { createdAt: new Date() } : {}),
+        // Only an attending guest brings anyone with them.
+        plusOnes:
+          parsed.data.rsvpStatus === "ATTENDING" ? parsed.data.plusOnes : 0,
+        dietary: parsed.data.dietary?.trim() || null,
+        respondedAt: new Date(),
+      },
+    });
+    return { rejoining };
   });
+  if ("error" in outcome) return { error: outcome.error };
+  const { rejoining } = outcome;
   const plusOnes = { from: guest.plusOnes, to: parsed.data.plusOnes };
   if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus, plusOnes)) await promoteWaitlist(guest.eventId);
 

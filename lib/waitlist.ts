@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { notify } from "@/lib/notify";
+import { hasStarted } from "@/lib/outcomes";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 async function eventTitle(eventId: string): Promise<string> {
@@ -33,13 +34,19 @@ export function releasesSeat(
  * Pure: which of the waiting guests (oldest first) fit into `room` seats.
  * A guest takes a seat for themselves and one per plus-one, and the line
  * stops at the first party that doesn't fit rather than letting anyone
- * behind them jump ahead.
+ * behind them jump ahead. A party bigger than the whole night (`capacity`)
+ * could never go in, so it's passed over instead of holding the line.
  */
-export function promotionPlan<T extends { createdAt: Date; plusOnes?: number }>(waiting: T[], room: number): T[] {
+export function promotionPlan<T extends { createdAt: Date; plusOnes?: number }>(
+  waiting: T[],
+  room: number,
+  capacity = Infinity,
+): T[] {
   const plan: T[] = [];
   let left = room;
   for (const guest of [...waiting].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())) {
     const heads = 1 + Math.max(0, guest.plusOnes ?? 0);
+    if (heads > capacity) continue;
     if (heads > left) break;
     plan.push(guest);
     left -= heads;
@@ -87,23 +94,23 @@ async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
     const event = await tx.event.findUnique({
       where: { id: eventId },
-      select: { guestCount: true, date: true, status: true },
+      select: { guestCount: true, date: true, status: true, schoolDomain: true },
     });
     if (!event) return [];
     // Once the night has started, whoever's next is at home: a seat freed by
     // a no-show marked "Not going" shouldn't tell them they're in. The host
     // can still move someone in by hand from the Guests tab.
-    if (event.status === "COMPLETED" || (event.date && event.date.getTime() <= Date.now())) return [];
+    if (event.status === "COMPLETED" || hasStarted(event)) return [];
     const room = event.guestCount - (await attendingHeads(tx, eventId));
     if (room <= 0) return [];
     const waiting = promotionPlan(
       await tx.guest.findMany({
         where: { eventId, rsvpStatus: "WAITLISTED" },
         orderBy: { createdAt: "asc" },
-        take: room,
         select: { id: true, userId: true, name: true, email: true, plusOnes: true, createdAt: true },
       }),
       room,
+      event.guestCount,
     );
     if (waiting.length === 0) return [];
     await tx.guest.updateMany({

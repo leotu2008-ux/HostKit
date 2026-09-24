@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
@@ -43,8 +43,8 @@ function going(rows: number, plusOnes = 0) {
   return { _count: rows, _sum: { plusOnes } };
 }
 
-function eventAt(date: Date, status = "PUBLISHED") {
-  return { title: "Pitch Night", guestCount: 10, date, endDate: null, durationHours: 3, status };
+function eventAt(date: Date, status = "PUBLISHED", schoolDomain: string | null = null) {
+  return { title: "Pitch Night", guestCount: 10, date, endDate: null, durationHours: 3, status, schoolDomain };
 }
 
 describe("promoteWaitlist", () => {
@@ -94,16 +94,65 @@ describe("promoteWaitlist", () => {
     expect(mocks.notify).not.toHaveBeenCalled();
   });
 
-  it("stops moving people in once the night has started", async () => {
-    // A no-show marked "Not going" at 7:10 for a 7pm start: whoever's next
-    // is at home, so the host moves someone in by hand if they want to.
-    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() - 10 * 60_000)));
+  describe("on the school's own clock", () => {
+    // Event.date is the host's wall clock encoded as UTC: 7pm reads 19:00Z.
+    const SEVEN_PM = new Date("2026-09-11T19:00:00Z");
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("stops moving people in once the night has started", async () => {
+      // A no-show marked "Not going" at 7:10pm Eastern for a 7pm start:
+      // whoever's next is at home, so the host moves someone in by hand.
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-11T23:10:00Z") });
+      mocks.eventFind.mockResolvedValue(eventAt(SEVEN_PM));
+
+      const promoted = await promoteWaitlist("ev-1");
+
+      expect(promoted).toEqual([]);
+      expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
+      expect(mocks.notify).not.toHaveBeenCalled();
+    });
+
+    it("still moves people in that afternoon, hours before an Eastern start", async () => {
+      // 3pm in Boston is 19:00Z — the same reading as the 7pm start.
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-11T19:00:00Z") });
+      mocks.eventFind.mockResolvedValue(eventAt(SEVEN_PM, "PUBLISHED", "babson.edu"));
+
+      const promoted = await promoteWaitlist("ev-1");
+
+      expect(promoted.map((g) => g.id)).toEqual(["g-1"]);
+    });
+
+    it("goes by a Pacific school's clock for a Pacific night", async () => {
+      // 6:30pm in Berkeley is already 9:30pm in Boston.
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-12T01:30:00Z") });
+      mocks.eventFind.mockResolvedValue(eventAt(SEVEN_PM, "PUBLISHED", "berkeley.edu"));
+
+      expect((await promoteWaitlist("ev-1")).map((g) => g.id)).toEqual(["g-1"]);
+
+      vi.setSystemTime(new Date("2026-09-12T02:05:00Z"));
+      mocks.guestUpdateMany.mockClear();
+
+      expect(await promoteWaitlist("ev-1")).toEqual([]);
+      expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  // A party bigger than the whole night can never go in; everyone behind
+  // them shouldn't wait forever for it.
+  it("passes over a party that could never fit the night", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestAggregate.mockResolvedValue(going(8));
+    mocks.guestFindMany.mockResolvedValue([
+      { ...WAITING[0], id: "g-big", plusOnes: 12 },
+      { ...WAITING[0], id: "g-2", createdAt: new Date(1) },
+    ]);
 
     const promoted = await promoteWaitlist("ev-1");
 
-    expect(promoted).toEqual([]);
-    expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
-    expect(mocks.notify).not.toHaveBeenCalled();
+    expect(promoted.map((g) => g.id)).toEqual(["g-2"]);
   });
 
   it("keeps the line moving for a night with no date yet", async () => {

@@ -6,17 +6,20 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   count: vi.fn(),
   aggregate: vi.fn(),
+  lock: vi.fn(),
   promoteWaitlist: vi.fn(),
   record: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 vi.mock("@/lib/session", () => ({ requireEvent: vi.fn() }));
-vi.mock("@/lib/db", () => ({
-  db: {
+vi.mock("@/lib/db", () => {
+  const tx = {
+    $executeRaw: mocks.lock,
     guest: { findUnique: mocks.findUnique, update: mocks.update, count: mocks.count, aggregate: mocks.aggregate },
-  },
-}));
+  };
+  return { db: { ...tx, $transaction: (fn: (t: typeof tx) => unknown) => fn(tx) } };
+});
 vi.mock("@/lib/activity", () => ({ record: mocks.record }));
 vi.mock("@/lib/waitlist", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/waitlist")>()),
@@ -116,6 +119,32 @@ describe("submitRsvpAction", () => {
     });
   });
 
+  // Capacity 10: joining the line with 12 people would sit at the front forever.
+  it("won't let a guest rejoin the line with a party bigger than the night", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(1);
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "12" }));
+
+    expect(result).toEqual({ error: "There’s only room for you and 9 more." });
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.record).not.toHaveBeenCalled();
+  });
+
+  // The night being full is why they're in line; their party just has to fit it one day.
+  it("lets a guest rejoin the line with plus-ones that fit the night", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(1);
+    mocks.aggregate.mockResolvedValue({ _count: 10, _sum: { plusOnes: 0 } });
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "3" }));
+
+    expect(result).toBeUndefined();
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("WAITLISTED");
+    expect(data.plusOnes).toBe(3);
+  });
+
   it("lets a guest who declined back in when nobody is waiting", async () => {
     mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
 
@@ -153,6 +182,20 @@ describe("submitRsvpAction", () => {
       _sum: { plusOnes: true },
     });
     expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  // Two replies racing for the last seat must not both see it free.
+  it("counts the room under the same event lock the other capacity writers take", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.aggregate.mockResolvedValue({ _count: 6, _sum: { plusOnes: 2 } });
+
+    await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING", plusOnes: "1" }));
+
+    const [sql, eventId] = mocks.lock.mock.calls[0];
+    expect(sql.join("?")).toMatch(/FROM "Event" WHERE id = \? FOR UPDATE/);
+    expect(eventId).toBe("evt-1");
+    expect(mocks.lock.mock.invocationCallOrder[0]).toBeLessThan(mocks.aggregate.mock.invocationCallOrder[0]);
+    expect(mocks.aggregate.mock.invocationCallOrder[0]).toBeLessThan(mocks.update.mock.invocationCallOrder[0]);
   });
 
   it("takes plus-ones that fit", async () => {

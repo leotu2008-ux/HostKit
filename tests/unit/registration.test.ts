@@ -57,6 +57,14 @@ describe("waitlist", () => {
     expect(promotionPlan([t("2"), { ...t("3"), plusOnes: 2 }], 2).map((g) => g.id)).toEqual(["2"]);
   });
 
+  it("passes over a party bigger than the whole night instead of holding the line", () => {
+    const tooBig = { ...t("1"), plusOnes: 12 };
+    expect(promotionPlan([tooBig, t("2")], 1, 10).map((g) => g.id)).toEqual(["2"]);
+    // One that fits the night one day still holds its place.
+    const party = { ...t("1"), plusOnes: 2 };
+    expect(promotionPlan([party, t("2")], 1, 10)).toEqual([]);
+  });
+
   it("knows when a status change frees a seat", () => {
     expect(releasesSeat("ATTENDING", "DECLINED")).toBe(true);
     expect(releasesSeat("ATTENDING", null)).toBe(true);
