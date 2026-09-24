@@ -28,6 +28,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // depending on AUTH_TRUST_HOST being present in every environment.
   trustHost: true,
   pages: { signIn: "/signin" },
+  // Credentials only. package.json overrides next-auth's nodemailer peer
+  // (^7 || ^8) with our nodemailer 9, which is safe only while Auth.js never
+  // sends mail. Adding the Email/Nodemailer provider needs that re-checked.
   providers: [
     Credentials({
       credentials: {
