@@ -60,6 +60,8 @@ model User {
   series             Series[]
   contacts           Contact[]
   vendorContacts     VendorContact[]
+  emailMessages      EmailMessage[]
+  emailPreference    EmailPreference?
 }
 
 /// A club or org that hosts events: a page people follow, run by its admins.
@@ -348,9 +350,11 @@ model Event {
   guests           Guest[]
   runSheetItems    RunSheetItem[]
   collaborators    EventCollaborator[]
-  blasts           Blast[]
-  activities       Activity[]
-  agentRuns        AgentRun[]
+  blasts            Blast[]
+  activities        Activity[]
+  agentRuns         AgentRun[]
+  emailMessages     EmailMessage[]
+  emailUnsubscribes EventEmailUnsubscribe[]
 
   @@index([ownerId])
   @@index([clubId])
@@ -406,14 +410,134 @@ model Blast {
   body           String
   recipientCount Int
   /// "resend" when the provider sent it; "manual" when the host copied it.
+  /// Later writes may also use "logged". Existing rows are left as they are.
   provider       String
   /// Guests also texted (Twilio), when the host asked for it.
   smsCount       Int      @default(0)
   sentAt         DateTime @default(now())
+  /// QUEUED while the outbox is draining, SENT when every copy has been
+  /// attempted, FAILED if the enqueue itself could not be recorded.
+  /// Existing rows were sent (or copied) already; default SENT.
+  deliveryStatus      String @default("SENT")
+  skippedUnsubscribed Int    @default(0)
+  skippedSuppressed   Int    @default(0)
+
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  emailMessages EmailMessage[]
+
+  @@index([eventId, sentAt])
+}
+
+// ---------------------------------------------------------------------------
+// Outbound email. Rows are written by a later outbox; nothing reads them yet.
+// Auth bodies are cleared after a successful send (they contain the link).
+// ---------------------------------------------------------------------------
+
+enum EmailStream {
+  TRANSACTIONAL
+  BLAST
+}
+
+enum EmailMessageStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  SUPPRESSED
+  LOGGED
+}
+
+/// One outbound message. The unique key is what makes a retry safe.
+/// Auth bodies are cleared after a successful send (they contain the link).
+model EmailMessage {
+  id             String             @id @default(cuid())
+  idempotencyKey String             @unique
+  stream         EmailStream
+  /// "verify_email" | "password_reset" | "rsvp_confirmed" | "blast" | …
+  template       String
+  toEmail        String
+  toName         String?
+  fromAddress    String
+  replyTo        String?
+  subject        String
+  textBody       String?
+  htmlBody       String?
+  /// Provider message id, set once accepted.
+  providerId     String?
+  status         EmailMessageStatus @default(QUEUED)
+  attemptCount   Int                @default(0)
+  nextAttemptAt  DateTime           @default(now())
+  lastError      String?
+  sentAt         DateTime?
+  userId         String?
+  eventId        String?
+  guestId        String?
+  blastId        String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  user   User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event  Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  guest  Guest?       @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  blast  Blast?       @relation(fields: [blastId], references: [id], onDelete: SetNull)
+  events EmailEvent[]
+
+  @@index([status, nextAttemptAt])
+  @@index([toEmail])
+  @@index([blastId])
+  @@index([eventId])
+}
+
+/// A provider callback or a local decision (suppressed, logged).
+/// providerEventId dedupes webhook retries.
+model EmailEvent {
+  id              String   @id @default(cuid())
+  emailMessageId  String?
+  providerEventId String?  @unique
+  /// "accepted" | "delivered" | "bounced" | "complained" | "suppressed" | "logged"
+  type            String
+  detail          String?
+  createdAt       DateTime @default(now())
+
+  message EmailMessage? @relation(fields: [emailMessageId], references: [id], onDelete: SetNull)
+
+  @@index([emailMessageId])
+}
+
+/// Hard bounce or complaint. Checked before enqueue and before send.
+model EmailSuppression {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  /// "bounce" | "complaint" | "manual"
+  reason    String
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+/// Optional product mail for an account. Password reset, verification,
+/// and RSVP outcomes ignore these flags.
+model EmailPreference {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  eventReminders Boolean  @default(true)
+  clubUpdates    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Host blasts and club mail. One row per address per event. Token RSVP
+/// guests have no User, so this is keyed by email, not userId.
+model EventEmailUnsubscribe {
+  id        String   @id @default(cuid())
+  eventId   String
+  email     String
+  createdAt DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
-  @@index([eventId, sentAt])
+  @@unique([eventId, email])
 }
 
 // ---------------------------------------------------------------------------
@@ -715,9 +839,10 @@ model Guest {
   createdAt          DateTime   @default(now())
   contactId          String?
 
-  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contact       Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  emailMessages EmailMessage[]
 
   @@index([eventId])
   @@index([userId])
