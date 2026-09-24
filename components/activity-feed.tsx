@@ -177,6 +177,7 @@ export function ActivityFeed({
       <ChatThread
         messages={toChatThread(rows)}
         running={agent.status === "running"}
+        needsBrief={agent.needs.length > 0}
         now={clock}
         eventId={eventId}
       />

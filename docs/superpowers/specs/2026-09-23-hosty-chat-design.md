@@ -96,7 +96,7 @@ export function briefingIntro(briefing: Briefing, firstName: string | null): str
   - **Hosty** messages sit on the left, with the avatar and "Hosty · time" once per consecutive group, in neutral bubbles. **You** messages sit on the right in brand-blue bubbles, with "You · time" under them. **Notes** are centered grey text with the time.
   - `action` renders as a small pill link inside the bubble.
   - A typing indicator (Hosty avatar + three dots) shows while `agentStatus === "running"`.
-  - The empty state is Hosty saying "Fill in the brief and I'll get going.", with a "Open the brief" action.
+  - The empty state is Hosty saying "Fill in the brief and I'll get going.", with a "Open the brief" action. It shows while the brief still has missing fields, Hosty isn't running, and the thread holds only system notes (every event starts with an "Event created" note). The notes stay above it.
   - Scrolling: a max height (about 28rem) with internal scroll. It starts at the bottom, and after a poll it sticks to the bottom only when the reader was already within about 80px of it.
   - Accessibility: `aria-live="polite"` stays on the list. Each message has a visually hidden speaker prefix ("Hosty:", "You:"), and the avatar is `aria-hidden`.
 - The heading "What's happening" and its live dot / "Paused — resume" control stay.
@@ -104,7 +104,7 @@ export function briefingIntro(briefing: Briefing, firstName: string | null): str
 ### 4. Side panel: `components/agent-panel.tsx` + `components/agent-card.tsx`
 - Header: `HostyMark` + "Hosty" + the existing `briefing.headline` in muted text.
 - Body: one bubble with `briefingIntro(briefing, firstName)`, then each `BriefingItem` as a compact row: the title, a due line colored by urgency (amber for now, muted for soon), and the **existing** `AgentCardAction` on the right. The switch is reused as-is, so it stays exhaustive and every row keeps exactly one action.
-- The `detail` text moves to a `title` tooltip on the row. It keeps the rows short; it's the same information.
+- The `detail` text sits under the title as one short muted line, visible to everyone and read once by screen readers.
 - New prop `firstName: string | null`, passed from `app/(workspace)/events/[id]/layout.tsx` (which already loads the user).
 
 ### 5. Sidebar status: `components/workspace-sidebar.tsx`

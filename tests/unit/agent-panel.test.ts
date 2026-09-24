@@ -58,10 +58,16 @@ describe("AgentPanel", () => {
     expect(html.match(/<li /g)?.length).toBe(2);
   });
 
-  it("keeps each item's detail for screen readers and as a tooltip", () => {
+  it("shows each item's detail once, as a visible line under its title", () => {
     const html = render(briefing);
-    expect(html).toContain('title="Everything downstream keys off these three numbers."');
-    expect(html).toContain('<span class="sr-only">Everything downstream keys off these three numbers.</span>');
+    const detail = "Everything downstream keys off these three numbers.";
+    expect(html).toMatch(
+      /Lock the date, the headcount and the budget<\/p><p class="[^"]*">Everything downstream keys off these three numbers\.<\/p>/,
+    );
+    expect(html.split(detail).length - 1).toBe(1);
+    expect(html).toContain("Nothing booked for the space.");
+    expect(html).not.toContain("title=");
+    expect(html).not.toContain("sr-only");
   });
 
   it("marks what needs the host today apart from what's coming up", () => {

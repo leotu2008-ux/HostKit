@@ -102,11 +102,14 @@ function Typing() {
 export function ChatThread({
   messages,
   running,
+  needsBrief,
   now,
   eventId,
 }: {
   messages: ChatMessage[];
   running: boolean;
+  /** Whether the brief still has missing fields. */
+  needsBrief: boolean;
   now: Date;
   eventId: string;
 }) {
@@ -125,9 +128,12 @@ export function ChatThread({
     stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_PX;
   }
 
+  // Notes alone still count as empty: every event starts with an
+  // "Event created" note, so the invitation would otherwise never show.
   const shown: ChatMessage[] =
-    messages.length === 0 && !running
+    needsBrief && !running && messages.every((message) => message.speaker === "note")
       ? [
+          ...messages,
           {
             id: "hosty-empty",
             speaker: "hosty",

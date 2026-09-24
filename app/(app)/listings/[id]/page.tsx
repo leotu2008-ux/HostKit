@@ -163,6 +163,7 @@ export default async function ListingPage({
               </p>
               <InquiryPanel
                 eventId={event.id}
+                vendorName={listing.name}
                 inquiry={inquiry}
                 subject={
                   composeInquiry(event, listing, user?.name ?? "").subject
