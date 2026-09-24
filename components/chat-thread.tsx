@@ -85,7 +85,7 @@ function Typing() {
           <span
             key={delay}
             aria-hidden
-            className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-mute"
+            className="h-1.5 w-1.5 motion-safe:animate-pulse rounded-full bg-ink-mute"
             style={{ animationDelay: `${delay}ms` }}
           />
         ))}

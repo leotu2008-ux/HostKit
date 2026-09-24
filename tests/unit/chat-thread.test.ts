@@ -74,6 +74,12 @@ describe("ChatThread", () => {
     expect(render([msg({ id: "1", text: "x" })], false)).not.toContain("Hosty is typing");
   });
 
+  it("pulses the typing dots only when the host allows motion", () => {
+    const html = render([msg({ id: "1", text: "x" })], true);
+    expect(html.match(/motion-safe:animate-pulse/g)).toHaveLength(3);
+    expect(html).not.toMatch(/(^|[\s"])animate-pulse/);
+  });
+
   it("invites the host to fill in the brief when there's nothing yet", () => {
     const html = render([]);
     expect(html).toContain("Fill in the brief and I");
