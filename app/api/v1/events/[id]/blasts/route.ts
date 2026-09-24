@@ -1,12 +1,14 @@
 import { z } from "zod";
+import type { EventStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { apiError, apiUser, json, manageableEvent, readJson } from "@/lib/api/http";
-import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
-import { sendBlast } from "@/lib/blast-send";
+import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, segmentsFor, type Segment } from "@/lib/blasts";
+import { BlastError, sendBlast } from "@/lib/blast-send";
 import { isEmailConfigured } from "@/lib/email/send";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 
-async function feed(eventId: string) {
+async function feed(event: { id: string; date: Date | null; endDate: Date | null; status: EventStatus }) {
+  const eventId = event.id;
   const [blasts, guests] = await Promise.all([
     db.blast.findMany({ where: { eventId }, orderBy: { sentAt: "desc" } }),
     db.guest.findMany({
@@ -15,6 +17,7 @@ async function feed(eventId: string) {
         name: true,
         email: true,
         rsvpStatus: true,
+        checkedInAt: true,
         user: { select: { phone: true, phoneVerifiedAt: true } },
       },
     }),
@@ -22,7 +25,7 @@ async function feed(eventId: string) {
   return {
     canSend: isEmailConfigured(),
     canText: isSmsConfigured(),
-    segments: SEGMENT_KEYS.map((key) => ({
+    segments: segmentsFor(event, guests).map((key) => ({
       key,
       label: SEGMENTS[key],
       count: recipientsFor(key, guests).length,
@@ -50,7 +53,7 @@ export async function GET(
   const user = await apiUser(request);
   const event = await manageableEvent(request, id, user?.id ?? null);
   if (!event) return apiError(user ? "Not found." : "Sign in first.", user ? 404 : 401);
-  return json(await feed(event.id));
+  return json(await feed(event));
 }
 
 const sendSchema = z.object({
@@ -81,8 +84,9 @@ export async function POST(
       host: { name: user.name, email: user.email },
       ...parsed.data,
     });
-    return json({ ...outcome, ...(await feed(event.id)) }, 201);
+    return json({ ...outcome, ...(await feed(event)) }, 201);
   } catch (error) {
+    if (error instanceof BlastError) return apiError(error.message, error.status);
     return apiError(error instanceof Error ? error.message : "Couldn't send that.", 502);
   }
 }

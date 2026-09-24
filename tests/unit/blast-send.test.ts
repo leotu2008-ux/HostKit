@@ -28,13 +28,21 @@ vi.mock("@/lib/sms/twilio", () => ({
 
 vi.mock("@/lib/notify", () => ({ notify: mocks.notify }));
 
-import { sendBlast } from "@/lib/blast-send";
+import { emailText, sendBlast } from "@/lib/blast-send";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.blastCreate.mockResolvedValue({ id: "b1" });
   mocks.eventFind.mockResolvedValue({ title: "Supper club" });
   mocks.sendEmails.mockImplementation(async (emails: unknown[]) => emails.length);
+});
+
+describe("emailText", () => {
+  it("personalises the message and signs it with the host and the night", () => {
+    expect(emailText("Hi {name}, doors at 7.\n", "Ada Lovelace", "Sam", "Supper club")).toBe(
+      "Hi Ada, doors at 7.\n\n— Sam via Hosty. Reply to this email to stop getting updates about Supper club.",
+    );
+  });
 });
 
 describe("sendBlast", () => {
@@ -57,7 +65,7 @@ describe("sendBlast", () => {
       {
         to: "ada@example.com",
         subject: "Doors at 7",
-        text: "Hi Ada, doors at 7.",
+        text: "Hi Ada, doors at 7.\n\n— Sam via Hosty. Reply to this email to stop getting updates about Supper club.",
         replyTo: "sam@example.com",
         stream: "blast",
         template: "blast",
@@ -65,11 +73,35 @@ describe("sendBlast", () => {
       {
         to: "alan@example.com",
         subject: "Doors at 7",
-        text: "Hi Alan, doors at 7.",
+        text: "Hi Alan, doors at 7.\n\n— Sam via Hosty. Reply to this email to stop getting updates about Supper club.",
         replyTo: "sam@example.com",
         stream: "blast",
         template: "blast",
       },
     ]);
+  });
+
+  it("won't send to Came before the night has happened", async () => {
+    mocks.eventFind.mockResolvedValue({
+      title: "Supper club",
+      date: new Date(Date.now() + 86_400_000),
+      endDate: null,
+      status: "PLANNING",
+    });
+    mocks.guestFindMany.mockResolvedValue([
+      { name: "Ada", email: "ada@example.com", rsvpStatus: "ATTENDING", checkedInAt: new Date(), userId: null, user: null },
+    ]);
+
+    await expect(
+      sendBlast({
+        eventId: "e1",
+        host: { name: "Sam", email: "sam@example.com" },
+        segment: "came",
+        subject: "Thanks",
+        body: "Thanks for coming, {name}.",
+      }),
+    ).rejects.toThrow(/after the night/);
+    expect(mocks.sendEmails).not.toHaveBeenCalled();
+    expect(mocks.blastCreate).not.toHaveBeenCalled();
   });
 });

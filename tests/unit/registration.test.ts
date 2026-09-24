@@ -72,8 +72,8 @@ describe("new statuses across the guest maths", () => {
     expect(s.responseRate).toBe(67); // A and D of the 3 askable
   });
 
-  it("keeps the waitlist out of 'everyone' and gives it its own segment", () => {
-    expect(recipientsFor("everyone", guests).map((r) => r.name)).toEqual(["A", "B"]);
+  it("keeps the waitlist and requests out of 'everyone' and gives the waitlist its own segment", () => {
+    expect(recipientsFor("everyone", guests).map((r) => r.name)).toEqual(["A"]);
     expect(recipientsFor("waitlist", guests).map((r) => r.name)).toEqual(["C"]);
   });
 });

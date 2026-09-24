@@ -3,6 +3,7 @@ import {
   personalize,
   phoneRecipientsFor,
   recipientsFor,
+  segmentsFor,
   type PhoneRecipient,
   type Recipient,
   type Segment,
@@ -10,6 +11,12 @@ import {
 import { isEmailConfigured, sendEmails } from "@/lib/email/send";
 import { isSmsConfigured, sendSms } from "@/lib/sms/twilio";
 import { notify } from "@/lib/notify";
+
+export class BlastError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
 
 export type BlastOutcome = {
   id: string;
@@ -27,6 +34,13 @@ export function smsText(body: string, name: string, host: string): string {
   return `${message}\n— ${host} via Hosty. Reply STOP to opt out.`;
 }
 
+/** The email: the message, personalised, signed like the text. Replies go
+ *  to the host, so a reply is how a guest asks to stop. */
+export function emailText(body: string, name: string, host: string, event: string): string {
+  const message = personalize(body, name).trim();
+  return `${message}\n\n— ${host} via Hosty. Reply to this email to stop getting updates about ${event}.`;
+}
+
 /**
  * Sends a blast to a segment of the guest list and records it. With Resend
  * configured the mail goes out, reply-to the host; otherwise the blast is
@@ -42,16 +56,28 @@ export async function sendBlast(input: {
   body: string;
   sms?: boolean;
 }): Promise<BlastOutcome> {
-  const guests = await db.guest.findMany({
-    where: { eventId: input.eventId },
-    select: {
-      name: true,
-      email: true,
-      rsvpStatus: true,
-      userId: true,
-      user: { select: { phone: true, phoneVerifiedAt: true } },
-    },
-  });
+  const [guests, event] = await Promise.all([
+    db.guest.findMany({
+      where: { eventId: input.eventId },
+      select: {
+        name: true,
+        email: true,
+        rsvpStatus: true,
+        checkedInAt: true,
+        userId: true,
+        user: { select: { phone: true, phoneVerifiedAt: true } },
+      },
+    }),
+    db.event.findUnique({
+      where: { id: input.eventId },
+      select: { title: true, date: true, endDate: true, status: true },
+    }),
+  ]);
+  // A stale composer or an API call can still name "came"; only send it
+  // once the night has happened and the door was run.
+  if (event && !segmentsFor(event, guests).includes(input.segment)) {
+    throw new BlastError("“Came” opens after the night, once guests were checked in at the door.", 409);
+  }
   const recipients = recipientsFor(input.segment, guests);
   const phoneRecipients = phoneRecipientsFor(input.segment, guests);
 
@@ -61,7 +87,7 @@ export async function sendBlast(input: {
       recipients.map((r) => ({
         to: r.email,
         subject: input.subject,
-        text: personalize(input.body, r.name),
+        text: emailText(input.body, r.name, input.host.name, event?.title ?? "this event"),
         replyTo: input.host.email,
         // Its own From (RESEND_FROM_BLAST), so a complaint on a blast
         // cannot sink password resets.
@@ -102,7 +128,6 @@ export async function sendBlast(input: {
   const accountIds = guests
     .filter((g) => g.userId && g.email && emails.has(g.email.toLowerCase()))
     .map((g) => g.userId as string);
-  const event = await db.event.findUnique({ where: { id: input.eventId }, select: { title: true } });
   await notify(accountIds, {
     kind: "blast",
     title: `${event?.title ?? "Your event"}: ${input.subject}`,

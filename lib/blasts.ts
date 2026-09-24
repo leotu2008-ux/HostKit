@@ -1,14 +1,16 @@
-import type { RsvpStatus } from "@/generated/prisma/enums";
+import type { EventStatus, RsvpStatus } from "@/generated/prisma/enums";
 
 /**
- * Who a blast goes to. Segments are by RSVP status; only rows with an email
- * can receive anything, and registrations always have one.
+ * Who a blast goes to. Segments are by RSVP status (and, for "came", a
+ * check-in); only rows with an email can receive anything, and registrations
+ * always have one.
  */
 export const SEGMENTS = {
   going: "Going",
   pending: "Haven't replied",
   waitlist: "Waitlist",
   everyone: "Everyone on the list",
+  came: "Came",
 } as const;
 
 export type Segment = keyof typeof SEGMENTS;
@@ -17,6 +19,25 @@ export const SEGMENT_KEYS = Object.keys(SEGMENTS) as Segment[];
 
 export function isSegment(value: unknown): value is Segment {
   return typeof value === "string" && value in SEGMENTS;
+}
+
+type SegmentGuest = { rsvpStatus: RsvpStatus; checkedInAt?: Date | null };
+
+/**
+ * The segments a blast can go to for this night. "Came" is for the morning
+ * after: offered only once the night has happened (not cancelled, and past
+ * its last acceptable day when the date is flexible) and the door was run —
+ * the same rule as the guest book.
+ */
+export function segmentsFor(
+  event: { date: Date | null; endDate: Date | null; status: EventStatus },
+  guests: Array<{ checkedInAt?: Date | null }>,
+  now = new Date(),
+): Segment[] {
+  const end = event.endDate ?? event.date;
+  const happened = event.status !== "CANCELLED" && end !== null && end < now;
+  const doorRun = guests.some((g) => g.checkedInAt);
+  return SEGMENT_KEYS.filter((key) => key !== "came" || (happened && doorRun));
 }
 
 export type Recipient = { name: string; email: string };
@@ -28,17 +49,18 @@ export const SMS_CAP = 200;
 /** The segment's guests whose account has a verified phone, de-duplicated. */
 export function phoneRecipientsFor(
   segment: Segment,
-  guests: Array<{
-    name: string;
-    rsvpStatus: RsvpStatus;
-    user?: { phone: string | null; phoneVerifiedAt: Date | null } | null;
-  }>,
+  guests: Array<
+    SegmentGuest & {
+      name: string;
+      user?: { phone: string | null; phoneVerifiedAt: Date | null } | null;
+    }
+  >,
 ): PhoneRecipient[] {
   const seen = new Set<string>();
   const out: PhoneRecipient[] = [];
   for (const guest of guests) {
     const phone = guest.user?.phone && guest.user.phoneVerifiedAt ? guest.user.phone : null;
-    if (!phone || !inSegment(segment, guest.rsvpStatus) || seen.has(phone)) continue;
+    if (!phone || !inSegment(segment, guest) || seen.has(phone)) continue;
     seen.add(phone);
     out.push({ name: guest.name, phone });
     if (out.length >= SMS_CAP) break;
@@ -46,27 +68,31 @@ export function phoneRecipientsFor(
   return out;
 }
 
-export function inSegment(segment: Segment, status: RsvpStatus): boolean {
+export function inSegment(segment: Segment, guest: SegmentGuest): boolean {
+  const status = guest.rsvpStatus;
   // "Everyone" is everyone who might come — not the declined, and not the
-  // waitlist, who'd be confused by "doors at 7". The waitlist has its own.
+  // waitlist or requesters you haven't approved, who'd read "doors at 7" as
+  // "you're in". The waitlist has its own; approve requesters from Guests.
   return segment === "everyone"
-    ? status !== "DECLINED" && status !== "WAITLISTED"
+    ? status !== "DECLINED" && status !== "WAITLISTED" && status !== "PENDING"
     : segment === "going"
       ? status === "ATTENDING"
-      : segment === "waitlist"
-        ? status === "WAITLISTED"
-        : status === "INVITED";
+      : segment === "came"
+        ? status === "ATTENDING" && Boolean(guest.checkedInAt)
+        : segment === "waitlist"
+          ? status === "WAITLISTED"
+          : status === "INVITED";
 }
 
 export function recipientsFor(
   segment: Segment,
-  guests: Array<{ name: string; email: string | null; rsvpStatus: RsvpStatus }>,
+  guests: Array<SegmentGuest & { name: string; email: string | null }>,
 ): Recipient[] {
   const seen = new Set<string>();
   const out: Recipient[] = [];
   for (const guest of guests) {
     if (!guest.email) continue;
-    if (!inSegment(segment, guest.rsvpStatus)) continue;
+    if (!inSegment(segment, guest)) continue;
     const email = guest.email.toLowerCase();
     if (seen.has(email)) continue;
     seen.add(email);

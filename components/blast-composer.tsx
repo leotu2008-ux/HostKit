@@ -25,6 +25,7 @@ function Submit({ canSend }: { canSend: boolean }) {
 export function BlastComposer({
   eventId,
   eventTitle,
+  segments,
   counts,
   phoneCounts,
   canSend,
@@ -32,6 +33,8 @@ export function BlastComposer({
 }: {
   eventId: string;
   eventTitle: string;
+  /** The segments offered for this night — "Came" only after it happened. */
+  segments: Segment[];
   counts: Record<Segment, number>;
   phoneCounts?: Record<Segment, number>;
   canSend: boolean;
@@ -84,7 +87,7 @@ export function BlastComposer({
       <div>
         <p className="mb-2 text-sm font-medium text-ink">To</p>
         <div className="flex flex-wrap gap-1.5">
-          {(Object.keys(SEGMENTS) as Segment[]).map((key) => (
+          {segments.map((key) => (
             <button
               key={key}
               type="button"
