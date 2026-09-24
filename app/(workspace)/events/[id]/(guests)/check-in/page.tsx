@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
+import { doorList } from "@/lib/guests";
 import {
   addWalkUpAction,
   checkInGuestAction,
   undoCheckInAction,
 } from "@/lib/actions/checkin";
+import { PrintButton } from "@/components/print-button";
 import { Button, Card, EmptyState, Input } from "@/components/ui";
 
 export default async function CheckInPage({
@@ -36,24 +38,26 @@ export default async function CheckInPage({
     : guests;
 
   const inCount = guests.filter((g) => g.checkedInAt).length;
-  const going = guests.filter(
-    (g) => g.rsvpStatus === "ATTENDING" || g.checkedInAt,
-  ).length;
+  const printed = doorList(guests);
+  const going = printed.guests.length;
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
-          Door
-        </p>
-        <h2 className="mt-1 text-[20px] font-semibold text-ink">Check-in</h2>
-        <p className="mt-1 text-sm text-ink-soft">
-          <span className="tabular font-medium text-ink">{inCount}</span>{" "}
-          checked in · {going} going
-        </p>
+      <div className="no-print flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-medium tracking-[0.06em] text-clay uppercase">
+            Door
+          </p>
+          <h2 className="mt-1 text-[20px] font-semibold text-ink">Check-in</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            <span className="tabular font-medium text-ink">{inCount}</span>{" "}
+            checked in · {going} going
+          </p>
+        </div>
+        {printed.guests.length > 0 ? <PrintButton label="Print door list" /> : null}
       </div>
 
-      <form className="flex gap-2">
+      <form className="no-print flex gap-2">
         <Input
           name="q"
           defaultValue={q}
@@ -67,17 +71,21 @@ export default async function CheckInPage({
       </form>
 
       {guests.length === 0 ? (
-        <EmptyState
-          title="No guests yet"
-          body="Add people on the Guests tab, or share the public Register page."
-        />
+        <div className="no-print">
+          <EmptyState
+            title="No guests yet"
+            body="Add people on the Guests tab, or share the public Register page."
+          />
+        </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          title="No match"
-          body="Try another name, or the email they registered with."
-        />
+        <div className="no-print">
+          <EmptyState
+            title="No match"
+            body="Try another name, or the email they registered with."
+          />
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="no-print space-y-2">
           {filtered.map((guest) => {
             const inDoor = Boolean(guest.checkedInAt);
             return (
@@ -134,7 +142,7 @@ export default async function CheckInPage({
         </ul>
       )}
 
-      <form action={addWalkUpAction} className="space-y-2 border-t border-line pt-4">
+      <form action={addWalkUpAction} className="no-print space-y-2 border-t border-line pt-4">
         <input type="hidden" name="eventId" value={event.id} />
         <label htmlFor="walk-up-name" className="block text-sm font-medium text-ink">
           Add walk-up
@@ -153,6 +161,43 @@ export default async function CheckInPage({
           </Button>
         </div>
       </form>
+
+      {/* The print view: a paper backup for the door, for when the
+          connection drops with a queue outside. A search doesn't narrow it. */}
+      <div className="hidden print:block">
+        <h1 className="text-[20px] font-semibold">{event.title} — door list</h1>
+        <p className="text-sm">
+          {event.date
+            ? `${event.date.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })} · `
+            : ""}
+          {printed.guests.length} going
+          {printed.heads > printed.guests.length
+            ? ` · ${printed.heads} with plus-ones`
+            : ""}
+        </p>
+        <table className="mt-4 w-full text-sm">
+          <tbody>
+            {printed.guests.map((guest) => (
+              <tr key={guest.id} className="border-b border-line">
+                <td className="w-8 py-2">
+                  <span className="inline-flex size-4 items-center justify-center border border-ink text-xs">
+                    {guest.checkedInAt ? "✓" : ""}
+                  </span>
+                </td>
+                <td className="py-2">{guest.name}</td>
+                <td className="tabular py-2 text-right">
+                  {guest.plusOnes > 0 ? `+${guest.plusOnes}` : ""}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

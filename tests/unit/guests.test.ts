@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  doorList,
   effectiveHeadcount,
   parseGuestList,
   summarizeGuests,
@@ -181,5 +182,45 @@ describe("parseGuestList", () => {
 
   it("keeps two people who share a name but have no email", () => {
     expect(parseGuestList("Sam\nSam")).toHaveLength(2);
+  });
+});
+
+describe("doorList", () => {
+  const row = (
+    name: string,
+    rsvpStatus: GuestLike["rsvpStatus"],
+    plusOnes = 0,
+    checkedInAt: Date | null = null,
+  ) => ({ name, rsvpStatus, plusOnes, checkedInAt });
+
+  it("lists everyone going A–Z, ignoring case", () => {
+    const list = doorList([
+      row("zoe", "ATTENDING"),
+      row("Ben", "ATTENDING"),
+      row("ada", "ATTENDING"),
+    ]);
+    expect(list.guests.map((g) => g.name)).toEqual(["ada", "Ben", "zoe"]);
+  });
+
+  it("leaves out people who haven't said yes, but keeps anyone already in", () => {
+    const list = doorList([
+      row("Ada", "ATTENDING"),
+      row("Ben", "INVITED"),
+      row("Cy", "DECLINED"),
+      row("Di", "WAITLISTED"),
+      row("Ed", "PENDING"),
+      row("Flo", "MAYBE"),
+      row("Gus", "INVITED", 0, new Date("2026-09-24T23:00:00Z")),
+    ]);
+    expect(list.guests.map((g) => g.name)).toEqual(["Ada", "Gus"]);
+  });
+
+  it("counts plus-ones as heads", () => {
+    const list = doorList([
+      row("Ada", "ATTENDING", 2),
+      row("Ben", "ATTENDING"),
+      row("Cy", "DECLINED", 3),
+    ]);
+    expect(list.heads).toBe(4);
   });
 });

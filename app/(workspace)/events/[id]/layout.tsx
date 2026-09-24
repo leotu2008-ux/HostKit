@@ -76,7 +76,7 @@ export default async function EventLayout({
               canSend={Boolean(user?.email)}
               venueSearchEnabled={isVenueSearchConfigured()}
               firstName={firstNameOf(user?.name)}
-              className="mt-8 xl:mt-0"
+              className="no-print mt-8 xl:mt-0"
             />
           </div>
         </div>

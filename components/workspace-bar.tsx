@@ -56,7 +56,7 @@ export async function WorkspaceBar({
     : null;
 
   return (
-    <header className="sticky top-0 z-30 h-14 border-b border-line">
+    <header className="no-print sticky top-0 z-30 h-14 border-b border-line">
       {/* The translucent blur is its own layer behind the row rather than a
           class on the header, because backdrop-filter makes an element the
           containing block for `fixed` descendants — and the account menu is
