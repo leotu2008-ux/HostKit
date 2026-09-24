@@ -520,16 +520,6 @@ html[data-splash="played"] .rise {
   opacity: 0;
 }
 
-/* Five-borough locator (components/venue-discovery.tsx). Labels sit in the
-   water and on the land in the same quiet gray as the rest of the page. */
-.venue-map text {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  fill: #a3a3a3;
-  letter-spacing: 0.14em;
-}
-
 @media (prefers-reduced-motion: reduce) {
   html[data-splash="pending"] .launch-splash,
   .launch-splash {
