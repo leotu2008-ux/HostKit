@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
   findUnique: vi.fn(),
   update: vi.fn(),
+  count: vi.fn(),
   promoteWaitlist: vi.fn(),
   record: vi.fn(),
 }));
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 vi.mock("@/lib/session", () => ({ requireEvent: vi.fn() }));
 vi.mock("@/lib/db", () => ({
-  db: { guest: { findUnique: mocks.findUnique, update: mocks.update } },
+  db: { guest: { findUnique: mocks.findUnique, update: mocks.update, count: mocks.count } },
 }));
 vi.mock("@/lib/activity", () => ({ record: mocks.record }));
 vi.mock("@/lib/waitlist", async (importOriginal) => ({
@@ -44,6 +45,7 @@ describe("submitRsvpAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.update.mockResolvedValue({});
+    mocks.count.mockResolvedValue(0);
   });
 
   // A guest who never replied to a night the host didn't run the door for
@@ -86,5 +88,49 @@ describe("submitRsvpAction", () => {
 
     expect(result).toBeUndefined();
     expect(mocks.update).toHaveBeenCalledTimes(1);
+  });
+
+  // They gave their seat up; the people waiting were there first.
+  it("sends a guest who declined to the back of the line when people are waitlisted", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(2);
+
+    const result = await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    expect(result).toBeUndefined();
+    expect(mocks.count).toHaveBeenCalledWith({ where: { eventId: "evt-1", rsvpStatus: "WAITLISTED" } });
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("WAITLISTED");
+    // The line is ordered by createdAt, so rejoining it now puts them last.
+    expect(data.createdAt).toBeInstanceOf(Date);
+    expect(Date.now() - data.createdAt.getTime()).toBeLessThan(5_000);
+    expect(mocks.record).toHaveBeenCalledWith("evt-1", {
+      actor: "system",
+      kind: "guest_rsvp",
+      title: "Sam changed their mind and joined the waitlist",
+    });
+  });
+
+  it("lets a guest who declined back in when nobody is waiting", async () => {
+    mocks.findUnique.mockResolvedValue(guest("DECLINED", { date: new Date(Date.now() + 2 * DAY) }));
+
+    await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("ATTENDING");
+    expect(data.createdAt).toBeUndefined();
+  });
+
+  // The invite is the seat, even with a waitlist.
+  it("keeps the seat for an invited guest while people are waitlisted", async () => {
+    mocks.findUnique.mockResolvedValue(guest("INVITED", { date: new Date(Date.now() + 2 * DAY) }));
+    mocks.count.mockResolvedValue(3);
+
+    await submitRsvpAction(undefined, form({ rsvpStatus: "ATTENDING" }));
+
+    const data = mocks.update.mock.calls[0][0].data;
+    expect(data.rsvpStatus).toBe("ATTENDING");
+    expect(data.createdAt).toBeUndefined();
+    expect(mocks.record).toHaveBeenCalledWith("evt-1", expect.objectContaining({ title: "Sam is going" }));
   });
 });

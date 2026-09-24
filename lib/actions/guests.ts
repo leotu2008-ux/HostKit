@@ -114,6 +114,7 @@ export async function removeGuestAction(formData: FormData) {
  *
  * Someone waiting on the host (a request, or the waitlist) can bow out from
  * here, but can't let themselves in — that's the host's call, or the line's.
+ * Nor can a guest who declined jump the line by changing their mind.
  */
 export async function submitRsvpAction(
   _prev: GuestFormState,
@@ -149,10 +150,20 @@ export async function submitRsvpAction(
     return { error: "Pick whether you can make it." };
   }
 
+  // A guest who said no and changes their mind while people are waiting joins
+  // the back of the line: they gave their seat up, and the waitlist was there
+  // first. An invite (or a maybe) keeps its seat — the invite is the seat.
+  const rejoining =
+    guest.rsvpStatus === "DECLINED" &&
+    parsed.data.rsvpStatus === "ATTENDING" &&
+    (await db.guest.count({ where: { eventId: guest.eventId, rsvpStatus: "WAITLISTED" } })) > 0;
+
   await db.guest.update({
     where: { id: guest.id },
     data: {
-      rsvpStatus: parsed.data.rsvpStatus,
+      rsvpStatus: rejoining ? "WAITLISTED" : parsed.data.rsvpStatus,
+      // The line is ordered by createdAt, so rejoining it now puts them last.
+      ...(rejoining ? { createdAt: new Date() } : {}),
       // Only an attending guest brings anyone with them.
       plusOnes:
         parsed.data.rsvpStatus === "ATTENDING" ? parsed.data.plusOnes : 0,
@@ -162,11 +173,17 @@ export async function submitRsvpAction(
   });
   if (releasesSeat(guest.rsvpStatus, parsed.data.rsvpStatus)) await promoteWaitlist(guest.eventId);
 
-  // Only the move into ATTENDING is a new "yes" worth a line — PENDING and
-  // WAITLISTED are unreachable from here (guarded above; those only ever
-  // come from registerForEventAction), and re-affirming an existing ATTENDING
-  // (e.g. editing dietary notes) isn't a new decision.
-  if (parsed.data.rsvpStatus === "ATTENDING" && guest.rsvpStatus !== "ATTENDING") {
+  // Only the move into ATTENDING (or back into line) is a new "yes" worth a
+  // line — a guest can't pick PENDING or WAITLISTED themselves (guarded
+  // above), and re-affirming an existing ATTENDING (e.g. editing dietary
+  // notes) isn't a new decision.
+  if (rejoining) {
+    await record(guest.eventId, {
+      actor: "system",
+      kind: "guest_rsvp",
+      title: `${guest.name} changed their mind and joined the waitlist`,
+    });
+  } else if (parsed.data.rsvpStatus === "ATTENDING" && guest.rsvpStatus !== "ATTENDING") {
     await record(guest.eventId, { actor: "system", kind: "guest_rsvp", title: `${guest.name} is going` });
   }
 

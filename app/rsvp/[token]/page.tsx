@@ -84,6 +84,8 @@ export default async function RsvpPage({ params }: PageProps<"/rsvp/[token]">) {
             <p className="text-[15px] text-ink-soft">This night has already happened.</p>
           ) : (
             <RsvpForm
+              // A "yes" can land them on the waitlist; start the form afresh.
+              key={guest.rsvpStatus}
               token={token}
               current={guest.rsvpStatus}
               plusOnes={guest.plusOnes}
