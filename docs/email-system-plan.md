@@ -154,8 +154,9 @@ inside `notify` (the blast email is sent earlier by `sendBlast`, from
 is not attached to mail. `lib/calendar.ts` (`icsFor`) builds an `.ics` for
 the product UI. It is not attached to mail. Nothing sends a 24-hour or
 2-hour reminder. Nothing emails on event edit, cancellation, or
-"capacity reached" (`Event.guestCount` is the planned cap; attending count
-is computed).
+"capacity reached" (`Event.guestCount` is the planned cap in heads; attending
+heads, each guest plus their plus-ones, are computed by `attendingHeads` in
+`lib/waitlist.ts`).
 
 Host blasts (`lib/blast-send.ts`) build the recipient list on the server
 from RSVP status (`lib/blasts.ts`: `going`, `pending` which is status
@@ -661,7 +662,7 @@ Dependency PR: `@react-email/components`, `@react-email/render`.
   (find it in `lib/actions/` when implementing; do not email on every
   autosave). Material fields proposal: `date`, `durationHours`, `city`,
   `address`, `title`, and status moving to `CANCELLED`.
-- Capacity: when an attending insert makes `count === guestCount`, enqueue
+- Capacity: when an attending insert makes `attendingHeads >= guestCount`, enqueue
   one host mail. Key includes `guestCount`, so raising the cap can notify
   again.
 - Host digest: flush pending `registration_request` notifications older

@@ -11,9 +11,10 @@ async function eventTitle(eventId: string): Promise<string> {
 /**
  * Approval requests and the waitlist. Room frees whenever an ATTENDING
  * guest stops attending (host change, their own decline, removal) or brings
- * fewer people; every path that does that calls `promoteWaitlist`, which lets
- * in the people who have waited longest until the event is full again, up to
- * the start time.
+ * fewer people, or the host raises capacity; the line moves when a waiting
+ * party leaves or shrinks. Every path that does that calls `promoteWaitlist`,
+ * which lets in the people who have waited longest until the event is full
+ * again, up to the start time.
  */
 
 /**
