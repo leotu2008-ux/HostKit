@@ -18,6 +18,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { planRerun, runEventAgain, type RerunSource } from "@/lib/run-again";
+import { defaultStartHour } from "@/lib/runsheet";
 
 const DAY = 86_400_000;
 const { tx } = hoisted;
@@ -132,6 +133,39 @@ describe("planRerun", () => {
     expect(startsAt.getFullYear()).toBe(date.getFullYear());
     expect(startsAt.getMonth()).toBe(date.getMonth());
     expect(startsAt.getDate()).toBe(date.getDate());
+  });
+
+  it("anchors a date-only source's run sheet at its drafted hour, not noon, when the new night has a start time", () => {
+    const hour = defaultStartHour("MIXER");
+    const dateOnly = planRerun(
+      {
+        ...SOURCE,
+        date: new Date(2026, 9, 1, 12, 0),
+        runSheetItems: [
+          { startsAt: new Date(2026, 9, 1, hour - 2, 30), title: "Set up", owner: null, notes: null, source: "GENERATED" },
+          { startsAt: new Date(2026, 9, 1, hour, 0), title: "Doors", owner: null, notes: null, source: "GENERATED" },
+        ],
+      },
+      new Date(2026, 9, 8, 19, 30),
+    );
+    expect(dateOnly.runSheetItems.map((r) => r.startsAt)).toEqual([
+      new Date(2026, 9, 8, 18, 0), // 90 minutes before doors, as on the source
+      new Date(2026, 9, 8, 19, 30),
+    ]);
+  });
+
+  it("anchors the run sheet at the type's usual hour when the new night is date-only", () => {
+    const toDateOnly = planRerun(
+      {
+        ...SOURCE,
+        date: new Date(2026, 9, 1, 19, 30),
+        runSheetItems: [
+          { startsAt: new Date(2026, 9, 1, 19, 30), title: "Doors", owner: null, notes: null, source: "GENERATED" },
+        ],
+      },
+      new Date(2026, 9, 8, 12, 0),
+    );
+    expect(toDateOnly.runSheetItems[0].startsAt).toEqual(new Date(2026, 9, 8, defaultStartHour("MIXER"), 0));
   });
 });
 
