@@ -49,6 +49,11 @@ Three rules hold everywhere:
    `AI_MODEL` to override) to write the plan and pick venues. Without it, or
    if a call fails or times out, he falls back to Hosty's own planning
    templates, so a run always finishes.
+   Decisions are a separate job: with `TYPESAFE_API_KEY` and `JEV_DECISIONS`
+   set, Jev (TypeSafe's System One model) answers typed yes/no, pick-one and
+   rating questions, and code does the math. Claude writes, Jev decides, code
+   counts. Every Jev point is off unless named, and falls back to today's
+   behaviour when it's off, slow or unsure.
 
 ## What a host does with it
 
@@ -187,6 +192,7 @@ tab's "what else is on that night" advice.
 | Variable | Turns on |
 | --- | --- |
 | `ANTHROPIC_API_KEY` (`AI_MODEL` optional) | Model-written plans and venue picks. Without it Hosty uses his templates |
+| `TYPESAFE_API_KEY`, `JEV_DECISIONS` (`JEV_TIMEOUT_MS` optional) | Jev's decisions, one point at a time: `JEV_DECISIONS=guardrail,brief,venue,competing` names the points that are on (empty means none). Timeout defaults to 3000ms. See [docs/backend.md](docs/backend.md#jev-decisions) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email from any mailbox (Gmail app password, Fastmail…), no DNS needed |
 | `RESEND_API_KEY`, `RESEND_FROM` | Email through Resend with a verified domain. Wins over SMTP when both are set |
 | `GOOGLE_MAPS_API_KEY` | Venue search (Google Places API (New)) |
@@ -213,7 +219,8 @@ cases that matter are reachable from a test:
 | --- | --- |
 | `lib/agent/*` | Hosty's run: the plan, venue and vendor steps, triggers, the sweep, the daily briefing |
 | `lib/hosty-voice.ts` | How Hosty phrases what happened, grounded in the saved record |
-| `lib/ai/*` | The model client and its schema-checked answers, with template fallbacks |
+| `lib/ai/*` | The model client and its schema-checked answers, with template fallbacks; `decide.ts` is the Jev decision layer, with `guardrail.ts` and `venue-judge.ts` |
+| `lib/brief-classify.ts`, `lib/night-competition.ts` | Jev's brief and competing-night decisions |
 | `lib/scoring.ts` | Prices and scores one listing against one event |
 | `lib/plan.ts`, `lib/templates.ts` | The budget and timeline for an event type |
 | `lib/run-again.ts`, `lib/guest-book.ts`, `lib/vendor-book.ts` | The recurring-host features |
@@ -235,6 +242,12 @@ Decisions worth knowing:
   doesn't reprice the venue for four people.
 - **Inquiry drafts never mention your budget.** Telling a vendor what you
   have to spend is how it becomes what you spend.
+- **Claude writes, Jev decides, code does the math.** A Jev answer is a
+  probability, read against the point's own named thresholds; below them the
+  point takes its unsure path, never the confident one. Jev never gets guest
+  names, contact details or the budget, and never produces text, a number to
+  use, a date or a permission. Each decision is logged as a quiet `decision`
+  activity row, which no feed shows.
 - **Hosty's activity is stored once and phrased when shown.** The feed saves
   plain rows (`lib/activity.ts`), and the chat voice is applied at render
   time, so old history reads in his voice too and a new kind of row can

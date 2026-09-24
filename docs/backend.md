@@ -20,6 +20,7 @@ Postgres database. There is no second service to deploy.
 | **Push** | APNs (`lib/push/apns.ts`). | Needs a paid Apple team + `APNS_*` |
 | **Campus sync** | Daily cron (`vercel.json` → `/api/cron/campus-sync`) plus on-demand refresh. | Needs `CRON_SECRET` for the schedule |
 | **Venue search (web)** | Google Places API (New) Text Search, or Apple Maps Server API if Google isn't configured. | Needs `GOOGLE_MAPS_API_KEY` or `APPLE_MAPS_*` |
+| **Jev decisions** | TypeSafe System One (`@typesafe-ai/sdk`) through `lib/ai/decide.ts`, one flag per decision point. | Off unless `TYPESAFE_API_KEY` and `JEV_DECISIONS` are set |
 
 ## What to set in Vercel, in order of impact
 
@@ -28,6 +29,46 @@ Postgres database. There is no second service to deploy.
 3. **`CRON_SECRET`** — any random string; Vercel sends it on the scheduled campus sync.
 4. **`DIRECT_URL`** — the provider's non-pooled URL so `prisma migrate deploy` doesn't go through the pooler.
 5. `TWILIO_*`, `GOOGLE_MAPS_API_KEY` (or `APPLE_MAPS_*`), `APNS_*` — when you want texts, web venue search and push.
+
+## Jev decisions
+
+Jev answers typed questions with probabilities in a few hundred milliseconds.
+Claude still writes every sentence, and code still does money, dates, counts,
+capacity and permissions.
+
+**Switching points on.** `TYPESAFE_API_KEY` plus `JEV_DECISIONS`, a
+comma-separated list of the points to use. Empty or unset means all off, and
+Hosty behaves exactly as it did before Jev. `JEV_TIMEOUT_MS` (default 3000)
+bounds each call. At most 8 calls run at once per server process.
+
+| Point | Where | What Jev decides | What happens when it's unsure or silent |
+| --- | --- | --- | --- |
+| `guardrail` | `lib/ai/guardrail.ts`: the digest line, and venue reasons from Claude | Does the line hint at the budget? Does it state a price, date, time or headcount? Code then checks any stated value against the record | Unsure: the line is used, and the flag is logged. Fail: the digest line is written once more, then falls back to the plain digest; a venue reason falls back to the plain reason |
+| `brief` | `lib/brief-classify.ts`, on brief save, only when the keyword table finds nothing | Which template the host's words describe | Keeps the mixer; the briefing asks "Is this a …?" with a one-press fix |
+| `venue` | `lib/ai/venue-judge.ts`, after a distance filter | Rents private space? What kind of place? How well does it fit? | Kept and tagged "worth a look"; all silent means the old ranking |
+| `competing` | `lib/night-competition.ts`, after the agent's steps | Does another public Hosty night in the same city that evening draw the same crowd, and how much would it pull? | Nothing is shown |
+
+**Thresholds** are named constants beside each point: `BUDGET_BAND`,
+`VALUES_BAND`, `BRIEF_MIN_CONFIDENCE`, `PRIVATE_BAND`,
+`SPACE_MIN_CONFIDENCE`, `FIT_MIN_CONFIDENCE`, `SAME_CROWD_BAND` and
+`PULL_MIN_CONFIDENCE`. A yes/no answer has no confidence of its own, only
+P(yes), so yes/no points name a yes-band and a no-band.
+
+**What's sent.** Each point builds its state from named fields: the message
+being checked, the host's words for the kind of night, public venue facts,
+or other nights' titles and kinds. Never guest names, emails or phones, the
+host's contact details, or the budget. The SDK's logging is off, so state
+never reaches the logs.
+
+**The log.** Every decision is an `Activity` row with `kind: "decision"`,
+holding the point, the answers, the model, and whether it fell back.
+`loadActivity` leaves these rows out, so no feed, chat or API shows them.
+No schema change was needed.
+
+**Measuring a point.** `npx tsx scripts/jev-eval.ts <point>` runs the
+labelled examples in `tests/fixtures/jev/<point>.json` against the real API.
+It reports accuracy at confidence cutoffs 0.6 to 0.9, the fallback rate,
+latency and tokens. Run it by hand only, never in CI.
 
 ## Enabling web venue search
 

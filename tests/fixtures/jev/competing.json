@@ -1,0 +1,8 @@
+{
+  "about": "Made-up pairs of nights, labelled by hand. pull is 0-3 on the rubric in lib/night-competition.ts.",
+  "examples": [
+    { "id": "two-mixers", "host": { "type": "MIXER", "kind": "founders mixer" }, "other": { "title": "Startup Drinks", "type": "MIXER", "kind": "startup drinks" }, "timing": "starts about an hour after yours", "expect": { "sameCrowd": true, "pull": 2 } },
+    { "id": "recital", "host": { "type": "MIXER", "kind": "founders mixer" }, "other": { "title": "Cello Recital", "type": "FORMAL", "kind": null }, "timing": "starts about an hour before yours", "expect": { "sameCrowd": false, "pull": 0 } },
+    { "id": "pitch-vs-demo", "host": { "type": "PITCH_NIGHT", "kind": "student pitch night" }, "other": { "title": "Accelerator Demo Day", "type": "PITCH_NIGHT", "kind": "demo day" }, "timing": "starts at about the same time as yours", "expect": { "sameCrowd": true, "pull": 3 } }
+  ]
+}
