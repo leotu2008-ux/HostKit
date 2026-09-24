@@ -516,7 +516,6 @@ html[data-splash="played"] .rise {
   /* Landing motion off: everything lands in its final place at once. */
   .rise,
   .hosty-pop,
-  .wave-ch,
   .cloud-drift-far,
   .cloud-drift-near,
   .preview-caret,

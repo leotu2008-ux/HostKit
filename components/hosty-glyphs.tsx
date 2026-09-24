@@ -34,7 +34,7 @@ export function HostyGlyphs({ active, className }: { active: boolean; className?
 
     const styles = getComputedStyle(canvas);
     const ink = styles.color;
-    const blue = getComputedStyle(document.documentElement).getPropertyValue("--color-brand").trim() || "#1d4ed8";
+    const blue = getComputedStyle(document.documentElement).getPropertyValue("--color-brand").trim();
     const scale = CANVAS / 100;
     let raf = 0;
     let last = 0;
