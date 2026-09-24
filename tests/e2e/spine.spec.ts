@@ -59,8 +59,9 @@ async function createNight(page: Page) {
   // plan and budget every later step asserts on are its work, not the save's.
   // Deterministic without ANTHROPIC_API_KEY: draftPlan's fallback is the same
   // template, so it writes the same categories and tasks either way.
+  // The feed is a chat with Hosty, so the plan_drafted row reads in his voice.
   await page.goto(event);
-  await expect(page.getByText("Plan drafted")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("I drafted your plan")).toBeVisible({ timeout: 30_000 });
   return event;
 }
 
@@ -71,7 +72,8 @@ test("a host can plan, scout, shortlist and book an event", async ({ page }) => 
   await test.step("the Overview's activity feed shows what just happened", async () => {
     await page.goto(event);
     await expect(page.getByText("Event created")).toBeVisible();
-    await expect(page.getByText("Brief updated")).toBeVisible();
+    // The host's own save is their "You" bubble.
+    await expect(page.getByText("Updated the brief")).toBeVisible();
   });
 
   await test.step("publishing shows up live in the feed, in a second tab too", async () => {

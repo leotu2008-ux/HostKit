@@ -6,6 +6,7 @@ import { CreateEventButton } from "@/components/create-event-button";
 import { Eyebrow } from "@/components/eyebrow";
 import { GlitchText } from "@/components/glitch-text";
 import { LandingPreview } from "@/components/landing-preview";
+import { HostyMark } from "@/components/hosty-mark";
 import { Reveal } from "@/components/reveal";
 import { ButtonLink } from "@/components/ui";
 
@@ -136,8 +137,8 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             className="rise inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink-soft"
             style={stagger(0)}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
-            An agent for the whole event
+            <HostyMark size={16} className="text-ink" />
+            Meet Hosty, an agent for the whole event
           </p>
 
           <h1

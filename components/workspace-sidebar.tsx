@@ -8,6 +8,7 @@ import { formatEventDate } from "@/lib/when";
 import { relativeTime } from "@/lib/activity-format";
 import type { AgentStatusView } from "@/lib/activity";
 import { CreateEventButton } from "@/components/create-event-button";
+import { HostyMark } from "@/components/hosty-mark";
 import {
   BriefIcon,
   CheckIcon,
@@ -49,7 +50,6 @@ const TABS: SidebarTab[] = [
   { href: "/guests", label: "Guests", match: ["/promote", "/blasts", "/check-in"], Icon: GuestsIcon },
 ];
 
-const dotClass = "h-1.5 w-1.5 shrink-0 rounded-full";
 
 /**
  * The status line's own affordance, sized for 13px text rather than the
@@ -71,7 +71,7 @@ function RunAgainButton({ eventId, label }: { eventId: string; label: string }) 
   );
 }
 
-function AgentStatusLine({
+export function AgentStatusLine({
   eventId,
   agent,
   now,
@@ -80,31 +80,35 @@ function AgentStatusLine({
   agent: AgentStatusView;
   now: string;
 }) {
+  const mark = (pulse = false) => (
+    <HostyMark size={20} className={cx("shrink-0 text-ink", pulse && "animate-pulse")} />
+  );
+
   if (agent.status === "running") {
     return (
       <>
-        <span aria-hidden className={cx(dotClass, "bg-brand animate-pulse")} />
-        <span className="text-ink-soft">Working on this now…</span>
+        {mark(true)}
+        <span className="text-ink-soft">Hosty is working on this…</span>
       </>
     );
   }
   if (agent.status === "queued") {
-    // A run the rate limit parked: nothing went wrong and nothing is lost —
-    // the cron sweep picks QUEUED rows up — but without its own branch this
-    // read as "Idle", offering a "Run again" that would only queue again.
+    // A run the rate limit parked: nothing went wrong and nothing is lost,
+    // because the cron sweep picks QUEUED rows up. Without its own branch this
+    // read as idle, offering a "Run again" that would only queue again.
     return (
       <>
-        <span aria-hidden className={cx(dotClass, "bg-line-strong")} />
-        <span className="text-ink-soft">Queued &mdash; starting soon</span>
+        {mark()}
+        <span className="text-ink-soft">Hosty will start soon</span>
       </>
     );
   }
   if (agent.needs.length > 0) {
     return (
       <>
-        <span aria-hidden className={cx(dotClass, "bg-line-strong")} />
+        {mark()}
         <Link href={`/events/${eventId}/brief`} className="text-ink-soft hover:text-ink">
-          Needs {describeMissing(agent.needs)}
+          Hosty needs {describeMissing(agent.needs)}
         </Link>
       </>
     );
@@ -112,17 +116,17 @@ function AgentStatusLine({
   if (agent.status === "failed") {
     return (
       <>
-        <span aria-hidden className={cx(dotClass, "bg-amber")} />
-        <span className="text-ink-soft">Last run didn&rsquo;t finish</span>
+        {mark()}
+        <span className="text-ink-soft">Hosty&rsquo;s last run didn&rsquo;t finish</span>
         <RunAgainButton eventId={eventId} label="Try again" />
       </>
     );
   }
   return (
     <>
-      <span aria-hidden className={cx(dotClass, "bg-forest")} />
+      {mark()}
       <span className="text-ink-soft">
-        Idle
+        Hosty is resting
         {/* `now` comes from the server render so this string is the same on
             both sides of hydration. */}
         {agent.lastRunAt ? ` · ran ${relativeTime(agent.lastRunAt, new Date(now))}` : ""}
@@ -255,8 +259,7 @@ export function WorkspaceSidebar({
         <div className="hidden flex-1 lg:block" />
 
         <div className="mt-4 hidden rounded-lg border border-line bg-surface p-3 text-[12.5px] lg:block">
-          <p className="text-[11px] font-medium tracking-wide text-ink-mute uppercase">Agent</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <AgentStatusLine eventId={eventId} agent={agent} now={now} />
           </div>
         </div>

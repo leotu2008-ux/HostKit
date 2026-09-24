@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import type { AgentStatusView } from "@/lib/activity";
-import { actorLabel, feedIsQuiet, latestAt, mergeFeed, relativeTime, type FeedRow } from "@/lib/activity-format";
-import { Card, SectionHeading, EmptyState, cx } from "@/components/ui";
+import { feedIsQuiet, latestAt, mergeFeed, type FeedRow } from "@/lib/activity-format";
+import { toChatThread } from "@/lib/hosty-voice";
+import { ChatThread } from "@/components/chat-thread";
+import { Card, SectionHeading } from "@/components/ui";
 
 /**
  * The Overview's live "what's happening" feed.
@@ -19,12 +20,6 @@ import { Card, SectionHeading, EmptyState, cx } from "@/components/ui";
  * shouldn't poll forever — unless the agent is mid-run, in which case
  * something is always about to post.
  */
-
-const ACTOR_DOT: Record<FeedRow["actor"], string> = {
-  agent: "bg-clay",
-  host: "bg-forest",
-  system: "bg-line-strong",
-};
 
 export function ActivityFeed({
   eventId,
@@ -179,36 +174,12 @@ export function ActivityFeed({
           )
         }
       />
-      {rows.length === 0 ? (
-        <EmptyState title="Nothing yet" body="Save the brief and the agent gets going." />
-      ) : (
-        <ol aria-live="polite" className="space-y-3">
-          {rows.map((row) => {
-            const content = (
-              <div className="flex items-start gap-3">
-                <span aria-hidden className={cx("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", ACTOR_DOT[row.actor])} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] tracking-wide text-ink-mute uppercase">{actorLabel(row.actor)}</p>
-                  <p className="font-medium text-ink">{row.title}</p>
-                  {row.body ? <p className="text-[13px] text-ink-soft">{row.body}</p> : null}
-                </div>
-                <span className="shrink-0 text-[12px] text-ink-mute">{relativeTime(row.createdAt, clock)}</span>
-              </div>
-            );
-            return (
-              <li key={row.id}>
-                {row.href ? (
-                  <Link href={row.href} className="-mx-2 block rounded-lg px-2 py-1 hover:bg-sunk">
-                    {content}
-                  </Link>
-                ) : (
-                  content
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      <ChatThread
+        messages={toChatThread(rows)}
+        running={agent.status === "running"}
+        now={clock}
+        eventId={eventId}
+      />
     </Frame>
   );
 }

@@ -1,13 +1,15 @@
-import { Badge, Button, ButtonLink, Card } from "@/components/ui";
+import { Button, ButtonLink, cx } from "@/components/ui";
 import { toggleTaskAction } from "@/lib/actions/tasks";
 import type { BriefingItem } from "@/lib/agent/briefing";
 
 /**
- * One card, one action. The panel is a list of things that need the host,
- * not a place to offer them a menu of ways to respond — so every card ends
- * in exactly one button, and the switch below is exhaustive: a new
- * BriefingAction variant fails to compile here until this file knows how to
- * render it.
+ * One row in Hosty's message, one action. The panel is a list of things that
+ * need the host, not a menu of ways to respond — so every row ends in exactly
+ * one button, and the switch below is exhaustive: a new BriefingAction
+ * variant fails to compile here until this file knows how to render it.
+ *
+ * The detail line lives in the row's tooltip and in screen-reader text, so
+ * the message stays short without losing it.
  */
 export function AgentCard({
   item,
@@ -21,13 +23,13 @@ export function AgentCard({
   venueSearchEnabled: boolean;
 }) {
   return (
-    <Card className="flex items-start justify-between gap-3 p-3.5">
+    <li className="flex items-center justify-between gap-3 py-2" title={item.detail}>
       <div className="min-w-0">
-        <Badge tone={item.urgency === "now" ? "amber" : "neutral"} className="mb-1.5">
-          {item.urgency === "now" ? "Now" : "Soon"}
-        </Badge>
         <p className="text-[13px] font-medium text-ink">{item.title}</p>
-        <p className="text-[13px] text-ink-soft">{item.detail}</p>
+        <p className={cx("text-[12px]", item.urgency === "now" ? "text-amber" : "text-ink-mute")}>
+          {item.urgency === "now" ? "Needs you today" : "Coming up"}
+        </p>
+        <span className="sr-only">{item.detail}</span>
       </div>
       <div className="shrink-0">
         <AgentCardAction
@@ -37,7 +39,7 @@ export function AgentCard({
           venueSearchEnabled={venueSearchEnabled}
         />
       </div>
-    </Card>
+    </li>
   );
 }
 
