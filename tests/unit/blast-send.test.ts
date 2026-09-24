@@ -72,4 +72,28 @@ describe("sendBlast", () => {
       },
     ]);
   });
+
+  it("won't send to Came before the night has happened", async () => {
+    mocks.eventFind.mockResolvedValue({
+      title: "Supper club",
+      date: new Date(Date.now() + 86_400_000),
+      endDate: null,
+      status: "PLANNING",
+    });
+    mocks.guestFindMany.mockResolvedValue([
+      { name: "Ada", email: "ada@example.com", rsvpStatus: "ATTENDING", checkedInAt: new Date(), userId: null, user: null },
+    ]);
+
+    await expect(
+      sendBlast({
+        eventId: "e1",
+        host: { name: "Sam", email: "sam@example.com" },
+        segment: "came",
+        subject: "Thanks",
+        body: "Thanks for coming, {name}.",
+      }),
+    ).rejects.toThrow(/after the night/);
+    expect(mocks.sendEmails).not.toHaveBeenCalled();
+    expect(mocks.blastCreate).not.toHaveBeenCalled();
+  });
 });

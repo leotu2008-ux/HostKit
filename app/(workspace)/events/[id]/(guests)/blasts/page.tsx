@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { phoneRecipientsFor, recipientsFor, SEGMENT_KEYS, SEGMENTS, type Segment } from "@/lib/blasts";
+import { phoneRecipientsFor, recipientsFor, segmentsFor, SEGMENTS, type Segment } from "@/lib/blasts";
 import { isEmailConfigured } from "@/lib/email/send";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 import { BlastComposer } from "@/components/blast-composer";
@@ -18,16 +18,18 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
         name: true,
         email: true,
         rsvpStatus: true,
+        checkedInAt: true,
         user: { select: { phone: true, phoneVerifiedAt: true } },
       },
     }),
     db.blast.findMany({ where: { eventId: event.id }, orderBy: { sentAt: "desc" } }),
   ]);
+  const segments = segmentsFor(event, guests);
   const counts = Object.fromEntries(
-    SEGMENT_KEYS.map((key) => [key, recipientsFor(key, guests).length]),
+    segments.map((key) => [key, recipientsFor(key, guests).length]),
   ) as Record<Segment, number>;
   const phoneCounts = Object.fromEntries(
-    SEGMENT_KEYS.map((key) => [key, phoneRecipientsFor(key, guests).length]),
+    segments.map((key) => [key, phoneRecipientsFor(key, guests).length]),
   ) as Record<Segment, number>;
 
   return (
@@ -44,6 +46,7 @@ export default async function BlastsPage({ params }: PageProps<"/events/[id]/bla
           <BlastComposer
             eventId={event.id}
             eventTitle={event.title}
+            segments={segments}
             counts={counts}
             phoneCounts={phoneCounts}
             canSend={isEmailConfigured()}

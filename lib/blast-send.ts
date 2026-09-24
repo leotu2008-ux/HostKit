@@ -3,6 +3,7 @@ import {
   personalize,
   phoneRecipientsFor,
   recipientsFor,
+  segmentsFor,
   type PhoneRecipient,
   type Recipient,
   type Segment,
@@ -42,16 +43,28 @@ export async function sendBlast(input: {
   body: string;
   sms?: boolean;
 }): Promise<BlastOutcome> {
-  const guests = await db.guest.findMany({
-    where: { eventId: input.eventId },
-    select: {
-      name: true,
-      email: true,
-      rsvpStatus: true,
-      userId: true,
-      user: { select: { phone: true, phoneVerifiedAt: true } },
-    },
-  });
+  const [guests, event] = await Promise.all([
+    db.guest.findMany({
+      where: { eventId: input.eventId },
+      select: {
+        name: true,
+        email: true,
+        rsvpStatus: true,
+        checkedInAt: true,
+        userId: true,
+        user: { select: { phone: true, phoneVerifiedAt: true } },
+      },
+    }),
+    db.event.findUnique({
+      where: { id: input.eventId },
+      select: { title: true, date: true, endDate: true, status: true },
+    }),
+  ]);
+  // A stale composer or an API call can still name "came"; only send it
+  // once the night has happened and the door was run.
+  if (event && !segmentsFor(event, guests).includes(input.segment)) {
+    throw new Error("“Came” opens after the night, once guests were checked in at the door.");
+  }
   const recipients = recipientsFor(input.segment, guests);
   const phoneRecipients = phoneRecipientsFor(input.segment, guests);
 
@@ -102,7 +115,6 @@ export async function sendBlast(input: {
   const accountIds = guests
     .filter((g) => g.userId && g.email && emails.has(g.email.toLowerCase()))
     .map((g) => g.userId as string);
-  const event = await db.event.findUnique({ where: { id: input.eventId }, select: { title: true } });
   await notify(accountIds, {
     kind: "blast",
     title: `${event?.title ?? "Your event"}: ${input.subject}`,

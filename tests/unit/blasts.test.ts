@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { personalize, recipientsFor } from "@/lib/blasts";
+import { personalize, phoneRecipientsFor, recipientsFor, segmentsFor } from "@/lib/blasts";
 import { composeInquiry } from "@/lib/outreach";
 import { promoBlurb } from "@/lib/promote";
 
@@ -40,6 +40,41 @@ describe("recipientsFor", () => {
       "Grace Hopper",
       "Unsure",
     ]);
+  });
+});
+
+describe("the came segment", () => {
+  const door = [
+    { name: "In", email: "in@example.com", rsvpStatus: "ATTENDING" as const, checkedInAt: new Date("2026-09-20T20:00:00Z") },
+    { name: "No show", email: "noshow@example.com", rsvpStatus: "ATTENDING" as const, checkedInAt: null },
+    { name: "Waiting", email: "waiting@example.com", rsvpStatus: "WAITLISTED" as const, checkedInAt: null },
+  ];
+
+  it("came = attending guests who were checked in at the door", () => {
+    expect(recipientsFor("came", door).map((r) => r.name)).toEqual(["In"]);
+    const phones = door.map((g) => ({ ...g, user: { phone: `+1555${g.name.length}`, phoneVerifiedAt: new Date() } }));
+    expect(phoneRecipientsFor("came", phones).map((r) => r.name)).toEqual(["In"]);
+  });
+
+  const now = new Date("2026-09-24T12:00:00Z");
+  const past = { date: new Date("2026-09-20T19:00:00Z"), endDate: null, status: "PLANNING" as const };
+
+  it("is offered only for a night that happened where the door was run", () => {
+    expect(segmentsFor(past, door, now)).toContain("came");
+    expect(segmentsFor(past, door.map((g) => ({ ...g, checkedInAt: null })), now)).not.toContain("came");
+    expect(segmentsFor({ ...past, date: new Date("2026-09-30T19:00:00Z") }, door, now)).not.toContain("came");
+    expect(segmentsFor({ ...past, status: "CANCELLED" as const }, door, now)).not.toContain("came");
+    expect(segmentsFor({ ...past, date: null }, door, now)).not.toContain("came");
+  });
+
+  it("waits for the last acceptable day of a flexible night", () => {
+    const flexible = { ...past, endDate: new Date("2026-09-26T00:00:00Z") };
+    expect(segmentsFor(flexible, door, now)).not.toContain("came");
+    expect(segmentsFor({ ...flexible, endDate: new Date("2026-09-22T00:00:00Z") }, door, now)).toContain("came");
+  });
+
+  it("always offers the other segments", () => {
+    expect(segmentsFor({ ...past, date: null }, [], now)).toEqual(["going", "pending", "waitlist", "everyone"]);
   });
 });
 
