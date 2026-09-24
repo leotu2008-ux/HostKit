@@ -3,9 +3,10 @@ import { GlitchText } from "@/components/glitch-text";
 import { LLMS } from "@/lib/llms";
 import { ButtonLink } from "@/components/ui";
 
-/** What a connected agent can read — the host's own work, through the MCP
- *  tools (list_events, list_guests, get_event_brief, search_venues). */
-const READS = ["Events", "Guests", "Briefs", "Venues"] as const;
+/** What a connected agent can read — the host's own work. Claude and ChatGPT
+ *  (OAuth) get list_events, get_event_brief and search_venues; Cursor (bearer
+ *  token) gets list_events and list_guests. */
+const READS = ["Events", "Briefs", "Guests", "Venues"] as const;
 
 /**
  * The first scroll section under the landing hero.
@@ -14,7 +15,7 @@ export function ConnectAgentSection() {
   return (
     <section className="py-16 md:py-24">
       <p className="font-event text-[12px] tracking-[0.14em] text-ink-mute uppercase">
-        Cursor and Claude
+        Claude, ChatGPT and Cursor
       </p>
       <GlitchText
         as="h2"
@@ -23,8 +24,8 @@ export function ConnectAgentSection() {
         Connect an agent
       </GlitchText>
       <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">
-        Claude, ChatGPT and Cursor can connect to Hosty to read your events,
-        guests and briefs, and search venues.
+        Claude and ChatGPT can read your events and briefs and search venues.
+        Cursor can read your events and guest lists.
       </p>
 
       <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
