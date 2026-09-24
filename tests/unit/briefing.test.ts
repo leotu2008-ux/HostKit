@@ -299,24 +299,28 @@ describe("briefingFor — venue_missing", () => {
 });
 
 describe("briefingFor — event_soon", () => {
+  // 9:30 AM EST as a real instant; nights at 7 PM stored as wall-clock UTC.
+  const MORNING = new Date("2026-01-15T14:30:00Z");
+  const night = (day: number) => new Date(Date.UTC(2026, 0, day, 19));
+
   it("an event two days out is now", () => {
     const b = briefingFor(
-      { id: "e1", title: "Fall Mixer", date: inDays(2) },
-      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], now: NOW },
+      { id: "e1", title: "Fall Mixer", date: night(17) },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], now: MORNING },
     );
     expect(b.items.find((i) => i.kind === "event_soon")).toMatchObject({ urgency: "now" });
   });
 
   it("an event five days out is soon, and one nine days out is absent", () => {
     const soon = briefingFor(
-      { id: "e1", title: "Fall Mixer", date: inDays(5) },
-      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], now: NOW },
+      { id: "e1", title: "Fall Mixer", date: night(20) },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], now: MORNING },
     );
     expect(soon.items.find((i) => i.kind === "event_soon")).toMatchObject({ urgency: "soon" });
 
     const absent = briefingFor(
-      { id: "e1", title: "Fall Mixer", date: inDays(9) },
-      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], now: NOW },
+      { id: "e1", title: "Fall Mixer", date: night(24) },
+      { tasks: [], inquiries: [], collaborators: [SETTLED_VENUE], now: MORNING },
     );
     expect(absent.items.find((i) => i.kind === "event_soon")).toBeUndefined();
   });
@@ -476,6 +480,16 @@ describe("briefingFor — before-the-night reminders", () => {
       blasts: [{ segment: "going", sentAt: new Date("2026-01-24T02:00:00Z") }],
     });
     expect(sent.items.some((i) => i.kind === "guests_remind")).toBe(false);
+  });
+
+  it("the night's countdown agrees with the reminders on a US evening", () => {
+    const soon = (b: ReturnType<typeof on>) => b.items.find((i) => i.kind === "event_soon")?.detail;
+    const thursdayEvening = on(new Date("2026-01-23T02:00:00Z"));
+    expect(soon(thursdayEvening)).toBe("in 2 days");
+    expect(thursdayEvening.items.find((i) => i.kind === "guests_unreplied")?.detail).toBe("The night is in 2 days");
+    const fridayEvening = on(new Date("2026-01-24T02:00:00Z"));
+    expect(soon(fridayEvening)).toBe("Tomorrow");
+    expect(fridayEvening.items.some((i) => i.kind === "guests_remind")).toBe(true);
   });
 
   it("says nothing when no one can be emailed, and nothing for a cancelled night", () => {

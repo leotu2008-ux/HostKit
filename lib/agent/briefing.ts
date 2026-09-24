@@ -258,7 +258,7 @@ function venueMissingItem(
     inquiries.some((i) => i.category === "VENUE" && i.status === "BOOKED");
   if (hasVenue) return null;
 
-  const days = daysUntil(event.date, now);
+  const days = nightIn(event, now);
   const urgency: BriefingUrgency = days !== null && days <= VENUE_URGENT_DAYS ? "now" : "soon";
   return {
     id: `venue_missing:${event.id}`,
@@ -271,7 +271,7 @@ function venueMissingItem(
 }
 
 function eventSoonItem(event: BriefingEvent, now: Date): BriefingItem | null {
-  const days = daysUntil(event.date, now);
+  const days = nightIn(event, now);
   if (days === null || days < 0 || days > EVENT_SOON_DAYS) return null;
   return {
     id: `event_soon:${event.id}`,
