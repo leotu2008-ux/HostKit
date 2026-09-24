@@ -85,7 +85,9 @@ export async function updateGuestAction(formData: FormData) {
     data: {
       rsvpStatus: parsed.data.rsvpStatus,
       plusOnes: parsed.data.plusOnes,
-      dietary: parsed.data.dietary?.trim() || null,
+      // The reply picker doesn't post dietary notes; recording a reply must
+      // not wipe the guest's own (an allergy the caterer needs).
+      ...(formData.has("dietary") ? { dietary: parsed.data.dietary?.trim() || null } : {}),
       respondedAt: parsed.data.rsvpStatus === "INVITED" ? null : new Date(),
     },
   });
