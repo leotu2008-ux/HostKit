@@ -216,9 +216,11 @@ export async function deleteInquiryAction(formData: FormData) {
   await requireEvent(eventId);
 
   // The budget item cascades to null on delete, so remove it explicitly —
-  // an orphaned line with no inquiry behind it is worse than no line.
+  // an orphaned line with no inquiry behind it is worse than no line. Scoped
+  // to eventId like the inquiry itself: requireEvent only vouches for this
+  // event, not for whichever inquiry id was posted with it.
   await db.$transaction(async (tx) => {
-    await tx.budgetItem.deleteMany({ where: { inquiryId } });
+    await tx.budgetItem.deleteMany({ where: { inquiryId, eventId } });
     await tx.inquiry.deleteMany({ where: { id: inquiryId, eventId } });
   });
   refresh();
