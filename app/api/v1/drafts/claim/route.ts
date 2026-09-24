@@ -9,9 +9,11 @@ const schema = z.object({
 });
 
 /**
- * Attaches drafts a device made while signed out to the host who just signed
- * in — the API twin of lib/actions/claim.ts. Only drafts whose token matches
- * move; anything else is silently left alone.
+ * Attaches drafts a device already holds to the host who just signed in —
+ * the API twin of lib/actions/claim.ts. Only an existing unowned row whose
+ * token matches moves. This never creates an event: a token that doesn't
+ * match is left alone. Anonymous creation is disabled; new nights go through
+ * POST /api/v1/events with an approved account.
  */
 export async function POST(request: Request) {
   const user = await apiUser(request);

@@ -26,10 +26,15 @@ sample events and says so. To use real data:
   localhost).
 - **Preview:** enter the Vercel preview URL for this branch.
 
-You can create events without an account. They're saved as drafts on the
-phone (a claim token per draft, in UserDefaults) and show on the Events tab.
-Publishing asks you to sign in, then hands the draft to that account. Sign in
-with a website account, e.g. the seeded demo host `maya@hosty.demo` /
+Creating an event needs a signed-in account with dashboard access, the same
+invite gate as the website (`hasDashboardAccess`). Anonymous drafts are
+disabled for the beta. `POST /api/v1/events` returns 401 when there is no
+session or bearer token, and 403 when the signed-in account has not been
+approved. Drafts that already have a claim token can still be claimed with
+`POST /api/v1/drafts/claim`; that route only attaches those existing drafts
+and does not create new events.
+
+Sign in with a website account, e.g. the seeded demo host `maya@hosty.demo` /
 `hosty-demo` — on a local or CI seed only. Hosted deployments (preview and
 production share the production database) use `DEMO_PASSWORD` if set, otherwise
 there is no usable demo login.
