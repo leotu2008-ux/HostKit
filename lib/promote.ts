@@ -1,4 +1,4 @@
-import { formatEventDate, formatEventTime } from "@/lib/when";
+import { formatEventDate, formatEventTime, hasClock } from "@/lib/when";
 
 /** The public link for a night on a given site origin. */
 export function eventUrl(origin: string, eventId: string): string {
@@ -14,9 +14,12 @@ export function promoBlurb(event: {
   ticketType: "FREE" | "PAID";
   description: string | null;
 }, link: string): string {
-  const when = event.date
-    ? `${formatEventDate(event.date)} · ${formatEventTime(event.date)}`
-    : "Date to be announced";
+  // A night saved without a start time shows its day alone, as on /e.
+  const when = !event.date
+    ? "Date to be announced"
+    : hasClock(event.date)
+      ? `${formatEventDate(event.date)} · ${formatEventTime(event.date)}`
+      : formatEventDate(event.date)!;
   // A blank/half-brief event has neither yet; drop the location clause
   // entirely rather than printing a trailing " · ".
   const where = event.address || event.city || null;

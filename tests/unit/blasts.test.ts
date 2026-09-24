@@ -87,4 +87,21 @@ describe("promoBlurb", () => {
       "Free · register: https://tryhosty.app/e/abc",
     ]);
   });
+
+  // A date saved without a start time is stored as noon (see `parseStart`);
+  // the copy mustn't promise a noon start the host never gave.
+  it("leaves the time out for a night saved without one", () => {
+    const text = promoBlurb(
+      {
+        title: "Pitch Night",
+        date: new Date("2026-10-23T12:00:00"),
+        city: "Boston, MA",
+        address: "Olin Hall",
+        ticketType: "FREE",
+        description: null,
+      },
+      "https://tryhosty.app/e/abc",
+    );
+    expect(text.split("\n")[1]).toBe("Fri, Oct 23 · Olin Hall");
+  });
 });
