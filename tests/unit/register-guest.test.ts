@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
   guestFindFirst: vi.fn(),
-  guestCount: vi.fn(),
+  guestAggregate: vi.fn(),
   guestCreate: vi.fn(),
   guestUpdate: vi.fn(),
   notify: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock("@/lib/db", () => {
     $executeRaw: vi.fn(),
     guest: {
       findFirst: mocks.guestFindFirst,
-      count: mocks.guestCount,
+      aggregate: mocks.guestAggregate,
       create: mocks.guestCreate,
       update: mocks.guestUpdate,
     },
@@ -57,7 +57,7 @@ describe("registerGuest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.guestFindFirst.mockResolvedValue(null);
-    mocks.guestCount.mockResolvedValue(3);
+    mocks.guestAggregate.mockResolvedValue({ _count: 3, _sum: { plusOnes: 0 } });
   });
 
   it("saves a spot on a night still to come", async () => {
@@ -67,6 +67,17 @@ describe("registerGuest", () => {
 
     expect(result).toMatchObject({ ok: true, state: "going", changed: true });
     expect(mocks.guestCreate).toHaveBeenCalledTimes(1);
+  });
+
+  // 8 yeses bringing 2 between them fill a 10-person night.
+  it("waitlists a new registration when plus-ones already fill the room", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestAggregate.mockResolvedValue({ _count: 8, _sum: { plusOnes: 2 } });
+
+    const result = await registerGuest({ eventId: "ev-1", viewer: VIEWER });
+
+    expect(result).toMatchObject({ ok: true, state: "waitlisted", changed: true });
+    expect(mocks.guestCreate.mock.calls[0][0].data.rsvpStatus).toBe("WAITLISTED");
   });
 
   it("doesn't put anyone on the list once the night is over", async () => {

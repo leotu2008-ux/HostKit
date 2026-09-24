@@ -48,6 +48,15 @@ describe("waitlist", () => {
     expect(promotionPlan([t("1")], 0)).toEqual([]);
   });
 
+  // Capacity means people in the room, so a party only goes in whole — and
+  // nobody behind them jumps the line into a seat they're waiting for.
+  it("counts a waiting guest's plus-ones against the room", () => {
+    const party = { ...t("1"), plusOnes: 2 };
+    expect(promotionPlan([party, t("2")], 2)).toEqual([]);
+    expect(promotionPlan([party, t("2")], 4).map((g) => g.id)).toEqual(["1", "2"]);
+    expect(promotionPlan([t("2"), { ...t("3"), plusOnes: 2 }], 2).map((g) => g.id)).toEqual(["2"]);
+  });
+
   it("knows when a status change frees a seat", () => {
     expect(releasesSeat("ATTENDING", "DECLINED")).toBe(true);
     expect(releasesSeat("ATTENDING", null)).toBe(true);

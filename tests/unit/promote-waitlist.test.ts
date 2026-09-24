@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   eventFind: vi.fn(),
-  guestCount: vi.fn(),
+  guestAggregate: vi.fn(),
   guestFindMany: vi.fn(),
+  guestFindFirst: vi.fn(),
+  guestUpdate: vi.fn(),
   guestUpdateMany: vi.fn(),
   notify: vi.fn(),
 }));
@@ -12,7 +14,13 @@ vi.mock("@/lib/db", () => {
   const tx = {
     $executeRaw: vi.fn(),
     event: { findUnique: mocks.eventFind },
-    guest: { count: mocks.guestCount, findMany: mocks.guestFindMany, updateMany: mocks.guestUpdateMany },
+    guest: {
+      aggregate: mocks.guestAggregate,
+      findMany: mocks.guestFindMany,
+      findFirst: mocks.guestFindFirst,
+      update: mocks.guestUpdate,
+      updateMany: mocks.guestUpdateMany,
+    },
   };
   return {
     db: {
@@ -23,12 +31,17 @@ vi.mock("@/lib/db", () => {
 });
 vi.mock("@/lib/notify", () => ({ notify: mocks.notify }));
 
-import { promoteWaitlist } from "@/lib/waitlist";
+import { decideRequest, promoteWaitlist } from "@/lib/waitlist";
 
 const HOUR = 3_600_000;
 const WAITING = [
-  { id: "g-1", userId: "u-1", name: "Ada", email: "ada@example.com", createdAt: new Date(0) },
+  { id: "g-1", userId: "u-1", name: "Ada", email: "ada@example.com", plusOnes: 0, createdAt: new Date(0) },
 ];
+
+/** What the ATTENDING rows add up to: `rows` guests bringing `plusOnes` between them. */
+function going(rows: number, plusOnes = 0) {
+  return { _count: rows, _sum: { plusOnes } };
+}
 
 function eventAt(date: Date, status = "PUBLISHED") {
   return { title: "Pitch Night", guestCount: 10, date, endDate: null, durationHours: 3, status };
@@ -37,7 +50,7 @@ function eventAt(date: Date, status = "PUBLISHED") {
 describe("promoteWaitlist", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.guestCount.mockResolvedValue(9);
+    mocks.guestAggregate.mockResolvedValue(going(9));
     mocks.guestFindMany.mockResolvedValue(WAITING);
     mocks.guestUpdateMany.mockResolvedValue({ count: 1 });
   });
@@ -50,6 +63,24 @@ describe("promoteWaitlist", () => {
     expect(promoted.map((g) => g.id)).toEqual(["g-1"]);
     expect(mocks.guestUpdateMany).toHaveBeenCalledTimes(1);
     expect(mocks.notify).toHaveBeenCalledTimes(1);
+  });
+
+  // Capacity is people in the room: 7 yeses bringing 2 between them leave one seat.
+  it("counts plus-ones already going and waiting when it fills seats", async () => {
+    mocks.eventFind.mockResolvedValue(eventAt(new Date(Date.now() + 48 * HOUR)));
+    mocks.guestAggregate.mockResolvedValue(going(7, 2));
+    mocks.guestFindMany.mockResolvedValue([{ ...WAITING[0], plusOnes: 1 }]);
+
+    const promoted = await promoteWaitlist("ev-1");
+
+    expect(mocks.guestAggregate).toHaveBeenCalledWith({
+      where: { eventId: "ev-1", rsvpStatus: "ATTENDING" },
+      _count: true,
+      _sum: { plusOnes: true },
+    });
+    expect(promoted).toEqual([]);
+    expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.notify).not.toHaveBeenCalled();
   });
 
   it("doesn't tell anyone they're in once the night is over", async () => {
@@ -91,5 +122,33 @@ describe("promoteWaitlist", () => {
     expect(promoted).toEqual([]);
     expect(mocks.guestUpdateMany).not.toHaveBeenCalled();
     expect(mocks.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("decideRequest", () => {
+  const REQUEST = { id: "g-2", userId: "u-2", name: "Lin", email: "lin@example.com", rsvpStatus: "PENDING", plusOnes: 1 };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.eventFind.mockResolvedValue({ title: "Pitch Night", guestCount: 10 });
+    mocks.guestFindFirst.mockResolvedValue(REQUEST);
+  });
+
+  it("waitlists an approved request whose plus-one wouldn't fit", async () => {
+    mocks.guestAggregate.mockResolvedValue(going(8, 1));
+
+    const decided = await decideRequest("ev-1", "g-2", true);
+
+    expect(decided?.state).toBe("waitlisted");
+    expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("WAITLISTED");
+  });
+
+  it("lets an approved request in with their plus-one when both fit", async () => {
+    mocks.guestAggregate.mockResolvedValue(going(8));
+
+    const decided = await decideRequest("ev-1", "g-2", true);
+
+    expect(decided?.state).toBe("going");
+    expect(mocks.guestUpdate.mock.calls[0][0].data.rsvpStatus).toBe("ATTENDING");
   });
 });

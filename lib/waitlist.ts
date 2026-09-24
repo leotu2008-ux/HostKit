@@ -19,10 +19,40 @@ export function releasesSeat(from: RsvpStatus, to: RsvpStatus | null): boolean {
   return from === "ATTENDING" && to !== "ATTENDING";
 }
 
-/** Pure: which of the waiting guests (oldest first) fit into `room` seats. */
-export function promotionPlan<T extends { createdAt: Date }>(waiting: T[], room: number): T[] {
-  if (room <= 0) return [];
-  return [...waiting].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).slice(0, room);
+/**
+ * Pure: which of the waiting guests (oldest first) fit into `room` seats.
+ * A guest takes a seat for themselves and one per plus-one, and the line
+ * stops at the first party that doesn't fit rather than letting anyone
+ * behind them jump ahead.
+ */
+export function promotionPlan<T extends { createdAt: Date; plusOnes?: number }>(waiting: T[], room: number): T[] {
+  const plan: T[] = [];
+  let left = room;
+  for (const guest of [...waiting].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())) {
+    const heads = 1 + Math.max(0, guest.plusOnes ?? 0);
+    if (heads > left) break;
+    plan.push(guest);
+    left -= heads;
+  }
+  return plan;
+}
+
+/**
+ * Heads already going: every ATTENDING guest plus the people they bring, so
+ * capacity means people in the room. `except` leaves one guest out (the one
+ * whose own reply is being weighed).
+ */
+export async function attendingHeads(
+  client: Pick<typeof db, "guest">,
+  eventId: string,
+  except?: string,
+): Promise<number> {
+  const going = await client.guest.aggregate({
+    where: { eventId, rsvpStatus: "ATTENDING", ...(except ? { id: { not: except } } : {}) },
+    _count: true,
+    _sum: { plusOnes: true },
+  });
+  return going._count + (going._sum.plusOnes ?? 0);
 }
 
 export type PromotedGuest = { id: string; userId: string | null; name: string; email: string | null };
@@ -54,15 +84,17 @@ async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
     // a no-show marked "Not going" shouldn't tell them they're in. The host
     // can still move someone in by hand from the Guests tab.
     if (event.status === "COMPLETED" || (event.date && event.date.getTime() <= Date.now())) return [];
-    const attending = await tx.guest.count({ where: { eventId, rsvpStatus: "ATTENDING" } });
-    const room = event.guestCount - attending;
+    const room = event.guestCount - (await attendingHeads(tx, eventId));
     if (room <= 0) return [];
-    const waiting = await tx.guest.findMany({
-      where: { eventId, rsvpStatus: "WAITLISTED" },
-      orderBy: { createdAt: "asc" },
-      take: room,
-      select: { id: true, userId: true, name: true, email: true, createdAt: true },
-    });
+    const waiting = promotionPlan(
+      await tx.guest.findMany({
+        where: { eventId, rsvpStatus: "WAITLISTED" },
+        orderBy: { createdAt: "asc" },
+        take: room,
+        select: { id: true, userId: true, name: true, email: true, plusOnes: true, createdAt: true },
+      }),
+      room,
+    );
     if (waiting.length === 0) return [];
     await tx.guest.updateMany({
       where: { id: { in: waiting.map((g) => g.id) } },
@@ -75,9 +107,9 @@ async function promoteWaitlistRows(eventId: string): Promise<PromotedGuest[]> {
 export type Decision = "going" | "waitlisted" | "declined";
 
 /**
- * The host answers a request. Approving puts them in if there's room and on
- * the waitlist otherwise; declining ends it. Returns the new state, or null
- * when the guest wasn't waiting for a decision.
+ * The host answers a request. Approving puts them in if there's room for
+ * them and their plus-ones and on the waitlist otherwise; declining ends it.
+ * Returns the new state, or null when the guest wasn't waiting for a decision.
  */
 export async function decideRequest(
   eventId: string,
@@ -109,7 +141,7 @@ async function decideRequestRow(
     await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
     const guest = await tx.guest.findFirst({
       where: { id: guestId, eventId },
-      select: { id: true, userId: true, name: true, email: true, rsvpStatus: true },
+      select: { id: true, userId: true, name: true, email: true, rsvpStatus: true, plusOnes: true },
     });
     if (!guest || (guest.rsvpStatus !== "PENDING" && guest.rsvpStatus !== "WAITLISTED")) return null;
 
@@ -118,8 +150,8 @@ async function decideRequestRow(
       state = "declined";
     } else {
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { guestCount: true } });
-      const attending = await tx.guest.count({ where: { eventId, rsvpStatus: "ATTENDING" } });
-      state = event && attending < event.guestCount ? "going" : "waitlisted";
+      const heads = 1 + Math.max(0, guest.plusOnes);
+      state = event && (await attendingHeads(tx, eventId)) + heads <= event.guestCount ? "going" : "waitlisted";
     }
     await tx.guest.update({
       where: { id: guest.id },

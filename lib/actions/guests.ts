@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
 import { parseGuestList } from "@/lib/guests";
-import { promoteWaitlist, releasesSeat } from "@/lib/waitlist";
+import { attendingHeads, promoteWaitlist, releasesSeat } from "@/lib/waitlist";
 import { newRsvpToken } from "@/lib/tokens";
 import { record } from "@/lib/activity";
 import { hasFinished } from "@/lib/outcomes";
@@ -114,7 +114,8 @@ export async function removeGuestAction(formData: FormData) {
  *
  * Someone waiting on the host (a request, or the waitlist) can bow out from
  * here, but can't let themselves in — that's the host's call, or the line's.
- * Nor can a guest who declined jump the line by changing their mind.
+ * Nor can a guest who declined jump the line by changing their mind, or
+ * bring more people than there's room for.
  */
 export async function submitRsvpAction(
   _prev: GuestFormState,
@@ -133,7 +134,9 @@ export async function submitRsvpAction(
 
   const guest = await db.guest.findUnique({
     where: { rsvpToken: token },
-    include: { event: { select: { date: true, endDate: true, durationHours: true, status: true } } },
+    include: {
+      event: { select: { date: true, endDate: true, durationHours: true, status: true, guestCount: true } },
+    },
   });
   if (!guest) return { error: "This invitation link is no longer valid." };
   // After the night the list is history: a late "yes" would count as came in
@@ -157,6 +160,22 @@ export async function submitRsvpAction(
     guest.rsvpStatus === "DECLINED" &&
     parsed.data.rsvpStatus === "ATTENDING" &&
     (await db.guest.count({ where: { eventId: guest.eventId, rsvpStatus: "WAITLISTED" } })) > 0;
+
+  // Their own seat is theirs, but the people they bring need room — capacity
+  // is people in the room. Plus-ones they already have stay once it fills.
+  const kept = guest.rsvpStatus === "ATTENDING" ? guest.plusOnes : 0;
+  if (parsed.data.rsvpStatus === "ATTENDING" && !rejoining && parsed.data.plusOnes > kept) {
+    const room = guest.event.guestCount - 1 - (await attendingHeads(db, guest.eventId, guest.id));
+    const allowed = Math.max(kept, room);
+    if (parsed.data.plusOnes > allowed) {
+      return {
+        error:
+          allowed > 0
+            ? `There’s only room for you and ${allowed} more.`
+            : "The night is full, so there’s only room for you.",
+      };
+    }
+  }
 
   await db.guest.update({
     where: { id: guest.id },

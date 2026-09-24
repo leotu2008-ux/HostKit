@@ -4,6 +4,7 @@ import { notify } from "@/lib/notify";
 import { newRsvpToken } from "@/lib/tokens";
 import { linkGuestsToContacts } from "@/lib/guest-book";
 import { hasFinished } from "@/lib/outcomes";
+import { attendingHeads } from "@/lib/waitlist";
 import type { RsvpStatus } from "@/generated/prisma/enums";
 
 /** Where an account stands with an event. Mirrors `RegistrationState` on iOS. */
@@ -33,6 +34,7 @@ export function decideRegistration(input: {
   existing: RsvpStatus | null;
   isHost: boolean;
   requiresApproval: boolean;
+  /** Heads already going, plus-ones included. */
   attending: number;
   capacity: number;
 }): "going" | "pending" | "waitlisted" | "declined" | "unchanged" {
@@ -129,9 +131,10 @@ export async function registerGuest(input: {
       (await tx.guest.findFirst({ where: { eventId: event.id, userId: viewer.id } })) ??
       (await tx.guest.findFirst({ where: { eventId: event.id, email } }));
 
-    const attending = await tx.guest.count({
-      where: { eventId: event.id, rsvpStatus: "ATTENDING" },
-    });
+    // Capacity is people in the room: the yeses so far and the people they
+    // bring. The Register button only asks for the registrant's own seat;
+    // plus-ones come from their RSVP link, which checks there's room.
+    const attending = await attendingHeads(tx, event.id);
     const decision = decideRegistration({
       existing: existing?.rsvpStatus ?? null,
       isHost,

@@ -7,7 +7,7 @@ import { canAccessEvent, getCurrentUser } from "@/lib/session";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { schoolFor } from "@/lib/schools";
 import { registrationState } from "@/lib/registration";
-import { waitlistPositionFor } from "@/lib/waitlist";
+import { attendingHeads, waitlistPositionFor } from "@/lib/waitlist";
 import { attendeesPreview, type Attendee } from "@/lib/attendees";
 import { GoingRow } from "@/components/going-row";
 import { Avatar } from "@/components/avatar";
@@ -107,9 +107,10 @@ export default async function PublicEventPage({
   const isOwner = await canAccessEvent(event, user?.id ?? null);
   if (!isPublicPageVisible(event) && !isOwner) notFound();
 
-  const [registration, preview] = await Promise.all([
+  const [registration, preview, heads] = await Promise.all([
     registrationState(event.id, user?.id ?? null),
     attendeesPreview(event.id),
+    attendingHeads(db, event.id),
   ]);
   const alreadyGoing = registration === "going";
   const waitlistPlace =
@@ -117,7 +118,9 @@ export default async function PublicEventPage({
 
   const school = schoolFor(event.schoolDomain);
   const going = event._count.guests;
-  const spotsLeft = Math.max(0, event.guestCount - going);
+  // Spots are people in the room, plus-ones included — the same count
+  // registration checks, so "Register" never quietly lands on the waitlist.
+  const spotsLeft = Math.max(0, event.guestCount - heads);
   // With a waitlist, a full night still takes registrations.
   const over = event.status === "COMPLETED" || hasFinished(event);
   const canRegister = event.published && !over && registration === "none";
