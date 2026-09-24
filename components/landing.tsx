@@ -212,7 +212,9 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
         </Rails>
       </div>
 
-      <VenueDiscovery />
+      <Rails>
+        <VenueDiscovery />
+      </Rails>
 
       {/* After the four stages, still on the page ground so the section’s
           own surface cards stay as they are. */}

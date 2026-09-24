@@ -1,0 +1,56 @@
+.section { --map-scale: 1; --map-angle: 0deg; --scan-scale: 1; --scan-opacity: .15; --lock-opacity: 1; --match-opacity: 1; --progress: 1; position: relative; border-bottom: 1px solid var(--color-line); }
+.section[data-motion="scroll"] { height: 340svh; }
+.pin { padding: 64px 0; }
+.section[data-motion="scroll"] .pin { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 80px 0 24px; }
+.heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.skip { flex-shrink: 0; margin-top: 8px; color: var(--color-ink-soft); font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
+.map { position: relative; isolation: isolate; overflow: hidden; margin-top: 28px; border: 1px solid var(--color-line); border-radius: 16px; background: #fafafa; height: clamp(340px, 49svh, 540px); flex-shrink: 1; min-height: 300px; }
+.scene { width: 100%; height: calc(100% - 80px); position: absolute; top: 24px; left: 0; }
+.world { transform-origin: 300px 300px; transform: scale(var(--map-scale)) rotate(var(--map-angle)); }
+.scan { transform-origin: 285.1px 278.2px; transform: scale(var(--scan-scale)); opacity: var(--scan-opacity); }
+.lock { opacity: var(--lock-opacity); }
+.matchRing { opacity: var(--match-opacity); }
+.mapCaption { position: absolute; top: 20px; left: 22px; z-index: 1; font-size: 10px; letter-spacing: .12em; display: flex; align-items: center; gap: 8px; }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: #141414; }
+.mapSummary { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px; border-top: 1px solid var(--color-line); background: white; }
+.result { opacity: var(--match-opacity); text-align: right; }
+.brief span, .result span { display: block; font-size: 9px; letter-spacing: .13em; color: #666; margin-bottom: 3px; }
+.brief strong, .result strong { font-size: 12px; font-weight: 500; }
+.mapNote { margin-top: 8px; color: #626262; font-size: 10px; }
+.boroughLabels { fill: #414141; font-size: 15px; font-weight: 600; letter-spacing: 1px; paint-order: stroke; stroke: #fafafa; stroke-width: 4px; stroke-linejoin: round; }
+.waterLabels { fill: #8a8a8a; font-size: 10px; letter-spacing: 1.4px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 0 12px; }
+.steps li { color: var(--color-ink-soft); font-size: 12px; display: flex; gap: 9px; align-items: baseline; }
+.steps li[data-active="true"] { color: var(--color-ink); font-weight: 600; }
+.steps span { font-size: 10px; font-variant-numeric: tabular-nums; }
+.track { height: 1px; background: var(--color-line); }
+.track div { height: 100%; background: var(--color-ink); transform: scaleX(var(--progress)); transform-origin: left; }
+.instruction { text-align: center; margin-top: 12px; font-size: 11px; color: var(--color-ink-soft); }
+.end { position: absolute; bottom: 0; scroll-margin-top: 80px; }
+@media (max-width: 640px) {
+  .section[data-motion="scroll"] .pin { padding-bottom: 84px; }
+  .heading { gap: 10px; }
+  .heading h2 { max-width: 280px; }
+  .heading p { font-size: 14px; }
+  .skip { font-size: 10px; }
+  .map { margin-top: 16px; height: 40svh; min-height: 300px; }
+  .mapCaption { top: 12px; left: 12px; font-size: 8px; }
+  .mapSummary { padding: 10px 12px; gap: 8px; }
+  .brief span, .result span { font-size: 7px; }
+  .brief strong, .result strong { font-size: 10px; }
+  .mapNote { font-size: 8px; }
+  .steps { grid-template-columns: repeat(2, 1fr); gap: 12px 8px; padding-top: 16px; }
+  .steps li { font-size: 10px; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce), (max-height: 559px) {
+  .section[data-motion] { height: auto; }
+  .section[data-motion] .pin { position: relative; height: auto; padding: 48px 0; }
+  .instruction, .skip, .track { display: none; }
+}
+@media print {
+  .section[data-motion] { height: auto; }
+  .section[data-motion] .pin { position: static; height: auto; }
+  .world { transform: none; }
+  .venue, .result, .matchRing { opacity: 1 !important; }
+  .instruction, .skip { display: none; }
+}
