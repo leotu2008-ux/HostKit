@@ -111,7 +111,7 @@ Without Storage and `AUTH_SECRET`, the GitHub Vercel check stays red.
 Sign up with a school `.edu` email and Hosty treats you as a student of that
 school (`lib/schools.ts` maps domains to names and home cities; the domain is
 trusted, not verified yet). Your events are tagged with your school
-automatically, Discover leads with **At [School]** above the city feed, and
+automatically, the app's Discover leads with **At [School]** above the city feed, and
 both apps detect your city once from your location (nearest known city, no
 geocoding service). Tagging only surfaces events — anyone nearby can register.
 Demo student: `sam@babson.edu` / `hostkit-demo`. Design notes in
@@ -126,10 +126,11 @@ school matters because of the next part.
 ### Official campus events
 
 Each school's public calendar is pulled into Hosty and shown next to
-student-hosted nights: under **At [School]** on Home and Discover, on
-`/campus` (the whole calendar by day, `?school=mit.edu` for another school),
-and in the app's Discover → See all. Official events open on the school's own
-page; nobody registers for them here.
+student-hosted nights in the iOS app: under **At [School]** on Home and
+Discover, and in Discover → See all. Official events open on the school's own
+page; nobody registers for them here. The web's `/campus` page is gone (it
+redirects home and lives on the `discover` branch); the data stays, and the
+daily sync also feeds the Guests tab's night advice.
 
 - `lib/campus/sources.ts` lists the feeds per school — the catalog covers
   the Boston schools Hosty started with plus the U.S. News top 50, and
@@ -160,13 +161,14 @@ page; nobody registers for them here.
 
 ## Your account
 
-Both apps open on **Home**: the Hosty brand, **Your events** — what you
+The iOS app opens on **Home**: the Hosty brand, **Your events** — what you
 host and what you've registered for, soonest first (`lib/mine.ts`) — quick
-actions, and a taste of what's on nearby. **Discover** (`/discover`) is the
-full feed with the city picker. The logo (and your avatar) opens the account
-menu: profile, your events, past events, settings, sign out; on phones the
-tab bar is Home · Discover · Events · Profile (creating an event is behind
-the "Create event" buttons, not a tab).
+actions, and a taste of what's on nearby. **Discover** in the app is the full
+feed with the city picker. The web is B2B: `/` is the landing page, and
+`/discover` redirects home (the page lives on the `discover` branch). On the
+web the logo (and your avatar) opens the account menu: profile, your events,
+past events, settings, sign out; on phones the tab bar is Home · Events ·
+Profile (creating an event is behind the "Create event" buttons, not a tab).
 
 - **Profile picture** and **event covers** are uploads (`lib/images.ts`):
   JPEG/PNG/WebP up to 5 MB, downscaled in the client first. They go to
@@ -191,21 +193,24 @@ the "Create event" buttons, not a tab).
 ## Clubs, requests and the Inbox
 
 - **Clubs** (`lib/clubs.ts`) are pages people follow, run by an owner and
-  admins: `/c/handle` on the web, a club page in the app. Any signed-in user
-  can start one (`/clubs/new`); a student's club is tagged with their school
-  and surfaces there. Events can be posted **as** a club from Create, the
-  club's admins run those events alongside the owner, and followers see the
-  club's events under **From clubs you follow** on Home.
+  admins: a club page in the iOS app. The web's club pages (`/c/handle`,
+  `/clubs`, `/clubs/new`) redirect home and live on the `discover` branch;
+  the data and the iOS API stay. Anyone signed in to the app can start one;
+  a student's club is tagged with their school and surfaces there. Events
+  can be posted **as** a club from Create, the club's admins run those
+  events alongside the owner, and followers see the club's events under
+  **From clubs you follow** on Home.
   - Clubs have a **kind** (Social, Professional, Sports & fitness, Arts &
-    music, Cultural, Service, Academic — `lib/club-format.ts`); `/clubs` and
-    the app's Clubs screen search every club by name and browse by kind
+    music, Cultural, Service, Academic — `lib/club-format.ts`); the app's
+    Clubs screen searches every club by name and browses by kind
     (`GET /api/v1/clubs?q=&category=` → `results`).
   - Admins post **Updates** from the club page: a short note that lands in
     every follower's Inbox (`club_update`, emailed when Resend is set up)
     and stays on the page (`ClubPost`; `POST /api/v1/clubs/:handle/updates`,
     `DELETE …/updates/:id`).
-  - The event page's **Hosted by** row has a Follow button, and a club page
-    shows past events and how many it has run.
+  - In the app, the event's **Hosted by** row has a Follow button, and a
+    club page shows past events and how many it has run. On the web,
+    `/e/:id` shows the club's name as plain text.
   - **Official clubs are real.** When a feed names the organisation behind
     each event, the campus sync keeps a Club for it (`Club.sourceRef`,
     `isOfficial`; `lib/campus/sync.ts` `syncOfficialClubs`). Three kinds of
@@ -229,9 +234,9 @@ the "Create event" buttons, not a tab).
 - **Who's going**: event pages show the first few attending account
   registrations — first name and photo — unless they've turned "Show me on
   guest lists" off in Settings (`lib/attendees.ts`).
-- **Inbox** (`lib/notify.ts`): a club you follow posts, someone asks to join
-  your event, a host confirms your spot, a spot opens for you, a host sends
-  a blast — each lands in the Inbox (bell in the header; Home on iOS), goes
+- **Inbox** (`lib/notify.ts`): a club you follow in the app posts, someone
+  asks to join your event, a host confirms your spot, a spot opens for you,
+  a host sends a blast — each lands in the Inbox (bell in the header; Home on iOS), goes
   by email for the ones worth an email when Resend is configured, and by
   **push** when `APNS_*` is set. Push needs a paid Apple developer team: add
   the Push Notifications capability and an `aps-environment` entitlement,

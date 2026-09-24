@@ -58,7 +58,6 @@ function HostedBy({
 }: {
   name: string | null;
   club: { handle: string; name: string; imageUrl: string | null } | null;
-  /** Whether the viewer follows the club — the row is where people meet it. */
   preview: { attendees: Attendee[]; total: number };
 }) {
   return (

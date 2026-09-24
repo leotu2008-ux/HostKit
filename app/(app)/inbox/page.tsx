@@ -45,7 +45,7 @@ export default async function InboxPage() {
         <div className="mt-6">
           <EmptyState
             title="Nothing yet"
-            body="When a club you follow posts, a host confirms your spot, or a spot opens up, it lands here."
+            body="When someone asks to join your event, a host confirms your spot, or a spot opens up, it lands here."
           />
         </div>
       ) : (

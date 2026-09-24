@@ -21,7 +21,7 @@ One-off hosts can still use Hosty, but no work is done for them specifically. Gu
 ## Frozen (kept working, no new work)
 
 - **iOS app** (`ios/`, `app/api/v1/*` as it serves iOS). Bug fixes only.
-- **Clubs and Discover: data and iOS API only.** Amended 2026-09-24: Hosty is B2B, so the consumer web pages are removed — `/discover`, `/campus`, club pages `/c/…`, `/clubs`, `/clubs/new`, the Discover nav tab, the landing's "See what's on", and the web-only club server actions. Their URLs redirect home (temporary). Everything removed is kept intact on the `discover` branch. What stays: club and `CampusEvent` data, club-owned events (shown by name on `/e/…`), the iOS API routes, and the daily campus-calendar sync, which feeds the Guests tab's night advice.
+- **Clubs and Discover: data and iOS API only.** Amended 2026-09-24: Hosty is B2B, so the consumer web pages are removed — `/discover`, `/campus`, club pages `/c/…`, `/clubs`, `/clubs/new`, the Discover nav tab, the landing's "See what's on", and the web-only club server actions. Their URLs redirect home (temporary). Everything removed is kept intact on the `discover` branch. What stays: club and `CampusEvent` data, club-owned events (shown by name on `/e/…`), the iOS API routes, and the daily campus-calendar sync, which feeds the Guests tab's night advice. Accepted: club links shared from the frozen iOS app (`webPath` `/c/<handle>`) now land on the home page.
 - **Anonymous draft claiming** (`/events/claim`, `claimToken`). Existing claim links keep working for anyone with access. The website stops minting new anonymous drafts.
 
 "Frozen" means no new features, copy or UI polish. Security and breakage fixes are allowed.
