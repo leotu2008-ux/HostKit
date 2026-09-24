@@ -17,9 +17,9 @@ describe("account tokens", () => {
   });
 
   it("prefers SITE_URL for links when it is set", () => {
-    process.env.SITE_URL = "https://hostkit.example/";
+    process.env.SITE_URL = "https://hosty.example/";
     try {
-      expect(siteOrigin(new Headers({ host: "evil.test" }))).toBe("https://hostkit.example");
+      expect(siteOrigin(new Headers({ host: "evil.test" }))).toBe("https://hosty.example");
     } finally {
       delete process.env.SITE_URL;
     }

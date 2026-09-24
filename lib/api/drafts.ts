@@ -4,10 +4,12 @@ import { claimMatches, type DraftClaim } from "@/lib/drafts";
  * How a signed-out phone proves it made a draft.
  *
  * The website keeps `{id, token}` pairs in a cookie; the app keeps the same
- * pairs on the device and sends them as `X-HostKit-Drafts: id.token,id.token`.
+ * pairs on the device and sends them as `X-Hosty-Drafts: id.token,id.token`.
  * Tokens are hex (see newClaimToken), so "." is a safe separator.
  */
-export const DRAFTS_HEADER = "x-hostkit-drafts";
+export const DRAFTS_HEADER = "x-hosty-drafts";
+/** The header's name before the rebrand, which the frozen iOS app still sends. */
+export const LEGACY_DRAFTS_HEADER = "x-hostkit-drafts";
 
 export function parseDraftsHeader(raw: string | null | undefined): DraftClaim[] {
   if (!raw) return [];
@@ -24,7 +26,7 @@ export function parseDraftsHeader(raw: string | null | undefined): DraftClaim[] 
 }
 
 export function requestDrafts(request: Request): DraftClaim[] {
-  return parseDraftsHeader(request.headers.get(DRAFTS_HEADER));
+  return parseDraftsHeader(request.headers.get(DRAFTS_HEADER) ?? request.headers.get(LEGACY_DRAFTS_HEADER));
 }
 
 /** True when the request carries the token for this unclaimed draft. */

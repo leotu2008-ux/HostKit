@@ -1,5 +1,8 @@
 /** Maya Chen's seeded account. Signup never creates another User. */
-export const MAYA_EMAIL = "maya@hostkit.demo";
+export const MAYA_EMAIL = "maya@hosty.demo";
+/** Her address before the rebrand; the seed renames it, and a database that
+ *  hasn't been reseeded yet still counts. */
+export const LEGACY_MAYA_EMAIL = "maya@hostkit.demo";
 
 /**
  * Whether this is Maya Chen. The email is the seeded account;
@@ -9,7 +12,7 @@ export const MAYA_EMAIL = "maya@hostkit.demo";
 export function isMayaChen(user: { email: string; name: string }): boolean {
   const email = user.email.trim().toLowerCase();
   const name = user.name.trim().toLowerCase().replace(/\s+/g, " ");
-  return email === MAYA_EMAIL || name === "maya chen";
+  return email === MAYA_EMAIL || email === LEGACY_MAYA_EMAIL || name === "maya chen";
 }
 
 /** The Hosty administrator. Seeded from HOSTY_ADMIN_PASSWORD (prisma/seed.ts);

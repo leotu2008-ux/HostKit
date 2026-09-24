@@ -1,4 +1,4 @@
-# HostKit design system (publishing layer)
+# Hosty design system (publishing layer)
 
 Warm, editorial, premium — **good stationery**, not a project-management tool and not a neon event-startup. Tokens below extend `app/globals.css`. Display type is **Fraunces** (optical size + a little `SOFT` / `WONK`); UI type is **Inter**.
 
@@ -150,7 +150,7 @@ Header meta uppercase 12px. Rows 56–64px, hover sunk. Sticky first column on m
 | Not going | danger |
 | Checked in | forest + small “door” meta |
 
-## Theme catalog (original HostKit names)
+## Theme catalog (original Hosty names)
 
 Forty-two themes in five families. Families echo *categories* commonly documented on event platforms (quiet, celebration, marks, weave, season) without copying another product’s theme names or artwork.
 
@@ -219,7 +219,7 @@ Hosts may override **accent only**; emails always pick up that accent.
 
 ## Mobile app shell
 
-HostKit is a **phone app** first. Tokens above still apply; these rules are extra.
+Hosty is a **phone app** first. Tokens above still apply; these rules are extra.
 
 | Token | Value | Use |
 | --- | --- | --- |
@@ -242,7 +242,7 @@ Live luma.com screenshots (see `RESEARCH_NOTES.md`):
 - Discover: compact nav, pastel wash, **thumb + date + venue** list (not a card collage).  
 - Public event: **cream** ground, **left square cover + host/tags**, **right serif title + when/where + brown Register**.
 
-HostKit does none of the marketing look. We reuse the public-page *column split* and Discover *list rhythm* with paper/clay/Fraunces. Jazz Night public sample is **Midnight Garden** (night, clay CTA) so it does not read as a cream clone.
+Hosty does none of the marketing look. We reuse the public-page *column split* and Discover *list rhythm* with paper/clay/Fraunces. Jazz Night public sample is **Midnight Garden** (night, clay CTA) so it does not read as a cream clone.
 
 ## Do / don’t
 

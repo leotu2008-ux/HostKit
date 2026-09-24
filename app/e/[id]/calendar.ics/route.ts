@@ -26,7 +26,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   return new Response(body, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="hostkit-${event.id}.ics"`,
+      "Content-Disposition": `attachment; filename="hosty-${event.id}.ics"`,
       "Cache-Control": "no-store",
     },
   });

@@ -31,7 +31,7 @@ export function cursorMcpConfig(url: string, token = "YOUR_TOKEN"): string {
   return JSON.stringify(
     {
       mcpServers: {
-        hostkit: {
+        hosty: {
           url,
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -47,7 +47,7 @@ export function claudeMcpConfig(url: string, token = "YOUR_TOKEN"): string {
   return JSON.stringify(
     {
       mcpServers: {
-        hostkit: {
+        hosty: {
           type: "http",
           url,
           headers: { Authorization: `Bearer ${token}` },

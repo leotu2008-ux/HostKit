@@ -18,6 +18,6 @@ describe("shouldPlaySplash", () => {
 
 describe("SPLASH_STORAGE_KEY", () => {
   it("is a stable sessionStorage key", () => {
-    expect(SPLASH_STORAGE_KEY).toBe("hostkit-splash-seen");
+    expect(SPLASH_STORAGE_KEY).toBe("hosty-splash-seen");
   });
 });

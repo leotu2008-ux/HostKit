@@ -7,7 +7,7 @@ import { RateLimitError, clientIp } from "@/lib/rate-limit";
 const include = eventInclude;
 
 /** The request body is the image itself, with its Content-Type. Works for
- *  drafts on a signed-out device too (X-HostKit-Drafts). */
+ *  drafts on a signed-out device too (X-Hosty-Drafts). */
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const viewer = await apiUser(request);

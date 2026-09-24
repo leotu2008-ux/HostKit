@@ -115,7 +115,7 @@ Requires Node 20.19+ and PostgreSQL 16.
 ```bash
 npm install
 
-createdb hostkit            # any Postgres will do
+createdb hosty            # any Postgres will do
 cp .env.example .env        # then set DATABASE_URL and AUTH_SECRET
 npm run db:migrate          # apply migrations
 npm run db:seed             # the catalog, demo events and demo accounts
@@ -132,7 +132,7 @@ addresses (`192.168.*.*`, `10.*.*.*`, `172.*.*.*`) are listed in
 `allowedDevOrigins` in `next.config.ts`. `next dev` refuses to serve its
 scripts to any other hostname.
 
-**Demo login, local and CI only:** `maya@hostkit.demo` / `hostkit-demo`.
+**Demo login, local and CI only:** `maya@hosty.demo` / `hosty-demo`.
 The repo is public, so hosted builds never use that password
 (`lib/demo-login.ts`). Preview and production share one database, so there
 a demo account gets `DEMO_PASSWORD` if it's set and an unknowable random

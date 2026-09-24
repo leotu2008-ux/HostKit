@@ -23,9 +23,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: hostkit
-          POSTGRES_PASSWORD: hostkit
-          POSTGRES_DB: hostkit
+          POSTGRES_USER: hosty
+          POSTGRES_PASSWORD: hosty
+          POSTGRES_DB: hosty
         ports:
           - 5432:5432
         options: >-
@@ -35,7 +35,7 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://hostkit:hostkit@127.0.0.1:5432/hostkit?schema=public
+      DATABASE_URL: postgresql://hosty:hosty@127.0.0.1:5432/hosty?schema=public
       # Never a real secret: this database and this runner live for one job.
       AUTH_SECRET: ci-only-not-a-real-secret-ci-only-not-real
       AUTH_TRUST_HOST: "true"

@@ -145,7 +145,7 @@ export default async function McpPage() {
           Contributors can still start the same tools over stdio, against any Hosty origin:
         </p>
         <pre className="mt-4 overflow-x-auto rounded-xl bg-sunk p-4 text-[13px] leading-relaxed text-ink">
-          <code>{`HOSTKIT_URL=https://tryhosty.app HOSTKIT_TOKEN=... npm run mcp`}</code>
+          <code>{`HOSTY_URL=https://tryhosty.app HOSTY_TOKEN=... npm run mcp`}</code>
         </pre>
         <p className="mt-3 text-[13px] text-ink-mute">
           That needs the repo. The address above does not.

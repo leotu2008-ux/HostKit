@@ -31,7 +31,7 @@ So: whatever the token's owner can see, the agent can see. Nothing more. That in
 ### Get a token
 
 ```bash
-curl -X POST "$HOSTKIT_URL/api/v1/auth/token" \
+curl -X POST "$HOSTY_URL/api/v1/auth/token" \
   -H 'content-type: application/json' \
   -d '{"email":"you@school.edu","password":"..."}'
 ```
@@ -41,8 +41,8 @@ Tokens expire, and a password reset invalidates every one issued before it. A re
 ### Run it over stdio
 
 ```bash
-HOSTKIT_URL=https://tryhosty.app \
-HOSTKIT_TOKEN=... \
+HOSTY_URL=https://tryhosty.app \
+HOSTY_TOKEN=... \
 npm run mcp
 ```
 
@@ -51,13 +51,13 @@ npm run mcp
 ```json
 {
   "mcpServers": {
-    "hostkit": {
+    "hosty": {
       "command": "npx",
       "args": ["tsx", "scripts/mcp-server.ts"],
       "cwd": "/path/to/Hosty",
       "env": {
-        "HOSTKIT_URL": "https://tryhosty.app",
-        "HOSTKIT_TOKEN": "..."
+        "HOSTY_URL": "https://tryhosty.app",
+        "HOSTY_TOKEN": "..."
       }
     }
   }
@@ -106,7 +106,7 @@ Example environment value (replace every placeholder):
 
 ```dotenv
 MCP_PUBLIC_ORIGIN=https://tryhosty.app
-MCP_CLIENTS_JSON='[{"id":"hostkit-claude","name":"Claude","secret":"REPLACE_WITH_A_RANDOM_SECRET_AT_LEAST_32_CHARACTERS","redirectUris":["https://REPLACE_WITH_EXACT_CLAUDE_CALLBACK"]},{"id":"hostkit-chatgpt","name":"ChatGPT","secret":"REPLACE_WITH_ANOTHER_RANDOM_SECRET_AT_LEAST_32_CHARS","redirectUris":["https://REPLACE_WITH_EXACT_CHATGPT_CALLBACK"]}]'
+MCP_CLIENTS_JSON='[{"id":"hosty-claude","name":"Claude","secret":"REPLACE_WITH_A_RANDOM_SECRET_AT_LEAST_32_CHARACTERS","redirectUris":["https://REPLACE_WITH_EXACT_CLAUDE_CALLBACK"]},{"id":"hosty-chatgpt","name":"ChatGPT","secret":"REPLACE_WITH_ANOTHER_RANDOM_SECRET_AT_LEAST_32_CHARS","redirectUris":["https://REPLACE_WITH_EXACT_CHATGPT_CALLBACK"]}]'
 ```
 
 Public clients can omit `secret`; PKCE is still mandatory. This release uses pre-registered clients, not dynamic client registration or Client ID Metadata Documents. The connecting app must support manually supplied OAuth client credentials.

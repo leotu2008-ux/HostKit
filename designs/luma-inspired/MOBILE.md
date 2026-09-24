@@ -1,10 +1,10 @@
-# HostKit mobile app — screen specs (canonical)
+# Hosty mobile app — screen specs (canonical)
 
 **Product target is a phone app**, not a desktop-first web dashboard. Implement in **Expo / React Native** or a **mobile PWA**. Logical frame for every screen in this file: **390 × 844** (iPhone 14-class). Touch targets ≥ 44px. The Next.js demo in this repo is a planning prototype; these frames are the shipping UI.
 
 Desktop HTML in `mockups/*.html` (without the `mobile-` prefix) is a **tablet / host-companion** reference only.
 
-Inspired by public Luma event UX *patterns*. Branding is HostKit (paper, clay, Fraunces). Not affiliated with Luma.
+Inspired by public Luma event UX *patterns*. Branding is Hosty (paper, clay, Fraunces). Not affiliated with Luma.
 
 Prototype banner sits **outside** the phone in HTML mocks so it doesn’t eat the 844px.
 
@@ -17,7 +17,7 @@ Four tabs, paper bar, 1px `line` on top, 64px content + 20px home-indicator safe
 ```
 ┌────────────── 390 × 844 ──────────────┐
 │ 9:41                             ●●●  │  44 status
-│ HostKit                      MC       │  52 header
+│ Hosty                      MC       │  52 header
 │                                       │
 │              (screen)                 │
 │                                       │
@@ -45,7 +45,7 @@ HTML: `mobile-discover.html`, `mobile-event.html`, `mobile-create.html`, `mobile
 ```
 ┌────────────── 390 × 844 ──────────────┐
 │ 9:41                             ●●●  │
-│ HostKit                      MC       │
+│ Hosty                      MC       │
 │                                       │
 │ Overline  YOUR NIGHTS                 │
 │ Display   What are you                │
@@ -106,7 +106,7 @@ Two modes, one route. Host lands on **Manage**. **Guest view** is a toggle (and 
 └───────────────────────────────────────┘
 ```
 
-Coverage stays on this screen (HostKit). Do not bury under More.
+Coverage stays on this screen (Hosty). Do not bury under More.
 
 ### Guest view (no host tabs)
 
@@ -133,7 +133,7 @@ Single column. Preview is a **compact card at the top**, not a side rail. Sticky
 │ Cover   [illustration]                │
 │ Where   The Lantern Roof              │
 │ Body    (textarea)                    │
-│ HOSTKIT PLAN                          │
+│ HOSTY PLAN                          │
 │ Type Party · 90 guests · Oakland      │
 │ Budget $18,000                        │
 │ Theme   Midnight Garden swatches      │

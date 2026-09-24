@@ -1,6 +1,6 @@
-# Research notes (public Luma UX → HostKit)
+# Research notes (public Luma UX → Hosty)
 
-Reference only. **HostKit is not affiliated with Luma.** Do not copy logos (`luma+` or otherwise), trademarks, event photography, sponsor marks, theme artwork, or pixel-perfect layouts. Translate *jobs-to-be-done* into HostKit’s paper / clay / Fraunces system (`DESIGN_SYSTEM.md`).
+Reference only. **Hosty is not affiliated with Luma.** Do not copy logos (`luma+` or otherwise), trademarks, event photography, sponsor marks, theme artwork, or pixel-perfect layouts. Translate *jobs-to-be-done* into Hosty’s paper / clay / Fraunces system (`DESIGN_SYSTEM.md`).
 
 Live screenshots used for this note (homepage hero, public event page, Discover list) are **visual reference only**. They must not be committed to this repo, redrawn 1:1, or used as mock artwork.
 
@@ -17,18 +17,18 @@ Sources:
 
 Hosts set, in roughly this order:
 
-| Field | HostKit translation |
+| Field | Hosty translation |
 | --- | --- |
 | Title | Event title (Fraunces on the public page) |
-| Date / time / timezone | Same; HostKit also seeds the planning timeline from the date |
+| Date / time / timezone | Same; Hosty also seeds the planning timeline from the date |
 | Type: in-person / online / hybrid | Format chips |
-| Cover image | HostKit CSS/illustration placeholders; hosts upload later |
+| Cover image | Hosty CSS/illustration placeholders; hosts upload later |
 | Location or meeting link | Required by format |
 | Rich description | Public body |
-| Theme picker (40+; families often documented as Minimal / festive / pictorial / pattern / seasonal) | **Original HostKit catalog** of 42 names in Quiet / Celebration / Marks / Weave / Season — see `DESIGN_SYSTEM.md` |
+| Theme picker (40+; families often documented as Minimal / festive / pictorial / pattern / seasonal) | **Original Hosty catalog** of 42 names in Quiet / Celebration / Marks / Weave / Season — see `DESIGN_SYSTEM.md` |
 | Calendar selection | Host calendars (“The Lantern Sessions”) |
 | Visibility: public / private / member-only | Public / Unlisted / Calendar members |
-| Registration: approval, capacity, waitlist | Same policies + HostKit headcount rule |
+| Registration: approval, capacity, waitlist | Same policies + Hosty headcount rule |
 
 ### Manage dashboard tabs
 
@@ -48,13 +48,13 @@ Page views, live traffic, top referrers, cities, sources (UTM), referrals, atten
 
 ### Themes
 
-Light and dark presentations; a **custom accent** that should carry into email CTAs. HostKit default accent is clay; Midnight Garden lifts clay slightly on night grounds.
+Light and dark presentations; a **custom accent** that should carry into email CTAs. Hosty default accent is clay; Midnight Garden lifts clay slightly on night grounds.
 
 ---
 
 ## 2. Live-site visual DNA (from attached screenshots)
 
-Observed as *competitor notes*. HostKit must not ship this look.
+Observed as *competitor notes*. Hosty must not ship this look.
 
 ### Homepage hero
 
@@ -68,7 +68,7 @@ What the frame actually shows:
 - **Floating rounded-square tiles** of event art, some overlapping, some slightly rotated, around the type (workshop flyers, food, code, portraits).  
 - Feels like a consumer marketplace splash, not stationery.
 
-**HostKit instead:** paper ground, Fraunces headline with a *flat* clay word (never a gradient fill on type), clay pill CTA, 16:9 cards in a stack/grid — **no collage of flying photos**.
+**Hosty instead:** paper ground, Fraunces headline with a *flat* clay word (never a gradient fill on type), clay pill CTA, 16:9 cards in a stack/grid — **no collage of flying photos**.
 
 ### Discover list
 
@@ -81,13 +81,13 @@ What the frame actually shows:
 - **Two-column dense list**: ~72px rounded-square thumbnail | date/time (gray) / title (black sans) / venue (gray).  
 - This particular shot does **not** include the category-icon tiles or Follow-calendar cards mentioned in the written DNA; those remain help-center / other-page notes, not this frame.
 
-**HostKit instead:** Nights tab shows **your** nights as large paper cards, then “Happening nearby” as a compact **thumb + date + place** list (CSS thumbs, HostKit event-type chips — Party / Concert / Dinner — not colorful line-icon taxonomies, no Follow marketplace).
+**Hosty instead:** Nights tab shows **your** nights as large paper cards, then “Happening nearby” as a compact **thumb + date + place** list (CSS thumbs, Hosty event-type chips — Party / Concert / Dinner — not colorful line-icon taxonomies, no Follow marketplace).
 
 ### Public event page
 
 What the frame actually shows:
 
-- **Warm cream** ground (closer to HostKit `paper` than the homepage white).  
+- **Warm cream** ground (closer to Hosty `paper` than the homepage white).  
 - Same compact nav.  
 - **Two columns:**  
   - **Left:** large **rounded-square cover**; under it “Hosted By” (avatar + calendar name + social); Contact / Report; **hash tags** as pills.  
@@ -95,14 +95,14 @@ What the frame actually shows:
 - Geometric sans for nav/UI; serif for the event title only.  
 - Soft gray secondary text; lots of whitespace.
 
-**HostKit instead (same skeleton, different skin):**
+**Hosty instead (same skeleton, different skin):**
 
-| Live luma.com | HostKit |
+| Live luma.com | Hosty |
 | --- | --- |
 | Cream default public page | Themeable. Jazz Night sample = **Midnight Garden** (night) so we do not ship a cream clone. Daytime events may use Paper Quiet. |
 | Brown Register | Clay (`#c4502e` / lifted `#e06a45` on night) |
 | Left cover + right title/register | **Reuse this column split** on tablet (`public-event.html`) |
-| Hash tags | HostKit tags without a forced `#` prefix |
+| Hash tags | Hosty tags without a forced `#` prefix |
 | Sponsor/photography on the cover | CSS illustration only in mocks |
 
 Patterns we **do** reuse: serif title, two-column register, labeled when/where, host block, tags, sticky Register on phone.

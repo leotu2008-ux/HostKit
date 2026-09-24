@@ -115,7 +115,7 @@ export async function handleMcpRequest(
   try {
     access = await resolveAccess(request, options.authenticate ?? authenticateMcpRequest, oauth);
   } catch (error) {
-    console.error("hostkit mcp auth failed", error);
+    console.error("hosty mcp auth failed", error);
     return mcpError(500, "Hosty could not check that token.", oauth);
   }
 
@@ -157,7 +157,7 @@ export async function handleMcpRequest(
     const response = await transport.handleRequest(request);
     return withCors(response);
   } catch (error) {
-    console.error("hostkit mcp request failed", error);
+    console.error("hosty mcp request failed", error);
     return mcpError(500, "Hosty MCP could not answer that request.", oauth);
   } finally {
     await server.close().catch(() => undefined);
@@ -215,7 +215,7 @@ async function handleOAuthRequest(
       headers.set("Retry-After", "60");
       return new Response("Too many requests", { status: 429, headers });
     }
-    console.error("hostkit mcp rate limit failed", error);
+    console.error("hosty mcp rate limit failed", error);
     return mcpError(500, "Hosty MCP could not answer that request.", oauth);
   }
 
@@ -234,7 +234,7 @@ async function handleOAuthRequest(
     response.headers.set("Cache-Control", "no-store");
     return withCors(response);
   } catch (error) {
-    console.error("hostkit mcp request failed", error);
+    console.error("hosty mcp request failed", error);
     return mcpError(500, "Hosty MCP could not answer that request.", oauth);
   } finally {
     await server.close().catch(() => undefined);

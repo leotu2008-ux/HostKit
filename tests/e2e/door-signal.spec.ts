@@ -27,8 +27,8 @@ async function skipLaunchSplash(page: Page) {
 async function signInAsMaya(page: Page) {
   await skipLaunchSplash(page);
   await page.goto("/signin");
-  await page.fill('input[name="email"]', "maya@hostkit.demo");
-  await page.fill('input[name="password"]', "hostkit-demo");
+  await page.fill('input[name="email"]', "maya@hosty.demo");
+  await page.fill('input[name="password"]', "hosty-demo");
   await page.click('button[type="submit"]');
   await page.waitForURL((url) => url.pathname === "/events");
 }
