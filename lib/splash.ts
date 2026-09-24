@@ -1,5 +1,5 @@
 /** sessionStorage flag so the launch splash plays once per tab session. */
-export const SPLASH_STORAGE_KEY = "hostkit-splash-seen";
+export const SPLASH_STORAGE_KEY = "hosty-splash-seen";
 
 /**
  * Whether this visit should play the pop-in / hold / fade out splash.

@@ -2,9 +2,9 @@
 
 **Canonical phone frames live in [MOBILE.md](./MOBILE.md)** (390 × 844, bottom tabs). This file is the **wide layout** of the same product — useful for iPad or a future host companion. Do not implement the phone app from these wireframes.
 
-Layouts are HostKit; flows follow publicly documented event-platform patterns (create fields, manage tabs, guest filters, insights). Sample event: **Rooftop Jazz Night**.
+Layouts are Hosty; flows follow publicly documented event-platform patterns (create fields, manage tabs, guest filters, insights). Sample event: **Rooftop Jazz Night**.
 
-Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit · sample data · not production`.
+Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — Hosty · sample data · not production`.
 
 ---
 
@@ -15,7 +15,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [PROTO]                                                     │
-│ HostKit          Discover    [Sign in]  [Plan an event]     │
+│ Hosty          Discover    [Sign in]  [Plan an event]     │
 ├─────────────────────────────────────────────────────────────┤
 │ Overline: Your nights                                       │
 │ Display: What are you hosting next?          [Create event] │
@@ -37,17 +37,17 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 
 **Mobile (canonical).** See `MOBILE.md` — cards stack, bottom tabs, Create is the clay circle tab. Do not use a sticky bottom CTA that fights the tab bar.
 
-**Live-site note (structure only).** luma.com Discover uses a compact nav, a dense “popular” list (thumb + date + place), category tiles with icons/counts, and followable calendars. HostKit’s host-home should **not** copy those icons or the Follow marketplace pattern. Optional later: a compact “Happening nearby” *list* variant under the card grid, using HostKit event types (Party, Concert, Dinner…) as text chips, not colorful line-icon tiles.
+**Live-site note (structure only).** luma.com Discover uses a compact nav, a dense “popular” list (thumb + date + place), category tiles with icons/counts, and followable calendars. Hosty’s host-home should **not** copy those icons or the Follow marketplace pattern. Optional later: a compact “Happening nearby” *list* variant under the card grid, using Hosty event types (Party, Concert, Dinner…) as text chips, not colorful line-icon tiles.
 
 ---
 
 ## 2. Create event
 
-**Goal.** Publish a public (or unlisted) night *and* seed HostKit’s plan (type, headcount, city, budget).
+**Goal.** Publish a public (or unlisted) night *and* seed Hosty’s plan (type, headcount, city, budget).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ HostKit     Creating event              [Save draft][Publish]│
+│ Hosty     Creating event              [Save draft][Publish]│
 ├───────────────────────────────┬─────────────────────────────┤
 │ Title  [Rooftop Jazz Night  ] │ Sticky preview (public card)│
 │                               │ ┌─────────────────────────┐ │
@@ -65,7 +65,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 │                               │                             │
 │ Description  rich text        │                             │
 │                               │                             │
-│ HostKit plan                  │                             │
+│ Hosty plan                  │                             │
 │ Type chips · Headcount · City │                             │
 │ Budget $                      │                             │
 │                               │                             │
@@ -76,7 +76,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 └───────────────────────────────┴─────────────────────────────┘
 ```
 
-**Validation.** Title + start time required to Publish. Location required if In person. Meeting link required if Online. Budget is optional but recommended (HostKit copy: “used to price venues against this night”).
+**Validation.** Title + start time required to Publish. Location required if In person. Meeting link required if Online. Budget is optional but recommended (Hosty copy: “used to price venues against this night”).
 
 **Primary vs secondary.** Publish = clay. Draft = secondary.
 
@@ -99,7 +99,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 └───────────────────────────────┴─────────────────────────────┘
 ```
 
-**Live-site note (structure only).** luma.com places cover + host on the **left** and serif title + when/where + Register + about on the **right**. HostKit reuses that split with Midnight Garden + clay — not cream + brown.
+**Live-site note (structure only).** luma.com places cover + host on the **left** and serif title + when/where + Register + about on the **right**. Hosty reuses that split with Midnight Garden + clay — not cream + brown.
 
 **Theme.** Midnight Garden: `night` ground, clay register button, Fraunces title in `night-ink`.
 
@@ -127,14 +127,14 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 │  · 14 on page now                     90 cap · waitlist on  │
 │                                       approval: 4 waiting   │
 │                                                             │
-│ What this event still needs (HostKit) Next up (tasks)       │
+│ What this event still needs (Hosty) Next up (tasks)       │
 │  Venue Booked · Catering Waiting…     timeline excerpts     │
 │                                                             │
 │ Recent activity (regs, declines, views)                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**HostKit-specific.** The coverage grid from today’s overview stays on this tab. Do not hide it under More.
+**Hosty-specific.** The coverage grid from today’s overview stays on this tab. Do not hide it under More.
 
 **Empty.** Event just created: stats at 0, empty activity, coverage all “Needed”, CTA Scout listings.
 
@@ -172,7 +172,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 
 ## 6. Registration / tickets
 
-**Goal.** Policy for how people join, without implying HostKit processes payments yet.
+**Goal.** Policy for how people join, without implying Hosty processes payments yet.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -188,7 +188,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Copy.** Paid tile: “HostKit tracks money; it doesn’t collect it yet.”
+**Copy.** Paid tile: “Hosty tracks money; it doesn’t collect it yet.”
 
 ---
 
@@ -202,7 +202,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 │ Subject [Doors at 7:15]    │ From: Maya · Rooftop Jazz      │
 │ Body rich text             │ heading Fraunces               │
 │ CTA label [Add to calendar]│ [clay button]                  │
-│                            │ footer HostKit demo            │
+│                            │ footer Hosty demo            │
 │ [Copy blast] [Download .eml]                                │
 └────────────────────────────┴────────────────────────────────┘
 ```
@@ -243,7 +243,7 @@ Prototype rule: every mock shows a top banner — `DESIGN PROTOTYPE — HostKit 
 
 ```
 ┌──────────────────────────────┐
-│ HostKit · Jazz Night         │
+│ Hosty · Jazz Night         │
 │ 12 checked in · 86 going     │
 │ ┌──────────────────────────┐ │
 │ │                          │ │

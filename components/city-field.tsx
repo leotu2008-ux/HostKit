@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { detectCity, isScoutedCity, suggestCities, type UsCity } from "@/lib/cities";
-import { CITY_COOKIE } from "@/lib/city-cookie";
+import { CITY_COOKIE, LEGACY_CITY_COOKIE } from "@/lib/city-cookie";
 import { Badge, Input, cx } from "@/components/ui";
 
 /**
@@ -41,7 +41,7 @@ function PinIcon() {
 /** Whether a previous prompt was already refused — the cookie
  *  components/city-detector.tsx writes when Discover's own ask is denied. */
 function locationRefused(): boolean {
-  return document.cookie.includes(`${CITY_COOKIE}=none`);
+  return document.cookie.includes(`${CITY_COOKIE}=none`) || document.cookie.includes(`${LEGACY_CITY_COOKIE}=none`);
 }
 
 export function CityField({ name, defaultValue }: { name: string; defaultValue?: string }) {

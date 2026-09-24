@@ -12,7 +12,7 @@ async function main() {
   if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
     throw new Error("Use an isolated loopback test database");
   }
-  process.env.MCP_PUBLIC_ORIGIN = "https://hostkit.example";
+  process.env.MCP_PUBLIC_ORIGIN = "https://hosty.example";
   process.env.MCP_CLIENTS_JSON = JSON.stringify([
     { id: "test", name: "Test", redirectUris: ["https://client.example/callback"] },
   ]);
@@ -35,7 +35,7 @@ async function main() {
       data: { ownerId: users[1], title: "Private MCP event", city: "Boston, MA" },
     });
     const verifier = "v".repeat(43);
-    const resource = "https://hostkit.example/api/mcp";
+    const resource = "https://hosty.example/api/mcp";
     const code = await createAuthorizationCode({
       userId: users[0],
       sessionVersion: 0,

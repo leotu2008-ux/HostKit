@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
-const KEY = "hostkit.schoolPromptDismissed";
+const KEY = "hosty.schoolPromptDismissed";
+/** The key before the rebrand, still honoured so a dismissed prompt stays dismissed. */
+const LEGACY_KEY = "hostkit.schoolPromptDismissed";
 
 const noop = () => () => {};
 function readDismissed(): boolean {
   try {
-    return localStorage.getItem(KEY) === "1";
+    return localStorage.getItem(KEY) === "1" || localStorage.getItem(LEGACY_KEY) === "1";
   } catch {
     return false;
   }

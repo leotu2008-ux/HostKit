@@ -228,7 +228,7 @@ describe("the install page's addresses", () => {
   });
 
   it("keeps serving bearer tools when the OAuth connector is also configured", async () => {
-    vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hostkit.example");
+    vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hosty.example");
     vi.stubEnv(
       "MCP_CLIENTS_JSON",
       JSON.stringify([{ id: "claude", name: "Claude", redirectUris: ["https://client.example/callback"] }]),
@@ -242,7 +242,7 @@ describe("the install page's addresses", () => {
   });
 
   it("serves bearer tools for an API token while OAuth is configured", async () => {
-    vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hostkit.example");
+    vi.stubEnv("MCP_PUBLIC_ORIGIN", "https://hosty.example");
     vi.stubEnv("MCP_CLIENTS_JSON", "[]");
     process.env.AUTH_SECRET = "test-secret-for-mcp";
     const token = issueToken("user_9", 3);
@@ -262,7 +262,7 @@ describe("the install page's addresses", () => {
     expect(originFromHeaders(new Headers({ host: "localhost:3000" }))).toBe("http://localhost:3000");
     expect(originFromHeaders(new Headers({ host: "tryhosty.app" }))).toBe("https://tryhosty.app");
     expect(
-      originFromHeaders(new Headers({ "x-forwarded-host": "host-kit.vercel.app", "x-forwarded-proto": "https" })),
-    ).toBe("https://host-kit.vercel.app");
+      originFromHeaders(new Headers({ "x-forwarded-host": "hosty.vercel.app", "x-forwarded-proto": "https" })),
+    ).toBe("https://hosty.vercel.app");
   });
 });

@@ -77,7 +77,7 @@ export function LaunchSplash() {
       aria-hidden="true"
     >
       <Image
-        src="/brand/HostKit_Logo.png"
+        src="/brand/Hosty_Logo.png"
         alt=""
         width={1024}
         height={1024}

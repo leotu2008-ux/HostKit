@@ -7,8 +7,8 @@ import type {
   ListingCategory,
   PriceUnit,
 } from "../generated/prisma/enums";
-import { ADMIN_EMAIL } from "../lib/access";
-import { PUBLIC_DEMO_PASSWORD, demoPassword } from "../lib/demo-login";
+import { ADMIN_EMAIL, LEGACY_MAYA_EMAIL, MAYA_EMAIL } from "../lib/access";
+import { PUBLIC_DEMO_PASSWORD, PUBLIC_DEMO_PASSWORDS, demoPassword } from "../lib/demo-login";
 import { generatePlan } from "../lib/plan";
 
 /**
@@ -199,7 +199,18 @@ async function seedCatalog() {
   for (const row of byKind) console.log(`  ${row.kind}: ${row._count}`);
 }
 
-const DEMO_EMAIL = "maya@hostkit.demo";
+const DEMO_EMAIL = MAYA_EMAIL;
+
+/** The rebrand renamed Maya's address. Move an existing account to it, so her
+ *  events stay hers and the steps below find her; never overwrite a row that
+ *  already has the new address. */
+async function renameLegacyDemoEmail(): Promise<void> {
+  const legacy = await db.user.findUnique({ where: { email: LEGACY_MAYA_EMAIL }, select: { id: true } });
+  if (!legacy) return;
+  if (await db.user.findUnique({ where: { email: DEMO_EMAIL }, select: { id: true } })) return;
+  await db.user.update({ where: { id: legacy.id }, data: { email: DEMO_EMAIL } });
+  console.log(`Renamed ${LEGACY_MAYA_EMAIL} to ${DEMO_EMAIL}.`);
+}
 
 /**
  * Confirms a demo account that was seeded before seeded accounts were born
@@ -282,25 +293,37 @@ async function demoPasswordHash(): Promise<string> {
  */
 async function applyDemoPassword(email: string): Promise<void> {
   const password = demoPassword(process.env);
-  if (password === PUBLIC_DEMO_PASSWORD) return;
   const user = await db.user.findUnique({ where: { email }, select: { id: true, passwordHash: true } });
   if (!user?.passwordHash) return;
-  const stale = password
-    ? !(await bcrypt.compare(password, user.passwordHash))
-    : await bcrypt.compare(PUBLIC_DEMO_PASSWORD, user.passwordHash);
+  const hash = user.passwordHash;
+  const matchesAnyPublic = async (list: readonly string[]) => {
+    for (const candidate of list) if (await bcrypt.compare(candidate, hash)) return true;
+    return false;
+  };
+  // Locally the public password is the point (the e2e specs sign in with
+  // it), but an account seeded before the rebrand still has the old one.
+  const stale =
+    password === PUBLIC_DEMO_PASSWORD
+      ? await matchesAnyPublic(PUBLIC_DEMO_PASSWORDS.filter((p) => p !== PUBLIC_DEMO_PASSWORD))
+      : password
+        ? !(await bcrypt.compare(password, hash))
+        : await matchesAnyPublic(PUBLIC_DEMO_PASSWORDS);
   if (!stale) return;
   await db.user.update({
     where: { id: user.id },
     data: { passwordHash: await demoPasswordHash(), sessionVersion: { increment: 1 } },
   });
   console.log(
-    password
+    password === PUBLIC_DEMO_PASSWORD
+      ? `Moved ${email} to the current local demo password.`
+      : password
       ? `Set ${email}'s password from DEMO_PASSWORD; its sessions end.`
       : `Locked the public demo password on ${email}; its sessions end.`,
   );
 }
 
 async function seedDemoNights() {
+  await renameLegacyDemoEmail();
   await confirmDemoAccount(DEMO_EMAIL);
   await applyDemoPassword(DEMO_EMAIL);
   const existing = await db.user.findUnique({ where: { email: DEMO_EMAIL } });

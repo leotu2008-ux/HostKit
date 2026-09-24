@@ -1,4 +1,4 @@
-// HostKit — event planning, end-to-end.
+// Hosty — event planning, end-to-end.
 // Money is ALWAYS stored as integer cents. Never floats. See lib/money.ts.
 
 generator client {
@@ -157,7 +157,7 @@ model Notification {
 }
 
 /// An APNs device token. Registered by the iOS app only when its push
-/// entitlement is on (Info.plist HostKitPushEnabled).
+/// entitlement is on (Info.plist HostyPushEnabled).
 model PushToken {
   id         String   @id @default(cuid())
   userId     String
@@ -260,7 +260,7 @@ enum CollaboratorSource {
 // The event being planned. Everything else hangs off this.
 // ---------------------------------------------------------------------------
 
-/// HostKit is for student, professional and fun events — no weddings or
+/// Hosty is for student, professional and fun events — no weddings or
 /// family occasions.
 enum EventType {
   BIRTHDAY

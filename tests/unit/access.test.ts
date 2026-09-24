@@ -3,8 +3,8 @@ import { hasDashboardAccess, isMayaChen } from "@/lib/access";
 
 describe("dashboard access", () => {
   it("lets Maya Chen in", () => {
-    expect(isMayaChen({ email: "maya@hostkit.demo", name: "Maya Chen" })).toBe(true);
-    expect(isMayaChen({ email: "Maya@HostKit.demo", name: "Someone" })).toBe(true);
+    expect(isMayaChen({ email: "maya@hosty.demo", name: "Maya Chen" })).toBe(true);
+    expect(isMayaChen({ email: "Maya@Hosty.demo", name: "Someone" })).toBe(true);
     expect(isMayaChen({ email: "maya@tryhosty.app", name: "Maya Chen" })).toBe(true);
   });
 
@@ -16,7 +16,7 @@ describe("dashboard access", () => {
   it("lets the Hosty admin in alongside Maya", () => {
     expect(hasDashboardAccess({ email: "leowomc@gmail.com", name: "Hosty", approvedAt: null })).toBe(true);
     expect(hasDashboardAccess({ email: " LeoWoMC@Gmail.com ", name: "Anyone", approvedAt: null })).toBe(true);
-    expect(hasDashboardAccess({ email: "maya@hostkit.demo", name: "Maya Chen", approvedAt: null })).toBe(true);
+    expect(hasDashboardAccess({ email: "maya@hosty.demo", name: "Maya Chen", approvedAt: null })).toBe(true);
   });
 
   it("does not let a lookalike admin address in", () => {

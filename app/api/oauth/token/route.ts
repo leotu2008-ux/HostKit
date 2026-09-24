@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         { status: 429, headers: { ...headers, "Retry-After": "60" } },
       );
     }
-    console.error("hostkit oauth token failed", error);
+    console.error("hosty oauth token failed", error);
     return Response.json({ error: "server_error" }, { status: 500, headers });
   }
 }

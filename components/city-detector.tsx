@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { nearestCity } from "@/lib/catalog";
-import { CITY_COOKIE } from "@/lib/city-cookie";
+import { CITY_COOKIE, LEGACY_CITY_COOKIE } from "@/lib/city-cookie";
 
 /**
  * Asks the browser where it is, once, and remembers the nearest known city
@@ -14,7 +14,9 @@ export function CityDetector() {
   const router = useRouter();
 
   useEffect(() => {
-    if (document.cookie.includes(`${CITY_COOKIE}=`) || !navigator.geolocation) return;
+    const answered =
+      document.cookie.includes(`${CITY_COOKIE}=`) || document.cookie.includes(`${LEGACY_CITY_COOKIE}=`);
+    if (answered || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const city = nearestCity(pos.coords.latitude, pos.coords.longitude) ?? "none";

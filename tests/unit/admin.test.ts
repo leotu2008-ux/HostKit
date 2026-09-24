@@ -19,7 +19,7 @@ import { AccountError } from "@/lib/account";
 import { approveWaitlistEntryAction, deleteEventAsAdminAction } from "@/lib/actions/admin";
 
 const ADMIN = { id: "u-admin", email: "leowomc@gmail.com", name: "Leo" };
-const MAYA = { id: "u-maya", email: "maya@hostkit.demo", name: "Maya Chen" };
+const MAYA = { id: "u-maya", email: "maya@hosty.demo", name: "Maya Chen" };
 
 function form(eventId: string) {
   const data = new FormData();
@@ -31,7 +31,7 @@ describe("isAdmin", () => {
   it("is only the administrator's exact address", () => {
     expect(isAdmin({ email: "leowomc@gmail.com" })).toBe(true);
     expect(isAdmin({ email: " LeoWomc@Gmail.com " })).toBe(true);
-    expect(isAdmin({ email: "maya@hostkit.demo" })).toBe(false);
+    expect(isAdmin({ email: "maya@hosty.demo" })).toBe(false);
     expect(isAdmin({ email: "leowomc@gmail.com.evil.com" })).toBe(false);
   });
 });

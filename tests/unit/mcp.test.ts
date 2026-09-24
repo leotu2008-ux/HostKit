@@ -29,7 +29,7 @@ import { authenticateMcp, exchangeToken, hashToken, verifyPkce } from "@/lib/mcp
 import { createOAuthMcpServer, eventAccess } from "@/lib/mcp/oauth-tools";
 import { POST } from "@/app/api/mcp/route";
 
-const origin = "https://hostkit.example";
+const origin = "https://hosty.example";
 const verifier = "x".repeat(43);
 const code = "c".repeat(43);
 const challenge = createHash("sha256").update(verifier).digest("base64url");

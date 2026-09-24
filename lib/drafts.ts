@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
 
-export const DRAFT_COOKIE = "hostkit-drafts";
+export const DRAFT_COOKIE = "hosty-drafts";
+/** The cookie's name before the rebrand. Still read, so no one loses a draft;
+ *  the next write moves its claims to DRAFT_COOKIE and drops it. */
+export const LEGACY_DRAFT_COOKIE = "hostkit-drafts";
 
 export type DraftClaim = { id: string; token: string };
 
@@ -28,16 +31,26 @@ export function newClaimToken(): string {
   return randomBytes(18).toString("hex");
 }
 
+type Jar = { get(name: string): { value: string } | undefined; delete(name: string): unknown };
+
+/** Claims from the current cookie, then any the old cookie still holds. */
+function claimsIn(jar: Jar): DraftClaim[] {
+  const current = parseClaims(jar.get(DRAFT_COOKIE)?.value);
+  const legacy = parseClaims(jar.get(LEGACY_DRAFT_COOKIE)?.value).filter(
+    (row) => !current.some((c) => c.id === row.id),
+  );
+  return [...current, ...legacy].slice(0, 20);
+}
+
 export async function readDraftClaims(): Promise<DraftClaim[]> {
-  return parseClaims((await cookies()).get(DRAFT_COOKIE)?.value);
+  return claimsIn(await cookies());
 }
 
 export async function rememberDraftClaim(claim: DraftClaim) {
   const jar = await cookies();
-  const existing = parseClaims(jar.get(DRAFT_COOKIE)?.value).filter(
-    (row) => row.id !== claim.id,
-  );
+  const existing = claimsIn(jar).filter((row) => row.id !== claim.id);
   existing.unshift(claim);
+  jar.delete(LEGACY_DRAFT_COOKIE);
   jar.set(DRAFT_COOKIE, JSON.stringify(existing.slice(0, 20)), {
     path: "/",
     maxAge: 60 * 60 * 24 * 90,
@@ -48,9 +61,8 @@ export async function rememberDraftClaim(claim: DraftClaim) {
 
 export async function forgetDraftClaim(eventId: string) {
   const jar = await cookies();
-  const next = parseClaims(jar.get(DRAFT_COOKIE)?.value).filter(
-    (row) => row.id !== eventId,
-  );
+  const next = claimsIn(jar).filter((row) => row.id !== eventId);
+  jar.delete(LEGACY_DRAFT_COOKIE);
   if (next.length === 0) {
     jar.delete(DRAFT_COOKIE);
     return;
@@ -64,7 +76,9 @@ export async function forgetDraftClaim(eventId: string) {
 }
 
 export async function clearDraftClaims() {
-  (await cookies()).delete(DRAFT_COOKIE);
+  const jar = await cookies();
+  jar.delete(DRAFT_COOKIE);
+  jar.delete(LEGACY_DRAFT_COOKIE);
 }
 
 export function claimMatches(

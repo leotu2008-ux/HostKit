@@ -19,7 +19,9 @@ import { shouldShowTabBar } from "@/components/tab-bar";
  * without an effect.
  */
 
-const DISMISSED_KEY = "hostkit.install-prompt.dismissed";
+const DISMISSED_KEY = "hosty.install-prompt.dismissed";
+/** The key before the rebrand, still honoured so a dismissed prompt stays dismissed. */
+const LEGACY_DISMISSED_KEY = "hostkit.install-prompt.dismissed";
 
 /** Nothing here changes after page load, so there is nothing to subscribe to. */
 function subscribe() {
@@ -36,7 +38,9 @@ function readEligibility(): boolean {
 
   let dismissed = false;
   try {
-    dismissed = window.localStorage.getItem(DISMISSED_KEY) === "1";
+    dismissed =
+      window.localStorage.getItem(DISMISSED_KEY) === "1" ||
+      window.localStorage.getItem(LEGACY_DISMISSED_KEY) === "1";
   } catch {
     // Private browsing can throw on storage access; treat as not dismissed.
   }

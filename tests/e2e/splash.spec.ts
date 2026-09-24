@@ -16,7 +16,7 @@ test("plays the launch splash once, then reveals the landing page", async ({
   await expect(splash).toBeVisible();
   await expect(splash.locator("img.launch-splash-logo")).toHaveAttribute(
     "src",
-    /HostKit_Logo/,
+    /Hosty_Logo/,
   );
 
   const timings = await splash.evaluate((el) => {
