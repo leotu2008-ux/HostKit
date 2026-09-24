@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { draftToDate, formatTime, suggestRunSheet } from "@/lib/runsheet";
+import { arrivalClock, draftToDate, formatTime, suggestRunSheet } from "@/lib/runsheet";
 import { ALL_EVENT_TYPES } from "@/lib/catalog";
 
 const party = { type: "BIRTHDAY" as const, durationHours: 6 };
@@ -96,5 +96,22 @@ describe("draftToDate", () => {
   it("ignores any time already on the event date", () => {
     const noon = new Date("2026-10-23T12:34:56");
     expect(formatTime(draftToDate(noon, 15, 0))).toBe("3:00 PM");
+  });
+});
+
+describe("arrivalClock", () => {
+  it("starts the sheet at the time the host saved", () => {
+    const start = new Date("2026-10-23T19:30:00");
+    expect(arrivalClock(start, "PITCH_NIGHT")).toEqual({ hour: 19, minute: 30 });
+    const { hour, minute } = arrivalClock(start, "PITCH_NIGHT");
+    expect(formatTime(draftToDate(start, hour, 0, minute))).toBe("7:30 PM");
+    expect(formatTime(draftToDate(start, hour, -60, minute))).toBe("6:30 PM");
+  });
+
+  it("falls back to the usual hour for this kind of night when only a date was given", () => {
+    // A date saved without a time is stored as noon (parseStart).
+    const dateOnly = new Date("2026-10-23T12:00:00");
+    expect(arrivalClock(dateOnly, "PITCH_NIGHT")).toEqual({ hour: 18, minute: 0 });
+    expect(arrivalClock(dateOnly, "CORPORATE_OFFSITE")).toEqual({ hour: 9, minute: 0 });
   });
 });

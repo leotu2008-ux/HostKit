@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { EventType } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
-import { defaultStartHour, draftToDate, suggestRunSheet } from "@/lib/runsheet";
+import { arrivalClock, draftToDate, suggestRunSheet } from "@/lib/runsheet";
 import { removableRunSheetRowWhere, runSheetRowsToReplace } from "@/lib/replan";
 
 export type RunSheetFormState = { error?: string } | undefined;
@@ -38,7 +38,7 @@ async function redraftRunSheet(event: {
       name: i.listing.name,
     })),
   );
-  const startHour = defaultStartHour(event.type);
+  const { hour, minute } = arrivalClock(event.date, event.type);
 
   await db.$transaction(async (tx) => {
     // Re-checks source against current state rather than trusting the
@@ -47,7 +47,7 @@ async function redraftRunSheet(event: {
     await tx.runSheetItem.createMany({
       data: drafts.map((draft) => ({
         eventId: event.id,
-        startsAt: draftToDate(event.date, startHour, draft.offsetMinutes),
+        startsAt: draftToDate(event.date, hour, draft.offsetMinutes, minute),
         title: draft.title,
         owner: draft.owner,
         notes: draft.notes,

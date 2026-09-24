@@ -62,10 +62,14 @@ export function formatEventWhen(
   const day = formatEventDate(date);
   if (!day) return `${length} · date TBD`;
   const time = formatEventTime(date);
-  const hasClock =
-    date != null && (date.getHours() !== 12 || date.getMinutes() !== 0);
-  if (hasClock && time) return `${day} · ${time} · ${length}`;
+  if (date != null && hasClock(date) && time) return `${day} · ${time} · ${length}`;
   return `${day} · ${length}`;
+}
+
+/** Whether the host gave a start time, not just a date: a date saved without
+ *  one is stored as noon (see `parseStart`). */
+export function hasClock(date: Date): boolean {
+  return date.getHours() !== 12 || date.getMinutes() !== 0;
 }
 
 /** Combines a `yyyy-mm-dd` date and an optional `HH:MM` time into one Date,
