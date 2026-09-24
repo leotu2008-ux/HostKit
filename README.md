@@ -196,6 +196,7 @@ tab's "what else is on that night" advice.
 
 Email covers waitlist invites, password resets, blasts and vendor outreach.
 Without a transport, production refuses to pretend an email went out.
+The target design is [docs/email-system-plan.md](docs/email-system-plan.md).
 `docs/backend.md` maps the whole backend: data, images, accounts, and which
 keys turn on what.
 
