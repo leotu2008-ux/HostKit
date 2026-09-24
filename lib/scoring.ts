@@ -65,7 +65,8 @@ export function priceForEvent(
   switch (listing.priceUnit) {
     case "HOUR":
       return {
-        cents: listing.priceCents * event.durationHours,
+        // Durations are quarter hours, so round back to whole cents.
+        cents: Math.round(listing.priceCents * event.durationHours),
         basis: formatDurationLong(event.durationHours),
       };
     case "PERSON":
