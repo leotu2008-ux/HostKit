@@ -74,7 +74,7 @@ export function TabBar() {
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-paper/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid" style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}>
         {TABS.map((tab) => {
           const active = tabActive(pathname, tab.match);
           const Icon = tab.icon;

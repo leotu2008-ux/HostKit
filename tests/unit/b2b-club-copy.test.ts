@@ -31,12 +31,12 @@ const CLUB = { id: "c1", name: "Chess Club" };
 describe("club updates on the B2B web", () => {
   beforeEach(() => mocks.notify.mockClear());
 
-  it("tells followers the whole short update without sending them to a club page", async () => {
+  it("puts a short update wholly in the title, with no body repeating it", async () => {
     await postClubUpdate(CLUB, "u-author", "Doors at 7.");
     expect(mocks.notify).toHaveBeenCalledWith(["u-sam"], {
       kind: "club_update",
       title: "Chess Club: Doors at 7.",
-      body: "Doors at 7.",
+      body: "",
       clubId: "c1",
     });
   });

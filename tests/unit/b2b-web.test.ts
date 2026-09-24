@@ -32,4 +32,11 @@ describe("the consumer web pages are gone", () => {
       expect(html).toContain('href="/events"');
     }
   });
+
+  it("gives the phone tab bar one column per tab", () => {
+    const html = renderToStaticMarkup(createElement(TabBar));
+    const columns = Number(html.match(/grid-template-columns:repeat\((\d+), minmax\(0, 1fr\)\)/)?.[1]);
+    expect(columns).toBe(html.match(/<li/g)?.length);
+    expect(columns).toBe(3);
+  });
 });
