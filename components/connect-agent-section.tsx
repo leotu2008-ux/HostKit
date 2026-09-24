@@ -13,7 +13,7 @@ const READS = ["Events", "Briefs", "Guests", "Venues"] as const;
  */
 export function ConnectAgentSection() {
   return (
-    <section className="py-16 md:py-24">
+    <section id="connect-agent" className="py-16 md:py-24">
       <p className="font-event text-[12px] tracking-[0.14em] text-ink-mute uppercase">
         Claude, ChatGPT and Cursor
       </p>
