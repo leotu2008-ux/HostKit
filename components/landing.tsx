@@ -7,6 +7,7 @@ import { Eyebrow } from "@/components/eyebrow";
 import { GlitchText } from "@/components/glitch-text";
 import { LandingPreview } from "@/components/landing-preview";
 import { HostyMark } from "@/components/hosty-mark";
+import { HeroHeadline } from "@/components/hero-headline";
 import { Reveal } from "@/components/reveal";
 import { ButtonLink } from "@/components/ui";
 
@@ -141,33 +142,10 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             Meet Hosty, an agent for the whole event
           </p>
 
-          <h1
+          <HeroHeadline
             className="rise mt-7 text-[42px] leading-[1.08] text-ink md:text-[68px]"
             style={stagger(1)}
-          >
-            <GlitchText as="span" className="font-hero text-[#182038]">
-              Plan the event.
-            </GlitchText>
-            <br />
-            <GlitchText as="span" className="font-display tracking-[-0.03em] text-black">
-              Let the agent do
-            </GlitchText>
-            <span className="font-display tracking-[-0.03em]"> </span>
-            {/* Hosty pops out of "work." He's pinned to "the work." — kept whole
-                so a phone wraps before it, not inside it — rather than to the
-                line, so he stays beside the word wherever the headline breaks.
-                (GlitchText is an inline-block, so a split mid-phrase would
-                strand "work." on a line of its own.) */}
-            <span className="relative inline-block">
-              <GlitchText as="span" className="font-display tracking-[-0.03em] text-black">
-                the work.
-              </GlitchText>
-              <HostyMark
-                filled
-                className="hosty-pop pointer-events-none absolute -top-[0.06em] -right-[0.94em] h-[0.86em] w-[0.86em] text-ink"
-              />
-            </span>
-          </h1>
+          />
 
           <p
             className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]"

@@ -467,6 +467,45 @@ html[data-splash="played"] .rise {
   }
 }
 
+/* Headline wave (components/wave-text.tsx): hovering a line lifts its
+   letters one after another, then lets them settle. Words stay whole. */
+.wave-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.wave-ch {
+  display: inline-block;
+  transition: translate 0.55s var(--landing-ease);
+  transition-delay: calc(var(--n, 0) * 28ms);
+}
+
+.wave-line:hover .wave-ch {
+  translate: 0 -0.12em;
+}
+
+/* Hosty in characters (components/hosty-glyphs.tsx): the outline and the
+   character canvas cross-fade while the headline is hovered. */
+.hosty-glyphs > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.45s var(--landing-ease);
+}
+
+.hosty-glyphs-canvas {
+  opacity: 0;
+}
+
+.hosty-glyphs[data-active] .hosty-glyphs-canvas {
+  opacity: 1;
+}
+
+.hosty-glyphs[data-active] .hosty-glyphs-outline {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-splash="pending"] .launch-splash,
   .launch-splash {
@@ -482,6 +521,18 @@ html[data-splash="played"] .rise {
   .preview-caret,
   .preview-dots span {
     animation: none !important;
+  }
+
+  .wave-line:hover .wave-ch {
+    translate: none !important;
+  }
+
+  .hosty-glyphs[data-active] .hosty-glyphs-canvas {
+    opacity: 0 !important;
+  }
+
+  .hosty-glyphs[data-active] .hosty-glyphs-outline {
+    opacity: 1 !important;
   }
 
   .reveal[data-reveal="pending"],
