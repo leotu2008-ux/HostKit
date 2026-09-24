@@ -292,7 +292,7 @@ async function attemptRun(eventId: string, options: RunOptions): Promise<RunOutc
   const planStep = byName.get("plan");
   if (planStep) {
     const result = await runStep(eventId, planStep, deadline, () =>
-      applyDraftedPlan(event, { fetchImpl: options.fetchImpl }),
+      applyDraftedPlan(event, { deadline, fetchImpl: options.fetchImpl }),
     );
     results.push(result);
     if (result.ok) {

@@ -4,7 +4,7 @@ One remote endpoint, `POST /api/mcp`, accepts two credentials. They are not inte
 
 | Credential | Who uses it | Tools |
 | --- | --- | --- |
-| API bearer from `POST /api/v1/auth/token` | Cursor, Claude Desktop with a header, `npm run mcp` | `list_events`, `get_event`, `list_guests`, `campus_events`, `discover_events` |
+| API bearer from `POST /api/v1/auth/token` | Cursor, Claude Desktop with a header, `npm run mcp` | `list_events`, `get_event`, `list_guests` |
 | OAuth access token from `POST /api/oauth/token` | Claude and ChatGPT custom connectors | `list_events`, `get_event_brief`, `search_venues` |
 
 An OAuth access token is 43 characters of base64url. The server looks that shape up as an `McpGrant` first. Anything else, including the dotted API bearer, is the existing Hosty token check. A missing or rejected credential is HTTP 401. With `MCP_PUBLIC_ORIGIN` unset, OAuth is off and the bearer path is unchanged.
@@ -20,7 +20,7 @@ POST https://tryhosty.app/api/mcp
 Authorization: Bearer <token from POST /api/v1/auth/token>
 ```
 
-Streamable HTTP, stateless, JSON responses. The same five tools run, still read-only, still scoped to that token, still by calling `/api/v1` rather than the database. `npm run mcp` remains for contributors who want stdio.
+Streamable HTTP, stateless, JSON responses. The same three tools run, still read-only, still scoped to that token, still by calling `/api/v1` rather than the database. `npm run mcp` remains for contributors who want stdio.
 
 ### Why the bearer path is a client, not a second door
 
@@ -68,11 +68,9 @@ npm run mcp
 
 | tool | what it answers |
 |---|---|
-| `list_events` | Every event you host, soonest first. Start here for an id. |
+| `list_events` | Every night you host, by date, oldest first, undated last; compare dates to today to find what's next. Start here for an id. |
 | `get_event` | One event in full: when, where, capacity, published or not. |
 | `list_guests` | The list, each person's RSVP and whether they came through the door, plus a summary. |
-| `campus_events` | What a school's own calendars have on. |
-| `discover_events` | Public upcoming events, filterable by city or search. |
 
 `list_guests` is the interesting one. The RSVP and the check-in are separate facts. This tool is not offered to OAuth clients.
 

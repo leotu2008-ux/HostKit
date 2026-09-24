@@ -69,9 +69,10 @@ const KNOWN_EVENT_TYPES = Object.keys(EVENT_TEMPLATES) as EventType[];
 
 function systemPrompt(): string {
   return [
-    "You draft a first-pass event plan for Hosty, a platform students use to plan campus events.",
+    "You draft a first-pass event plan for Hosty, a tool recurring event hosts use to plan each night.",
     `Event types Hosty already knows: ${KNOWN_EVENT_TYPES.join(", ")}.`,
     "Return JSON only, matching the schema you are given. Propose a task list and a set of budget category weights — plain relative numbers, not dollar amounts. The caller converts your weights into an exact dollar split, so they do not need to sum to 1.",
+    "Keep it short: at most 12 tasks, notes under 200 characters.",
     `Choose "category" only from: ${CATEGORY_VALUES.join(", ")}. Leave it out for a task that isn't tied to one category.`,
     "Never invent a budget figure, a date, a guest count or a vendor name — those are given to you as facts. Each task's \"at\" is its position in the planning runway: 1 is the day planning starts, 0 is the day of the event.",
   ].join("\n");
@@ -94,6 +95,13 @@ function userPrompt(input: DraftPlanInput, horizonDays: number): string {
     `Planning runway: ${horizonDays} days`,
   ].join("\n");
 }
+
+/** Longer than askOr's 12s default: a full plan takes longer than that to
+ *  write, and an answer cut off early is a fallback. The plan runs in the
+ *  agent, whose routes allow 60s, not on a page render — but the cron sweep
+ *  shares one 60s limit across several runs, so a caller with less time left
+ *  than this passes a smaller budgetMs. */
+const PLAN_TIMEOUT_MS = 30_000;
 
 /** Never used: when askOr falls back, draftPlan discards this value and
  *  calls generatePlan directly instead of routing a manufactured answer back
@@ -153,6 +161,9 @@ export type DraftPlanInput = PlanInput & {
 
 export type DraftPlanOptions = {
   now?: Date;
+  /** How long the model may take, when the caller has less than
+   *  PLAN_TIMEOUT_MS left. Never raises the wait above it. */
+  budgetMs?: number;
   /** Injectable for tests; forwarded to askOr, defaults to global fetch. */
   fetchImpl?: typeof fetch;
 };
@@ -169,6 +180,7 @@ export async function draftPlan(
       system: systemPrompt(),
       prompt: userPrompt(input, horizonDays),
       schema: draftSchema,
+      timeoutMs: Math.min(options.budgetMs ?? PLAN_TIMEOUT_MS, PLAN_TIMEOUT_MS),
       fetchImpl: options.fetchImpl,
     },
     unusedFallback,

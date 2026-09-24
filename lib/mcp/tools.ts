@@ -76,25 +76,7 @@ export const listGuestsSchema = z.object({
   eventId: z.string().min(1).describe("The event's id."),
 });
 
-export const campusSchema = z.object({
-  school: z
-    .string()
-    .min(1)
-    .optional()
-    .describe("A school's email domain, e.g. babson.edu. Defaults to the signed-in student's own."),
-});
-
-export const discoverSchema = z.object({
-  city: z.string().optional().describe("Filter to a city, e.g. \"Boston, MA\"."),
-  q: z.string().optional().describe("Search titles, hosts and places."),
-});
-
-export type ToolName =
-  | "list_events"
-  | "get_event"
-  | "list_guests"
-  | "campus_events"
-  | "discover_events";
+export type ToolName = "list_events" | "get_event" | "list_guests";
 
 export type ToolSpec = {
   name: ToolName;
@@ -111,7 +93,7 @@ export const TOOLS: ToolSpec[] = [
     name: "list_events",
     title: "List the events you host",
     description:
-      "Every event this account hosts or helps run, soonest first, with dates, cities, capacity and how many have said yes. Start here to find an event's id.",
+      "Every night this account hosts or helps run, by date, oldest first, undated last, with dates, cities, capacity and how many have said yes. Compare dates to today to find what's next. Start here to find an event's id.",
     schema: listEventsSchema,
     readOnly: true,
     run: (ctx) => apiGet(ctx, "/api/v1/events"),
@@ -134,24 +116,6 @@ export const TOOLS: ToolSpec[] = [
     readOnly: true,
     run: (ctx, args) =>
       apiGet(ctx, `/api/v1/events/${encodeURIComponent(String(args.eventId))}/guests`),
-  },
-  {
-    name: "campus_events",
-    title: "What is on at a school",
-    description:
-      "Official campus events from a school's own calendars, soonest first. Useful for seeing what a night is already up against before choosing one.",
-    schema: campusSchema,
-    readOnly: true,
-    run: (ctx, args) => apiGet(ctx, `/api/v1/campus${query({ school: args.school as string })}`),
-  },
-  {
-    name: "discover_events",
-    title: "Find public events",
-    description: "Public, upcoming events across Hosty, optionally filtered by city or search term.",
-    schema: discoverSchema,
-    readOnly: true,
-    run: (ctx, args) =>
-      apiGet(ctx, `/api/v1/discover${query({ city: args.city as string, q: args.q as string })}`),
   },
 ];
 

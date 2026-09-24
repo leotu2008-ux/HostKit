@@ -3,11 +3,11 @@ import { HostyApiError, TOOLS, type ToolContext } from "./tools";
 
 const INSTRUCTIONS =
   "Read-only access to the Hosty account that issued the bearer token. " +
-  "You can list and inspect events, guest lists, campus calendars and public discovery. " +
+  "You can list and inspect the events you host and their guest lists. " +
   "You cannot publish, message guests, check anyone in, or change an event.";
 
 /**
- * The same five tools the stdio server exposes, bound to one account's token.
+ * The same three tools the stdio server exposes, bound to one account's token.
  * Both transports call this so a tool cannot exist on one and not the other.
  */
 export function createHostyMcpServer(ctx: ToolContext): McpServer {

@@ -25,9 +25,13 @@ export type PlanStepEvent = {
   budgetTotalCents: number;
 };
 
+/** Kept back from the run's deadline for the writes after the model answers,
+ *  so a slow model falls back to the template instead of outlasting the run. */
+const PLAN_WRITE_MARGIN_MS = 3_000;
+
 export async function applyDraftedPlan(
   event: PlanStepEvent,
-  options: { fetchImpl?: typeof fetch } = {},
+  options: { deadline: number; fetchImpl?: typeof fetch },
 ): Promise<ActivityLine> {
   const input = {
     type: event.type,
@@ -43,7 +47,7 @@ export async function applyDraftedPlan(
       guestCount: event.guestCount,
       kind: event.kind,
     },
-    { fetchImpl: options.fetchImpl },
+    { budgetMs: options.deadline - Date.now() - PLAN_WRITE_MARGIN_MS, fetchImpl: options.fetchImpl },
   );
 
   const { tasks, categories } = await regenerateTasksAndCategories(event.id, input, {

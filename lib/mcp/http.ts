@@ -19,8 +19,8 @@ import { RateLimitError, assertRateLimit } from "@/lib/rate-limit";
  *   get_event_brief, search_venues).
  * - Every other bearer is the Hosty API token from POST /api/v1/auth/token.
  *   Those contain a dot, so they are not looked up as grants. They see
- *   list_events, get_event, list_guests, campus_events, and discover_events,
- *   still by calling /api/v1 with that same token.
+ *   list_events, get_event, and list_guests, still by calling /api/v1 with
+ *   that same token.
  *
  * OAuth is optional. With MCP_PUBLIC_ORIGIN unset, only the bearer path
  * runs — that is what the Connect an agent page configures for Cursor.

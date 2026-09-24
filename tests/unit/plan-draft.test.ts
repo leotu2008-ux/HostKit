@@ -196,6 +196,85 @@ describe("draftPlan — the host's own words for the event", () => {
   });
 });
 
+/** A fetch that answers only after `delayMs`, and gives up the way real fetch
+ *  does when askOr's timer aborts it first. */
+function answersAfter(delayMs: number, text: string): typeof fetch {
+  return ((_url: string, init: RequestInit) =>
+    new Promise<Response>((resolve, reject) => {
+      const timer = setTimeout(
+        () =>
+          resolve(
+            new Response(JSON.stringify({ content: [{ type: "text", text }] }), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }),
+          ),
+        delayMs,
+      );
+      init.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(new DOMException("The operation was aborted.", "AbortError"));
+      });
+    })) as unknown as typeof fetch;
+}
+
+describe("draftPlan — how long it waits for the model", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps a plan that takes longer than the 12s default to write", async () => {
+    vi.useFakeTimers({ now: NOW });
+    const pending = draftPlan(input, {
+      now: NOW,
+      fetchImpl: answersAfter(20_000, JSON.stringify(goodDraft)),
+    });
+    await vi.advanceTimersByTimeAsync(20_000);
+    const { source } = await pending;
+    expect(source).toBe("model");
+  });
+
+  it("gives up at 30s and falls back to the template, even with more budget left", async () => {
+    vi.useFakeTimers({ now: NOW });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const pending = draftPlan(input, {
+      now: NOW,
+      budgetMs: 45_000,
+      fetchImpl: answersAfter(31_000, JSON.stringify(goodDraft)),
+    });
+    await vi.advanceTimersByTimeAsync(30_000);
+    const { plan, source } = await pending;
+    expect(source).toBe("fallback");
+    expect(plan).toEqual(generatePlan(input, NOW));
+  });
+
+  it("gives up when the caller's budget runs out, before 30s", async () => {
+    vi.useFakeTimers({ now: NOW });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const pending = draftPlan(input, {
+      now: NOW,
+      budgetMs: 8_000,
+      fetchImpl: answersAfter(9_000, JSON.stringify(goodDraft)),
+    });
+    await vi.advanceTimersByTimeAsync(8_000);
+    const { plan, source } = await pending;
+    expect(source).toBe("fallback");
+    expect(plan).toEqual(generatePlan(input, NOW));
+  });
+});
+
+describe("draftPlan — what the model is told", () => {
+  it("frames Hosty for recurring hosts and asks for a short plan", async () => {
+    const { fetchImpl, bodies } = capturing(JSON.stringify(goodDraft));
+    await draftPlan(input, { now: NOW, fetchImpl });
+    const { system } = JSON.parse(bodies[0]) as { system: string };
+    expect(system).toContain("recurring event hosts");
+    expect(system).not.toMatch(/students|campus/);
+    expect(system).toContain("at most 12 tasks");
+    expect(system).toContain("notes under 200 characters");
+  });
+});
+
 describe("draftPlan — being switched off", () => {
   it("falls back without a key, and says so", async () => {
     delete process.env.ANTHROPIC_API_KEY;
