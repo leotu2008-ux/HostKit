@@ -14,7 +14,7 @@ export const MAP_FOCUS = { x: 586.4, y: 322.0 } as const;
  * just far enough to read the district, still close enough that the streets
  * stay visible.
  */
-export const MAP_CAMERA = { block: 2.8, neighborhood: 1.4 } as const;
+export const MAP_CAMERA = { block: 6.2, neighborhood: 1.48 } as const;
 
 export const SCAN_BAND = { from: 178.5, to: 522.6 } as const;
 

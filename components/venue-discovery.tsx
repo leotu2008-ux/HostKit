@@ -61,13 +61,17 @@ export function VenueDiscovery() {
     const section = sectionRef.current;
     if (!section) return;
 
+    // The tall track is what gives the zoom room. Set it before measuring.
+    // Otherwise the section is only as tall as the frame, progress stays on
+    // the finished neighborhood shot, and the block view never appears.
+    section.setAttribute("data-motion", "on");
     setMotion(true);
     let frame = 0;
     const update = () => {
       frame = 0;
       const total = section.offsetHeight - window.innerHeight;
       const top = section.getBoundingClientRect().top;
-      const next = total <= 0 ? SETTLED : Math.min(1, Math.max(0, -top / total));
+      const next = total <= 0 ? 0 : Math.min(1, Math.max(0, -top / total));
       setProgress(next);
     };
     const onScroll = () => {
@@ -96,6 +100,7 @@ export function VenueDiscovery() {
       className="venue-discovery"
       data-motion={motion ? "on" : undefined}
       data-phase={phase}
+      data-scale={camera.scale.toFixed(2)}
       aria-labelledby="venue-discovery-title"
     >
       <div className="venue-discovery-pin mx-auto flex w-full max-w-6xl flex-col border-x border-line px-5 py-8 md:px-10 md:py-12">
@@ -294,11 +299,13 @@ export function VenueDiscovery() {
                   {label.text}
                 </text>
               ))}
-              {NEIGHBORHOOD_LABELS.map((label) => (
-                <text key={label.text} className="venue-area" x={label.x} y={label.y}>
-                  {label.text}
-                </text>
-              ))}
+              {camera.scale < 3.2
+                ? NEIGHBORHOOD_LABELS.map((label) => (
+                    <text key={label.text} className="venue-area" x={label.x} y={label.y}>
+                      {label.text}
+                    </text>
+                  ))
+                : null}
 
               <g transform={`translate(${MAP_FOCUS.x} ${MAP_FOCUS.y})`}>
                 <circle r="28" fill="none" stroke="#1d4ed8" strokeOpacity="0.28" strokeWidth="1.4" />

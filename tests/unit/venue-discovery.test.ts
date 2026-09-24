@@ -34,16 +34,19 @@ describe("downtown venue map camera", () => {
       expect(camera.y).toBeGreaterThan(0);
       expect(camera.y).toBeLessThan(MAP_VIEW.height);
     }
-    // After the zoom-out, the camera holds the neighborhood.
-    expect(discoveryCamera(0.5).scale).toBe(MAP_CAMERA.neighborhood);
+    // Most of the scroll is the zoom-out. Halfway is still pulling back.
+    expect(discoveryCamera(0.5).scale).toBeGreaterThan(MAP_CAMERA.neighborhood);
+    expect(discoveryCamera(0.5).scale).toBeLessThan(MAP_CAMERA.block);
+    expect(discoveryCamera(0.8).scale).toBe(MAP_CAMERA.neighborhood);
   });
 
   it("marks the example rooms only after the scan", () => {
     expect(venueVisibility(0.2, 0)).toBe(0);
+    expect(venueVisibility(0.7, 0)).toBe(0);
     expect(venueVisibility(1, 0)).toBe(1);
     expect(venueVisibility(1, 3)).toBe(1);
-    expect(venueVisibility(0.55, 0)).toBeGreaterThan(0);
-    expect(venueVisibility(0.55, 3)).toBe(0);
+    expect(venueVisibility(0.82, 0)).toBeGreaterThan(0);
+    expect(venueVisibility(0.82, 3)).toBe(0);
   });
 });
 
