@@ -2,11 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { nightlyTurnout, type NightTurnout } from "@/lib/guest-book";
 import { Card } from "@/components/ui";
 
 const WHEN = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-/** Every night in one series, newest first, with how many came. Owner only. */
+function turnoutLine(t: NightTurnout | undefined): string | null {
+  return t ? `${t.came} came · ${t.fresh} new` : null;
+}
+
+/**
+ * Every night in one series, newest first. A night that happened shows how
+ * many came and how many were new to the host; one ahead shows who's going.
+ * Owner only.
+ */
 export default async function SeriesPage({ params }: PageProps<"/series/[id]">) {
   const { id } = await params;
   const user = await requireUser(`/series/${id}`);
@@ -19,13 +28,13 @@ export default async function SeriesPage({ params }: PageProps<"/series/[id]">) 
           id: true,
           title: true,
           date: true,
-          outcome: { select: { checkedIn: true } },
           _count: { select: { guests: { where: { rsvpStatus: "ATTENDING" } } } },
         },
       },
     },
   });
   if (!series) notFound();
+  const turnout = await nightlyTurnout(user.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:py-10">
@@ -41,8 +50,8 @@ export default async function SeriesPage({ params }: PageProps<"/series/[id]">) 
               <span className="block truncate font-medium text-ink">{e.title}</span>
               <span className="block text-[13px] text-ink-mute">{e.date ? WHEN.format(e.date) : "No date yet"}</span>
             </span>
-            <span className="text-[13px] text-ink-soft">
-              {e.outcome ? `${e.outcome.checkedIn} came` : `${e._count.guests} going`}
+            <span className="shrink-0 text-[13px] text-ink-soft">
+              {turnoutLine(turnout.get(e.id)) ?? `${e._count.guests} going`}
             </span>
           </Link>
         ))}

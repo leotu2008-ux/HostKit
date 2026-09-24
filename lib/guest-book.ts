@@ -1,3 +1,4 @@
+import type { RsvpStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { newRsvpToken } from "@/lib/tokens";
 
@@ -132,6 +133,52 @@ export async function guestBookFor(ownerId: string, eventId: string, now = new D
     .sort(
       (a, b) => Number(b.missedOut) - Number(a.missedOut) || b.came - a.came || a.name.localeCompare(b.name),
     );
+}
+
+type TurnoutNight = {
+  id: string;
+  date: Date | null;
+  endDate: Date | null;
+  guests: { contactId: string | null; rsvpStatus: RsvpStatus; checkedInAt: Date | null }[];
+};
+
+export type NightTurnout = { came: number; fresh: number };
+
+/**
+ * For each night that happened: how many came (the guest book's rule, per
+ * night) and how many of them came to none of the earlier nights. Pure. A
+ * guest with no contact counts as came but can't be called new.
+ */
+export function cameAndNew(nights: TurnoutNight[]): Map<string, NightTurnout> {
+  const when = (n: TurnoutNight) => (n.date ?? n.endDate)?.getTime() ?? 0;
+  const seen = new Set<string>();
+  const result = new Map<string, NightTurnout>();
+  for (const night of [...nights].sort((a, b) => when(a) - when(b))) {
+    const door = night.guests.some((g) => g.checkedInAt);
+    const cameHere = night.guests.filter((g) => (door ? g.checkedInAt : g.rsvpStatus === "ATTENDING"));
+    const contacts = new Set(cameHere.flatMap((g) => (g.contactId ? [g.contactId] : [])));
+    const fresh = [...contacts].filter((id) => !seen.has(id)).length;
+    contacts.forEach((id) => seen.add(id));
+    result.set(night.id, { came: cameHere.length, fresh });
+  }
+  return result;
+}
+
+/** `cameAndNew` over every night this host has had, keyed by event id. */
+export async function nightlyTurnout(ownerId: string, now = new Date()): Promise<Map<string, NightTurnout>> {
+  const nights = await db.event.findMany({
+    where: { ownerId, ...happened(now) },
+    select: {
+      id: true,
+      date: true,
+      endDate: true,
+      guests: {
+        where: { OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING" }] },
+        select: { contactId: true, rsvpStatus: true, checkedInAt: true },
+      },
+    },
+  });
+  return cameAndNew(nights);
 }
 
 /**

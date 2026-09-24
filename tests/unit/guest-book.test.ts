@@ -19,7 +19,14 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { contactEmail, guestBookFor, inviteFromGuestBook, linkGuestsToContacts } from "@/lib/guest-book";
+import {
+  cameAndNew,
+  contactEmail,
+  guestBookFor,
+  inviteFromGuestBook,
+  linkGuestsToContacts,
+  nightlyTurnout,
+} from "@/lib/guest-book";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -228,5 +235,53 @@ describe("inviteFromGuestBook", () => {
     expect(await inviteFromGuestBook("evt-1", "host-1", ["someone-elses"])).toBe(0);
     expect(mocks.contactFindMany.mock.calls[0][0].where).toEqual({ id: { in: ["someone-elses"] }, ownerId: "host-1" });
     expect(mocks.guestCreateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("cameAndNew", () => {
+  const yes = (contactId: string | null) => ({ contactId, rsvpStatus: "ATTENDING" as const, checkedInAt: null });
+  const inAt = (contactId: string | null) => ({ contactId, rsvpStatus: "INVITED" as const, checkedInAt: new Date("2026-09-01T20:00:00Z") });
+
+  it("counts who came each night and how many of them came to none of the earlier nights", () => {
+    const result = cameAndNew([
+      { id: "n2", date: new Date("2026-09-08"), endDate: null, guests: [yes("a"), yes("c"), yes(null)] },
+      { id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [yes("a"), yes("b")] },
+    ]);
+    expect(result.get("n1")).toEqual({ came: 2, fresh: 2 });
+    // a came before; c is new; a guest with no contact came but can't be called new.
+    expect(result.get("n2")).toEqual({ came: 3, fresh: 1 });
+  });
+
+  it("uses check-ins where the door was run, so a yes who never walked in didn't come", () => {
+    const result = cameAndNew([
+      { id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [yes("a"), inAt("b")] },
+      { id: "n2", date: new Date("2026-09-08"), endDate: null, guests: [yes("a")] },
+    ]);
+    expect(result.get("n1")).toEqual({ came: 1, fresh: 1 });
+    // a never came to n1, so a is new at n2.
+    expect(result.get("n2")).toEqual({ came: 1, fresh: 1 });
+  });
+
+  it("counts a contact on the list twice in one night once as new", () => {
+    const result = cameAndNew([{ id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [yes("a"), yes("a")] }]);
+    expect(result.get("n1")).toEqual({ came: 2, fresh: 1 });
+  });
+});
+
+describe("nightlyTurnout", () => {
+  it("loads the host's nights that happened, with only the guests who might have come", async () => {
+    const now = new Date("2026-09-20T00:00:00Z");
+    mocks.eventFindMany.mockResolvedValue([
+      { id: "n1", date: new Date("2026-09-01"), endDate: null, guests: [{ contactId: "a", rsvpStatus: "ATTENDING", checkedInAt: null }] },
+    ]);
+    const result = await nightlyTurnout("host-1", now);
+    expect(result.get("n1")).toEqual({ came: 1, fresh: 1 });
+    const where = mocks.eventFindMany.mock.calls[0][0].where;
+    expect(where.ownerId).toBe("host-1");
+    expect(where.status).toEqual({ not: "CANCELLED" });
+    expect(where.OR).toEqual([{ endDate: null, date: { lt: now } }, { endDate: { lt: now } }]);
+    expect(mocks.eventFindMany.mock.calls[0][0].select.guests.where).toEqual({
+      OR: [{ checkedInAt: { not: null } }, { rsvpStatus: "ATTENDING" }],
+    });
   });
 });
