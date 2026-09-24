@@ -8,6 +8,8 @@ import {
 } from "@/lib/actions/checkin";
 import { LocalTime } from "@/components/local-time";
 import { PrintButton } from "@/components/print-button";
+import { WalkUpSubmit } from "@/components/walk-up-submit";
+import { formatEventDate } from "@/lib/when";
 import { Button, Card, EmptyState, Input } from "@/components/ui";
 
 export default async function CheckInPage({
@@ -162,9 +164,7 @@ export default async function CheckInPage({
             placeholder="Name"
             className="min-h-12"
           />
-          <Button type="submit" className="min-h-12! px-5">
-            Add and check in
-          </Button>
+          <WalkUpSubmit />
         </div>
       </form>
 
@@ -173,14 +173,7 @@ export default async function CheckInPage({
       <div className="hidden print:block">
         <h1 className="text-[20px] font-semibold">{event.title} — door list</h1>
         <p className="text-sm">
-          {event.date
-            ? `${event.date.toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })} · `
-            : ""}
+          {event.date ? `${formatEventDate(event.date, true)} · ` : ""}
           {printed.guests.length} going
           {printed.heads > printed.guests.length
             ? ` · ${printed.heads} with plus-ones`

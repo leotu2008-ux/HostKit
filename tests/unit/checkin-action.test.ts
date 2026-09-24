@@ -75,6 +75,7 @@ beforeEach(() => {
   mocks.requireEvent.mockResolvedValue({ user: { id: "u1" }, event: { id: "e1", ownerId: "u1" } });
   mocks.guestUpdate.mockImplementation(async ({ data }) => guest(data));
   mocks.guestUpdateMany.mockResolvedValue({ count: 1 });
+  mocks.guestFindFirst.mockResolvedValue(null);
 });
 
 /**
@@ -169,6 +170,35 @@ describe("addWalkUpAction", () => {
       title: "Priya walked up and checked in",
     });
     expect(mocks.refresh).toHaveBeenCalled();
+  });
+
+  it("adds a walk-up once when the button is tapped twice before the first add lands", async () => {
+    const rows: { name: string; checkedInAt: Date; arrivedWithoutRsvp: boolean }[] = [];
+    mocks.guestFindFirst.mockImplementation(async ({ where }) =>
+      rows.find(
+        (r) =>
+          r.name === where.name &&
+          r.arrivedWithoutRsvp === where.arrivedWithoutRsvp &&
+          r.checkedInAt >= where.checkedInAt.gte,
+      ) ?? null,
+    );
+    mocks.guestCreate.mockImplementation(async ({ data }) => (rows.push(data), data));
+
+    await addWalkUpAction(walkUp("Priya"));
+    await addWalkUpAction(walkUp("Priya"));
+
+    expect(rows).toHaveLength(1);
+    expect(mocks.record).toHaveBeenCalledTimes(1);
+    // Both taps still refresh, so the list shows Priya as in.
+    expect(mocks.refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it("still adds a second walk-up with the same name once the first is more than a moment old", async () => {
+    await addWalkUpAction(walkUp("Priya"));
+    const { where } = mocks.guestFindFirst.mock.calls[0][0];
+    expect(where).toMatchObject({ eventId: "e1", name: "Priya", arrivedWithoutRsvp: true });
+    expect(Date.now() - where.checkedInAt.gte.getTime()).toBeLessThanOrEqual(60_000);
+    expect(mocks.guestCreate).toHaveBeenCalledTimes(1);
   });
 
   it("adds nobody without a name", async () => {
