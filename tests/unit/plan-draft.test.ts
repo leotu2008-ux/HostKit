@@ -264,11 +264,12 @@ describe("draftPlan — how long it waits for the model", () => {
 });
 
 describe("draftPlan — what the model is told", () => {
-  it("frames Hosty for recurring hosts and asks for a short plan", async () => {
+  it("frames Hosty for all hosts and asks for a short plan", async () => {
     const { fetchImpl, bodies } = capturing(JSON.stringify(goodDraft));
     await draftPlan(input, { now: NOW, fetchImpl });
     const { system } = JSON.parse(bodies[0]) as { system: string };
-    expect(system).toContain("recurring event hosts");
+    expect(system).toContain("a tool hosts use to plan their events");
+    expect(system).not.toContain("recurring");
     expect(system).not.toMatch(/students|campus/);
     expect(system).toContain("at most 12 tasks");
     expect(system).toContain("notes under 200 characters");
