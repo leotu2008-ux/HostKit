@@ -1,6 +1,7 @@
 import { Landing } from "@/components/landing";
 import { hasDashboardAccess } from "@/lib/access";
 import { currentProfile } from "@/lib/session";
+import { getWaitlistCount } from "@/lib/waitlist-count";
 
 export const metadata = { title: "Hosty — an agent that plans your event" };
 
@@ -17,5 +18,9 @@ export const metadata = { title: "Hosty — an agent that plans your event" };
  */
 export default async function HomePage() {
   const user = await currentProfile();
-  return <Landing canCreate={Boolean(user && hasDashboardAccess(user))} />;
+  const canCreate = Boolean(user && hasDashboardAccess(user));
+  // Only the "Join the waitlist" buttons show the count; a host with access
+  // sees "Plan an event" instead, so don't read it for them.
+  const waitlistCount = canCreate ? null : await getWaitlistCount();
+  return <Landing canCreate={canCreate} waitlistCount={waitlistCount} />;
 }
