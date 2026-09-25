@@ -23,6 +23,9 @@ export function ConnectAgentSection() {
       <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-soft">
         <WaveText by="word" text="Claude and ChatGPT can read your events and briefs and search venues. Cursor can read your events and guest lists." />
       </p>
+      <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-soft">
+        Agent access is read-only.
+      </p>
 
       <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
         {READS.map((item) => (

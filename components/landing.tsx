@@ -23,13 +23,8 @@ import { ButtonLink } from "@/components/ui";
  * Nothing here queries the database. A landing page that waits on Postgres to
  * render its headline is a landing page people leave.
  *
- * A note for whoever edits this next, because it matters more here than on a
- * normal marketing page: parts of this copy are ahead of the code.
- * lib/ai/plan-draft.ts is built and tested but still has no caller, so "the
- * agent drafts the plan" is the deterministic template doing the drafting
- * today. The preview panel below is labelled as an example for that reason —
- * it is representative of real output, not a screenshot of a live run. Keep
- * the copy ahead deliberately, or pull it back, but know which lines are which.
+ * The preview panel below is an example. It is representative of a real
+ * draft, not a screenshot of a live run.
  */
 
 const STAGES = [
@@ -42,20 +37,20 @@ const STAGES = [
   {
     step: "02",
     title: "Source it",
-    agent: "The agent does the outreach",
-    body: "It writes the first message to each venue and vendor with everything they need to quote properly, sends it once you approve, and tells you who never came back.",
+    agent: "The agent drafts the outreach",
+    body: "It drafts the first message to each venue and vendor, with what they need to quote. You send it. It tells you who never came back.",
   },
   {
     step: "03",
     title: "Fill it",
     agent: "The agent watches the room",
-    body: "One link collects RSVPs. Because it reads the door as well as the replies, it tells you the range likely to actually walk in — the number you order food against.",
+    body: "One link collects RSVPs. Because it sees who checked in as well as who replied, it tells you the range likely to actually walk in — the number you order food against.",
   },
   {
     step: "04",
     title: "Run it",
     agent: "The agent runs the day",
-    body: "A run sheet built from the plan, times you can move, and a door that scans people in. What happened feeds the next event's estimate.",
+    body: "A run sheet built from the plan, times you can move, and check-in by name or a printed door list. The QR code opens the event page. What happened feeds the next event's estimate.",
   },
 ];
 
@@ -152,7 +147,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]"
             style={stagger(2)}
           >
-            <WaveText by="word" text="Brief it once and it drafts the plan, writes to the venues, chases the quotes, tracks who’s coming, and hands you a run sheet for the day. You approve. It does the rest." />
+            <WaveText by="word" text="Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day." />
           </p>
 
           <div
