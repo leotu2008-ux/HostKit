@@ -75,6 +75,7 @@ describe("normalizePlace", () => {
       lat: 42.3601,
       lng: -71.0589,
       category: "Nightlife",
+      types: ["Nightlife"],
     });
   });
 
@@ -84,6 +85,11 @@ describe("normalizePlace", () => {
       coordinate: { latitude: 1, longitude: 2 },
     });
     expect(venue).toMatchObject({ address: "", phone: null, website: null, category: null });
+  });
+
+  it("has no types when Apple gives no category", () => {
+    const venue = normalizePlace({ name: "Somewhere", coordinate: { latitude: 1, longitude: 2 } });
+    expect(venue?.types).toEqual([]);
   });
 
   it("drops places with no name or coordinate", () => {
@@ -115,6 +121,7 @@ describe("normalizeGooglePlace", () => {
       lat: 42.3601,
       lng: -71.0589,
       category: "Bar",
+      types: ["bar"],
     });
   });
 
@@ -159,6 +166,17 @@ describe("normalizeGooglePlace", () => {
       }),
     ).toBeNull();
   });
+
+  it("keeps every place type Google gives, primary type first, once each", () => {
+    const venue = normalizeGooglePlace({
+      id: "ChIJHotelBar",
+      displayName: { text: "The Lobby Bar" },
+      location: { latitude: 42.35, longitude: -71.06 },
+      primaryType: "bar",
+      types: ["hotel", "bar", "point_of_interest"],
+    });
+    expect(venue?.types).toEqual(["bar", "hotel", "point_of_interest"]);
+  });
 });
 
 describe("which provider", () => {
@@ -199,6 +217,10 @@ describe("which provider", () => {
 });
 
 describe("searchVenues through Google", () => {
+  it("asks Google for every place type", () => {
+    expect(GOOGLE_PLACES_FIELD_MASK.split(",")).toContain("places.types");
+  });
+
   it("POSTs Text Search (New) biased around the city centre", async () => {
     withGoogle();
     const fetchMock = vi.fn(replyWith({ places: [] }));
@@ -262,6 +284,7 @@ describe("searchVenues through Google", () => {
         lat: 42.3601,
         lng: -71.0589,
         category: "Bar",
+        types: [],
       },
     ]);
   });
@@ -327,6 +350,7 @@ describe("GET /api/v1/venues/search", () => {
           lat: 42.3601,
           lng: -71.0589,
           category: null,
+          types: [],
         },
       ],
     });

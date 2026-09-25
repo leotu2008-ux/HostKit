@@ -25,6 +25,7 @@ export const GOOGLE_PLACES_FIELD_MASK = [
   "places.websiteUri",
   "places.primaryType",
   "places.primaryTypeDisplayName",
+  "places.types",
 ].join(",");
 
 /** Same 40 km window the iOS MapKit search uses. Google's circle cap is 50 km. */
@@ -45,6 +46,7 @@ export type GooglePlace = {
   location?: { latitude?: number; longitude?: number };
   primaryType?: string;
   primaryTypeDisplayName?: { text?: string };
+  types?: string[];
 };
 
 function hasCoordinate(
@@ -71,6 +73,13 @@ export function normalizeGooglePlace(place: GooglePlace): VenueResult | null {
     lat: latitude,
     lng: longitude,
     category: place.primaryTypeDisplayName?.text?.trim() || place.primaryType?.trim() || null,
+    types: [
+      ...new Set(
+        [place.primaryType, ...(place.types ?? [])]
+          .map((t) => t?.trim())
+          .filter((t): t is string => Boolean(t)),
+      ),
+    ],
   };
 }
 
