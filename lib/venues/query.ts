@@ -18,6 +18,14 @@ const BASE_QUERY: Record<EventType, string> = {
   FORMAL: "banquet hall",
   PITCH_NIGHT: "event space",
   STUDY_BREAK: "cafe",
+  NETWORKING: "cocktail lounge",
+  WORKSHOP: "workshop space",
+  SPEAKER_EVENT: "auditorium",
+  HACKATHON: "event space",
+  GAME_NIGHT: "pub trivia night",
+  WATCH_PARTY: "sports bar",
+  SHOWCASE: "live music venue",
+  RUN_CLUB: "coffee shop",
 };
 
 const MAX_VIBE_WORDS = 2;

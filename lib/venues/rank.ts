@@ -47,6 +47,14 @@ const CATEGORY_KEYWORD: Record<EventType, string> = {
   FORMAL: "banquet",
   PITCH_NIGHT: "event",
   STUDY_BREAK: "cafe",
+  NETWORKING: "bar",
+  WORKSHOP: "event",
+  SPEAKER_EVENT: "event",
+  HACKATHON: "event",
+  GAME_NIGHT: "bar",
+  WATCH_PARTY: "bar",
+  SHOWCASE: "music",
+  RUN_CLUB: "cafe",
 };
 
 function categoryMatches(category: string | null, type: EventType): boolean {
