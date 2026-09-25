@@ -19,13 +19,17 @@ const garamond = EB_Garamond({
   weight: "500",
 });
 
+const description =
+  "For recurring event hosts. An agent drafts the plan, budget, run sheet, guest list and RSVPs, blasts, and door check-in, then runs the next night again.";
+
 export const metadata: Metadata = {
   title: {
     default: "Hosty",
     template: "%s · Hosty",
   },
-  description:
-    "Find a night, register in a tap, or plan your own — timeline, budget, and guest list in one place.",
+  description,
+  openGraph: { description },
+  twitter: { description },
   appleWebApp: {
     capable: true,
     title: "Hosty",

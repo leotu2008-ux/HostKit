@@ -17,6 +17,7 @@ import {
 import { applyDraftedPlan } from "@/lib/agent/plan-step";
 import { attachTopVenues } from "@/lib/agent/venue-step";
 import { draftVendorInquiries } from "@/lib/agent/vendor-step";
+import { judgeNightCompetition } from "@/lib/night-competition";
 
 /**
  * One run of the agent over one event: draft the plan, find a venue, draft the
@@ -317,6 +318,14 @@ async function attemptRun(eventId: string, options: RunOptions): Promise<RunOutc
         draftVendorInquiries(event, vendorCategories(context)),
       ),
     );
+  }
+
+  // Not a step: nothing depends on it and it writes no feed line, only
+  // decision rows the briefing reads. Off unless JEV_DECISIONS names it, and
+  // never allowed past the run's deadline.
+  const remaining = deadline - Date.now();
+  if (remaining > 0) {
+    await judgeNightCompetition(event, { budgetMs: remaining });
   }
 
   const allOk = results.every((result) => result.ok);

@@ -39,7 +39,10 @@ export type ActivityKind =
   | "blast_sent"
   | "guest_rsvp"
   | "guest_checked_in"
-  | "task_done";
+  | "task_done"
+  /** A Jev decision (lib/ai/decide.ts). Quiet: never shown in a feed, read
+   *  only by the code that acts on it. */
+  | "decision";
 
 export type ActivityLine = {
   actor: ActivityActor;
@@ -108,6 +111,10 @@ export async function loadActivity(
   const rows = await db.activity.findMany({
     where: {
       eventId,
+      // Decision rows are the agent's working notes, not something that
+      // happened to the event; left out here, in the query, so they never
+      // crowd real lines out of the window either.
+      kind: { not: "decision" },
       ...(opts?.after ? { createdAt: { gt: opts.after } } : {}),
     },
     orderBy: { createdAt: "desc" },

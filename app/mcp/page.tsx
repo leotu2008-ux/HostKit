@@ -38,7 +38,7 @@ export default async function McpPage() {
         <p className="mt-1 text-[15px] text-ink-soft">
           Hosty speaks MCP, so it plugs into the assistant you already use.
         </p>
-        <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {LLMS.map((llm) => (
             <li key={llm.name} className="flex items-start gap-3 rounded-xl border border-line p-4 sm:flex-col">
               <Image src={llm.logo} alt="" width={32} height={32} unoptimized className="size-8 shrink-0" />

@@ -1,0 +1,8 @@
+{
+  "about": "Made-up maps results for a made-up event, labelled by hand. fit is 0-4 on the rubric in lib/ai/venue-judge.ts.",
+  "examples": [
+    { "id": "hall", "venue": { "name": "Harborview Function Rooms", "category": "Event Venue", "address": "12 Pier Rd" }, "event": { "type": "MIXER", "guestCount": 60 }, "expect": { "rentsPrivate": true, "spaceKind": "hall", "fit": 3 } },
+    { "id": "pub", "venue": { "name": "The Brass Tap", "category": "Bar", "address": "40 Elm St" }, "event": { "type": "MIXER", "guestCount": 60 }, "expect": { "rentsPrivate": true, "spaceKind": "bar", "fit": 3 } },
+    { "id": "copy-shop", "venue": { "name": "QuickPrint Copy Center", "category": "Store", "address": "9 Main St" }, "event": { "type": "DINNER_PARTY", "guestCount": 20 }, "expect": { "rentsPrivate": false, "spaceKind": "other", "fit": 0 } }
+  ]
+}

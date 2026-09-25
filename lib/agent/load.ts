@@ -1,5 +1,10 @@
 import { db } from "@/lib/db";
+import type { EventType } from "@/generated/prisma/enums";
 import { briefingFor, type Briefing, type BriefingEvent } from "@/lib/agent/briefing";
+import { jevEnabled, loadDecisions } from "@/lib/ai/decide";
+import { FALLBACK_TYPE } from "@/lib/brief";
+import { typeCheckFrom } from "@/lib/brief-classify";
+import { loadCompetitors } from "@/lib/night-competition";
 
 /**
  * Loads the rows briefingFor needs for one event and hands them to it.
@@ -10,10 +15,20 @@ import { briefingFor, type Briefing, type BriefingEvent } from "@/lib/agent/brie
  * a pure function up to the database).
  */
 export async function loadBriefing(
-  event: BriefingEvent,
+  event: BriefingEvent & {
+    type?: EventType;
+    kind?: string | null;
+    city?: string;
+    ownerId?: string | null;
+    seriesId?: string | null;
+  },
   now = new Date(),
 ): Promise<Briefing> {
-  const [tasks, inquiries, collaborators, guests, blasts] = await Promise.all([
+  // Only an event still on the fallback type with words of its own can have
+  // a type worth asking about, so only that one pays for the lookup.
+  const askAboutType =
+    jevEnabled("brief") && event.type === FALLBACK_TYPE && Boolean(event.kind?.trim());
+  const [tasks, inquiries, collaborators, guests, blasts, briefDecisions, competitors] = await Promise.all([
     db.task.findMany({
       where: { eventId: event.id, status: "TODO" },
       select: { id: true, title: true, dueDate: true, status: true, category: true },
@@ -42,6 +57,21 @@ export async function loadBriefing(
       where: { eventId: event.id, segment: { in: ["pending", "going"] } },
       select: { segment: true, sentAt: true },
     }),
+    askAboutType ? loadDecisions(event.id, "brief", { take: 1 }) : Promise.resolve([]),
+    event.type && event.city
+      ? loadCompetitors(
+          {
+            id: event.id,
+            city: event.city,
+            date: event.date,
+            ownerId: event.ownerId ?? null,
+            seriesId: event.seriesId ?? null,
+            type: event.type,
+            kind: event.kind ?? null,
+          },
+          now,
+        )
+      : Promise.resolve([]),
   ]);
 
   return briefingFor(event, {
@@ -58,6 +88,10 @@ export async function loadBriefing(
     collaborators,
     guests,
     blasts,
+    typeCheck: askAboutType
+      ? typeCheckFrom({ type: event.type!, kind: event.kind ?? null }, briefDecisions[0] ?? null)
+      : null,
+    competitors,
     now,
   });
 }

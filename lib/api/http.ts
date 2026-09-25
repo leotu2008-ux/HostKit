@@ -25,8 +25,32 @@ export async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-/** The user behind a `Authorization: Bearer` token, or null. */
-export async function apiUser(request: Request) {
+const apiUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  schoolDomain: true,
+  classYear: true,
+  bio: true,
+  company: true,
+  xHandle: true,
+  linkedinHandle: true,
+  instagramHandle: true,
+  imageUrl: true,
+  phone: true,
+  phoneVerifiedAt: true,
+  emailVerifiedAt: true,
+  approvedAt: true,
+  sessionVersion: true,
+} as const;
+
+/**
+ * The account behind a bearer token, including someone signed in who has not
+ * been approved. Null when the header is missing, invalid, or stale.
+ * `apiUser` still drops unapproved accounts; this exists so a route can
+ * answer 403 instead of pretending they are anonymous.
+ */
+export async function apiBearer(request: Request) {
   const header = request.headers.get("authorization") ?? "";
   const match = header.match(/^Bearer\s+(\S+)$/i);
   if (!match) return null;
@@ -34,14 +58,21 @@ export async function apiUser(request: Request) {
   if (!payload) return null;
   const user = await db.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, name: true, email: true, schoolDomain: true, classYear: true, bio: true, company: true, xHandle: true, linkedinHandle: true, instagramHandle: true, imageUrl: true, phone: true, phoneVerifiedAt: true, emailVerifiedAt: true, approvedAt: true, sessionVersion: true },
+    select: apiUserSelect,
   });
   // A password reset bumps the version; tokens issued before it are out.
   if (!user || user.sessionVersion !== payload.v) return null;
   // Settings → Revoke agent access records a cutoff. Tokens issued at or
   // before it stop working, including ones that are still inside 30 days.
+  // Every bearer path goes through here, including POST /api/v1/events.
   if (bearerRevoked(payload, await agentRevokedAt(user.id))) return null;
-  if (!hasDashboardAccess(user)) return null;
+  return user;
+}
+
+/** The user behind a `Authorization: Bearer` token who can use the host app, or null. */
+export async function apiUser(request: Request) {
+  const user = await apiBearer(request);
+  if (!user || !hasDashboardAccess(user)) return null;
   return user;
 }
 

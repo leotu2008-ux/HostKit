@@ -1,4 +1,5 @@
 import { createElement, type ReactNode } from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -39,6 +40,26 @@ describe("the consumer web pages are gone", () => {
     const columns = Number(html.match(/grid-template-columns:repeat\((\d+), minmax\(0, 1fr\)\)/)?.[1]);
     expect(columns).toBe(html.match(/<li/g)?.length);
     expect(columns).toBe(3);
+  });
+
+  it("describes Hosty for recurring hosts, not the old consumer app", () => {
+    const layout = readFileSync(new URL("../../app/layout.tsx", import.meta.url), "utf8");
+    const description =
+      "For recurring event hosts. An agent drafts the plan, budget, run sheet, guest list and RSVPs, blasts, and door check-in, then runs the next night again.";
+    expect(layout).toContain(description);
+    expect(layout).toContain("openGraph: { description }");
+    expect(layout).toContain("twitter: { description }");
+    expect(layout).not.toContain("Find a night");
+    expect(layout).not.toContain("register in a tap");
+  });
+
+  it("does not tell a host that Discover leads with their school", () => {
+    const profile = readFileSync(new URL("../../app/(app)/profile/page.tsx", import.meta.url), "utf8");
+    expect(profile).not.toContain("Discover leads");
+    expect(profile).not.toContain("see your campus first");
+    expect(profile).not.toContain("official events included");
+    expect(profile).toContain("Your events are tagged ${user.school.short}.");
+    expect(profile).toContain("Pick your school to tag your events.");
   });
 
   it("sends signed-out visitors on the auth pages back home, not to Discover", () => {
