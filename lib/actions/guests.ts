@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireEvent } from "@/lib/session";
@@ -10,6 +11,8 @@ import { newRsvpToken } from "@/lib/tokens";
 import { record } from "@/lib/activity";
 import { hasFinished } from "@/lib/outcomes";
 import { inviteFromGuestBook, linkGuestsToContacts } from "@/lib/guest-book";
+import { deliverRsvpInvites } from "@/lib/guest-invite-send";
+import { siteOrigin } from "@/lib/site";
 
 export type GuestFormState = { error?: string; added?: number } | undefined;
 
@@ -58,6 +61,54 @@ export async function addGuestsAction(
 
   refresh();
   return { added: fresh.length };
+}
+
+export type InviteFormState =
+  | { error?: string; sent?: number; skippedNoEmail?: number }
+  | undefined;
+
+/**
+ * Emails RSVP links. Only when the host asks — adding a name, or picking
+ * someone from the guest book, does not call this.
+ *
+ * The caller has to own the event. requireEvent also lets a club-mate and a
+ * claimed draft through, and neither of those may send this list's links.
+ */
+export async function sendGuestInvitesAction(
+  _prev: InviteFormState,
+  formData: FormData,
+): Promise<InviteFormState> {
+  const eventId = String(formData.get("eventId") ?? "");
+  const guestId = String(formData.get("guestId") ?? "").trim();
+  const { event, user } = await requireEvent(eventId);
+  if (!user || user.id !== event.ownerId) {
+    return { error: "Only the host can do that." };
+  }
+
+  const guests = await db.guest.findMany({
+    where: { eventId: event.id, ...(guestId ? { id: guestId } : {}) },
+    select: { id: true, name: true, email: true, rsvpToken: true },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+  });
+  if (guestId && guests.length === 0) {
+    return { error: "That guest isn't on this list." };
+  }
+
+  try {
+    const result = await deliverRsvpInvites({
+      guests,
+      title: event.title,
+      date: event.date,
+      hostName: user.name,
+      origin: siteOrigin(await headers()),
+      replyTo: user.email,
+    });
+    refresh();
+    return result;
+  } catch (error) {
+    console.error("[rsvp-invite] send failed", error);
+    return { error: "Couldn't send those invites. Try again." };
+  }
 }
 
 const updateSchema = z.object({

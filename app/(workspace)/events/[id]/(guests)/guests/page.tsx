@@ -12,6 +12,7 @@ import { guestBookFor } from "@/lib/guest-book";
 import { AddGuestsForm } from "@/components/add-guests-form";
 import { GuestBookPicker } from "@/components/guest-book-picker";
 import { RsvpLink } from "@/components/rsvp-link";
+import { SendInvitesForm } from "@/components/send-invites-form";
 import { ProgressBar } from "@/components/progress-bar";
 import {
   Badge,
@@ -137,15 +138,19 @@ export default async function GuestsPage({
           title="The list"
           hint={
             guests.length > 0
-              ? "Each guest has their own RSVP link. Hosty doesn't send email — copy the link and share it however you normally would."
+              ? isOwner
+                ? "Each guest has their own RSVP link. Send invites to email it, or copy a link."
+                : "Each guest has their own RSVP link. Copy a link to share it."
               : undefined
           }
         />
 
+        {isOwner && guests.length > 0 ? <SendInvitesForm eventId={event.id} /> : null}
+
         {guests.length === 0 ? (
           <EmptyState
             title="No guests yet"
-            body="Paste your list above and each guest gets their own RSVP link. Replies feed straight back into the headcount everything else is priced against."
+            body="Paste your list above and each guest gets their own RSVP link. Send invites when you want that link emailed. Replies feed straight back into the headcount everything else is priced against."
           />
         ) : (
           <Card className="divide-y divide-line">
@@ -202,6 +207,10 @@ export default async function GuestsPage({
                 </form>
 
                 <RsvpLink token={guest.rsvpToken} />
+
+                {isOwner && guest.email ? (
+                  <SendInvitesForm eventId={event.id} guestId={guest.id} guestName={guest.name} />
+                ) : null}
 
                 {guest.checkedInAt ? (
                   <form action={undoCheckInAction}>
