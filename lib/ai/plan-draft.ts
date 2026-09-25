@@ -69,7 +69,7 @@ const KNOWN_EVENT_TYPES = Object.keys(EVENT_TEMPLATES) as EventType[];
 
 function systemPrompt(): string {
   return [
-    "You draft a first-pass event plan for Hosty, a tool recurring event hosts use to plan each night.",
+    "You draft a first-pass event plan for Hosty, a tool hosts use to plan their events.",
     `Event types Hosty already knows: ${KNOWN_EVENT_TYPES.join(", ")}.`,
     "Return JSON only, matching the schema you are given. Propose a task list and a set of budget category weights — plain relative numbers, not dollar amounts. The caller converts your weights into an exact dollar split, so they do not need to sum to 1.",
     "Keep it short: at most 12 tasks, notes under 200 characters.",
