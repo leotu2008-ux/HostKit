@@ -114,8 +114,8 @@ export const PLACE_PROFILES: Record<EventType, PlaceProfile> = {
   },
   GENERAL_MEETING: {
     searches: ["event space", "coworking space"],
-    googleTypes: ["event_venue", "coworking_space", "cultural_center"],
-    appleCategories: ["ConventionCenter"],
+    googleTypes: ["event_venue", "coworking_space", "cultural_center", "hotel", "convention_center"],
+    appleCategories: ["ConventionCenter", "Hotel"],
     excludedTypes: [],
     spaceKinds: ["meeting", "hall"],
     needsPrivateSpace: true,
@@ -160,8 +160,8 @@ export const PLACE_PROFILES: Record<EventType, PlaceProfile> = {
   },
   WORKSHOP: {
     searches: ["event space", "coworking space"],
-    googleTypes: ["event_venue", "coworking_space", "cultural_center", "art_gallery"],
-    appleCategories: ["ConventionCenter"],
+    googleTypes: ["event_venue", "coworking_space", "cultural_center", "art_gallery", "hotel", "convention_center"],
+    appleCategories: ["ConventionCenter", "Hotel"],
     excludedTypes: [],
     spaceKinds: ["meeting", "hall", "cafe"],
     needsPrivateSpace: true,
@@ -169,8 +169,8 @@ export const PLACE_PROFILES: Record<EventType, PlaceProfile> = {
   },
   SPEAKER_EVENT: {
     searches: ["event space", "lecture hall"],
-    googleTypes: ["auditorium", "event_venue", "performing_arts_theater", "cultural_center", "convention_center", "coworking_space"],
-    appleCategories: ["Theater", "ConventionCenter"],
+    googleTypes: ["auditorium", "event_venue", "performing_arts_theater", "cultural_center", "convention_center", "coworking_space", "hotel"],
+    appleCategories: ["Theater", "ConventionCenter", "Hotel"],
     excludedTypes: [],
     spaceKinds: ["hall", "meeting"],
     needsPrivateSpace: true,

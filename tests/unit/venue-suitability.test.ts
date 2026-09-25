@@ -14,6 +14,9 @@ describe("placeFit", () => {
     [["cafe"], "RUN_CLUB", "yes"],
     [["banquet_hall"], "FORMAL", "yes"],
     [["bar"], "FORMAL", "no"],
+    [["hotel"], "WORKSHOP", "yes"],
+    [["convention_center"], "GENERAL_MEETING", "yes"],
+    [["Hotel"], "SPEAKER_EVENT", "yes"],
   ] as const)("%j for a %s is %s", (types, type, expected) => {
     expect(placeFit({ types: [...types] }, type)).toBe(expected);
   });

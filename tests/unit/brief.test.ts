@@ -205,8 +205,19 @@ describe("eventTypeForKind", () => {
     ["Saturday run club", "RUN_CLUB"],
     ["sunday brunch", "DINNER_PARTY"],
     ["drama club social", "MIXER"],
+    ["5k gala", "FORMAL"],
+    ["raise $5k fundraiser", "FUNDRAISER"],
+    ["Sunday 5k run", "RUN_CLUB"],
   ] as const)("maps %s to %s", (text, type) => {
     expect(eventTypeForKind(text)).toBe(type);
+  });
+
+  it("art show is not classified as SHOWCASE after removing it from showcase keywords", () => {
+    expect(eventTypeForKind("art show")).not.toBe("SHOWCASE");
+  });
+
+  it("open mic night is still classified as SHOWCASE", () => {
+    expect(eventTypeForKind("open mic night")).toBe("SHOWCASE");
   });
 
   it.each([["silent disco"], [""]] as const)("returns null for %s", (text) => {
