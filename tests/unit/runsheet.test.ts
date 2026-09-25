@@ -84,6 +84,14 @@ describe("suggestRunSheet", () => {
     expect(sheet.some((item) => item.title === "Hacking starts")).toBe(true);
   });
 
+  it("serves the hackathon's midnight food at midnight from the default start", () => {
+    const date = new Date("2026-10-03T12:00:00");
+    const { hour } = arrivalClock(date, "HACKATHON");
+    const sheet = suggestRunSheet({ type: "HACKATHON", durationHours: 24 }, []);
+    const food = sheet.find((item) => item.title === "Midnight food");
+    expect(formatTime(draftToDate(date, hour, food!.offsetMinutes))).toBe("12:00 AM");
+  });
+
   it("starts a run club in the morning", () => {
     expect(arrivalClock(new Date("2026-10-03T12:00:00"), "RUN_CLUB")).toEqual({ hour: 8, minute: 0 });
   });

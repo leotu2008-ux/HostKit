@@ -97,7 +97,7 @@ const KIND_KEYWORDS: Array<[EventType, string[]]> = [
   ["LAUNCH_PARTY", ["launch", "release party", "debut", "premiere"]],
   ["BIRTHDAY", ["birthday", "bday", "21st", "18th", "turning"]],
   ["CORPORATE_OFFSITE", ["offsite", "off site", "retreat", "all hands", "team building", "conference", "summit"]],
-  ["NETWORKING", ["networking", "network", "coffee chat", "career night", "industry night", "recruiting"]],
+  ["NETWORKING", ["networking", "coffee chat", "career night", "industry night", "recruiting"]],
   ["WORKSHOP", ["workshop", "masterclass", "bootcamp", "hands on", "crash course", "skill session"]],
   ["SPEAKER_EVENT", ["panel", "speaker", "fireside", "keynote", "lecture", "in conversation"]],
   ["GENERAL_MEETING", ["gbm", "general meeting", "general body", "info session", "interest meeting", "orientation", "meeting"]],

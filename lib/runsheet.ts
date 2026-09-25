@@ -176,7 +176,7 @@ const RUNNING_ORDER: Record<EventType, Array<[number, string]>> = {
     [0, "Check-in"],
     [60, "Kickoff and team forming"],
     [120, "Hacking starts"],
-    [720, "Midnight food"],
+    [900, "Midnight food"],
     [1260, "Hacking ends, submissions due"],
     [1320, "Demos and judging"],
     [1410, "Winners announced"],

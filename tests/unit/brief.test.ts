@@ -191,6 +191,8 @@ describe("eventTypeForKind", () => {
     ["networking night", "NETWORKING"],
     ["Networking mixer", "NETWORKING"],
     ["coffee chat with recruiters", "NETWORKING"],
+    ["Intro to neural networks workshop", "WORKSHOP"],
+    ["network security panel", "SPEAKER_EVENT"],
     ["Python workshop", "WORKSHOP"],
     ["panel on climate tech", "SPEAKER_EVENT"],
     ["fireside chat", "SPEAKER_EVENT"],
