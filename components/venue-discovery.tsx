@@ -43,7 +43,8 @@ export function VenueDiscovery() {
       const lock = ease((progress - 0.3) / 0.16);
       const scan = ease((progress - 0.46) / 0.34);
       const match = ease((progress - 0.8) / 0.15);
-      root.style.setProperty("--map-scale", String(1.18 - zoom * 0.18));
+      // Start 40% closer; retain the existing 1× final framing.
+      root.style.setProperty("--map-scale", String(1.65 - zoom * 0.65));
       root.style.setProperty("--map-angle", `${-2 + lock * 2}deg`);
       root.style.setProperty("--scan-scale", String(scan));
       root.style.setProperty("--scan-opacity", String(progress < 0.46 ? 0 : 0.65 - match * 0.5));
