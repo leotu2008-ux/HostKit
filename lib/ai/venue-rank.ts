@@ -2,10 +2,10 @@ import { z } from "zod";
 import type { EventType } from "@/generated/prisma/enums";
 import { askOr } from "@/lib/ai/client";
 import { checkDraft } from "@/lib/ai/guardrail";
-import { judgeVenues } from "@/lib/ai/venue-judge";
+import { judgeVenues, VENUE_MAX_KM } from "@/lib/ai/venue-judge";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { daysUntil, describeCountdown } from "@/lib/plan";
-import { rankVenues, type RankableEvent, type RankedVenue } from "@/lib/venues/rank";
+import { kmBetween, rankVenues, type RankableEvent, type RankedVenue } from "@/lib/venues/rank";
 import { formatDuration } from "@/lib/when";
 import type { VenueResult } from "@/lib/venues/apple-maps";
 
@@ -158,13 +158,18 @@ export async function rankVenuesForEvent(
     lng: event.lng,
   };
 
-  if (candidates.length === 0) {
+  // The same 40 km cutoff judgeVenues applies for the Jev path, applied here
+  // so the model and fallback paths can't rank — or the free room's own
+  // closestFree beat — a venue too far away to be the one.
+  const near = candidates.filter((venue) => kmBetween(venue.lat, venue.lng, event.lat, event.lng) <= VENUE_MAX_KM);
+
+  if (near.length === 0) {
     return { venues: [], source: "fallback" };
   }
 
   // Jev decides fit when that point is on (lib/ai/venue-judge.ts); with it
   // off or silent, everything below runs exactly as it did before.
-  const judged = await judgeVenues(candidates, event, {
+  const judged = await judgeVenues(near, event, {
     eventId: opts.eventId,
     fetch: opts.jev?.fetch,
     env: opts.jev?.env,
@@ -174,7 +179,7 @@ export async function rankVenuesForEvent(
   const { value, source } = await askOr(
     {
       system: systemPrompt(),
-      prompt: userPrompt(candidates, event, now),
+      prompt: userPrompt(near, event, now),
       schema: rankSchema,
       fetchImpl: opts.fetchImpl,
       timeoutMs: 8000,
@@ -184,11 +189,11 @@ export async function rankVenuesForEvent(
   );
 
   if (source === "fallback") {
-    return { venues: rankVenues(candidates, rankEvent), source: "fallback" };
+    return { venues: rankVenues(near, rankEvent), source: "fallback" };
   }
 
-  const picked = reconcile(value, candidates, rankEvent);
-  return { venues: await guardReasons(picked, value, candidates, rankEvent, event, now, opts), source: "model" };
+  const picked = reconcile(value, near, rankEvent);
+  return { venues: await guardReasons(picked, value, near, rankEvent, event, now, opts), source: "model" };
 }
 
 /**

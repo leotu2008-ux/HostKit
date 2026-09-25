@@ -223,10 +223,18 @@ export const PLACE_PROFILES: Record<EventType, PlaceProfile> = {
   },
 };
 
+/** Google types so generic (a small function room gets `point_of_interest`
+ *  and `establishment` alongside, or instead of, anything specific) that they
+ *  say nothing about fit — ignored before deciding, so a place that only
+ *  carries these reads as "unknown", not "no". `place_of_worship` is
+ *  deliberately not here: it's specific enough to rule a place out. */
+const GENERIC_GOOGLE_TYPES = ["point_of_interest", "establishment", "food", "store", "premise", "health", "finance"];
+
 /** Whether a place's types suit the night. "unknown" when the provider gave
- *  no types: kept, and left to Jev, rather than dropped for silence. */
+ *  no types, or only generic ones: kept, and left to Jev, rather than
+ *  dropped for silence. */
 export function placeFit(venue: Pick<VenueResult, "types">, type: EventType): "yes" | "no" | "unknown" {
-  const types = venue.types ?? [];
+  const types = (venue.types ?? []).filter((t) => !GENERIC_GOOGLE_TYPES.includes(t));
   if (types.length === 0) return "unknown";
   const profile = PLACE_PROFILES[type];
   if (types.some((t) => profile.excludedTypes.includes(t))) return "no";

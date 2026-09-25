@@ -24,6 +24,12 @@ function venue(id: string, name: string, lat = 42.3601, lng = -71.0589): VenueRe
   return { id, name, address: `${id} Main St`, phone: "+1 617 555 0100", website: "https://example.com", lat, lng, category: "Bar" };
 }
 
+/** A candidate whose types the type filter (lib/venues/suitability.ts) has
+ *  already seen, unlike venue()'s untyped default. */
+function typedVenue(id: string, name: string, types: string[]): VenueResult {
+  return { ...venue(id, name), types };
+}
+
 type Judgment = { privateP: number; space: string; spaceConf: number; fit: number; fitConf: number };
 
 /** A Jev that judges each venue by name, and remembers every state it was sent. */
@@ -172,6 +178,61 @@ describe("judgeVenues", () => {
       venue: { name: "Harbor Hall", category: "Bar", address: "h Main St" },
       event: { kind: "Mixer", size: "20 to 50 people", hostWords: "founders networking night" },
     });
+  });
+
+  // Fix round 1, item 1: a night that doesn't need a private room must not
+  // let "no private room" sink an otherwise ideal venue below an unjudged one.
+  const IDEAL_CAFE: Judgment = { privateP: 0.1, space: "cafe", spaceConf: 0.9, fit: 4, fitConf: 0.9 };
+
+  it("doesn't let 'no private room' sink an ideal fit for a night that never needed one", async () => {
+    const result = await judgeVenues(
+      [venue("c", "Ideal Cafe"), venue("d", "Down Venue")],
+      { ...EVENT, type: "RUN_CLUB" },
+      { env: JEV_ON, fetch: jev({ "Ideal Cafe": IDEAL_CAFE, "Down Venue": "down" }) },
+    );
+    expect(result?.venues.map((v) => v.name)).toEqual(["Ideal Cafe", "Down Venue"]);
+    expect(result?.worthALook.has("c")).toBe(false);
+  });
+
+  // Fix round 1, item 2: the space-kind veto must not remove a place the type
+  // filter already approved just because Jev's fixed vocabulary calls it
+  // "other" (Jev has no "cinema" or "theatre" choice).
+  const OTHER_KIND: Judgment = { privateP: 0.9, space: "other", spaceConf: 0.9, fit: 3, fitConf: 0.9 };
+
+  it("keeps a place the type filter already allowed, even when Jev calls its kind 'other'", async () => {
+    const cinema = typedVenue("c", "Cinema Bar", ["movie_theater"]);
+    const result = await judgeVenues([cinema], { ...EVENT, type: "WATCH_PARTY" }, {
+      env: JEV_ON,
+      fetch: jev({ "Cinema Bar": OTHER_KIND }),
+    });
+    expect(result?.venues.map((v) => v.name)).toEqual(["Cinema Bar"]);
+  });
+
+  it("still vetoes an untyped place Jev calls 'other'", async () => {
+    const unknown = venue("u", "Unknown Bar");
+    const result = await judgeVenues([unknown], { ...EVENT, type: "WATCH_PARTY" }, {
+      env: JEV_ON,
+      fetch: jev({ "Unknown Bar": OTHER_KIND }),
+    });
+    expect(result?.venues).toEqual([]);
+  });
+
+  // Fix round 1, item 3: fit is an expected value between rubric levels, so
+  // only a fit nearest the vetoed levels (below 1.5) is taken off the list.
+  const NEAR_STRETCH: Judgment = { privateP: 0.9, space: "bar", spaceConf: 0.9, fit: 1.4, fitConf: 0.9 };
+  const NEAR_WORKABLE: Judgment = { privateP: 0.9, space: "bar", spaceConf: 0.9, fit: 1.6, fitConf: 0.9 };
+
+  it("vetoes a fit nearest 'a stretch' (1.4), but keeps one nearest 'workable' (1.6)", async () => {
+    const vetoed = await judgeVenues([venue("x", "Stretchy Bar")], EVENT, {
+      env: JEV_ON,
+      fetch: jev({ "Stretchy Bar": NEAR_STRETCH }),
+    });
+    const kept = await judgeVenues([venue("y", "Workable Bar")], EVENT, {
+      env: JEV_ON,
+      fetch: jev({ "Workable Bar": NEAR_WORKABLE }),
+    });
+    expect(vetoed?.venues).toEqual([]);
+    expect(kept?.venues.map((v) => v.name)).toEqual(["Workable Bar"]);
   });
 });
 

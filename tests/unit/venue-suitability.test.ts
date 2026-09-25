@@ -22,6 +22,18 @@ describe("placeFit", () => {
     expect(placeFit({ types: [] }, "MIXER")).toBe("unknown");
     expect(placeFit({}, "MIXER")).toBe("unknown");
   });
+
+  it("leaves a place with only Google's generic types to Jev, rather than dropping it for silence", () => {
+    expect(placeFit({ types: ["point_of_interest", "establishment"] }, "MIXER")).toBe("unknown");
+  });
+
+  it("still recognizes a suitable type alongside a generic one", () => {
+    expect(placeFit({ types: ["bar", "point_of_interest"] }, "MIXER")).toBe("yes");
+  });
+
+  it("still rules out an unsuitable type once the generic ones are ignored", () => {
+    expect(placeFit({ types: ["clothing_store", "store", "point_of_interest"] }, "MIXER")).toBe("no");
+  });
 });
 
 describe("freeSourceFor", () => {
