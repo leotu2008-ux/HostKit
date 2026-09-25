@@ -5,7 +5,8 @@ import { inviteFromGuestBookAction, type GuestFormState } from "@/lib/actions/gu
 import { Button } from "@/components/ui";
 import type { GuestBookEntry } from "@/lib/guest-book";
 
-/** Pick people who came to your earlier events and invite them in one go. */
+/** Pick people who came to earlier events and add them to this list.
+ *  Emailing their RSVP link is a separate Send invites action. */
 export function GuestBookPicker({ eventId, entries }: { eventId: string; entries: GuestBookEntry[] }) {
   const [state, action, pending] = useActionState<GuestFormState, FormData>(inviteFromGuestBookAction, undefined);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -44,7 +45,9 @@ export function GuestBookPicker({ eventId, entries }: { eventId: string; entries
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-[15px] font-semibold text-ink">From your guest book</h2>
-          <p className="text-[13px] text-ink-mute">People who came to your other events.</p>
+          <p className="text-[13px] text-ink-mute">
+            People who came to your other events. Adding them does not email anyone.
+          </p>
         </div>
         <Button
           type="button"
@@ -86,9 +89,13 @@ export function GuestBookPicker({ eventId, entries }: { eventId: string; entries
           {state.error}
         </p>
       ) : null}
-      {state?.added ? <p className="text-sm text-forest">Invited {state.added}.</p> : null}
+      {state?.added ? (
+        <p className="text-sm text-forest">
+          Added {state.added} to the list. Send invites when you want the RSVP link emailed.
+        </p>
+      ) : null}
       <Button type="submit" size="sm" disabled={pending || pickedVisible.length === 0}>
-        {pending ? "Inviting…" : `Invite ${pickedVisible.length || ""}`.trim()}
+        {pending ? "Adding…" : pickedVisible.length ? `Add ${pickedVisible.length} to the list` : "Add to the list"}
       </Button>
     </form>
   );
