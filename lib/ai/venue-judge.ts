@@ -1,6 +1,7 @@
 import { choice, noul, score } from "@typesafe-ai/sdk";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { kmBetween, rankVenues, type RankableEvent, type RankedVenue } from "@/lib/venues/rank";
+import { PLACE_PROFILES } from "@/lib/venues/suitability";
 import type { VenueResult } from "@/lib/venues/types";
 import type { VenueRankEvent } from "@/lib/ai/venue-rank";
 import {
@@ -26,7 +27,12 @@ import {
  * falling back to rankVenues' score, and writes each venue's reason from the
  * answers alone, so the reason can't say anything Jev wasn't asked.
  *
- * A venue Jev wasn't sure about stays on the list, tagged "worth a look".
+ * A venue Jev is confident doesn't suit the night (the wrong kind of place
+ * for it, a fit of "a stretch" or worse, or no private space when the night
+ * needs one) is taken off the list. A venue Jev wasn't sure about stays on it,
+ * tagged "worth a look". When Jev takes everything off, the list is empty:
+ * the caller says nothing suitable turned up, and never falls back to the
+ * unfiltered ranking.
  * `null` means the point is off or Jev answered nothing at all, and the caller
  * ranks the way it did before (lib/ai/venue-rank.ts).
  */
@@ -41,6 +47,9 @@ const RESULT_LIMIT = 6;
 export const PRIVATE_BAND: NoulBand = { yesAt: 0.7, noAt: 0.3 };
 export const SPACE_MIN_CONFIDENCE = 0.6;
 export const FIT_MIN_CONFIDENCE = 0.55;
+/** A confident fit at or below this ("Wrong kind of place", "A stretch")
+ *  takes a venue off the list. */
+export const FIT_VETO_AT = 1;
 
 export const SPACE_KINDS = {
   bar: "A bar, pub, lounge or brewery",
@@ -87,12 +96,18 @@ export function sizeBand(guestCount: number): string {
   return "a large crowd, over 250 people";
 }
 
-/** Public facts about the place and the night's kind and size. No budget, no
- *  guests, no host details, no address beyond the venue's own. */
-export function stateForVenue(venue: VenueResult, event: Pick<VenueRankEvent, "type" | "guestCount">) {
+/** Public facts about the place, the night's kind and size, and the host's
+ *  own words for the night when they gave any. No budget, no guests, no host
+ *  details, no address beyond the venue's own. */
+export function stateForVenue(venue: VenueResult, event: Pick<VenueRankEvent, "type" | "guestCount" | "kind">) {
+  const hostWords = event.kind?.trim() ?? "";
   return {
     venue: { name: venue.name, category: venue.category ?? "unknown", address: venue.address },
-    event: { kind: EVENT_TYPE_LABEL[event.type], size: sizeBand(event.guestCount) },
+    event: {
+      kind: EVENT_TYPE_LABEL[event.type],
+      size: sizeBand(event.guestCount),
+      ...(hostWords ? { hostWords } : {}),
+    },
   };
 }
 
@@ -126,6 +141,7 @@ export async function judgeVenues(
     lat: event.lat,
     lng: event.lng,
   };
+  const profile = PLACE_PROFILES[event.type];
 
   // Code's own filters: one row per place, and near enough to be the venue.
   const seen = new Set<string>();
@@ -173,20 +189,34 @@ export async function judgeVenues(
     const space = picked<SpaceKind>(decision.answers.spaceKind, SPACE_MIN_CONFIDENCE);
     const fit = scored(decision.answers.fit, FIT_MIN_CONFIDENCE);
     const worthALook = rentsPrivate === "unsure" || fit === "unsure";
+    // Only a confident answer takes a venue off the list; an unsure one keeps
+    // it, tagged worth a look.
+    const vetoed =
+      (rentsPrivate === "no" && profile.needsPrivateSpace) ||
+      (space !== "unsure" && !profile.spaceKinds.includes(space)) ||
+      (fit !== "unsure" && fit <= FIT_VETO_AT);
 
-    judged.push({
-      venue: { ...venue, reason: reasonFrom(rentsPrivate, space, venue.reason, worthALook) },
-      tier: rentsPrivate === "yes" ? 0 : rentsPrivate === "unsure" ? 1 : 2,
-      fit: fit === "unsure" ? -1 : fit,
-      worthALook,
-    });
+    if (!vetoed) {
+      judged.push({
+        venue: { ...venue, reason: reasonFrom(rentsPrivate, space, venue.reason, worthALook) },
+        tier: rentsPrivate === "yes" ? 0 : rentsPrivate === "unsure" ? 1 : 2,
+        fit: fit === "unsure" ? -1 : fit,
+        worthALook,
+      });
+    }
     if (opts.eventId) {
       logs.push(
         logDecision(opts.eventId, {
           point: "venue",
           subject: venue.name,
           answers: summarize(decision.answers),
-          verdict: worthALook ? "worth a look" : rentsPrivate === "yes" ? "rents private space" : "judged",
+          verdict: vetoed
+            ? "vetoed"
+            : worthALook
+              ? "worth a look"
+              : rentsPrivate === "yes"
+                ? "rents private space"
+                : "judged",
           model: decision.model,
           fellBack: false,
           ms: decision.ms,

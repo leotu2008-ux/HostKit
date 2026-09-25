@@ -57,7 +57,7 @@ bounds each call. At most 8 calls run at once per server process.
 | --- | --- | --- | --- |
 | `guardrail` | `lib/ai/guardrail.ts`: the digest line, and venue reasons from Claude | Does the line hint at the budget? Does it state a price, date, time or headcount? Code then checks any stated value against the record | Unsure: the line is used, and the flag is logged. Fail: the digest line is written once more, then falls back to the plain digest; a venue reason falls back to the plain reason |
 | `brief` | `lib/brief-classify.ts`, on brief save, only when the keyword table finds nothing | Which template the host's words describe | Keeps the mixer; the briefing asks "Is this a …?" with a one-press fix |
-| `venue` | `lib/ai/venue-judge.ts`, after a distance filter | Rents private space? What kind of place? How well does it fit? | Kept and tagged "worth a look"; all silent means the old ranking |
+| `venue` | `lib/ai/venue-judge.ts`, after the type filter (`lib/venues/suitability.ts`) and a distance filter | Rents private space? What kind of place? How well does it fit? It also hears the host's own words for the night | Confidently the wrong kind, a stretch, or no private room when the night needs one: removed. Unsure: kept and tagged "worth a look". All silent: the old ranking, over places that already passed the type filter |
 | `competing` | `lib/night-competition.ts`, after the agent's steps | Does another public Hosty night in the same city that evening draw the same crowd, and how much would it pull? | Nothing is shown |
 
 **Thresholds** are named constants beside each point: `BUDGET_BAND`,

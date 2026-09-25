@@ -40,6 +40,9 @@ export type VenueRankEvent = {
   durationHours: number;
   date: Date | null;
   vibe?: string | null;
+  /** The host's own words for the kind of night ("founders networking
+   *  night"). Jev's venue point reads it; nothing else here does. */
+  kind?: string | null;
   lat: number;
   lng: number;
   /** VENUE category allocation, in cents; null when nothing is allocated. */

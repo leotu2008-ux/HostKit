@@ -70,7 +70,6 @@ describe("judgeVenues", () => {
       ["Harbor Hall", "Rents private space · Event space"],
       ["Back Bar", "Rents private space · Bar"],
       ["Maybe Bistro", "Worth a look · Has a phone number and a site"],
-      ["Corner Shop", "Has a phone number and a site"],
     ]);
     expect([...(result?.worthALook ?? [])]).toEqual(["m"]);
   });
@@ -127,6 +126,52 @@ describe("judgeVenues", () => {
     const sent: unknown[] = [];
     expect(await judgeVenues(CANDIDATES, EVENT, { env: {}, fetch: jev({ "Harbor Hall": HALL }, sent) })).toBeNull();
     expect(sent).toHaveLength(0);
+  });
+
+  const NO_ROOM_BAR: Judgment = { privateP: 0.1, space: "bar", spaceConf: 0.9, fit: 2.5, fitConf: 0.8 };
+  const STRETCH: Judgment = { privateP: 0.9, space: "bar", spaceConf: 0.9, fit: 1, fitConf: 0.9 };
+
+  it("vetoes a bar with no private room for a mixer, but keeps it for a watch party", async () => {
+    const candidates = [venue("n", "Open Bar")];
+    const fetch = jev({ "Open Bar": NO_ROOM_BAR });
+    const mixer = await judgeVenues(candidates, EVENT, { env: JEV_ON, fetch });
+    const watch = await judgeVenues(candidates, { ...EVENT, type: "WATCH_PARTY" }, { env: JEV_ON, fetch });
+    expect(mixer?.venues).toEqual([]);
+    expect(watch?.venues.map((v) => v.name)).toEqual(["Open Bar"]);
+  });
+
+  it("vetoes a place Jev is sure is a stretch", async () => {
+    const result = await judgeVenues([venue("s", "Stretch Bar")], EVENT, { env: JEV_ON, fetch: jev({ "Stretch Bar": STRETCH }) });
+    expect(result?.venues).toEqual([]);
+  });
+
+  it("vetoes the wrong kind of place for the night: a bar for a formal", async () => {
+    const result = await judgeVenues([venue("b", "Back Bar")], { ...EVENT, type: "FORMAL" }, { env: JEV_ON, fetch: jev({ "Back Bar": BAR }) });
+    expect(result?.venues).toEqual([]);
+  });
+
+  it("returns an empty list, not the old ranking, when Jev vetoes everything", async () => {
+    const result = await judgeVenues([venue("s", "Corner Shop")], EVENT, { env: JEV_ON, fetch: jev({ "Corner Shop": SHOP }) });
+    expect(result).not.toBeNull();
+    expect(result?.venues).toEqual([]);
+  });
+
+  it("logs a vetoed venue as vetoed", async () => {
+    await judgeVenues([venue("s", "Corner Shop")], EVENT, { env: JEV_ON, eventId: "evt-1", fetch: jev({ "Corner Shop": SHOP }) });
+    const entry = JSON.parse(mocks.record.mock.calls[0][1].body);
+    expect(entry).toMatchObject({ point: "venue", subject: "Corner Shop", verdict: "vetoed" });
+  });
+
+  it("tells Jev the host's own words for the night, and nothing else new", async () => {
+    const sent: unknown[] = [];
+    await judgeVenues([venue("h", "Harbor Hall")], { ...EVENT, kind: "founders networking night" }, {
+      env: JEV_ON,
+      fetch: jev({ "Harbor Hall": HALL }, sent),
+    });
+    expect(sent[0]).toEqual({
+      venue: { name: "Harbor Hall", category: "Bar", address: "h Main St" },
+      event: { kind: "Mixer", size: "20 to 50 people", hostWords: "founders networking night" },
+    });
   });
 });
 
