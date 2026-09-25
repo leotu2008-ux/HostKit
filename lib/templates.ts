@@ -334,6 +334,159 @@ export const EVENT_TEMPLATES: Record<EventType, EventTemplate> = {
     required: ["CATERING"],
     extraTasks: [{ title: "Clear it with the building", at: 0.6 }],
   },
+
+  NETWORKING: {
+    type: "NETWORKING",
+    blurb: "A room you can hear each other in, name tags, and a drink.",
+    horizonDays: 21,
+    defaultDurationHours: 2,
+    defaultGuestCount: 50,
+    budget: [
+      { category: "VENUE", weight: 0.4 },
+      { category: "CATERING", weight: 0.3 },
+      { category: "BAR_SERVICE", weight: 0.2 },
+      { category: "PHOTOGRAPHY", weight: 0.1 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Confirm who's coming from each company", at: 0.5 },
+      { title: "Print the name tags", at: 0.1 },
+    ],
+  },
+
+  WORKSHOP: {
+    type: "WORKSHOP",
+    blurb: "Tables, a screen, and everyone leaves able to do one new thing.",
+    horizonDays: 21,
+    defaultDurationHours: 2,
+    defaultGuestCount: 30,
+    budget: [
+      { category: "VENUE", weight: 0.4 },
+      { category: "CATERING", weight: 0.3 },
+      { category: "AV_PRODUCTION", weight: 0.2 },
+      { category: "RENTALS", weight: 0.1 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Confirm the instructor and what they need", at: 0.8 },
+      { title: "Tell everyone what to bring", at: 0.15 },
+    ],
+  },
+
+  SPEAKER_EVENT: {
+    type: "SPEAKER_EVENT",
+    blurb: "A talk, a panel or a fireside chat: a stage, good mics, questions from the floor.",
+    horizonDays: 30,
+    defaultDurationHours: 2,
+    defaultGuestCount: 80,
+    budget: [
+      { category: "VENUE", weight: 0.35 },
+      { category: "AV_PRODUCTION", weight: 0.3 },
+      { category: "CATERING", weight: 0.25 },
+      { category: "PHOTOGRAPHY", weight: 0.1 },
+    ],
+    required: ["VENUE", "AV_PRODUCTION"],
+    extraTasks: [
+      { title: "Confirm the speakers and their bios", at: 0.8 },
+      { title: "Collect questions for the moderator", at: 0.2 },
+      { title: "Mic check with the speakers", at: 0.03, category: "AV_PRODUCTION" },
+    ],
+  },
+
+  HACKATHON: {
+    type: "HACKATHON",
+    blurb: "Twenty-four hours, power strips, wifi that holds, and food at 2am.",
+    horizonDays: 45,
+    defaultDurationHours: 24,
+    defaultGuestCount: 100,
+    budget: [
+      { category: "VENUE", weight: 0.3 },
+      { category: "CATERING", weight: 0.45 },
+      { category: "RENTALS", weight: 0.15 },
+      { category: "AV_PRODUCTION", weight: 0.1 },
+    ],
+    required: ["VENUE", "CATERING"],
+    extraTasks: [
+      { title: "Confirm the sponsors and the prizes", at: 0.75 },
+      { title: "Confirm the judges", at: 0.5 },
+      { title: "Test the wifi with the venue", at: 0.1, category: "VENUE" },
+    ],
+  },
+
+  GAME_NIGHT: {
+    type: "GAME_NIGHT",
+    blurb: "Trivia or board games: tables, a host with a mic, and a prize worth winning.",
+    horizonDays: 14,
+    defaultDurationHours: 3,
+    defaultGuestCount: 40,
+    budget: [
+      { category: "VENUE", weight: 0.4 },
+      { category: "CATERING", weight: 0.35 },
+      { category: "AV_PRODUCTION", weight: 0.15 },
+      { category: "RENTALS", weight: 0.1 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Write the questions or pick the games", at: 0.5 },
+      { title: "Buy the prizes", at: 0.2 },
+    ],
+  },
+
+  WATCH_PARTY: {
+    type: "WATCH_PARTY",
+    blurb: "A match or a film on a big screen, sound that carries, and snacks.",
+    horizonDays: 10,
+    defaultDurationHours: 3,
+    defaultGuestCount: 50,
+    budget: [
+      { category: "VENUE", weight: 0.4 },
+      { category: "AV_PRODUCTION", weight: 0.3 },
+      { category: "CATERING", weight: 0.3 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Confirm the screen and the sound with the venue", at: 0.5, category: "VENUE" },
+      { title: "Test the stream", at: 0.03, category: "AV_PRODUCTION" },
+    ],
+  },
+
+  SHOWCASE: {
+    type: "SHOWCASE",
+    blurb: "An open mic, a talent show or a performance: a stage, a sign-up sheet, a crowd that claps.",
+    horizonDays: 30,
+    defaultDurationHours: 3,
+    defaultGuestCount: 80,
+    budget: [
+      { category: "VENUE", weight: 0.35 },
+      { category: "AV_PRODUCTION", weight: 0.3 },
+      { category: "CATERING", weight: 0.2 },
+      { category: "PHOTOGRAPHY", weight: 0.15 },
+    ],
+    required: ["VENUE", "AV_PRODUCTION"],
+    extraTasks: [
+      { title: "Open performer sign-ups", at: 0.7 },
+      { title: "Set the running order", at: 0.15 },
+      { title: "Sound check with the performers", at: 0.03, category: "AV_PRODUCTION" },
+    ],
+  },
+
+  RUN_CLUB: {
+    type: "RUN_CLUB",
+    blurb: "A meeting point, a route, and coffee after.",
+    horizonDays: 7,
+    defaultDurationHours: 2,
+    defaultGuestCount: 30,
+    budget: [
+      { category: "CATERING", weight: 0.5 },
+      { category: "VENUE", weight: 0.3 },
+      { category: "PHOTOGRAPHY", weight: 0.2 },
+    ],
+    required: ["VENUE"],
+    extraTasks: [
+      { title: "Map the route and share it", at: 0.4 },
+      { title: "Check the weather", at: 0.03 },
+    ],
+  },
 };
 
 export function templateFor(type: EventType): EventTemplate {
