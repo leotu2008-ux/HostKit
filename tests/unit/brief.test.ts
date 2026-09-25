@@ -188,6 +188,23 @@ describe("eventTypeForKind", () => {
     ["birthday dinner", "BIRTHDAY"],
     ["GBM", "GENERAL_MEETING"],
     ["BLACK-TIE gala!!", "FORMAL"],
+    ["networking night", "NETWORKING"],
+    ["Networking mixer", "NETWORKING"],
+    ["coffee chat with recruiters", "NETWORKING"],
+    ["Python workshop", "WORKSHOP"],
+    ["panel on climate tech", "SPEAKER_EVENT"],
+    ["fireside chat", "SPEAKER_EVENT"],
+    ["guest speaker series", "SPEAKER_EVENT"],
+    ["spring hackathon", "HACKATHON"],
+    ["game night", "GAME_NIGHT"],
+    ["pub trivia night", "GAME_NIGHT"],
+    ["World Cup watch party", "WATCH_PARTY"],
+    ["movie night screening", "WATCH_PARTY"],
+    ["open mic night", "SHOWCASE"],
+    ["talent show", "SHOWCASE"],
+    ["Saturday run club", "RUN_CLUB"],
+    ["sunday brunch", "DINNER_PARTY"],
+    ["drama club social", "MIXER"],
   ] as const)("maps %s to %s", (text, type) => {
     expect(eventTypeForKind(text)).toBe(type);
   });
@@ -215,6 +232,14 @@ describe("eventTypeForKind", () => {
       GENERAL_MEETING: "gbm",
       DINNER_PARTY: "dinner",
       MIXER: "mixer",
+      NETWORKING: "networking",
+      WORKSHOP: "workshop",
+      SPEAKER_EVENT: "panel",
+      HACKATHON: "hackathon",
+      GAME_NIGHT: "trivia",
+      WATCH_PARTY: "watch party",
+      SHOWCASE: "open mic",
+      RUN_CLUB: "run club",
     };
     expect(eventTypeForKind(phrase[type])).toBe(type);
   });

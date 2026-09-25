@@ -80,16 +80,24 @@ export function describeMissing(fields: BriefField[]): string {
  * nothing more specific already claimed.
  */
 const KIND_KEYWORDS: Array<[EventType, string[]]> = [
+  ["HACKATHON", ["hackathon", "hack night", "buildathon", "datathon", "game jam"]],
   ["PITCH_NIGHT", ["pitch", "demo day", "demo night", "shark tank", "startup competition"]],
+  ["WATCH_PARTY", ["watch party", "watch along", "viewing party", "screening", "movie night", "film night", "super bowl", "world cup"]],
+  ["GAME_NIGHT", ["game night", "games night", "trivia", "quiz night", "board game", "poker night", "bingo"]],
+  ["SHOWCASE", ["open mic", "talent show", "showcase", "recital", "concert", "comedy night", "art show", "exhibition"]],
+  ["RUN_CLUB", ["run club", "running club", "fun run", "group run", "5k", "walk club"]],
   ["FORMAL", ["formal", "gala", "black tie", "ball", "prom"]],
   ["FUNDRAISER", ["fundraiser", "benefit", "charity", "philanthropy", "raiser"]],
   ["STUDY_BREAK", ["study break", "finals", "midterm", "de stress", "destress", "study"]],
   ["LAUNCH_PARTY", ["launch", "release party", "debut", "premiere"]],
   ["BIRTHDAY", ["birthday", "bday", "21st", "18th", "turning"]],
   ["CORPORATE_OFFSITE", ["offsite", "off site", "retreat", "all hands", "team building", "conference", "summit"]],
-  ["GENERAL_MEETING", ["gbm", "general meeting", "general body", "info session", "interest meeting", "orientation", "workshop", "panel", "speaker series", "meeting"]],
+  ["NETWORKING", ["networking", "network", "coffee chat", "career night", "industry night", "recruiting"]],
+  ["WORKSHOP", ["workshop", "masterclass", "bootcamp", "hands on", "crash course", "skill session"]],
+  ["SPEAKER_EVENT", ["panel", "speaker", "fireside", "keynote", "lecture", "in conversation"]],
+  ["GENERAL_MEETING", ["gbm", "general meeting", "general body", "info session", "interest meeting", "orientation", "meeting"]],
   ["DINNER_PARTY", ["dinner", "supper", "banquet", "brunch", "lunch", "potluck", "tasting"]],
-  ["MIXER", ["mixer", "social", "networking", "happy hour", "meet and greet", "kickback", "party", "night"]],
+  ["MIXER", ["mixer", "social", "happy hour", "meet and greet", "kickback", "party", "night"]],
 ];
 
 function normalizeKind(text: string): string {
