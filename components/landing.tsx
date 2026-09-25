@@ -135,7 +135,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             style={stagger(0)}
           >
             <HostyMark size={16} className="text-ink" />
-            Meet Hosty, an agent for the whole event
+            Meet Hosty, an agent that saves you hours on every event
           </p>
 
           <HeroHeadline
@@ -147,7 +147,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft md:text-[19px]"
             style={stagger(2)}
           >
-            <WaveText by="word" text="Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day." />
+            <WaveText by="word" text="Skip the weeks of spreadsheets and back-and-forth. Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day." />
           </p>
 
           <div

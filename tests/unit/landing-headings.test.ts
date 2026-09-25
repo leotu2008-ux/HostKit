@@ -55,7 +55,7 @@ describe("landing subtitles", () => {
   };
 
   const subtitles = [
-    "Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day.",
+    "Skip the weeks of spreadsheets and back-and-forth. Brief it once and it drafts the plan, the budget, and the messages to venues and vendors. You send those. It tracks who’s coming and hands you a run sheet for the day.",
     "Not a chatbot bolted onto a form. It carries one event from the first idea to the last person through the door.",
     "The agent drafts the plan",
     "Nothing is sent, published or spent without you pressing the button. Every message is yours to edit first.",
