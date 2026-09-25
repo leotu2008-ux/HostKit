@@ -45,6 +45,14 @@ const BY_EVENT_TYPE: Record<string, EventIcon> = {
   GENERAL_MEETING: "meeting",
   PITCH_NIGHT: "talk",
   STUDY_BREAK: "study",
+  NETWORKING: "career",
+  WORKSHOP: "meeting",
+  SPEAKER_EVENT: "talk",
+  HACKATHON: "career",
+  GAME_NIGHT: "celebration",
+  WATCH_PARTY: "stage",
+  SHOWCASE: "stage",
+  RUN_CLUB: "fitness",
 };
 
 const SPORTS =

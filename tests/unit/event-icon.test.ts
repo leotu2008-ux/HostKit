@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_ICON, iconFor, type EventIcon } from "@/lib/event-icon";
+import { ALL_EVENT_TYPES } from "@/lib/catalog";
 
 /**
  * Every title below is a real one, taken from the synced campus feed, so the
@@ -75,6 +76,15 @@ describe("Hosty's own events", () => {
 
   it("falls back to the title for a type it doesn't know", () => {
     expect(iconFor({ title: "Gallery Night", type: "SOMETHING_NEW" })).toBe("arts");
+  });
+
+  it.each(ALL_EVENT_TYPES)("gives %s its own icon, whatever the title says", (type) => {
+    expect(iconFor({ type, title: "" })).not.toBe(DEFAULT_ICON);
+  });
+
+  it("draws a run club as fitness and a showcase as a stage", () => {
+    expect(iconFor({ type: "RUN_CLUB" })).toBe("fitness");
+    expect(iconFor({ type: "SHOWCASE" })).toBe("stage");
   });
 });
 
