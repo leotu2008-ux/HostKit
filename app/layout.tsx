@@ -20,7 +20,7 @@ const garamond = EB_Garamond({
 });
 
 const description =
-  "An AI agent that saves you hours on any event. It drafts the plan, budget, run sheet and vendor messages, then runs RSVPs, blasts and door check-in. You approve every send.";
+  "An AI agent that saves you hours on any event. It drafts the plan, budget and vendor messages, runs RSVPs and check-in, and you approve every send.";
 
 export const metadata: Metadata = {
   title: {

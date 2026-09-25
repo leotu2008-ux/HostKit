@@ -20,12 +20,13 @@ describe("the site description", () => {
   });
 
   it("is what search results and link previews show", () => {
+    expect(description.length).toBeLessThanOrEqual(155);
     expect(metadata.openGraph?.description).toBe(description);
     expect(metadata.twitter?.description).toBe(description);
   });
 
   it("keeps the promise that the host presses send, and drops the old consumer copy", () => {
-    expect(description).toContain("You approve every send.");
+    expect(description).toContain("you approve every send");
     expect(description).not.toContain("Find a night");
     expect(description).not.toContain("register in a tap");
   });
