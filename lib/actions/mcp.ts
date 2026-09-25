@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { issueToken } from "@/lib/api/token";
+import { revokeAgentTokens } from "@/lib/agent-tokens";
 import { getCurrentUser } from "@/lib/session";
 
 export type McpTokenState = { token: string } | { error: string };
@@ -11,9 +12,10 @@ export type McpTokenState = { token: string } | { error: string };
 /**
  * A bearer token for the signed-in account, for the hosted MCP.
  *
- * Same token `POST /api/v1/auth/token` issues: thirty days, and a password
- * reset ends every one of them. Nothing is stored beyond the signature, so
- * the page can show it once and cannot look it up again.
+ * Same token `POST /api/v1/auth/token` issues: thirty days. A password
+ * reset or Revoke agent access ends every one issued before it. Nothing is
+ * stored beyond the signature, so the page can show it once and cannot look
+ * it up again.
  */
 export async function issueMcpTokenAction(): Promise<McpTokenState> {
   const user = await getCurrentUser();
@@ -24,6 +26,20 @@ export async function issueMcpTokenAction(): Promise<McpTokenState> {
   });
   if (!row) return { error: "Sign in first." };
   return { token: issueToken(user.id, row.sessionVersion) };
+}
+
+/**
+ * Ends bearer tokens issued before now (Cursor and the iOS app). The browser
+ * session is a cookie and stays. OAuth grants are separate and stay until
+ * disconnected on the AI connections page.
+ */
+export async function revokeAgentAccessAction() {
+  const actor = await getCurrentUser();
+  if (!actor) redirect("/signin?next=%2Fsettings");
+  await revokeAgentTokens(actor.id);
+  revalidatePath("/settings");
+  revalidatePath("/mcp");
+  redirect("/settings?agent=revoked");
 }
 
 /** Ends one OAuth grant. Access and refresh tokens for it stop working. */

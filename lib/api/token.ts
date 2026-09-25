@@ -10,13 +10,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * anything Auth.js signs.
  */
 
-const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
+export const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 export type TokenPayload = {
   sub: string;
   exp: number;
   /** The account's session version when issued; a reset bumps it. */
   v: number;
+  /** Milliseconds when issued. Absent on tokens from before revocation existed. */
+  iat?: number;
 };
 
 function apiKey(): string {
@@ -39,6 +41,7 @@ export function issueToken(
     sub: userId,
     exp: Math.floor(now / 1000) + TOKEN_TTL_SECONDS,
     v: version,
+    iat: now,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${body}.${signature(body, key)}`;
@@ -70,8 +73,22 @@ export function verifyToken(
     if (payload.exp * 1000 <= now) return null;
     // Tokens from before versions existed count as version 0.
     const v = typeof payload.v === "number" ? payload.v : 0;
-    return { sub: payload.sub, exp: payload.exp, v };
+    const iat = typeof payload.iat === "number" ? payload.iat : undefined;
+    return iat === undefined
+      ? { sub: payload.sub, exp: payload.exp, v }
+      : { sub: payload.sub, exp: payload.exp, v, iat };
   } catch {
     return null;
   }
+}
+
+/**
+ * When the token was issued, in milliseconds.
+ *
+ * New tokens carry `iat`. Older ones only have `exp`, which was `issued + TTL`,
+ * so the issue time is recovered from that. Revocation compares this value.
+ */
+export function tokenIssuedAt(payload: TokenPayload): number {
+  if (typeof payload.iat === "number") return payload.iat;
+  return (payload.exp - TOKEN_TTL_SECONDS) * 1000;
 }

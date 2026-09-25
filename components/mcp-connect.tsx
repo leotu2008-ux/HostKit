@@ -62,7 +62,7 @@ export function McpConnect({
           {token ? (
             <Field
               label="Your token"
-              hint="Shown once. It lasts 30 days, and a password reset ends it. Don’t commit it."
+              hint="Shown once. It lasts 30 days. Revoke agent access in Settings ends it, and so does a password reset. Don’t commit it."
             >
               <Input readOnly value={token} spellCheck={false} autoComplete="off" className="font-mono text-sm" />
             </Field>
@@ -73,7 +73,7 @@ export function McpConnect({
           )}
           {token ? (
             <p className="text-[13px] text-ink-mute" role="status">
-              Paste that into Cursor or Claude. Generating another does not revoke this one.
+              Paste that into Cursor or Claude. Generating another does not revoke this one — use Revoke agent access in Settings.
             </p>
           ) : null}
         </div>
