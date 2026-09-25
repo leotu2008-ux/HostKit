@@ -158,7 +158,7 @@ password otherwise.
 | `npm run db:migrate` / `db:seed` / `db:reset` | Database. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL` |
 | `npm run db:studio` | Prisma Studio |
 | `npm run relink:guest-book` | One-off: links guests added since the recurring-hosts backfill to their host's guest book. Idempotent |
-| `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
+| `npm run vercel-build` | What Vercel runs: `node scripts/vercel-build.mjs` (generate, then `next build`; migrate and seed only when `VERCEL_ENV` is `production`) |
 
 ## Deploying to Vercel
 
@@ -172,14 +172,16 @@ Production and Preview:
 | `AUTH_SECRET` | `openssl rand -base64 32` |
 | `AUTH_TRUST_HOST` | `true` |
 | `DIRECT_URL` | Optional. The non-pooled URL, used by `prisma migrate` |
-| `HOSTY_ADMIN_PASSWORD` | Optional. The seed creates or rotates the administrator from it on every deploy |
-| `DEMO_PASSWORD` | Optional, 8+ characters. Applied to the demo accounts on every deploy; without it they get a random password |
+| `HOSTY_ADMIN_PASSWORD` | Optional. The production seed creates or rotates the administrator from it |
+| `DEMO_PASSWORD` | Optional, 8+ characters. Applied to the demo accounts on each production deploy; without it they get a random password |
 | `CRON_SECRET` | Protects the scheduled routes below; Vercel sends it as a bearer token |
 
-`vercel-build` generates Prisma Client, applies migrations, seeds the catalog
-if it's empty, and runs `next build`. **Preview builds run against the
-production database too**, so a migration or seed change takes effect the
-moment a preview builds.
+`vercel-build` (`node scripts/vercel-build.mjs`) generates Prisma Client and
+runs `next build` on every Vercel build. It applies migrations and seeds the
+catalog only when `VERCEL_ENV` is `production`. Preview and development builds
+skip both, so they never touch the database. Preview and production still
+share one database at runtime. A preview with schema changes may error until
+the migration lands on `main` and a production build applies it.
 
 **Scheduled jobs** (`vercel.json`): `agent-briefing` (13:00 UTC) sends each
 host their "needs you today" digest; `agent-run` (13:30 UTC) picks up runs
