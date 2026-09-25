@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { EB_Garamond, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { AppFrame } from "@/components/app-frame";
 import { LaunchSplash } from "@/components/launch-splash";
 import { SPLASH_BOOTSTRAP } from "@/lib/splash";
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </noscript>
         <LaunchSplash />
         <AppFrame>{children}</AppFrame>
+        <Analytics />
       </body>
     </html>
   );
