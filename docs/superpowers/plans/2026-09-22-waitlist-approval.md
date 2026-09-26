@@ -15,7 +15,7 @@
 - The administrator is an address in `ADMIN_EMAILS` (`isAdmin` in `lib/access.ts`). Only `isAdmin(user)` may approve.
 - Dashboard access = `isMayaChen(user) || isAdmin(user) || user.approvedAt != null`. No other path.
 - Frozen areas (iOS, Clubs, Discover/campus, anonymous draft claiming) get no new UI or copy. The only allowed change there is the access check behind `createBlankEventAction`.
-- The migration is additive only (new nullable columns, one unique index, one FK). Vercel preview builds run `prisma migrate deploy` against the production database.
+- The migration is additive only (new nullable columns, one unique index, one FK). Migrate and seed run only when `VERCEL_ENV` is `production`; preview builds do not touch the database. A preview with schema changes may error until the migration lands on `main`.
 - `"use server"` exports are public endpoints: every server action re-checks `isAdmin` or access itself.
 - Never use browser `confirm()` dialogs. Actions that send email or delete use a two-step button.
 - User-facing copy: plain, second person, no "free to start" and no "no account needed".

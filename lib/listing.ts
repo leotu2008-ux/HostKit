@@ -1,14 +1,9 @@
-import type { EventVisibility, TicketType } from "@/generated/prisma/enums";
+import type { EventVisibility } from "@/generated/prisma/enums";
 
 export const VISIBILITY_LABEL: Record<EventVisibility, string> = {
   PUBLIC: "Public on Discover",
   UNLISTED: "Unlisted link",
   PRIVATE: "Private",
-};
-
-export const TICKET_LABEL: Record<TicketType, string> = {
-  FREE: "Free",
-  PAID: "Paid tickets",
 };
 
 export function isDiscoverable(event: {

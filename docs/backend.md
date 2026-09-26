@@ -9,7 +9,7 @@ Postgres database. There is no second service to deploy.
 
 | Concern | Where it lives | Status |
 | --- | --- | --- |
-| **Data** | Postgres via Prisma 7 (`prisma/schema.prisma`, migrations in `prisma/migrations`). On Vercel: the Storage-attached Prisma Postgres / Neon (`DATABASE_URL`, `DIRECT_URL`). `vercel-build` runs `prisma migrate deploy` on every deploy. | **Live** |
+| **Data** | Postgres via Prisma 7 (`prisma/schema.prisma`, migrations in `prisma/migrations`). On Vercel: the Storage-attached Prisma Postgres / Neon (`DATABASE_URL`, `DIRECT_URL`). `vercel-build` runs `prisma migrate deploy` and the seed only when `VERCEL_ENV` is `production`. Preview and development builds skip both. A preview with schema changes may error until the migration lands on `main`. | **Live** |
 | **Accounts** | Email + password. Web: Auth.js credentials with JWT sessions (`lib/auth.ts`). App: 30-day HMAC bearer tokens (`lib/api/token.ts`). Passwords bcrypt-hashed; sign-in takes the same time for unknown emails. Administrators are the addresses in `ADMIN_EMAILS` (comma-separated, trimmed, case-insensitive). Unset means nobody is an administrator. `POST /api/v1/events` requires the same dashboard access as the website. Anonymous drafts are disabled for the beta; `POST /api/v1/drafts/claim` only attaches drafts that already exist. | **Live** |
 | **Account recovery** | Password reset by one-time link (`lib/account.ts`, `/forgot-password`, `/reset-password`, `POST /api/v1/auth/forgot` + `/reset`). Tokens stored hashed, one hour, single use. A waitlist approval (`/admin/waitlist`) sends the same kind of link as a set-password invite, good for a week. | **Live**; needs Resend to actually email |
 | **Email verification** | A link on sign-up and on demand (`/verify-email?token=`, `POST /api/v1/auth/verify`); `User.emailVerifiedAt`; a nudge on the profile until confirmed. Students' `.edu` school stays a claim until this is set. | **Live**; needs Resend to actually email |
@@ -102,7 +102,7 @@ key the form offers typing an address (`unavailable: true`).
 ## Data safety
 
 - **Backups.** Prisma Postgres and Neon both keep point-in-time history on the dashboard; turn on the longest retention your plan allows. There is no app-level backup job.
-- **Migrations** are forward-only and applied on deploy. Never edit an applied migration; add a new one (`npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`).
+- **Migrations** are forward-only and applied on a production deploy (`VERCEL_ENV=production`). Preview and development builds skip `prisma migrate deploy` and the seed. A preview with schema changes may error until the migration lands on `main`. Never edit an applied migration; add a new one (`npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`).
 - **Deleting an account** cascades through events, registrations, follows, tokens and notifications by schema. There is no self-serve delete yet — see below.
 - **Never point `migrate dev` at the hosted database.** It authors migrations and offers to drop the database when it has drifted; a half-applied run leaves a failed row in `_prisma_migrations` and then *every* deploy fails. `npm run db:migrate` and `db:reset` now refuse a non-local `DATABASE_URL` (`scripts/guard-local-db.mjs`); `ALLOW_REMOTE_MIGRATE=1` overrides it deliberately. `npm run db:deploy` is the safe one — it only applies migrations that already exist.
 

@@ -4,10 +4,12 @@ import { AuthError, CredentialsSignin } from "next-auth";
 import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
 import { headers } from "next/headers";
+import { updateTag } from "next/cache";
 import { safeNextPath } from "@/lib/listing";
 import { AccountError, unverifiedMessage } from "@/lib/account";
 import { joinEmailList } from "@/lib/email-list";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
+import { WAITLIST_COUNT_TAG, readWaitlistCount } from "@/lib/waitlist-count";
 
 export type AuthFormState =
   | {
@@ -15,7 +17,11 @@ export type AuthFormState =
       /** Sign-in refused because the address isn’t confirmed: offer a resend. */
       unverifiedEmail?: string;
       /** Sign-up adds the address to the list. It does not create an account. */
-      listed?: { email: string };
+      listed?: {
+        email: string;
+        /** Everyone on the list, read just after they joined; null if unread. */
+        waitlistCount?: number | null;
+      };
     }
   | undefined;
 
@@ -43,7 +49,10 @@ export async function signUpAction(
   try {
     await assertRateLimit(`signup:ip:${clientIp(h)}`, ...LIMITS.signUp.perIp);
     const { email } = await joinEmailList(parsed.data);
-    return { listed: { email } };
+    // The landing page's cached count is out of date now: expire it so the
+    // next view reads the new number, and hand this tab the fresh one.
+    updateTag(WAITLIST_COUNT_TAG);
+    return { listed: { email, waitlistCount: await readWaitlistCount() } };
   } catch (error) {
     if (error instanceof RateLimitError) return { error: error.message };
     if (error instanceof AccountError) return { error: error.message };

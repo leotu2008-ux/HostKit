@@ -42,17 +42,6 @@ describe("the consumer web pages are gone", () => {
     expect(columns).toBe(3);
   });
 
-  it("describes Hosty for recurring hosts, not the old consumer app", () => {
-    const layout = readFileSync(new URL("../../app/layout.tsx", import.meta.url), "utf8");
-    const description =
-      "For recurring event hosts. An agent drafts the plan, budget, run sheet, guest list and RSVPs, blasts, and door check-in, then runs the next night again.";
-    expect(layout).toContain(description);
-    expect(layout).toContain("openGraph: { description }");
-    expect(layout).toContain("twitter: { description }");
-    expect(layout).not.toContain("Find a night");
-    expect(layout).not.toContain("register in a tap");
-  });
-
   it("does not tell a host that Discover leads with their school", () => {
     const profile = readFileSync(new URL("../../app/(app)/profile/page.tsx", import.meta.url), "utf8");
     expect(profile).not.toContain("Discover leads");

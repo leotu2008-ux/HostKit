@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Scope: planning only
+
+Hosty is only for planning events. Never build ticketing, RSVP, check-in, or guest blast (guest messaging) features, and don't extend the code that already exists for them. Point that work to Luma, Partiful, Eventbrite, or similar tools. Messages to vendors and venues are part of planning and stay in scope.

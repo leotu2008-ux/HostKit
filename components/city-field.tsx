@@ -38,8 +38,8 @@ function PinIcon() {
   );
 }
 
-/** Whether a previous prompt was already refused — the cookie
- *  components/city-detector.tsx writes when Discover's own ask is denied. */
+/** Whether a previous prompt was already refused — the cookie the former
+ *  Discover page's city detector wrote when its ask was denied. */
 function locationRefused(): boolean {
   return document.cookie.includes(`${CITY_COOKIE}=none`) || document.cookie.includes(`${LEGACY_CITY_COOKIE}=none`);
 }

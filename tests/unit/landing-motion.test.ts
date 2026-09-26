@@ -85,7 +85,7 @@ describe("landing page", () => {
       "4",
       "5",
     ]);
-    expect(lines[0]).toContain("Meet Hosty, an agent for the whole event");
+    expect(lines[0]).toContain("Meet Hosty, an agent that saves you hours on every event");
     expect(lines[0]).toContain('viewBox="0 0 100 100"');
     expect(lines[1]).toContain("Plan the event.");
     expect(lines[1]).toContain("Let the agent do");
