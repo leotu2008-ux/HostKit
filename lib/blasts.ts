@@ -18,10 +18,6 @@ export type Segment = keyof typeof SEGMENTS;
 
 export const SEGMENT_KEYS = Object.keys(SEGMENTS) as Segment[];
 
-export function isSegment(value: unknown): value is Segment {
-  return typeof value === "string" && value in SEGMENTS;
-}
-
 type SegmentGuest = { rsvpStatus: RsvpStatus; checkedInAt?: Date | null };
 
 /**

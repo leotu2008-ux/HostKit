@@ -236,12 +236,3 @@ export async function registrationStates(
 export async function isRegistered(eventId: string, userId: string | null): Promise<boolean> {
   return (await registrationState(eventId, userId)) === "going";
 }
-
-/** Event ids from `eventIds` this account is registered (attending) for. */
-export async function registeredEventIds(
-  eventIds: string[],
-  userId: string | null,
-): Promise<Set<string>> {
-  const states = await registrationStates(eventIds, userId);
-  return new Set([...states].filter(([, state]) => state === "going").map(([id]) => id));
-}

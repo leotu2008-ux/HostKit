@@ -45,13 +45,6 @@ export const clubSelect = {
   _count: { select: { followers: true } },
 } as const;
 
-/** Where a synced club's events come from, for crediting it on the page. */
-export function officialSourceKey(club: { sourceRef: string | null }): string | null {
-  if (!club.sourceRef) return null;
-  const i = club.sourceRef.lastIndexOf(":");
-  return i > 0 ? club.sourceRef.slice(0, i) : null;
-}
-
 /** Upcoming official calendar events put on by a synced club. */
 export async function officialClubEvents(club: { sourceRef: string | null }, take = 20) {
   if (!club.sourceRef) return [];

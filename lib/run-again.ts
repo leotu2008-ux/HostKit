@@ -55,8 +55,6 @@ export type RerunSource = {
   }[];
 };
 
-export type RerunPlan = ReturnType<typeof planRerun>;
-
 /** When guests arrive on a night: its start time, or for a date-only night (stored
  *  at noon) the type's usual hour, which is where the run sheet was drafted. */
 function arrival(date: Date, type: EventType): Date {

@@ -75,12 +75,6 @@ export async function forgetDraftClaim(eventId: string) {
   });
 }
 
-export async function clearDraftClaims() {
-  const jar = await cookies();
-  jar.delete(DRAFT_COOKIE);
-  jar.delete(LEGACY_DRAFT_COOKIE);
-}
-
 export function claimMatches(
   claims: DraftClaim[],
   eventId: string,

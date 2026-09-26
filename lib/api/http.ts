@@ -76,8 +76,6 @@ export async function apiUser(request: Request) {
   return user;
 }
 
-export type ApiUserRow = NonNullable<Awaited<ReturnType<typeof apiUser>>>;
-
 /**
  * An event this request may manage: one the signed-in user owns, or a draft
  * the device made and still holds the token for. Null otherwise, so callers

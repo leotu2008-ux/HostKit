@@ -123,24 +123,6 @@ const PATHS: Record<EventIcon, React.ReactNode> = {
   ),
 };
 
-/** The glyph alone, for previews and any caller that wants it inline. */
-export function EventGlyph({ icon, className }: { icon: EventIcon; className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      {PATHS[icon]}
-    </svg>
-  );
-}
-
 /** The same drawing, positioned for the cover's 400x225 canvas. */
 export function GlyphOnCover({ icon }: { icon: EventIcon }) {
   return (
