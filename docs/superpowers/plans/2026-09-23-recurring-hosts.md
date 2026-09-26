@@ -25,7 +25,7 @@ Each feature is a plain library module (`lib/guest-book.ts`, `lib/vendor-book.ts
 - The vendor book is filled only when a venue, speaker or cohost becomes `CONFIRMED`, or when a catalog inquiry becomes `BOOKED`. Nothing is backfilled for vendors.
 - Book entries belong to the event's `ownerId`. An event with no owner neither reads nor writes books.
 - Frozen areas (iOS, Clubs, Discover/campus, anonymous claiming) get no new UI or copy. `EventCard` is shared with Discover, so it isn't changed.
-- The migration adds tables, nullable columns and indexes. Its only data change is the guest-book backfill (INSERT … ON CONFLICT DO NOTHING, plus an UPDATE of `Guest.contactId` where it's null). Vercel preview builds run `prisma migrate deploy` against the production database.
+- The migration adds tables, nullable columns and indexes. Its only data change is the guest-book backfill (INSERT … ON CONFLICT DO NOTHING, plus an UPDATE of `Guest.contactId` where it's null). Migrate and seed run only when `VERCEL_ENV` is `production`; preview builds do not touch the database. A preview with schema changes may error until the migration lands on `main`.
 - `"use server"` exports are public endpoints: every new action calls `requireEvent(eventId)` (or checks ownership) itself. Write logic lives in plain `lib/*.ts` modules, never in `"use server"` files.
 - No browser `confirm()` dialogs.
 - Commit messages are plain imperative sentences.

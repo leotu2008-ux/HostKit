@@ -13,12 +13,12 @@ package stay **HostKit**. This plan does not rename identifiers.
 | Piece | What the repo actually uses |
 | --- | --- |
 | App | Next.js 16.3.4 (App Router), React 19.2.8, TypeScript, Tailwind v4 |
-| Data | Prisma 7.10 → Postgres. Models use `cuid()` ids and camelCase fields. `vercel-build` runs `prisma migrate deploy` on every deploy, including previews |
+| Data | Prisma 7.10 → Postgres. Models use `cuid()` ids and camelCase fields. `vercel-build` runs `prisma migrate deploy` and the seed only when `VERCEL_ENV` is `production`. Preview and development builds skip both. A preview with schema changes may error until the migration lands on `main` |
 | Auth | Auth.js / next-auth v5 beta (`next-auth@5.0.0-beta.32`), **credentials only** (`lib/auth.ts`). JWT sessions. Passwords are bcrypt (`bcryptjs`). App API uses 30-day HMAC bearer tokens (`lib/api/token.ts`) |
 | Email libraries | `nodemailer` and `@types/nodemailer` are already dependencies. There is **no** Resend, Postmark, React Email, MJML, Inngest, Trigger.dev, Bull, or Vercel Workflow package |
 | Jobs | Vercel Cron in `vercel.json`: `campus-sync`, `close-events`, `agent-briefing`, `agent-run`. Routes under `app/api/cron/*` check `CRON_SECRET`. Deferred work already uses `after()` from `next/server` (`lib/agent/trigger.ts`) |
 | Tests | Vitest. Email transport, failure classification, waitlist confirmation, and approval-invite failures are covered |
-| Host | One Vercel project named `hosty`. Preview builds apply migrations to the **production** database (README). iOS is a separate SwiftUI client of `/api/v1` and does not send mail itself |
+| Host | One Vercel project named `hosty`. Preview and production share one database at runtime, but only a production build applies migrations (README). A preview with schema changes may error until the migration lands on `main`. iOS is a separate SwiftUI client of `/api/v1` and does not send mail itself |
 
 Auth.js does not send mail. There is no Email, magic-link, or OAuth provider in
 `lib/auth.ts`. Supabase, Clerk, and Firebase are not in this app. Every
@@ -588,9 +588,10 @@ No new emails. Existing sends keep working in production.
 - `prisma/migrations/<timestamp>_email_outbox/migration.sql` — generated
   locally against a local database only. Never `migrate dev` against the
   hosted URL (`scripts/guard-local-db.mjs` already refuses).
-- No callers yet. Deploy applies it, including preview, because preview
-  builds run `prisma migrate deploy` on the production database. Merge
-  this PR only when Leo expects that.
+- No callers yet. `vercel-build` applies it only when `VERCEL_ENV` is
+  `production`. A preview with this schema change may error until the
+  migration lands on `main` and a production build applies it. Merge
+  this PR only when Leo expects that production deploy.
 
 ### PR 3 — Outbox and drain
 
@@ -777,10 +778,12 @@ click through DNS.
 9. **Postal address** for the CAN-SPAM / CASL footer. A real street
    address. It will be visible in every blast and club email.
 10. **Migration.** PR 2's SQL is applied by `vercel-build` on the next
-    preview **and** the next production deploy, against the one shared
-    database. Read the SQL before you let that deploy run. If a migrate
-    fails halfway, follow the P3009 steps already in `docs/backend.md`.
-    Do not point `npm run db:migrate` at the hosted database.
+    production deploy only (`VERCEL_ENV=production`). Preview builds skip
+    migrate and seed. A preview with this schema change may error until
+    the migration lands on `main`. Read the SQL before you let that
+    production deploy run. If a migrate fails halfway, follow the P3009
+    steps already in `docs/backend.md`. Do not point `npm run db:migrate`
+    at the hosted database.
 11. **Auth.js.** There is no provider SMTP form to fill in. Optional only:
     if you later insist on SMTP, Resend's host is `smtp.resend.com`, user
     `resend`, password the API key, From on the verified domain. The plan
