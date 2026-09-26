@@ -11,6 +11,7 @@ import { HostyMark } from "@/components/hosty-mark";
 import { HeroHeadline } from "@/components/hero-headline";
 import { Reveal } from "@/components/reveal";
 import { ButtonLink } from "@/components/ui";
+import { WaitlistCount } from "@/components/waitlist-count";
 
 /**
  * The front door, for everyone — app/page.tsx renders this signed in or out.
@@ -21,7 +22,9 @@ import { ButtonLink } from "@/components/ui";
  * what comes back, rather than a paragraph claiming it.
  *
  * Nothing here queries the database. A landing page that waits on Postgres to
- * render its headline is a landing page people leave.
+ * render its headline is a landing page people leave. The one number it shows,
+ * the waitlist count, is read by app/page.tsx from a cache that refreshes
+ * about once a minute.
  *
  * The preview panel below is an example. It is representative of a real
  * draft, not a screenshot of a live run.
@@ -114,7 +117,25 @@ function PrimaryCta({ canCreate }: { canCreate: boolean }) {
   );
 }
 
-export function Landing({ canCreate }: { canCreate: boolean }) {
+/** The count under a "Join the waitlist" button. `basis-full` puts it on its
+ *  own row beneath the buttons; it renders nothing for a null or zero count. */
+function WaitlistLine({ count }: { count: number | null | undefined }) {
+  return (
+    <WaitlistCount
+      count={count}
+      className="basis-full text-[13px] font-medium tabular-nums text-ink-soft"
+    />
+  );
+}
+
+export function Landing({
+  canCreate,
+  waitlistCount = null,
+}: {
+  canCreate: boolean;
+  /** How many people are on the waitlist; null when it couldn't be read. */
+  waitlistCount?: number | null;
+}) {
   return (
     <main className="relative isolate -mt-16 flex-1 bg-paper md:-mt-[4.25rem]">
       {/* No header: the app shell already renders the nav and the brand. The
@@ -155,6 +176,7 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
             style={stagger(3)}
           >
             <PrimaryCta canCreate={canCreate} />
+            {canCreate ? null : <WaitlistLine count={waitlistCount} />}
           </div>
           <p className="rise mt-4 text-[13px] text-ink-mute" style={stagger(4)}>
             {canCreate
@@ -251,9 +273,12 @@ export function Landing({ canCreate }: { canCreate: boolean }) {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
             <PrimaryCta canCreate={canCreate} />
             {canCreate ? null : (
-              <ButtonLink href="/signin" variant="secondary" size="lg">
-                Sign in
-              </ButtonLink>
+              <>
+                <ButtonLink href="/signin" variant="secondary" size="lg">
+                  Sign in
+                </ButtonLink>
+                <WaitlistLine count={waitlistCount} />
+              </>
             )}
           </div>
         </Reveal>
