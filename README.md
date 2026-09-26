@@ -1,25 +1,30 @@
 # Hosty
 
-**An AI agent for people who run the same event again and again.**
+**An AI agent that saves you hours on every event you host.**
 
-Brief Hosty once and he drafts the plan, lines up venues, writes to vendors,
-tracks who's coming and hands you a run sheet for the day. You approve. He
-does the rest. The second, fifth and twentieth night should take a fraction
-of the first.
+Brief Hosty once and he drafts the plan and budget, lines up venues that fit,
+drafts the messages to vendors, tracks who's coming and hands you a run sheet
+for the day. You approve. He does the rest, so hosting takes a fraction of
+the time it used to.
 
 Live at [tryhosty.app](https://tryhosty.app). Invite-only while we're small.
 
 ## Who it's for
 
-**Recurring hosts**: the person behind a monthly pitch night, a weekly run
-club social or a termly alumni dinner. Every product decision is judged by
-one question: *does this make the next night faster than the last one?*
+**Anyone hosting an event of about 20 to 250 people**: a mixer, a workshop,
+a pitch night, a team offsite, a club formal. Big enough that doing it by
+hand eats your week, too small to pay an event planner. Every product
+decision is judged by one question: *does this save the host time?*
 
-Hosty is **B2B and host-side only**. Guests never need an account to be
-invited, vendors and venues never log in, and there is no consumer
-marketplace. One-off hosts can use Hosty, but nothing is built for them
-specifically. The full product scope is locked in
-[`docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md`](docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md).
+Hosting again is where it compounds. Run it again, the guest book and the
+vendor book carry everything from the last event into the next one, so each
+one takes less work than the one before.
+
+Hosty is **host-side only**. Guests never need an account to be invited,
+vendors and venues never log in, and there is no consumer marketplace. The
+access and data-model decisions from the earlier scope lock still hold
+([`docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md`](docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md));
+its recurring-hosts-only positioning does not.
 
 ## Meet Hosty
 
@@ -78,7 +83,7 @@ budget, and comfortable for 90 guests."** Booking a vendor writes into the
 budget and ticks off the matching task, and RSVPs feed back into the
 headcount everything is priced against.
 
-**For the next night:**
+**For your next event:**
 
 - **Run it again** (owner only) copies the brief, budget split, tasks, vendors
   and run sheet into a new draft on a new date. Guests aren't copied
@@ -224,7 +229,7 @@ cases that matter are reachable from a test:
 | `lib/brief-classify.ts`, `lib/night-competition.ts` | Jev's brief and competing-night decisions |
 | `lib/scoring.ts` | Prices and scores one listing against one event |
 | `lib/plan.ts`, `lib/templates.ts` | The budget and timeline for an event type |
-| `lib/run-again.ts`, `lib/guest-book.ts`, `lib/vendor-book.ts` | The recurring-host features |
+| `lib/run-again.ts`, `lib/guest-book.ts`, `lib/vendor-book.ts` | What carries one event into the next: run it again, the guest book, the vendor book |
 | `lib/budget.ts`, `lib/guests.ts`, `lib/runsheet.ts` | Budget roll-up, RSVP maths, the day-of schedule |
 | `lib/money.ts` | Integer-cent arithmetic and formatting |
 
