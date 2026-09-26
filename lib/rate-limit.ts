@@ -31,11 +31,6 @@ export async function assertRateLimit(key: string, limit: number, windowMs: numb
   await db.rateLimit.update({ where: { key }, data: { count: { increment: 1 } } });
 }
 
-/** Old windows are noise; the auth routes call this now and then. */
-export async function sweepRateLimits(olderThanMs = 24 * 60 * 60_000): Promise<void> {
-  await db.rateLimit.deleteMany({ where: { windowStart: { lt: new Date(Date.now() - olderThanMs) } } });
-}
-
 /** The caller's address behind Vercel's proxy, or "local" when there is none. */
 export function clientIp(headers: Headers): string {
   const forwarded = headers.get("x-forwarded-for") ?? headers.get("x-real-ip") ?? "";

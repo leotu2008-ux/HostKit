@@ -72,25 +72,6 @@ export async function record(eventId: string, line: ActivityLine): Promise<void>
   }
 }
 
-/** Posts several lines in one round trip. Same never-throws guarantee. */
-export async function recordMany(eventId: string, lines: ActivityLine[]): Promise<void> {
-  if (lines.length === 0) return;
-  try {
-    await db.activity.createMany({
-      data: lines.map((line) => ({
-        eventId,
-        actor: line.actor,
-        kind: line.kind,
-        title: line.title,
-        body: line.body ?? null,
-        href: line.href ?? null,
-      })),
-    });
-  } catch (error) {
-    console.error("[activity] failed", error);
-  }
-}
-
 export type ActivityRow = {
   id: string;
   actor: ActivityActor;

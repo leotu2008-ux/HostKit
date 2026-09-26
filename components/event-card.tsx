@@ -41,32 +41,6 @@ export function whenLabel(event: EventCardEvent): string {
   return formatEventWhen(event.date, event.durationHours);
 }
 
-/** Shapes an event row (with owner and attending count) for the card. */
-export function toEventCard(event: {
-  id: string;
-  title: string;
-  city: string;
-  date: Date | null;
-  durationHours: number;
-  schoolDomain: string | null;
-  coverUrl: string | null;
-  owner?: { name: string } | null;
-  club?: { name: string } | null;
-  _count: { guests: number };
-}): EventCardEvent {
-  return {
-    id: event.id,
-    title: event.title,
-    city: event.city,
-    date: event.date,
-    durationHours: event.durationHours,
-    going: event._count.guests,
-    hostName: event.club?.name ?? event.owner?.name,
-    schoolDomain: event.schoolDomain,
-    coverUrl: event.coverUrl,
-  };
-}
-
 /**
  * One night in a list: when, the title, who and where, with the cover as a
  * thumbnail on the right, as in a host's list of their events.
