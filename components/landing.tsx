@@ -307,6 +307,9 @@ export function Landing({
               <Link href="/signin" className="hover:text-ink">
                 Sign in
               </Link>
+              <Link href="/privacy" className="hover:text-ink">
+                Privacy
+              </Link>
             </nav>
           </div>
         </Rails>
