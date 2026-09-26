@@ -9,6 +9,14 @@ the time it used to.
 
 Live at [tryhosty.app](https://tryhosty.app). Invite-only while we're small.
 
+## Scope: planning only
+
+**Hosty is only for planning events.** It does not do ticketing, RSVPs,
+check-in, or guest messaging and blasts. Hosts handle those in Luma,
+Partiful, Eventbrite and similar tools. Some code for those features still
+exists in this repo from before this decision. Don't extend it; see the
+scope rule in [`AGENTS.md`](AGENTS.md).
+
 ## Who it's for
 
 **Anyone hosting an event of about 20 to 250 people**: a mixer, a workshop,
