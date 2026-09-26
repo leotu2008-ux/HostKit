@@ -59,6 +59,9 @@ export default function PrivacyPage() {
             <b>iOS notifications.</b> If you allow notifications in the iOS app, a device token so we can
             send them.
           </li>
+          <li>
+            <b>Page views.</b> Vercel Web Analytics records anonymous page views, with no cookies.
+          </li>
         </List>
         <P>
           When you fill in an event&rsquo;s city, your browser may ask for your location to suggest the
