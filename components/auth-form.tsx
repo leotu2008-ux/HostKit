@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { AuthFormState } from "@/lib/actions/auth";
 import Link from "next/link";
 import { Button, Field, FormError, Input } from "@/components/ui";
 import { ResendVerificationForm } from "@/components/account-forms";
+import { publishWaitlistCount } from "@/components/waitlist-count";
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -79,6 +80,13 @@ export function AuthForm({
   email?: string;
 }) {
   const [state, formAction] = useActionState(action, undefined);
+  const joinedCount = state?.listed?.waitlistCount;
+
+  // Joining changes the number under "Join the waitlist": pass it on, so the
+  // landing page shows it on the way back without waiting on the server.
+  useEffect(() => {
+    publishWaitlistCount(joinedCount);
+  }, [joinedCount]);
 
   // Joined the list. No account was created.
   if (state?.listed) {

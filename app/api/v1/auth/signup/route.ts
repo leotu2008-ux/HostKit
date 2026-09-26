@@ -1,8 +1,10 @@
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { apiError, json, readJson } from "@/lib/api/http";
 import { AccountError } from "@/lib/account";
 import { joinEmailList } from "@/lib/email-list";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
+import { WAITLIST_COUNT_TAG } from "@/lib/waitlist-count";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Tell us your name.").max(80),
@@ -24,6 +26,9 @@ export async function POST(request: Request) {
   try {
     await assertRateLimit(`signup:ip:${clientIp(request.headers)}`, ...LIMITS.signUp.perIp);
     const { email } = await joinEmailList({ name: parsed.data.name, email: parsed.data.email });
+    // updateTag is Server Action–only; this expires the landing page's
+    // cached count just as immediately.
+    revalidateTag(WAITLIST_COUNT_TAG, { expire: 0 });
     return json({ listed: true, email }, 200);
   } catch (error) {
     if (error instanceof RateLimitError) return apiError(error.message, 429);

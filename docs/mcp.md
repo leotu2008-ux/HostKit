@@ -26,7 +26,7 @@ Streamable HTTP, stateless, JSON responses. The same three tools run, still read
 
 The server holds nothing but a base URL and a bearer token. Every call goes through `/api/v1/*`, which already checks who is asking and what they may see. Reaching into the database directly would have been less code and a second place for authorisation to go wrong.
 
-So: whatever the token's owner can see, the agent can see. Nothing more. That includes guest lists. The OAuth tools below do not.
+So: whatever the token's owner can see, the agent can see. Nothing more. That includes guest names and RSVPs. `list_guests` does not include guest email addresses or phone numbers. The OAuth tools below do not see the guest list at all.
 
 ### Get a token
 
@@ -36,7 +36,7 @@ curl -X POST "$HOSTY_URL/api/v1/auth/token" \
   -d '{"email":"you@school.edu","password":"..."}'
 ```
 
-Tokens expire, and a password reset invalidates every one issued before it. A rejected token is reported as such rather than as a bare 401.
+Tokens expire after 30 days. A password reset invalidates every one issued before it, and so does Settings → Revoke agent access (that cutoff is a row in the existing `AccountToken` table, so it needs no schema change). A rejected token is reported as such rather than as a bare 401. Revoking agent access also ends the iOS app's bearer token, because it is the same kind of token. The browser session stays signed in.
 
 ### Run it over stdio
 
@@ -70,9 +70,9 @@ npm run mcp
 |---|---|
 | `list_events` | Every night you host, by date, oldest first, undated last; compare dates to today to find what's next. Start here for an id. |
 | `get_event` | One event in full: when, where, capacity, published or not. |
-| `list_guests` | The list, each person's RSVP and whether they came through the door, plus a summary. |
+| `list_guests` | Each person's name, RSVP, and whether they came through the door, plus counts. Email addresses and phone numbers are omitted. |
 
-`list_guests` is the interesting one. The RSVP and the check-in are separate facts. This tool is not offered to OAuth clients.
+`list_guests` is the interesting one. The RSVP and the check-in are separate facts. Names, RSVP status, and counts are included; email addresses and phone numbers are not. This tool is not offered to OAuth clients.
 
 Every bearer tool is read-only, and there is a test asserting that so a write cannot be added by accident.
 

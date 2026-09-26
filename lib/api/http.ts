@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { verifyToken } from "@/lib/api/token";
 import { requestOwnsDraft } from "@/lib/api/drafts";
 import { hasDashboardAccess } from "@/lib/access";
+import { agentRevokedAt, bearerRevoked } from "@/lib/agent-tokens";
 
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -61,6 +62,10 @@ export async function apiBearer(request: Request) {
   });
   // A password reset bumps the version; tokens issued before it are out.
   if (!user || user.sessionVersion !== payload.v) return null;
+  // Settings → Revoke agent access records a cutoff. Tokens issued at or
+  // before it stop working, including ones that are still inside 30 days.
+  // Every bearer path goes through here, including POST /api/v1/events.
+  if (bearerRevoked(payload, await agentRevokedAt(user.id))) return null;
   return user;
 }
 

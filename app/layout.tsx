@@ -21,7 +21,7 @@ const garamond = EB_Garamond({
 });
 
 const description =
-  "For recurring event hosts. An agent drafts the plan, budget, run sheet, guest list and RSVPs, blasts, and door check-in, then runs the next night again.";
+  "An AI agent that saves you hours on any event. It drafts the plan, budget and vendor messages, runs RSVPs and check-in, and you approve every send.";
 
 export const metadata: Metadata = {
   title: {

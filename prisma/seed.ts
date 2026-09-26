@@ -231,7 +231,8 @@ async function confirmDemoAccount(email: string): Promise<void> {
 }
 
 /**
- * The Hosty administrator (lib/access.ts `ADMIN_EMAIL`).
+ * The Hosty administrator (the first address in ADMIN_EMAILS, exported as
+ * `ADMIN_EMAIL` from lib/access.ts).
  *
  * The repo is public, so the password is never written here — not even as a
  * bcrypt hash, which a short password would not survive offline. It comes from
@@ -243,12 +244,16 @@ async function confirmDemoAccount(email: string): Promise<void> {
  * the row and bumps sessionVersion, ending every session, API token and MCP
  * grant signed in with the old password. The row is never confirmed without
  * the admin password replacing whatever hash it held.
- * With the variable unset (local, CI) the step does nothing.
+ * With HOSTY_ADMIN_PASSWORD or ADMIN_EMAILS unset (local, CI) the step does nothing.
  */
 async function seedAdminAccount() {
   const password = process.env.HOSTY_ADMIN_PASSWORD;
   if (!password) {
     console.log("HOSTY_ADMIN_PASSWORD not set; skipping the admin account.");
+    return;
+  }
+  if (!ADMIN_EMAIL) {
+    console.log("ADMIN_EMAILS not set; skipping the admin account.");
     return;
   }
   const existing = await db.user.findUnique({ where: { email: ADMIN_EMAIL } });

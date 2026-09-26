@@ -1,25 +1,30 @@
 # Hosty
 
-**An AI agent for people who run the same event again and again.**
+**An AI agent that saves you hours on every event you host.**
 
-Brief Hosty once and he drafts the plan, lines up venues, writes to vendors,
-tracks who's coming and hands you a run sheet for the day. You approve. He
-does the rest. The second, fifth and twentieth night should take a fraction
-of the first.
+Brief Hosty once and he drafts the plan and budget, lines up venues that fit,
+drafts the messages to vendors, tracks who's coming and hands you a run sheet
+for the day. You approve. He does the rest, so hosting takes a fraction of
+the time it used to.
 
 Live at [tryhosty.app](https://tryhosty.app). Invite-only while we're small.
 
 ## Who it's for
 
-**Recurring hosts**: the person behind a monthly pitch night, a weekly run
-club social or a termly alumni dinner. Every product decision is judged by
-one question: *does this make the next night faster than the last one?*
+**Anyone hosting an event of about 20 to 250 people**: a mixer, a workshop,
+a pitch night, a team offsite, a club formal. Big enough that doing it by
+hand eats your week, too small to pay an event planner. Every product
+decision is judged by one question: *does this save the host time?*
 
-Hosty is **B2B and host-side only**. Guests never need an account to be
-invited, vendors and venues never log in, and there is no consumer
-marketplace. One-off hosts can use Hosty, but nothing is built for them
-specifically. The full product scope is locked in
-[`docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md`](docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md).
+Hosting again is where it compounds. Run it again, the guest book and the
+vendor book carry everything from the last event into the next one, so each
+one takes less work than the one before.
+
+Hosty is **host-side only**. Guests never need an account to be invited,
+vendors and venues never log in, and there is no consumer marketplace. The
+access and data-model decisions from the earlier scope lock still hold
+([`docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md`](docs/superpowers/specs/2026-09-22-scope-lock-recurring-hosts.md));
+its recurring-hosts-only positioning does not.
 
 ## Meet Hosty
 
@@ -78,7 +83,7 @@ budget, and comfortable for 90 guests."** Booking a vendor writes into the
 budget and ticks off the matching task, and RSVPs feed back into the
 headcount everything is priced against.
 
-**For the next night:**
+**For your next event:**
 
 - **Run it again** (owner only) copies the brief, budget split, tasks, vendors
   and run sheet into a new draft on a new date. Guests aren't copied
@@ -94,7 +99,7 @@ headcount everything is priced against.
 ## Access
 
 Hosty is invite-only. People join the waitlist on the landing page. The
-administrator (`ADMIN_EMAIL` in `lib/access.ts`) lets them in from
+administrator (addresses in `ADMIN_EMAILS`) lets them in from
 `/admin/waitlist`, and each one gets an email with a link to set a password.
 The administrator also sees `/admin/events`, every host's events, and can
 remove any of them.
@@ -158,7 +163,7 @@ password otherwise.
 | `npm run db:migrate` / `db:seed` / `db:reset` | Database. `db:migrate` and `db:reset` refuse a non-local `DATABASE_URL` |
 | `npm run db:studio` | Prisma Studio |
 | `npm run relink:guest-book` | One-off: links guests added since the recurring-hosts backfill to their host's guest book. Idempotent |
-| `npm run vercel-build` | What Vercel runs: generate, migrate, seed, then `next build` |
+| `npm run vercel-build` | What Vercel runs: `node scripts/vercel-build.mjs` (generate, then `next build`; migrate and seed only when `VERCEL_ENV` is `production`) |
 
 ## Deploying to Vercel
 
@@ -172,14 +177,16 @@ Production and Preview:
 | `AUTH_SECRET` | `openssl rand -base64 32` |
 | `AUTH_TRUST_HOST` | `true` |
 | `DIRECT_URL` | Optional. The non-pooled URL, used by `prisma migrate` |
-| `HOSTY_ADMIN_PASSWORD` | Optional. The seed creates or rotates the administrator from it on every deploy |
-| `DEMO_PASSWORD` | Optional, 8+ characters. Applied to the demo accounts on every deploy; without it they get a random password |
+| `HOSTY_ADMIN_PASSWORD` | Optional. The production seed creates or rotates the administrator from it |
+| `DEMO_PASSWORD` | Optional, 8+ characters. Applied to the demo accounts on each production deploy; without it they get a random password |
 | `CRON_SECRET` | Protects the scheduled routes below; Vercel sends it as a bearer token |
 
-`vercel-build` generates Prisma Client, applies migrations, seeds the catalog
-if it's empty, and runs `next build`. **Preview builds run against the
-production database too**, so a migration or seed change takes effect the
-moment a preview builds.
+`vercel-build` (`node scripts/vercel-build.mjs`) generates Prisma Client and
+runs `next build` on every Vercel build. It applies migrations and seeds the
+catalog only when `VERCEL_ENV` is `production`. Preview and development builds
+skip both, so they never touch the database. Preview and production still
+share one database at runtime. A preview with schema changes may error until
+the migration lands on `main` and a production build applies it.
 
 **Scheduled jobs** (`vercel.json`): `agent-briefing` (13:00 UTC) sends each
 host their "needs you today" digest; `agent-run` (13:30 UTC) picks up runs
@@ -224,7 +231,7 @@ cases that matter are reachable from a test:
 | `lib/brief-classify.ts`, `lib/night-competition.ts` | Jev's brief and competing-night decisions |
 | `lib/scoring.ts` | Prices and scores one listing against one event |
 | `lib/plan.ts`, `lib/templates.ts` | The budget and timeline for an event type |
-| `lib/run-again.ts`, `lib/guest-book.ts`, `lib/vendor-book.ts` | The recurring-host features |
+| `lib/run-again.ts`, `lib/guest-book.ts`, `lib/vendor-book.ts` | What carries one event into the next: run it again, the guest book, the vendor book |
 | `lib/budget.ts`, `lib/guests.ts`, `lib/runsheet.ts` | Budget roll-up, RSVP maths, the day-of schedule |
 | `lib/money.ts` | Integer-cent arithmetic and formatting |
 
