@@ -4,6 +4,7 @@ import { kmBetween, rankVenues, type RankableEvent, type RankedVenue } from "@/l
 import { placeFit, PLACE_PROFILES } from "@/lib/venues/suitability";
 import type { VenueResult } from "@/lib/venues/types";
 import type { VenueRankEvent } from "@/lib/ai/venue-rank";
+import { sanitizeHostWords } from "@/lib/ai/sanitize-host-words";
 import {
   decide,
   jevEnabled,
@@ -100,10 +101,10 @@ export function sizeBand(guestCount: number): string {
 }
 
 /** Public facts about the place, the night's kind and size, and the host's
- *  own words for the night when they gave any. No budget, no guests, no host
- *  details, no address beyond the venue's own. */
+ *  own words for the night when they gave any, with money amounts taken out.
+ *  No budget, no guests, no host details, no address beyond the venue's own. */
 export function stateForVenue(venue: VenueResult, event: Pick<VenueRankEvent, "type" | "guestCount" | "kind">) {
-  const hostWords = event.kind?.trim() ?? "";
+  const hostWords = sanitizeHostWords(event.kind);
   return {
     venue: { name: venue.name, category: venue.category ?? "unknown", address: venue.address },
     event: {
