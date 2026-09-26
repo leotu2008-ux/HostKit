@@ -43,4 +43,8 @@ describe("venueQueryFor", () => {
     const input = { type: "FORMAL" as const, guestCount: 120, vibe: "black tie" };
     expect(venueQueryFor(input)).toBe(venueQueryFor(input));
   });
+
+  it("searches for a lounge, not a bar, for a networking night", () => {
+    expect(venueQueryFor({ type: "NETWORKING", guestCount: 50 })).toBe("cocktail lounge");
+  });
 });

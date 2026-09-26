@@ -50,6 +50,14 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   FORMAL: "Formal",
   PITCH_NIGHT: "Pitch night",
   STUDY_BREAK: "Study break",
+  NETWORKING: "Networking night",
+  WORKSHOP: "Workshop",
+  SPEAKER_EVENT: "Speaker event",
+  HACKATHON: "Hackathon",
+  GAME_NIGHT: "Game night",
+  WATCH_PARTY: "Watch party",
+  SHOWCASE: "Showcase",
+  RUN_CLUB: "Run club",
 };
 
 export const ALL_CATEGORIES = Object.keys(CATEGORY_LABEL) as ListingCategory[];
@@ -66,9 +74,13 @@ export const ALL_EVENT_TYPES = Object.keys(EVENT_TYPE_LABEL) as EventType[];
  */
 const EVENT_TYPE_ORDER: EventType[] = [
   "MIXER",
+  "NETWORKING",
   "GENERAL_MEETING",
+  "WORKSHOP",
+  "SPEAKER_EVENT",
   "STUDY_BREAK",
   "PITCH_NIGHT",
+  "GAME_NIGHT",
   "FORMAL",
   "DINNER_PARTY",
 ];

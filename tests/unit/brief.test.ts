@@ -188,8 +188,38 @@ describe("eventTypeForKind", () => {
     ["birthday dinner", "BIRTHDAY"],
     ["GBM", "GENERAL_MEETING"],
     ["BLACK-TIE gala!!", "FORMAL"],
+    ["networking night", "NETWORKING"],
+    ["Networking mixer", "NETWORKING"],
+    ["coffee chat with recruiters", "NETWORKING"],
+    ["Intro to neural networks workshop", "WORKSHOP"],
+    ["network security panel", "SPEAKER_EVENT"],
+    ["Python workshop", "WORKSHOP"],
+    ["panel on climate tech", "SPEAKER_EVENT"],
+    ["fireside chat", "SPEAKER_EVENT"],
+    ["guest speaker series", "SPEAKER_EVENT"],
+    ["spring hackathon", "HACKATHON"],
+    ["game night", "GAME_NIGHT"],
+    ["pub trivia night", "GAME_NIGHT"],
+    ["World Cup watch party", "WATCH_PARTY"],
+    ["movie night screening", "WATCH_PARTY"],
+    ["open mic night", "SHOWCASE"],
+    ["talent show", "SHOWCASE"],
+    ["Saturday run club", "RUN_CLUB"],
+    ["sunday brunch", "DINNER_PARTY"],
+    ["drama club social", "MIXER"],
+    ["5k gala", "FORMAL"],
+    ["raise $5k fundraiser", "FUNDRAISER"],
+    ["Sunday 5k run", "RUN_CLUB"],
   ] as const)("maps %s to %s", (text, type) => {
     expect(eventTypeForKind(text)).toBe(type);
+  });
+
+  it("art show is not classified as SHOWCASE after removing it from showcase keywords", () => {
+    expect(eventTypeForKind("art show")).not.toBe("SHOWCASE");
+  });
+
+  it("open mic night is still classified as SHOWCASE", () => {
+    expect(eventTypeForKind("open mic night")).toBe("SHOWCASE");
   });
 
   it.each([["silent disco"], [""]] as const)("returns null for %s", (text) => {
@@ -215,6 +245,14 @@ describe("eventTypeForKind", () => {
       GENERAL_MEETING: "gbm",
       DINNER_PARTY: "dinner",
       MIXER: "mixer",
+      NETWORKING: "networking",
+      WORKSHOP: "workshop",
+      SPEAKER_EVENT: "panel",
+      HACKATHON: "hackathon",
+      GAME_NIGHT: "trivia",
+      WATCH_PARTY: "watch party",
+      SHOWCASE: "open mic",
+      RUN_CLUB: "run club",
     };
     expect(eventTypeForKind(phrase[type])).toBe(type);
   });

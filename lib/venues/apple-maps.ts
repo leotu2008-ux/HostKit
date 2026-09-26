@@ -79,6 +79,7 @@ export function normalizePlace(place: ApplePlace): VenueResult | null {
     lat: place.coordinate.latitude,
     lng: place.coordinate.longitude,
     category: place.poiCategory ?? null,
+    types: place.poiCategory ? [place.poiCategory] : [],
   };
 }
 

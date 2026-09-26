@@ -24,6 +24,12 @@ function venue(id: string, name: string, lat = 42.3601, lng = -71.0589): VenueRe
   return { id, name, address: `${id} Main St`, phone: "+1 617 555 0100", website: "https://example.com", lat, lng, category: "Bar" };
 }
 
+/** A candidate whose types the type filter (lib/venues/suitability.ts) has
+ *  already seen, unlike venue()'s untyped default. */
+function typedVenue(id: string, name: string, types: string[]): VenueResult {
+  return { ...venue(id, name), types };
+}
+
 type Judgment = { privateP: number; space: string; spaceConf: number; fit: number; fitConf: number };
 
 /** A Jev that judges each venue by name, and remembers every state it was sent. */
@@ -70,7 +76,6 @@ describe("judgeVenues", () => {
       ["Harbor Hall", "Rents private space · Event space"],
       ["Back Bar", "Rents private space · Bar"],
       ["Maybe Bistro", "Worth a look · Has a phone number and a site"],
-      ["Corner Shop", "Has a phone number and a site"],
     ]);
     expect([...(result?.worthALook ?? [])]).toEqual(["m"]);
   });
@@ -127,6 +132,107 @@ describe("judgeVenues", () => {
     const sent: unknown[] = [];
     expect(await judgeVenues(CANDIDATES, EVENT, { env: {}, fetch: jev({ "Harbor Hall": HALL }, sent) })).toBeNull();
     expect(sent).toHaveLength(0);
+  });
+
+  const NO_ROOM_BAR: Judgment = { privateP: 0.1, space: "bar", spaceConf: 0.9, fit: 2.5, fitConf: 0.8 };
+  const STRETCH: Judgment = { privateP: 0.9, space: "bar", spaceConf: 0.9, fit: 1, fitConf: 0.9 };
+
+  it("vetoes a bar with no private room for a mixer, but keeps it for a watch party", async () => {
+    const candidates = [venue("n", "Open Bar")];
+    const fetch = jev({ "Open Bar": NO_ROOM_BAR });
+    const mixer = await judgeVenues(candidates, EVENT, { env: JEV_ON, fetch });
+    const watch = await judgeVenues(candidates, { ...EVENT, type: "WATCH_PARTY" }, { env: JEV_ON, fetch });
+    expect(mixer?.venues).toEqual([]);
+    expect(watch?.venues.map((v) => v.name)).toEqual(["Open Bar"]);
+  });
+
+  it("vetoes a place Jev is sure is a stretch", async () => {
+    const result = await judgeVenues([venue("s", "Stretch Bar")], EVENT, { env: JEV_ON, fetch: jev({ "Stretch Bar": STRETCH }) });
+    expect(result?.venues).toEqual([]);
+  });
+
+  it("vetoes the wrong kind of place for the night: a bar for a formal", async () => {
+    const result = await judgeVenues([venue("b", "Back Bar")], { ...EVENT, type: "FORMAL" }, { env: JEV_ON, fetch: jev({ "Back Bar": BAR }) });
+    expect(result?.venues).toEqual([]);
+  });
+
+  it("returns an empty list, not the old ranking, when Jev vetoes everything", async () => {
+    const result = await judgeVenues([venue("s", "Corner Shop")], EVENT, { env: JEV_ON, fetch: jev({ "Corner Shop": SHOP }) });
+    expect(result).not.toBeNull();
+    expect(result?.venues).toEqual([]);
+  });
+
+  it("logs a vetoed venue as vetoed", async () => {
+    await judgeVenues([venue("s", "Corner Shop")], EVENT, { env: JEV_ON, eventId: "evt-1", fetch: jev({ "Corner Shop": SHOP }) });
+    const entry = JSON.parse(mocks.record.mock.calls[0][1].body);
+    expect(entry).toMatchObject({ point: "venue", subject: "Corner Shop", verdict: "vetoed" });
+  });
+
+  it("tells Jev the host's own words for the night, and nothing else new", async () => {
+    const sent: unknown[] = [];
+    await judgeVenues([venue("h", "Harbor Hall")], { ...EVENT, kind: "founders networking night" }, {
+      env: JEV_ON,
+      fetch: jev({ "Harbor Hall": HALL }, sent),
+    });
+    expect(sent[0]).toEqual({
+      venue: { name: "Harbor Hall", category: "Bar", address: "h Main St" },
+      event: { kind: "Mixer", size: "20 to 50 people", hostWords: "founders networking night" },
+    });
+  });
+
+  // Fix round 1, item 1: a night that doesn't need a private room must not
+  // let "no private room" sink an otherwise ideal venue below an unjudged one.
+  const IDEAL_CAFE: Judgment = { privateP: 0.1, space: "cafe", spaceConf: 0.9, fit: 4, fitConf: 0.9 };
+
+  it("doesn't let 'no private room' sink an ideal fit for a night that never needed one", async () => {
+    const result = await judgeVenues(
+      [venue("c", "Ideal Cafe"), venue("d", "Down Venue")],
+      { ...EVENT, type: "RUN_CLUB" },
+      { env: JEV_ON, fetch: jev({ "Ideal Cafe": IDEAL_CAFE, "Down Venue": "down" }) },
+    );
+    expect(result?.venues.map((v) => v.name)).toEqual(["Ideal Cafe", "Down Venue"]);
+    expect(result?.worthALook.has("c")).toBe(false);
+  });
+
+  // Fix round 1, item 2: the space-kind veto must not remove a place the type
+  // filter already approved just because Jev's fixed vocabulary calls it
+  // "other" (Jev has no "cinema" or "theatre" choice).
+  const OTHER_KIND: Judgment = { privateP: 0.9, space: "other", spaceConf: 0.9, fit: 3, fitConf: 0.9 };
+
+  it("keeps a place the type filter already allowed, even when Jev calls its kind 'other'", async () => {
+    const cinema = typedVenue("c", "Cinema Bar", ["movie_theater"]);
+    const result = await judgeVenues([cinema], { ...EVENT, type: "WATCH_PARTY" }, {
+      env: JEV_ON,
+      fetch: jev({ "Cinema Bar": OTHER_KIND }),
+    });
+    expect(result?.venues.map((v) => v.name)).toEqual(["Cinema Bar"]);
+  });
+
+  it("still vetoes an untyped place Jev calls 'other'", async () => {
+    const unknown = venue("u", "Unknown Bar");
+    const result = await judgeVenues([unknown], { ...EVENT, type: "WATCH_PARTY" }, {
+      env: JEV_ON,
+      fetch: jev({ "Unknown Bar": OTHER_KIND }),
+    });
+    expect(result?.venues).toEqual([]);
+  });
+
+  // Fix round 1, item 3: fit is an expected value between rubric levels, so
+  // only a fit nearest the vetoed levels (below 1.5) is taken off the list.
+  const NEAR_STRETCH: Judgment = { privateP: 0.9, space: "bar", spaceConf: 0.9, fit: 1.4, fitConf: 0.9 };
+  const NEAR_WORKABLE: Judgment = { privateP: 0.9, space: "bar", spaceConf: 0.9, fit: 1.6, fitConf: 0.9 };
+
+  it("vetoes a fit nearest 'a stretch' (1.4), but keeps one nearest 'workable' (1.6)", async () => {
+    const vetoed = await judgeVenues([venue("x", "Stretchy Bar")], EVENT, {
+      env: JEV_ON,
+      fetch: jev({ "Stretchy Bar": NEAR_STRETCH }),
+    });
+    const kept = await judgeVenues([venue("y", "Workable Bar")], EVENT, {
+      env: JEV_ON,
+      fetch: jev({ "Workable Bar": NEAR_WORKABLE }),
+    });
+    expect(vetoed?.venues).toEqual([]);
+    expect(kept?.venues.map((v) => v.name)).toEqual(["Workable Bar"]);
   });
 });
 

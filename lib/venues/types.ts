@@ -14,4 +14,9 @@ export type VenueResult = {
   lat: number;
   lng: number;
   category: string | null;
+  /** Every type the provider gave: Google's primaryType then its types
+   *  (bar, university…), or Apple's poiCategory (Nightlife, University…).
+   *  Empty when the provider said nothing, which lib/venues/suitability.ts
+   *  reads as "unknown", not "unsuitable". */
+  types?: string[];
 };

@@ -8,8 +8,11 @@ import { requireEvent } from "@/lib/session";
 import { record } from "@/lib/activity";
 import { CITY_CENTERS, isCity } from "@/lib/catalog";
 import { LIMITS, RateLimitError, assertRateLimit, clientIp } from "@/lib/rate-limit";
-import { isVenueSearchConfigured, searchVenues } from "@/lib/venues/search";
-import { venueQueryFor } from "@/lib/venues/query";
+import { isVenueSearchConfigured } from "@/lib/venues/search";
+import { closestFree, scoutVenues } from "@/lib/venues/scout";
+import { FREE_SOURCES } from "@/lib/venues/suitability";
+import type { RankedVenue } from "@/lib/venues/rank";
+import type { VenueResult } from "@/lib/venues/types";
 import { rankVenuesForEvent } from "@/lib/ai/venue-rank";
 import { composeInquiry } from "@/lib/outreach";
 
@@ -37,7 +40,7 @@ export type FindVenuesState =
   | undefined;
 
 /**
- * "Find venues" — one paid Maps search and one model call, per press.
+ * "Find venues" — up to five paid Maps searches (lib/venues/scout.ts) and one model call, per press.
  *
  * This used to happen during the Venue tab's render. That was fine while it
  * lived behind an agent card, but Milestone 4 made it one of six primary
@@ -77,12 +80,14 @@ export async function findVenuesAction(
     return { message: "Give it a little while before searching again." };
   }
 
-  let candidates;
+  let scouted;
   try {
-    candidates = await searchVenues(
-      venueQueryFor({ type: event.type, guestCount: event.guestCount, vibe: event.vibe }),
-      event.city,
-    );
+    scouted = await scoutVenues({
+      type: event.type,
+      guestCount: event.guestCount,
+      vibe: event.vibe,
+      city: event.city,
+    });
   } catch {
     // Apple Maps and Google Places are third parties Hosty doesn't control
     // — a failed call must never surface as a 500, just as "nothing to show
@@ -90,42 +95,50 @@ export async function findVenuesAction(
     return { message: "Venue search isn't answering right now." };
   }
 
-  if (candidates.length === 0) {
-    return { message: "No venues turned up nearby. Add one by hand from Outreach." };
+  const centre = CITY_CENTERS[event.city];
+  const at = { lat: event.lat ?? centre.lat, lng: event.lng ?? centre.lng };
+  const freeRoom = closestFree(scouted.free, at);
+  const nothing = { message: "No venues turned up nearby. Add one by hand from Outreach." };
+  if (scouted.suitable.length === 0 && !freeRoom) return nothing;
+
+  let ranked: { venues: RankedVenue[]; source: "jev" | "model" | "fallback" } = { venues: [], source: "fallback" };
+  if (scouted.suitable.length > 0) {
+    const venueAllocation = await db.budgetCategory.findUnique({
+      where: { eventId_category: { eventId: event.id, category: "VENUE" } },
+    });
+    ranked = await rankVenuesForEvent(scouted.suitable, {
+      type: event.type,
+      city: event.city,
+      guestCount: event.guestCount,
+      durationHours: event.durationHours,
+      date: event.date,
+      vibe: event.vibe,
+      kind: event.kind,
+      lat: at.lat,
+      lng: at.lng,
+      venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
+    }, { eventId: event.id });
   }
 
-  const venueAllocation = await db.budgetCategory.findUnique({
-    where: { eventId_category: { eventId: event.id, category: "VENUE" } },
+  const hostName = user?.name || "the host";
+  const found = (venue: VenueResult, reason: string): FoundVenue => ({
+    id: venue.id,
+    name: venue.name,
+    address: venue.address,
+    phone: venue.phone,
+    website: venue.website,
+    lat: venue.lat,
+    lng: venue.lng,
+    reason,
+    subject: composeInquiry(event, { name: venue.name, role: "VENUE" }, hostName).subject,
   });
 
-  const centre = CITY_CENTERS[event.city];
-  const { venues, source } = await rankVenuesForEvent(candidates, {
-    type: event.type,
-    city: event.city,
-    guestCount: event.guestCount,
-    durationHours: event.durationHours,
-    date: event.date,
-    vibe: event.vibe,
-    lat: event.lat ?? centre.lat,
-    lng: event.lng ?? centre.lng,
-    venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
-  }, { eventId: event.id });
+  // The free room goes last, so it never pushes out a venue that suits.
+  const venues = ranked.venues.map((venue) => found(venue, venue.reason));
+  if (freeRoom) venues.push(found(freeRoom, FREE_SOURCES[freeRoom.freeSource].reason));
+  if (venues.length === 0) return nothing;
 
-  const hostName = user?.name || "the host";
-  return {
-    source,
-    venues: venues.map((venue) => ({
-      id: venue.id,
-      name: venue.name,
-      address: venue.address,
-      phone: venue.phone,
-      website: venue.website,
-      lat: venue.lat,
-      lng: venue.lng,
-      reason: venue.reason,
-      subject: composeInquiry(event, { name: venue.name, role: "VENUE" }, hostName).subject,
-    })),
-  };
+  return { source: ranked.source, venues };
 }
 
 /** Re-validates the hidden fields the venues page rendered — a host never

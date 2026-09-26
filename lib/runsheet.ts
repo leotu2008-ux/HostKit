@@ -36,6 +36,14 @@ const DEFAULT_START_HOUR: Record<EventType, number> = {
   FORMAL: 19,
   PITCH_NIGHT: 18,
   STUDY_BREAK: 20,
+  NETWORKING: 18,
+  WORKSHOP: 18,
+  SPEAKER_EVENT: 18,
+  HACKATHON: 9,
+  GAME_NIGHT: 19,
+  WATCH_PARTY: 19,
+  SHOWCASE: 19,
+  RUN_CLUB: 8,
 };
 
 export function defaultStartHour(type: EventType): number {
@@ -142,6 +150,63 @@ const RUNNING_ORDER: Record<EventType, Array<[number, string]>> = {
   STUDY_BREAK: [
     [0, "Doors open, food out"],
     [90, "Last call for food"],
+  ],
+  NETWORKING: [
+    [0, "Doors open, name tags on"],
+    [20, "Welcome and how tonight works"],
+    [30, "Open networking"],
+    [105, "Last call"],
+    [115, "Wrap up"],
+  ],
+  WORKSHOP: [
+    [0, "Arrivals, settle in at the tables"],
+    [15, "Intro and what we'll make"],
+    [25, "Hands-on session"],
+    [100, "Show and tell"],
+    [115, "Wrap up"],
+  ],
+  SPEAKER_EVENT: [
+    [0, "Doors open"],
+    [15, "Welcome and introductions"],
+    [20, "Talk or panel"],
+    [80, "Questions from the floor"],
+    [100, "Mingle"],
+  ],
+  HACKATHON: [
+    [0, "Check-in"],
+    [60, "Kickoff and team forming"],
+    [120, "Hacking starts"],
+    [900, "Midnight food"],
+    [1260, "Hacking ends, submissions due"],
+    [1320, "Demos and judging"],
+    [1410, "Winners announced"],
+  ],
+  GAME_NIGHT: [
+    [0, "Doors open, teams form"],
+    [20, "Round one"],
+    [80, "Break"],
+    [95, "Final rounds"],
+    [160, "Winners announced"],
+  ],
+  WATCH_PARTY: [
+    [0, "Doors open, food out"],
+    [30, "Kickoff or film starts"],
+    [90, "Halftime or intermission"],
+    [170, "Final whistle or credits"],
+  ],
+  SHOWCASE: [
+    [0, "Doors open"],
+    [15, "Host opens the show"],
+    [20, "First half"],
+    [95, "Intermission"],
+    [110, "Second half"],
+    [170, "Closing"],
+  ],
+  RUN_CLUB: [
+    [0, "Meet and warm up"],
+    [15, "Run starts"],
+    [60, "Back at the meeting point"],
+    [65, "Coffee and hang out"],
   ],
 };
 

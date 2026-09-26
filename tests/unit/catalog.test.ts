@@ -22,4 +22,22 @@ describe("the event type picker", () => {
   it("leads with the types students actually host", () => {
     expect(EVENT_TYPE_OPTIONS[0].value).toBe("MIXER");
   });
+
+  it("puts networking night right after the mixer", () => {
+    expect(EVENT_TYPE_OPTIONS.slice(0, 2).map((o) => o.value)).toEqual(["MIXER", "NETWORKING"]);
+  });
+
+  it("offers the recurring-host types added in September 2026", () => {
+    const labels = Object.fromEntries(EVENT_TYPE_OPTIONS.map((o) => [o.value, o.label]));
+    expect(labels).toMatchObject({
+      NETWORKING: "Networking night",
+      WORKSHOP: "Workshop",
+      SPEAKER_EVENT: "Speaker event",
+      HACKATHON: "Hackathon",
+      GAME_NIGHT: "Game night",
+      WATCH_PARTY: "Watch party",
+      SHOWCASE: "Showcase",
+      RUN_CLUB: "Run club",
+    });
+  });
 });

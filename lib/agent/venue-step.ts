@@ -4,8 +4,10 @@ import { db } from "@/lib/db";
 import { CITY_CENTERS, isCity } from "@/lib/catalog";
 import { composeInquiry, type OutreachEvent } from "@/lib/outreach";
 import { rankVenuesForEvent } from "@/lib/ai/venue-rank";
-import { venueQueryFor } from "@/lib/venues/query";
-import { searchVenues, venueSearchProvider } from "@/lib/venues/search";
+import { closestFree, scoutVenues, type FreeVenue } from "@/lib/venues/scout";
+import { venueSearchProvider } from "@/lib/venues/search";
+import { FREE_SOURCES } from "@/lib/venues/suitability";
+import type { VenueResult } from "@/lib/venues/types";
 
 /**
  * The agent's venue step: the best few real places for this event, each one
@@ -15,8 +17,11 @@ import { searchVenues, venueSearchProvider } from "@/lib/venues/search";
  * Nothing is sent and nothing is booked — `email` and `sentAt` stay null, so
  * the drafted message is only ever readable from Outreach, where the host
  * presses send themselves. The candidates come from the configured maps
- * provider, never from the model; the model only reorders and explains a
- * fixed list (lib/ai/venue-rank.ts).
+ * provider, never from the model: lib/venues/scout.ts runs the searches and
+ * drops places whose type doesn't suit the night, and the model or Jev only
+ * reorders, explains or vetoes that fixed list (lib/ai/venue-rank.ts). The
+ * closest free room (a university, a library) is added past the limit,
+ * tagged "may be free".
  *
  * Idempotent per place id, the same lookup-then-create attachVenueAction uses
  * (lib/actions/venues.ts): externalId also holds catalog listing ids, so
@@ -25,6 +30,7 @@ import { searchVenues, venueSearchProvider } from "@/lib/venues/search";
 
 export type VenueStepEvent = OutreachEvent & {
   id: string;
+  kind: string | null;
   lat: number | null;
   lng: number | null;
   owner: { name: string | null } | null;
@@ -47,41 +53,54 @@ export async function attachTopVenues(
     throw new Error("Hosty doesn't scout that city yet");
   }
 
-  const candidates = await searchVenues(
-    venueQueryFor({ type: event.type, guestCount: event.guestCount, vibe: event.vibe }),
-    event.city,
-  );
-
-  if (candidates.length === 0) {
-    return { actor: "agent", kind: "venue_search_empty", title: "No venues turned up nearby" };
-  }
-
-  const venueAllocation = await db.budgetCategory.findUnique({
-    where: { eventId_category: { eventId: event.id, category: "VENUE" } },
+  const scouted = await scoutVenues({
+    type: event.type,
+    guestCount: event.guestCount,
+    vibe: event.vibe,
+    city: event.city,
   });
 
   const centre = CITY_CENTERS[event.city];
-  const { venues, worthALook } = await rankVenuesForEvent(
-    candidates,
-    {
-      type: event.type,
-      city: event.city,
-      guestCount: event.guestCount,
-      durationHours: event.durationHours,
-      date: event.date,
-      vibe: event.vibe,
-      lat: event.lat ?? centre.lat,
-      lng: event.lng ?? centre.lng,
-      venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
-    },
-    { fetchImpl: options.fetchImpl, eventId: event.id },
-  );
+  const at = { lat: event.lat ?? centre.lat, lng: event.lng ?? centre.lng };
+  const freeRoom = closestFree(scouted.free, at);
+  const empty: ActivityLine = { actor: "agent", kind: "venue_search_empty", title: "No venues turned up nearby" };
 
-  const top = venues.slice(0, limit);
+  if (scouted.suitable.length === 0 && !freeRoom) return empty;
+
+  let top: VenueResult[] = [];
+  let worthALook: Set<string> | undefined;
+  if (scouted.suitable.length > 0) {
+    const venueAllocation = await db.budgetCategory.findUnique({
+      where: { eventId_category: { eventId: event.id, category: "VENUE" } },
+    });
+    const ranked = await rankVenuesForEvent(
+      scouted.suitable,
+      {
+        type: event.type,
+        city: event.city,
+        guestCount: event.guestCount,
+        durationHours: event.durationHours,
+        date: event.date,
+        vibe: event.vibe,
+        kind: event.kind,
+        lat: at.lat,
+        lng: at.lng,
+        venueAllocatedCents: venueAllocation?.allocatedCents ?? null,
+      },
+      { fetchImpl: options.fetchImpl, eventId: event.id },
+    );
+    top = ranked.venues.slice(0, limit);
+    worthALook = ranked.worthALook;
+  }
+
+  // The free room goes past the limit, so it never pushes out a suitable one.
+  const lineup: Array<VenueResult | FreeVenue> = freeRoom ? [...top, freeRoom] : top;
+  if (lineup.length === 0) return empty;
+
   const hostName = event.owner?.name ?? "the host";
   const source = providerSource();
 
-  for (const venue of top) {
+  for (const venue of lineup) {
     const existing = await db.eventCollaborator.findFirst({
       where: { eventId: event.id, kind: "VENUE", externalId: venue.id },
     });
@@ -111,10 +130,17 @@ export async function attachTopVenues(
   return {
     actor: "agent",
     kind: "venues_attached",
-    title: `${top.length} venue${top.length === 1 ? "" : "s"} lined up`,
-    // A venue Jev wasn't sure about is still lined up, and says so.
-    body: top
-      .map((venue) => (worthALook?.has(venue.id) ? `${venue.name} (worth a look)` : venue.name))
+    title: `${lineup.length} venue${lineup.length === 1 ? "" : "s"} lined up`,
+    // A venue Jev wasn't sure about is still lined up, and says so; a free
+    // room says it may be free.
+    body: lineup
+      .map((venue) =>
+        "freeSource" in venue
+          ? `${venue.name} (${FREE_SOURCES[venue.freeSource].tag})`
+          : worthALook?.has(venue.id)
+            ? `${venue.name} (worth a look)`
+            : venue.name,
+      )
       .join(" · "),
     href: `/events/${event.id}/outreach`,
   };

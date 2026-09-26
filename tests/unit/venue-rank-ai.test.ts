@@ -163,3 +163,16 @@ describe("rankVenuesForEvent — falling back", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+describe("rankVenuesForEvent — the 40 km cutoff, with Jev off or silent", () => {
+  it("drops a venue too far away to be the one, even on the fallback path", async () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    const far = { ...venue("f", "Far Hall"), lat: 40.7128, lng: -74.006 }; // New York, ~300 km
+    const { venues, source } = await rankVenuesForEvent([...CANDIDATES, far], EVENT, {
+      fetchImpl: vi.fn() as unknown as typeof fetch,
+    });
+    expect(source).toBe("fallback");
+    expect(venues.map((v) => v.id)).not.toContain("f");
+    expect(venues).toEqual(rankVenues(CANDIDATES, RANK_EVENT));
+  });
+});

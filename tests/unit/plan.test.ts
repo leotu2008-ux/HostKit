@@ -81,6 +81,15 @@ describe("event templates", () => {
       );
     }
   });
+
+  it("templates the recurring-host types with the shapes they need", () => {
+    expect(EVENT_TEMPLATES.HACKATHON.defaultDurationHours).toBe(24);
+    expect(EVENT_TEMPLATES.SPEAKER_EVENT.required).toEqual(["VENUE", "AV_PRODUCTION"]);
+    expect(EVENT_TEMPLATES.RUN_CLUB.horizonDays).toBeLessThanOrEqual(7);
+    for (const type of ["NETWORKING", "WORKSHOP", "GAME_NIGHT", "WATCH_PARTY", "SHOWCASE"] as const) {
+      expect(EVENT_TEMPLATES[type].required, type).toContain("VENUE");
+    }
+  });
 });
 
 describe("generatePlan — budget", () => {

@@ -78,18 +78,31 @@ export function describeMissing(fields: BriefField[]): string {
  * DINNER_PARTY so "birthday dinner" reads as a birthday; MIXER's words are
  * the broadest ("party", "night") so they go last, catching only what
  * nothing more specific already claimed.
+ *
+ * Specific night types (hackathon, pitch, watch party, game night, showcase,
+ * run club) lead the table so their words win over catch-alls. NETWORKING,
+ * WORKSHOP and SPEAKER_EVENT must stay above GENERAL_MEETING and MIXER, whose
+ * "meeting", "night" and "party" would otherwise catch them.
  */
 const KIND_KEYWORDS: Array<[EventType, string[]]> = [
+  ["HACKATHON", ["hackathon", "hack night", "buildathon", "datathon", "game jam"]],
   ["PITCH_NIGHT", ["pitch", "demo day", "demo night", "shark tank", "startup competition"]],
+  ["WATCH_PARTY", ["watch party", "watch along", "viewing party", "screening", "movie night", "film night", "super bowl", "world cup"]],
+  ["GAME_NIGHT", ["game night", "games night", "trivia", "quiz night", "board game", "poker night", "bingo"]],
+  ["SHOWCASE", ["open mic", "talent show", "showcase", "recital", "concert", "comedy night"]],
+  ["RUN_CLUB", ["run club", "running club", "fun run", "group run", "5k run", "charity 5k", "walk club"]],
   ["FORMAL", ["formal", "gala", "black tie", "ball", "prom"]],
   ["FUNDRAISER", ["fundraiser", "benefit", "charity", "philanthropy", "raiser"]],
   ["STUDY_BREAK", ["study break", "finals", "midterm", "de stress", "destress", "study"]],
   ["LAUNCH_PARTY", ["launch", "release party", "debut", "premiere"]],
   ["BIRTHDAY", ["birthday", "bday", "21st", "18th", "turning"]],
   ["CORPORATE_OFFSITE", ["offsite", "off site", "retreat", "all hands", "team building", "conference", "summit"]],
-  ["GENERAL_MEETING", ["gbm", "general meeting", "general body", "info session", "interest meeting", "orientation", "workshop", "panel", "speaker series", "meeting"]],
+  ["NETWORKING", ["networking", "coffee chat", "career night", "industry night", "recruiting"]],
+  ["WORKSHOP", ["workshop", "masterclass", "bootcamp", "hands on", "crash course", "skill session"]],
+  ["SPEAKER_EVENT", ["panel", "speaker", "fireside", "keynote", "lecture", "in conversation"]],
+  ["GENERAL_MEETING", ["gbm", "general meeting", "general body", "info session", "interest meeting", "orientation", "meeting"]],
   ["DINNER_PARTY", ["dinner", "supper", "banquet", "brunch", "lunch", "potluck", "tasting"]],
-  ["MIXER", ["mixer", "social", "networking", "happy hour", "meet and greet", "kickback", "party", "night"]],
+  ["MIXER", ["mixer", "social", "happy hour", "meet and greet", "kickback", "party", "night"]],
 ];
 
 function normalizeKind(text: string): string {

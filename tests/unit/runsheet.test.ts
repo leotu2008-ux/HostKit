@@ -74,6 +74,27 @@ describe("suggestRunSheet", () => {
       expect(sheet.length, type).toBeGreaterThan(4);
     }
   });
+
+  it("fits a 24-hour hackathon inside the day, ending with clear-down", () => {
+    const sheet = suggestRunSheet({ type: "HACKATHON", durationHours: 24 }, []);
+    const offsets = sheet.map((item) => item.offsetMinutes);
+    expect(offsets).toEqual([...offsets].sort((a, b) => a - b));
+    expect(Math.max(...sheet.slice(0, -1).map((item) => item.offsetMinutes))).toBeLessThanOrEqual(24 * 60);
+    expect(sheet[sheet.length - 1].title).toBe("Clear down and vendor collection");
+    expect(sheet.some((item) => item.title === "Hacking starts")).toBe(true);
+  });
+
+  it("serves the hackathon's midnight food at midnight from the default start", () => {
+    const date = new Date("2026-10-03T12:00:00");
+    const { hour } = arrivalClock(date, "HACKATHON");
+    const sheet = suggestRunSheet({ type: "HACKATHON", durationHours: 24 }, []);
+    const food = sheet.find((item) => item.title === "Midnight food");
+    expect(formatTime(draftToDate(date, hour, food!.offsetMinutes))).toBe("12:00 AM");
+  });
+
+  it("starts a run club in the morning", () => {
+    expect(arrivalClock(new Date("2026-10-03T12:00:00"), "RUN_CLUB")).toEqual({ hour: 8, minute: 0 });
+  });
 });
 
 describe("draftToDate", () => {

@@ -3,6 +3,7 @@ import type { EventType } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { EVENT_TYPE_LABEL } from "@/lib/catalog";
 import { CLASH_WINDOW_HOURS, clashWindow } from "@/lib/campus/conflicts";
+import { sanitizeHostWords } from "@/lib/ai/sanitize-host-words";
 import {
   decide,
   jevEnabled,
@@ -99,8 +100,8 @@ export function timingPhrase(host: Date, other: Date): string {
 
 export function stateForCompeting(host: HostNight, other: NightEvent) {
   return {
-    hostEvent: { kind: EVENT_TYPE_LABEL[host.type], hostWords: host.kind ?? "" },
-    otherEvent: { title: other.title, kind: EVENT_TYPE_LABEL[other.type], hostWords: other.kind ?? "" },
+    hostEvent: { kind: EVENT_TYPE_LABEL[host.type], hostWords: sanitizeHostWords(host.kind) },
+    otherEvent: { title: other.title, kind: EVENT_TYPE_LABEL[other.type], hostWords: sanitizeHostWords(other.kind) },
     timing: timingPhrase(host.date!, other.date),
   };
 }
